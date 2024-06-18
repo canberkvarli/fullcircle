@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "856286042200",
+    "project_id": "fullcircle-3d01a",
+    "storage_bucket": "fullcircle-3d01a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:856286042200:android:0533f17b97701cad87522d",
+        "android_client_info": {
+          "package_name": "com.fullcircle.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzOFmb54yrhXJ5c7XfmXmDzJlQg6oNiSQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
