@@ -7,7 +7,12 @@ export default function OnboardingStackLayout() {
       <Stack.Screen name="LoginSignupScreen" options={{ headerShown: false }} />
       <Stack.Screen name="LoginScreen" options={{ headerShown: false }} />
       <Stack.Screen name="PhoneNumberScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="PhoneVerificationScreen" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="PhoneVerificationScreen"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="EmailScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="HomeScreen" options={{ headerShown: false }} />
     </Stack>
   );
 }

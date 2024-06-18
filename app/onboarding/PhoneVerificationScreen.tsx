@@ -8,14 +8,15 @@ import {
   Text,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { FIREBASE_AUTH } from "../../services/FirebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
 import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
+import { collection, doc, getDoc, setDoc } from "firebase/firestore";
 
 function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState("");
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { verificationId } = params;
+  const { verificationId, phoneNumber } = params;
 
   const handleVerifyCode = async () => {
     if (verificationCode.trim() === "") {
@@ -32,8 +33,23 @@ function PhoneVerificationScreen() {
         FIREBASE_AUTH,
         credential
       );
+      const { user } = userCredential;
+      const usersRef = collection(FIRESTORE, "users");
+      const docRef = doc(usersRef, user.phoneNumber || user.uid);
 
-      Alert.alert("Success", "Phone number verified and logged in!");
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        // User exists in the database, directly navigate to HomeScreen
+        Alert.alert("Success", "Phone number verified and logged in!", [
+          { text: "OK", onPress: () => router.replace("HomeScreen") },
+        ]);
+      } else {
+        // User doesn't exist, navigate to EmailScreen
+        router.replace({
+          pathname: "onboarding/EmailScreen",
+          params: { userId: user.uid, phoneNumber },
+        });
+      }
     } catch (error: any) {
       Alert.alert("Error", "Failed to verify code: " + error.message);
     }
