@@ -1,49 +1,32 @@
-// screens/onboarding/PhoneNumberScreen.tsx
 import React, { useState } from "react";
-import { Button, TextInput, StyleSheet, Alert, View, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Button,
+  TextInput,
+  StyleSheet,
+  Alert,
+  SafeAreaView,
+  Text,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
-import { signInWithPhoneNumber } from "firebase/auth";
+import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [confirm, setConfirm] =
+    useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
   const router = useRouter();
-  const usersRef = collection(FIRESTORE, "users");
 
   const handleSubmit = async () => {
-    if (phoneNumber.trim() === "") {
-      Alert.alert("Error", "Phone number cannot be empty");
-      return;
-    }
-
     try {
-      FIREBASE_AUTH.useDeviceLanguage();
-      console.log("trying to sign in with phone number");
-      const docRef = doc(usersRef, phoneNumber);
-      console.log("docRef", docRef);
-      const docSnap = await getDoc(docRef);
-      console.log("docSnap", docSnap);
-
-      if (docSnap.exists()) {
-        console.log("Logged in");
-        Alert.alert("Success", "Logged in!");
-      } else {
-        const confirmation = await signInWithPhoneNumber(
-          FIREBASE_AUTH,
-          phoneNumber
-        );
-        setVerificationId(confirmation.verificationId);
-        console.log("Verification code sent!");
-        router.replace({
-          pathname: "onboarding/PhoneVerificationScreen",
-          params: { verificationId: confirmation.verificationId },
-        });
-      }
-    } catch (error: any) {
-      Alert.alert("Error", "Failed to process phone number: " + error.message);
+      const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+      setConfirm(confirmation);
+      router.replace({
+        pathname: "onboarding/PhoneVerificationScreen",
+        params: { verificationId: confirmation.verificationId },
+      });
+    } catch (error) {
+      console.error("Failed to sign in with phone number: ", error);
+      Alert.alert("Error", "Failed to send verification code.");
     }
   };
 

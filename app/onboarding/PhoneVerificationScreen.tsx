@@ -1,4 +1,3 @@
-// screens/onboarding/PhoneVerificationScreen.tsx
 import React, { useState } from "react";
 import {
   Button,
@@ -45,7 +44,7 @@ function PhoneVerificationScreen() {
       }
 
       Alert.alert("Success", "Phone number verified and logged in!");
-      router.replace("HomeScreen"); // Replace with your home screen or the next screen
+      router.replace("HomeScreen");
     } catch (error: any) {
       Alert.alert("Error", "Failed to verify code: " + error.message);
     }
