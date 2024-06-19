@@ -15,7 +15,7 @@ function EmailScreen() {
   const [email, setEmail] = useState("");
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { userId } = params;
+  const { userId, phoneNumber } = params;
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
@@ -23,12 +23,27 @@ function EmailScreen() {
       return;
     }
 
+    if (!userId || typeof userId !== "string") {
+      Alert.alert("Error", "Invalid user ID");
+      return;
+    }
+
     try {
       const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(docRef, { email: email });
-
+      await setDoc(
+        docRef,
+        { email: email, phoneNumber: phoneNumber },
+        { merge: true }
+      );
       Alert.alert("Success", "Email saved successfully!", [
-        { text: "OK", onPress: () => router.replace("onboarding/HomeScreen") },
+        // {
+        //   text: "OK",
+        //   onPress: () =>
+        //     router.replace({
+        //       pathname: "onboarding/FirstNameScreen",
+        //       params: { userId, phoneNumber, email },
+        //     }),
+        // },
       ]);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);

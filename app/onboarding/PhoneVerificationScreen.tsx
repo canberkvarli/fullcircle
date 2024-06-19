@@ -50,7 +50,7 @@ function PhoneVerificationScreen() {
         await setDoc(docRef, { phoneNumber: user.phoneNumber });
         router.replace({
           pathname: "onboarding/EmailScreen",
-          params: { userId: user.uid },
+          params: { userId: user.uid, phoneNumber: user.phoneNumber },
         });
       }
     } catch (error: any) {
