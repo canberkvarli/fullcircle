@@ -11,15 +11,15 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { FIRESTORE } from "../../services/FirebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
 
-function EmailScreen() {
-  const [email, setEmail] = useState("");
+function FirstNameScreen() {
+  const [firstName, setFirstName] = useState("");
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { userId, phoneNumber } = params;
+  const { userId, phoneNumber, email, birthdate } = params;
 
-  const handleEmailSubmit = async () => {
-    if (email.trim() === "") {
-      Alert.alert("Error", "Email cannot be empty");
+  const handleFirstNameSubmit = async () => {
+    if (firstName.trim() === "") {
+      Alert.alert("Error", "First name cannot be empty");
       return;
     }
 
@@ -30,40 +30,40 @@ function EmailScreen() {
 
     try {
       const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(
-        docRef,
-        { email: email, phoneNumber: phoneNumber },
-        { merge: true }
-      );
-      Alert.alert("Success", "Email saved successfully!", [
+      await setDoc(docRef, { firstName: firstName }, { merge: true });
+      Alert.alert("Success", "First name saved successfully!", [
         {
           text: "OK",
           onPress: () =>
             router.replace({
-              pathname: "onboarding/FirstNameScreen",
-              params: { userId, phoneNumber, email },
+              pathname: "onboarding/BirthdateScreen",
+              params: { userId, phoneNumber, email, birthdate, firstName },
             }),
         },
       ]);
     } catch (error: any) {
-      Alert.alert("Error", "Failed to save email: " + error.message);
+      Alert.alert("Error", "Failed to save first name: " + error.message);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Can we get your email?</Text>
+      <Text style={styles.title}>What's your first name?</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
+        placeholder="Enter your first name"
+        value={firstName}
+        onChangeText={setFirstName}
       />
-      <Button title="Submit" onPress={handleEmailSubmit} />
+      <Button title="Submit" onPress={handleFirstNameSubmit} />
       <Button
         title="Back"
-        onPress={() => router.replace("onboarding/PhoneNumberScreen")}
+        onPress={() =>
+          router.replace({
+            pathname: "onboarding/EmailScreen",
+            params: { userId, phoneNumber, email, birthdate },
+          })
+        }
       />
     </SafeAreaView>
   );
@@ -92,4 +92,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EmailScreen;
+export default FirstNameScreen;
