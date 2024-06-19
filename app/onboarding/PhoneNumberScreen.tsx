@@ -31,7 +31,10 @@ function PhoneNumberScreen(): JSX.Element {
       setConfirm(confirmation);
       router.replace({
         pathname: "onboarding/PhoneVerificationScreen",
-        params: { verificationId: confirmation.verificationId },
+        params: {
+          verificationId: confirmation.verificationId,
+          phoneNumber: phoneNumber,
+        },
       });
     } catch (error) {
       console.error("Failed to sign in with phone number: ", error);

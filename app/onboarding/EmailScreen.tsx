@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { FIRESTORE } from "../../services/FirebaseConfig";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 
 function EmailScreen() {
   const [email, setEmail] = useState("");
@@ -24,9 +24,9 @@ function EmailScreen() {
     }
 
     try {
-    //   const docRef = doc(FIRESTORE, "users", userId);
+      const docRef = doc(FIRESTORE, "users", userId);
+      await setDoc(docRef, { email: email });
 
-    //   await setDoc(docRef, { email });
       Alert.alert("Success", "Email saved successfully!", [
         { text: "OK", onPress: () => router.replace("onboarding/HomeScreen") },
       ]);

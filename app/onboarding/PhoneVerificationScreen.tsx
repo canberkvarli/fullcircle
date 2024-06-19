@@ -10,7 +10,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
 import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState("");
@@ -34,20 +34,23 @@ function PhoneVerificationScreen() {
         credential
       );
       const { user } = userCredential;
-      const usersRef = collection(FIRESTORE, "users");
-      const docRef = doc(usersRef, user.phoneNumber || user.uid);
-
+      const docRef = doc(FIRESTORE, "users", user.uid);
       const docSnap = await getDoc(docRef);
+
       if (docSnap.exists()) {
         // User exists in the database, directly navigate to HomeScreen
         Alert.alert("Success", "Phone number verified and logged in!", [
-          { text: "OK", onPress: () => router.replace("HomeScreen") },
+          {
+            text: "OK",
+            onPress: () => router.replace("onboarding/HomeScreen"),
+          },
         ]);
       } else {
-        // User doesn't exist, navigate to EmailScreen
+        // User doesn't exist, create a new user and navigate to EmailScreen
+        await setDoc(docRef, { phoneNumber: user.phoneNumber });
         router.replace({
           pathname: "onboarding/EmailScreen",
-          params: { userId: user.uid, phoneNumber },
+          params: { userId: user.uid },
         });
       }
     } catch (error: any) {
