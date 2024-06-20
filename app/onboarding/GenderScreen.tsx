@@ -32,24 +32,18 @@ function GenderScreen() {
     try {
       const docRef = doc(FIRESTORE, "users", userId);
       await setDoc(docRef, { gender: selectedGender }, { merge: true });
-      Alert.alert("Success", "Gender saved successfully!", [
-        {
-          text: "OK",
-          onPress: () =>
-            router.replace({
-              pathname: "onboarding/OrientationScreen",
-              params: {
-                userId,
-                phoneNumber,
-                email,
-                birthdate,
-                firstName,
-                lastName,
-                gender: selectedGender,
-              },
-            }),
+      router.replace({
+        pathname: "onboarding/OrientationScreen",
+        params: {
+          userId,
+          phoneNumber,
+          email,
+          birthdate,
+          firstName,
+          lastName,
+          gender: selectedGender,
         },
-      ]);
+      });
     } catch (error: any) {
       Alert.alert("Error", "Failed to save gender: " + error.message);
     }

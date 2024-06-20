@@ -31,16 +31,10 @@ function FirstNameScreen() {
     try {
       const docRef = doc(FIRESTORE, "users", userId);
       await setDoc(docRef, { firstName: firstName }, { merge: true });
-      Alert.alert("Success", "First name saved successfully!", [
-        {
-          text: "OK",
-          onPress: () =>
-            router.replace({
-              pathname: "onboarding/BirthdateScreen",
-              params: { userId, phoneNumber, email, birthdate, firstName },
-            }),
-        },
-      ]);
+      router.replace({
+        pathname: "onboarding/BirthdateScreen",
+        params: { userId, phoneNumber, email, birthdate, firstName },
+      });
     } catch (error: any) {
       Alert.alert("Error", "Failed to save first name: " + error.message);
     }

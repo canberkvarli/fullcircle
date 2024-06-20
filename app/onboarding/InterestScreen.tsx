@@ -46,26 +46,20 @@ function InterestScreen() {
     try {
       const docRef = doc(FIRESTORE, "users", userId);
       await setDoc(docRef, { interestedIn: selectedOption }, { merge: true });
-      Alert.alert("Success", "Interest saved successfully!", [
-        {
-          text: "OK",
-          onPress: () =>
-            router.replace({
-              pathname: "onboarding/DistancePreferenceScreen",
-              params: {
-                userId,
-                phoneNumber,
-                email,
-                birthdate,
-                firstName,
-                lastName,
-                gender,
-                sexualOrientation,
-                interestedIn: selectedOption,
-              },
-            }),
+      router.replace({
+        pathname: "onboarding/DistancePreferenceScreen",
+        params: {
+          userId,
+          phoneNumber,
+          email,
+          birthdate,
+          firstName,
+          lastName,
+          gender,
+          sexualOrientation,
+          interestedIn: selectedOption,
         },
-      ]);
+      });
     } catch (error: any) {
       Alert.alert("Error", "Failed to save interest: " + error.message);
     }

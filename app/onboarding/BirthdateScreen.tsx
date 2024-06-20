@@ -31,23 +31,17 @@ function BirthdayScreen() {
     try {
       const docRef = doc(FIRESTORE, "users", userId);
       await setDoc(docRef, { birthdate: birthdate }, { merge: true });
-      Alert.alert("Success", "Birthdate saved successfully!", [
-        {
-          text: "OK",
-          onPress: () =>
-            router.replace({
-              pathname: "onboarding/GenderScreen",
-              params: {
-                userId,
-                phoneNumber,
-                email,
-                firstName,
-                lastName,
-                birthdate,
-              },
-            }),
+      router.replace({
+        pathname: "onboarding/GenderScreen",
+        params: {
+          userId,
+          phoneNumber,
+          email,
+          firstName,
+          lastName,
+          birthdate,
         },
-      ]);
+      });
     } catch (error: any) {
       Alert.alert("Error", "Failed to save birthdate: " + error.message);
     }

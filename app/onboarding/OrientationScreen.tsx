@@ -51,25 +51,19 @@ function SexualOrientationScreen() {
         { sexualOrientation: selectedOptions },
         { merge: true }
       );
-      Alert.alert("Success", "Sexual orientation saved successfully!", [
-        {
-          text: "OK",
-          onPress: () =>
-            router.replace({
-              pathname: "onboarding/InterestScreen",
-              params: {
-                userId,
-                phoneNumber,
-                email,
-                birthdate,
-                firstName,
-                lastName,
-                gender,
-                sexualOrientation: selectedOptions,
-              },
-            }),
+      router.replace({
+        pathname: "onboarding/InterestScreen",
+        params: {
+          userId,
+          phoneNumber,
+          email,
+          birthdate,
+          firstName,
+          lastName,
+          gender,
+          sexualOrientation: selectedOptions,
         },
-      ]);
+      });
     } catch (error: any) {
       Alert.alert(
         "Error",

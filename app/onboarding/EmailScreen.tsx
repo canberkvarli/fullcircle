@@ -35,16 +35,10 @@ function EmailScreen() {
         { email: email, phoneNumber: phoneNumber },
         { merge: true }
       );
-      Alert.alert("Success", "Email saved successfully!", [
-        {
-          text: "OK",
-          onPress: () =>
-            router.replace({
-              pathname: "onboarding/FirstNameScreen",
-              params: { userId, phoneNumber, email },
-            }),
-        },
-      ]);
+      router.replace({
+        pathname: "onboarding/FirstNameScreen",
+        params: { userId, phoneNumber, email },
+      });
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
     }
