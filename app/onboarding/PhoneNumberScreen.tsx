@@ -1,39 +1,41 @@
 import React, { useState } from "react";
 import {
   Button,
-  TextInput,
   StyleSheet,
   Alert,
   SafeAreaView,
   Text,
+  View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import PhoneInput from "react-native-phone-number-input";
 
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
   const [confirm, setConfirm] =
     useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
   const router = useRouter();
 
   const handleSubmit = async () => {
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-      Alert.alert(
-        "Error",
-        "Please enter a valid phone number in E.164 format (e.g., +14157698292)."
-      );
+    if (!phoneRegex.test(formattedPhoneNumber)) {
+      Alert.alert("Error", "Please enter a valid phone number.");
       return;
     }
 
     try {
-      const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+      const confirmation = await auth().signInWithPhoneNumber(
+        formattedPhoneNumber
+      );
       setConfirm(confirmation);
+
       router.replace({
         pathname: "onboarding/PhoneVerificationScreen",
         params: {
           verificationId: confirmation.verificationId,
-          phoneNumber: phoneNumber,
+          phoneNumber: formattedPhoneNumber,
         },
       });
     } catch (error) {
@@ -45,13 +47,22 @@ function PhoneNumberScreen(): JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Can we get your number?</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your phone number (e.g., +14157698292)"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        keyboardType="phone-pad"
-      />
+      <View style={styles.phoneContainer}>
+        <PhoneInput
+          defaultValue={phoneNumber}
+          defaultCode="US"
+          layout="first"
+          onChangeText={(text) => {
+            setPhoneNumber(text);
+          }}
+          onChangeFormattedText={(text) => {
+            setFormattedPhoneNumber(text);
+          }}
+          withDarkTheme
+          withShadow
+          autoFocus
+        />
+      </View>
       <Button title="Submit" onPress={handleSubmit} />
       <Button
         title="Back"
@@ -68,14 +79,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+  phoneContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
     width: "80%",
+    borderBottomColor: "gray",
+    borderBottomWidth: 1,
   },
   title: {
     fontSize: 24,
