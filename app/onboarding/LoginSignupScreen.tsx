@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Button,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Video, ResizeMode } from "expo-av";
@@ -19,12 +20,17 @@ function LoginSignupScreen(): JSX.Element {
   const video = useRef(null);
   const [status, setStatus] = useState({});
   const [showSSOButtons, setShowSSOButtons] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   useEffect(() => {
     if (video.current) {
       (video.current as Video).playAsync();
     }
   }, []);
+
+  const handleVideoLoad = () => {
+    setVideoLoaded(true);
+  };
 
   const handleSignIn = () => {
     setShowSSOButtons(true);
@@ -45,55 +51,65 @@ function LoginSignupScreen(): JSX.Element {
         shouldPlay
         isMuted
         onPlaybackStatusUpdate={(status) => setStatus(() => status)}
+        onLoad={handleVideoLoad}
       />
-      <View style={styles.overlay}>
-        <Image
-          source={require("../../assets/circle.svg")}
-          style={styles.logo}
+      {!videoLoaded && (
+        <ActivityIndicator
+          size="large"
+          color="#ffffff"
+          style={styles.loadingIndicator}
         />
-        <WelcomeTitle />
-        <Text style={styles.affirmation}>
-          <Text style={{ fontStyle: "italic" }}>
-            Embark on a journey of love and self-discovery.
+      )}
+      {videoLoaded && (
+        <View style={styles.overlay}>
+          <Image
+            source={require("../../assets/circle.svg")}
+            style={styles.logo}
+          />
+          <WelcomeTitle />
+          <Text style={styles.affirmation}>
+            <Text style={{ fontStyle: "italic" }}>
+              Embark on a journey of love and self-discovery.
+            </Text>
           </Text>
-        </Text>
-        <Text style={styles.infoText}>
-          By signing up for Circle, you agree to our{" "}
-          <Text style={styles.link} onPress={() => console.log("pressed")}>
-            Terms of Service
+          <Text style={styles.infoText}>
+            By signing up for Circle, you agree to our{" "}
+            <Text style={styles.link} onPress={() => console.log("pressed")}>
+              Terms of Service
+            </Text>
+            . Learn how we process your data in our{" "}
+            <Text style={styles.link} onPress={() => console.log("pressed")}>
+              Privacy Policy
+            </Text>
+            , and{" "}
+            <Text style={styles.link} onPress={() => console.log("pressed")}>
+              Cookies Policy
+            </Text>
+            .
           </Text>
-          . Learn how we process your data in our{" "}
-          <Text style={styles.link} onPress={() => console.log("pressed")}>
-            Privacy Policy
-          </Text>
-          , and{" "}
-          <Text style={styles.link} onPress={() => console.log("pressed")}>
-            Cookies Policy
-          </Text>
-          .
-        </Text>
-        {showSSOButtons ? (
-          <>
-            <SSOButtons />
-            <Button title="Back" onPress={handleGoBack} />
-          </>
-        ) : (
-          <View>
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
-              onPress={() => router.replace("onboarding/PhoneNumberScreen")}
-            >
-              <Text style={styles.buttonText}>Create account</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleSignIn}
-            >
-              <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+          {showSSOButtons ? (
+            <>
+              <SSOButtons />
+              <Button title="Back" onPress={handleGoBack} />
+            </>
+          ) : (
+            <View>
+              <TouchableOpacity
+                style={[styles.button, styles.primaryButton]}
+                onPress={() => router.replace("onboarding/PhoneNumberScreen")}
+              >
+                <Text style={styles.buttonText}>Create account</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.secondaryButton]}
+                onPress={handleSignIn}
+              >
+                <Text style={styles.buttonText}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -113,6 +129,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     backgroundColor: "rgba(0, 0, 0, 0.6)", // Dark overlay to make text more readable
+  },
+  loadingIndicator: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -25 }, { translateY: -25 }],
   },
   logo: {
     width: 100,
