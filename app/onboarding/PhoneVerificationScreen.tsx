@@ -46,8 +46,21 @@ function PhoneVerificationScreen() {
           },
         ]);
       } else {
+        const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
+        const match = phoneRegex.exec(phoneNumber as string);
+        if (!match) {
+          Alert.alert("Error", "Invalid phone number format");
+          return;
+        }
+        const [, countryCode, areaCode, phone] = match;
+
         // User doesn't exist, create a new user and navigate to EmailScreen
-        await setDoc(docRef, { phoneNumber: user.phoneNumber });
+        await setDoc(docRef, {
+          country: countryCode,
+          area: areaCode,
+          number: phone,
+          phoneNumber: user.phoneNumber,
+        });
         router.replace({
           pathname: "onboarding/EmailScreen",
           params: { userId: user.uid, phoneNumber: user.phoneNumber },

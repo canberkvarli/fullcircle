@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   Text,
   View,
+  TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
@@ -38,6 +39,7 @@ function PhoneNumberScreen(): JSX.Element {
           phoneNumber: formattedPhoneNumber,
         },
       });
+      console.log("phoneNumber", formattedPhoneNumber);
     } catch (error) {
       console.error("Failed to sign in with phone number: ", error);
       Alert.alert("Error", "Failed to send verification code.");
@@ -48,19 +50,28 @@ function PhoneNumberScreen(): JSX.Element {
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Can we get your number?</Text>
       <View style={styles.phoneContainer}>
-        <PhoneInput
-          defaultValue={phoneNumber}
-          defaultCode="US"
-          layout="first"
-          onChangeText={(text) => {
-            setPhoneNumber(text);
-          }}
-          onChangeFormattedText={(text) => {
-            setFormattedPhoneNumber(text);
-          }}
-          withDarkTheme
-          withShadow
-          autoFocus
+        <View style={styles.countryInputContainer}>
+          <PhoneInput
+            defaultValue={phoneNumber}
+            defaultCode="US"
+            layout="first"
+            onChangeText={(text) => {
+              setPhoneNumber(text);
+            }}
+            onChangeFormattedText={(text) => {
+              setFormattedPhoneNumber(text);
+            }}
+            containerStyle={styles.phoneInput}
+            textContainerStyle={styles.textContainer}
+            codeTextStyle={styles.codeText}
+          />
+        </View>
+        <TextInput
+          style={styles.phoneNumberInput}
+          placeholder="Phone Number"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          keyboardType="phone-pad"
         />
       </View>
       <Button title="Submit" onPress={handleSubmit} />
@@ -84,8 +95,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     width: "80%",
+  },
+  countryInputContainer: {
     borderBottomColor: "gray",
     borderBottomWidth: 1,
+    marginRight: 10,
+  },
+  phoneInput: {
+    borderBottomColor: "gray",
+    borderBottomWidth: 1,
+    backgroundColor: "transparent",
+  },
+  textContainer: {
+    backgroundColor: "transparent",
+  },
+  codeText: {
+    color: "black",
+  },
+  phoneNumberInput: {
+    flex: 1,
+    height: 40,
+    borderBottomColor: "gray",
+    borderBottomWidth: 1,
+    marginLeft: 10,
   },
   title: {
     fontSize: 24,
