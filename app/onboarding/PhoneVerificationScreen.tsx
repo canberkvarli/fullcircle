@@ -80,6 +80,7 @@ function PhoneVerificationScreen() {
         value={verificationCode}
         onChangeText={setVerificationCode}
         keyboardType="number-pad"
+        autoFocus={true}
       />
       <Button title="Verify" onPress={handleVerifyCode} />
       <Button

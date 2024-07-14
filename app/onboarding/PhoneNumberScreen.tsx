@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   StyleSheet,
@@ -72,6 +72,7 @@ function PhoneNumberScreen(): JSX.Element {
           value={phoneNumber}
           onChangeText={setPhoneNumber}
           keyboardType="phone-pad"
+          autoFocus={true}
         />
       </View>
       <Button title="Submit" onPress={handleSubmit} />
