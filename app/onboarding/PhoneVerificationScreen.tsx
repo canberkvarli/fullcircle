@@ -129,20 +129,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    bottom: 200,
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 45,
     textAlign: "left",
-    marginTop: 20,
+    marginTop: 16,
     marginBottom: 16,
-    marginLeft: 16, // Adjust left margin for left alignment
+    marginLeft: 40,
   },
   subtitle: {
     fontSize: 16,
     marginBottom: 16,
-    textAlign: "center",
+    marginLeft: 40,
+    textAlign: "left",
   },
   codeContainer: {
     flexDirection: "row",
@@ -162,6 +163,7 @@ const styles = StyleSheet.create({
   resendLink: {
     textDecorationLine: "underline",
     marginTop: 16,
+    marginLeft: 40,
     color: "blue",
   },
   affirmation: {
