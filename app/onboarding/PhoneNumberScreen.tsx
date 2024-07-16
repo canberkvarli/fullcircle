@@ -7,11 +7,14 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import PhoneInput from "react-native-phone-number-input";
-import Icon from "react-native-vector-icons/FontAwesome"; // Import FontAwesome from react-native-vector-icons
+import Icon from "react-native-vector-icons/FontAwesome";
 
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -49,56 +52,64 @@ function PhoneNumberScreen(): JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.replace("onboarding/LoginSignupScreen")}
-        >
-          <Icon name="chevron-left" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.content}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0} // Adjust as needed
+      >
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.replace("onboarding/LoginSignupScreen")}
+          >
+            <Icon name="chevron-left" size={24} color="black" />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.title}>Your Journey Begins Here</Text>
-        <Text style={styles.subtitle}>Enter your phone number to start.</Text>
-        <View style={styles.phoneContainer}>
-          <View style={styles.countryInputContainer}>
-            <PhoneInput
-              defaultValue={phoneNumber}
-              defaultCode="US"
-              layout="first"
-              onChangeText={(text) => {
-                setPhoneNumber(text);
-              }}
-              onChangeFormattedText={(text) => {
-                setFormattedPhoneNumber(text);
-              }}
-              containerStyle={styles.phoneInput}
-              textContainerStyle={styles.textContainer}
-              codeTextStyle={styles.codeText}
+        <View style={styles.mainContent}>
+          <Text style={styles.subtitle}>Enter your phone number to start.</Text>
+          <View style={styles.phoneContainer}>
+            <View style={styles.countryInputContainer}>
+              <PhoneInput
+                defaultValue={phoneNumber}
+                defaultCode="US"
+                layout="first"
+                onChangeText={(text) => {
+                  setPhoneNumber(text);
+                }}
+                onChangeFormattedText={(text) => {
+                  setFormattedPhoneNumber(text);
+                }}
+                containerStyle={styles.phoneInput}
+                textContainerStyle={styles.textContainer}
+                codeTextStyle={styles.codeText}
+              />
+            </View>
+            <TextInput
+              style={styles.phoneNumberInput}
+              placeholder="Phone Number"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+              autoFocus={true}
             />
           </View>
-          <TextInput
-            style={styles.phoneNumberInput}
-            placeholder="Phone Number"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-            autoFocus={true}
-          />
+          <Text style={styles.notificationText}>
+            We’ll text you a code to verify you’re really you. Message and data
+            rates may apply.
+          </Text>
         </View>
-        <Text style={styles.notificationText}>
-          We’ll text you a code to verify you’re really you. Message and data
-          rates may apply.
-        </Text>
-        <Text style={styles.affirmation}>
-          Step into a community of kindred spirits.
-        </Text>
-      </View>
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
-          <Icon name="chevron-right" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.affirmationContainer}>
+          <Text style={styles.affirmation}>
+            Step into a community of kindred spirits.
+          </Text>
+        </View>
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
+            <Icon name="chevron-right" size={24} color="black" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -113,17 +124,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  mainContent: {
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
+    marginTop: 25,
   },
   bottomBar: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
     padding: 16,
+    position: "absolute",
+    bottom: 0,
+    right: 0,
   },
   phoneContainer: {
     flexDirection: "row",
@@ -155,20 +169,28 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 16,
-    textAlign: "center",
+    fontSize: 45,
+    marginTop: 16,
+    marginLeft: 35,
+    textAlign: "left",
   },
   subtitle: {
     fontSize: 16,
-    marginBottom: 16,
+    marginTop: 20,
     textAlign: "center",
   },
   notificationText: {
     fontSize: 12,
-    marginBottom: 16,
+    marginTop: 16,
     textAlign: "center",
     color: "gray",
+  },
+  affirmationContainer: {
+    position: "absolute",
+    bottom: 70, // Adjust as needed to position above the nextButton
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
   },
   affirmation: {
     fontSize: 16,
