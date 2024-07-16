@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   Alert,
@@ -14,14 +14,22 @@ import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
 function PhoneVerificationScreen() {
-  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationCode, setVerificationCode] = useState(
+    new Array(6).fill("")
+  );
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verificationId, phoneNumber } = params;
   const inputs = useRef<TextInput[]>([]);
 
+  useEffect(() => {
+    focusNextEmptyInput();
+  }, [verificationCode]);
+
   const handleVerifyCode = async () => {
-    if (verificationCode.trim() === "") {
+    const code = verificationCode.join("");
+    console.log("verificationCode", code);
+    if (code.trim() === "") {
       Alert.alert("Error", "Verification code cannot be empty");
       return;
     }
@@ -29,7 +37,7 @@ function PhoneVerificationScreen() {
     try {
       const credential = PhoneAuthProvider.credential(
         verificationId as string,
-        verificationCode
+        code
       );
       const userCredential = await signInWithCredential(
         FIREBASE_AUTH,
@@ -70,6 +78,7 @@ function PhoneVerificationScreen() {
       }
     } catch (error: any) {
       Alert.alert("Error", "Failed to verify code: " + error.message);
+      setVerificationCode(new Array(6).fill(""));
     }
   };
 
@@ -79,6 +88,13 @@ function PhoneVerificationScreen() {
     // You may want to implement actual resend logic using Firebase
   };
 
+  const focusNextEmptyInput = () => {
+    const emptyIndex = verificationCode.findIndex((code) => code === "");
+    if (emptyIndex !== -1 && inputs.current[emptyIndex]) {
+      inputs.current[emptyIndex].focus();
+    }
+  };
+
   const focusInput = (index: number) => {
     if (inputs.current[index]) {
       inputs.current[index].focus();
@@ -86,16 +102,34 @@ function PhoneVerificationScreen() {
   };
 
   const handleCodeChange = (text: string, index: number) => {
-    let updatedCode = verificationCode;
-    updatedCode =
-      updatedCode.substr(0, index) + text + updatedCode.substr(index + 1);
+    const digit = text.replace(/[^0-9]/g, ""); // Ensure only digits are input
+    if (digit.length === 0) return;
+
+    let updatedCode = [...verificationCode];
+    updatedCode[index] = digit;
     setVerificationCode(updatedCode);
-    if (text && index < 5) {
+
+    if (index < 5 && digit) {
       focusInput(index + 1);
-    } else if (!text && index > 0) {
-      focusInput(index - 1);
-    } else if (index === 5 && updatedCode.length === 6) {
+    }
+
+    if (index === 5 && digit) {
       handleVerifyCode();
+    }
+  };
+
+  const handleKeyPress = (e: any, index: number) => {
+    if (
+      e.nativeEvent.key === "Backspace" &&
+      verificationCode[index] === "" &&
+      index > 0
+    ) {
+      console.log("Backspace pressed");
+      console.log("index", index);
+      let updatedCode = [...verificationCode];
+      updatedCode[index - 1] = "";
+      setVerificationCode(updatedCode);
+      focusInput(index - 1);
     }
   };
 
@@ -104,7 +138,7 @@ function PhoneVerificationScreen() {
       <Text style={styles.title}>Verify your connection</Text>
       <Text style={styles.subtitle}>Sent to {phoneNumber}</Text>
       <View style={styles.codeContainer}>
-        {[...Array(6)].map((_, index) => (
+        {verificationCode.map((_, index) => (
           <TextInput
             key={index}
             ref={(ref) => (inputs.current[index] = ref as TextInput)}
@@ -112,6 +146,10 @@ function PhoneVerificationScreen() {
             maxLength={1}
             keyboardType="numeric"
             onChangeText={(text) => handleCodeChange(text, index)}
+            onKeyPress={(e) => handleKeyPress(e, index)}
+            value={verificationCode[index]}
+            inputMode="numeric" // Ensures only numeric input is allowed
+            caretHidden
           />
         ))}
       </View>
@@ -128,9 +166,8 @@ function PhoneVerificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    bottom: 200,
     paddingHorizontal: 16,
+    marginTop: 25,
   },
   title: {
     fontSize: 45,
@@ -168,7 +205,7 @@ const styles = StyleSheet.create({
   },
   affirmation: {
     position: "absolute",
-    bottom: 16,
+    bottom: 70,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
