@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
-  Button,
-  TextInput,
   StyleSheet,
   Alert,
   SafeAreaView,
   Text,
+  View,
+  TouchableOpacity,
+  TextInput,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
@@ -17,6 +18,7 @@ function PhoneVerificationScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verificationId, phoneNumber } = params;
+  const inputs = useRef<TextInput[]>([]);
 
   const handleVerifyCode = async () => {
     if (verificationCode.trim() === "") {
@@ -71,22 +73,54 @@ function PhoneVerificationScreen() {
     }
   };
 
+  const handleResendCode = () => {
+    // Implement resend code functionality here
+    Alert.alert("Resend Code", "Code has been resent to your phone number.");
+    // You may want to implement actual resend logic using Firebase
+  };
+
+  const focusInput = (index: number) => {
+    if (inputs.current[index]) {
+      inputs.current[index].focus();
+    }
+  };
+
+  const handleCodeChange = (text: string, index: number) => {
+    let updatedCode = verificationCode;
+    updatedCode =
+      updatedCode.substr(0, index) + text + updatedCode.substr(index + 1);
+    setVerificationCode(updatedCode);
+    if (text && index < 5) {
+      focusInput(index + 1);
+    } else if (!text && index > 0) {
+      focusInput(index - 1);
+    } else if (index === 5 && updatedCode.length === 6) {
+      handleVerifyCode();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Enter the verification code</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter verification code"
-        value={verificationCode}
-        onChangeText={setVerificationCode}
-        keyboardType="number-pad"
-        autoFocus={true}
-      />
-      <Button title="Verify" onPress={handleVerifyCode} />
-      <Button
-        title="Back"
-        onPress={() => router.replace("onboarding/PhoneNumberScreen")}
-      />
+      <Text style={styles.title}>Verify your connection</Text>
+      <Text style={styles.subtitle}>Sent to {phoneNumber}</Text>
+      <View style={styles.codeContainer}>
+        {[...Array(6)].map((_, index) => (
+          <TextInput
+            key={index}
+            ref={(ref) => (inputs.current[index] = ref as TextInput)}
+            style={styles.codeInput}
+            maxLength={1}
+            keyboardType="numeric"
+            onChangeText={(text) => handleCodeChange(text, index)}
+          />
+        ))}
+      </View>
+      <TouchableOpacity onPress={handleResendCode}>
+        <Text style={styles.resendLink}>Didn't get a code? Resend</Text>
+      </TouchableOpacity>
+      <Text style={styles.affirmation}>
+        Secure your place in the circle of trust
+      </Text>
     </SafeAreaView>
   );
 }
@@ -94,23 +128,49 @@ function PhoneVerificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     justifyContent: "center",
     alignItems: "center",
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-    width: "80%",
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 24,
+    textAlign: "left",
+    marginTop: 20,
+    marginBottom: 16,
+    marginLeft: 16, // Adjust left margin for left alignment
+  },
+  subtitle: {
+    fontSize: 16,
     marginBottom: 16,
     textAlign: "center",
+  },
+  codeContainer: {
+    flexDirection: "row",
+    marginBottom: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  codeInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: "black",
+    marginHorizontal: 4,
+    width: 40,
+    height: 40,
+    fontSize: 24,
+    textAlign: "center",
+  },
+  resendLink: {
+    textDecorationLine: "underline",
+    marginTop: 16,
+    color: "blue",
+  },
+  affirmation: {
+    position: "absolute",
+    bottom: 16,
+    textAlign: "center",
+    width: "100%",
+    fontStyle: "italic",
+    color: "gray",
   },
 });
 
