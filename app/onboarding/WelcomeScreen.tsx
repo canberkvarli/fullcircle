@@ -22,8 +22,9 @@ function WelcomeScreen() {
 
   return (
     <ImageBackground
-      source={{ uri: "https://source.unsplash.com/featured/?nature,spiritual" }} // This URL will fetch a random nature/spiritual photo
+      source={require("../../assets/images/welcome.jpg")}
       style={styles.background}
+      resizeMode="cover"
     >
       <View style={styles.overlay}>
         <Text style={styles.title}>Welcome to Circle</Text>
