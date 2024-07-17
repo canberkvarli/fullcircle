@@ -7,6 +7,7 @@ import {
   View,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
@@ -17,6 +18,7 @@ function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState(
     new Array(6).fill("")
   );
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verificationId, phoneNumber } = params;
@@ -24,15 +26,19 @@ function PhoneVerificationScreen() {
 
   useEffect(() => {
     focusNextEmptyInput();
+    if (verificationCode.every((digit) => digit !== "")) {
+      handleVerifyCode();
+    }
   }, [verificationCode]);
 
   const handleVerifyCode = async () => {
     const code = verificationCode.join("");
-    console.log("verificationCode", code);
     if (code.trim() === "") {
       Alert.alert("Error", "Verification code cannot be empty");
       return;
     }
+
+    setLoading(true); // Start loading indicator
 
     try {
       const credential = PhoneAuthProvider.credential(
@@ -52,13 +58,17 @@ function PhoneVerificationScreen() {
         Alert.alert("Success", "Phone number verified and logged in!", [
           {
             text: "OK",
-            onPress: () => router.replace("onboarding/HomeScreen"),
+            onPress: () => {
+              setLoading(false);
+              router.replace("onboarding/HomeScreen");
+            },
           },
         ]);
       } else {
         const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
         const match = phoneRegex.exec(phoneNumber as string);
         if (!match) {
+          setLoading(false);
           Alert.alert("Error", "Invalid phone number format");
           return;
         }
@@ -71,14 +81,21 @@ function PhoneVerificationScreen() {
           number: phone,
           phoneNumber: user.phoneNumber,
         });
+        setLoading(false);
         router.replace({
           pathname: "onboarding/EmailScreen",
           params: { userId: user.uid, phoneNumber: user.phoneNumber },
         });
       }
     } catch (error: any) {
+      setLoading(false);
       Alert.alert("Error", "Failed to verify code: " + error.message);
-      setVerificationCode(new Array(6).fill(""));
+    }
+  };
+
+  const focusInput = (index: number) => {
+    if (inputs.current[index]) {
+      inputs.current[index].focus();
     }
   };
 
@@ -95,14 +112,8 @@ function PhoneVerificationScreen() {
     }
   };
 
-  const focusInput = (index: number) => {
-    if (inputs.current[index]) {
-      inputs.current[index].focus();
-    }
-  };
-
   const handleCodeChange = (text: string, index: number) => {
-    const digit = text.replace(/[^0-9]/g, ""); // Ensure only digits are input
+    const digit = text.replace(/[^0-9]/g, "");
     if (digit.length === 0) return;
 
     let updatedCode = [...verificationCode];
@@ -112,10 +123,6 @@ function PhoneVerificationScreen() {
     if (index < 5 && digit) {
       focusInput(index + 1);
     }
-
-    if (index === 5 && digit) {
-      handleVerifyCode();
-    }
   };
 
   const handleKeyPress = (e: any, index: number) => {
@@ -124,8 +131,6 @@ function PhoneVerificationScreen() {
       verificationCode[index] === "" &&
       index > 0
     ) {
-      console.log("Backspace pressed");
-      console.log("index", index);
       let updatedCode = [...verificationCode];
       updatedCode[index - 1] = "";
       setVerificationCode(updatedCode);
@@ -153,9 +158,13 @@ function PhoneVerificationScreen() {
           />
         ))}
       </View>
-      <TouchableOpacity onPress={handleResendCode}>
-        <Text style={styles.resendLink}>Didn't get a code? Resend</Text>
-      </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <TouchableOpacity onPress={handleResendCode}>
+          <Text style={styles.resendLink}>Didn't get a code? Resend</Text>
+        </TouchableOpacity>
+      )}
       <Text style={styles.affirmation}>
         Secure your place in the circle of trust
       </Text>
