@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   View,
+  Modal,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import { doc, setDoc } from "firebase/firestore";
 function EmailScreen() {
   const [email, setEmail] = useState("");
   const [marketingRequested, setMarketingRequested] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
   const router = useRouter();
   const params = useLocalSearchParams();
   const { userId, phoneNumber, firstName, lastName } = params;
@@ -38,13 +40,28 @@ function EmailScreen() {
         { email: email, phoneNumber: phoneNumber, marketingRequested },
         { merge: true }
       );
-      router.replace({
-        pathname: "onboarding/BirthdateScreen",
-        params: { userId, phoneNumber, firstName, email },
-      });
+      // Show modal after email is submitted
+      setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
     }
+  };
+
+  const handleModalOption = (option: number) => {
+    if (option === 1) {
+      // Handle linking Apple account (if implemented)
+      Alert.alert("Connect Apple Account", "Feature coming soon!");
+    } else if (option === 2) {
+      // Handle linking Google account (if implemented)
+      Alert.alert("Connect Google Account", "Feature coming soon!");
+    } else {
+      // No thanks, skip to next screen
+      router.replace({
+        pathname: "onboarding/BirthdateScreen",
+        params: { userId, phoneNumber, firstName, lastName, email },
+      });
+    }
+    setModalVisible(false); // Close modal after handling option
   };
 
   return (
@@ -92,6 +109,41 @@ function EmailScreen() {
       <TouchableOpacity style={styles.submitButton} onPress={handleEmailSubmit}>
         <Ionicons name="chevron-forward" size={24} color="white" />
       </TouchableOpacity>
+
+      {/* Modal for linking accounts */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Connect your account?</Text>
+            <Text style={styles.modalSubtitle}>
+              Linking your account makes it easier to connect.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => handleModalOption(1)} // Option 1: Connect Apple account
+            >
+              <Text>Connect your Apple account</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => handleModalOption(2)} // Option 2: Connect Google account
+            >
+              <Text>Connect your Google account</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => handleModalOption(3)} // Option 3: No thanks, skip
+            >
+              <Text>No thanks</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -145,11 +197,12 @@ const styles = StyleSheet.create({
   },
   affirmation: {
     position: "absolute",
-    bottom: 70,
+    bottom: 85,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
+    left: 15,
   },
   submitButton: {
     position: "absolute",
@@ -160,6 +213,37 @@ const styles = StyleSheet.create({
     padding: 10,
     justifyContent: "center",
     alignItems: "center",
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalOption: {
+    paddingVertical: 10,
+    width: "100%",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "lightgray",
   },
 });
 
