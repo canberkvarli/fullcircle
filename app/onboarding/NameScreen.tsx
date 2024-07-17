@@ -72,6 +72,7 @@ function NameScreen() {
         placeholderTextColor="gray"
         value={firstName}
         onChangeText={(text) => handleInputChange(text, "firstName")}
+        autoFocus={true}
       />
       <TextInput
         style={styles.input}

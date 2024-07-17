@@ -93,6 +93,7 @@ function EmailScreen() {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        autoFocus={true}
       />
       <View style={styles.toggleContainer}>
         <TouchableOpacity
