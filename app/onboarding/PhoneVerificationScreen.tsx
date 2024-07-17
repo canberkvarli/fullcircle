@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
 import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -83,7 +84,7 @@ function PhoneVerificationScreen() {
         });
         setLoading(false);
         router.replace({
-          pathname: "onboarding/EmailScreen",
+          pathname: "onboarding/WelcomeScreen",
           params: { userId: user.uid, phoneNumber: user.phoneNumber },
         });
       }
@@ -140,8 +141,16 @@ function PhoneVerificationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="chevron-back" size={24} color="black" />
+      </TouchableOpacity>
       <Text style={styles.title}>Verify your connection</Text>
-      <Text style={styles.subtitle}>Sent to {phoneNumber}</Text>
+      <View style={styles.subtitleContainer}>
+        <Text style={styles.subtitle}>Sent to {phoneNumber} </Text>
+        <TouchableOpacity onPress={handleResendCode}>
+          <Text style={styles.resendText}>Resend</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.codeContainer}>
         {verificationCode.map((_, index) => (
           <TextInput
@@ -154,15 +163,16 @@ function PhoneVerificationScreen() {
             onKeyPress={(e) => handleKeyPress(e, index)}
             value={verificationCode[index]}
             inputMode="numeric" // Ensures only numeric input is allowed
-            caretHidden
           />
         ))}
       </View>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
-        <TouchableOpacity onPress={handleResendCode}>
-          <Text style={styles.resendLink}>Didn't get a code? Resend</Text>
+        <TouchableOpacity
+          onPress={() => router.replace("onboarding/PhoneNumberScreen")}
+        >
+          <Text style={styles.changeNumberLink}>Didn't get a code?</Text>
         </TouchableOpacity>
       )}
       <Text style={styles.affirmation}>
@@ -178,6 +188,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 25,
   },
+  backButton: {
+    position: "absolute",
+    top: 40,
+    left: 16,
+    zIndex: 1,
+  },
   title: {
     fontSize: 45,
     textAlign: "left",
@@ -185,11 +201,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginLeft: 40,
   },
+  subtitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 40,
+    marginBottom: 16,
+  },
   subtitle: {
     fontSize: 16,
-    marginBottom: 16,
-    marginLeft: 40,
     textAlign: "left",
+  },
+  resendText: {
+    color: "blue",
+    marginLeft: 10,
   },
   codeContainer: {
     flexDirection: "row",
@@ -206,10 +230,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     textAlign: "center",
   },
-  resendLink: {
+  changeNumberLink: {
     textDecorationLine: "underline",
     marginTop: 16,
-    marginLeft: 40,
+    textAlign: "center",
     color: "blue",
   },
   affirmation: {
