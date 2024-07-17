@@ -1,17 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Button,
-  TextInput,
-  StyleSheet,
-  Alert,
   SafeAreaView,
   Text,
   View,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Animated,
 } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler"; // Import gesture handler for swipe functionality
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { FIRESTORE } from "../../services/FirebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
+import { GestureHandlerRootView, FlatList } from "react-native-gesture-handler";
 
 const months = [
   "Jan",
@@ -28,13 +29,23 @@ const months = [
   "Dec",
 ];
 
+const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+const years = Array.from(
+  { length: new Date().getFullYear() - 1900 + 1 },
+  (_, i) => (1900 + i).toString()
+);
+
 function BirthdayScreen() {
-  const [birthdate, setBirthdate] = useState({
-    month: "",
-    day: "",
-    year: "",
+  const [birthdate, setBirthdate] = useState<{
+    month: string;
+    day: string;
+    year: string;
+  }>({
+    month: months[0],
+    day: days[0],
+    year: years[0],
   });
-  const [age, setAge] = useState(""); // State to hold calculated age
+  const [age, setAge] = useState<string>(""); // State to hold calculated age
   const router = useRouter();
   const params = useLocalSearchParams();
   const {
@@ -97,55 +108,6 @@ function BirthdayScreen() {
     });
   };
 
-  // Function to render swipeable date picker for month, day, or year
-  const renderDatePicker = (type: "month" | "day" | "year") => {
-    let currentValue = birthdate[type];
-    if (!currentValue) currentValue = "";
-
-    return (
-      <View style={styles.datePicker}>
-        <Text style={styles.dateValue}>{currentValue}</Text>
-        <View style={styles.dateUpDown}>
-          <Text style={styles.dateChange}>{getPreviousValue(type)}</Text>
-          <Text style={styles.dateChange}>{currentValue}</Text>
-          <Text style={styles.dateChange}>{getNextValue(type)}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  // Function to calculate previous value for month, day, or year
-  const getPreviousValue = (
-    type: "month" | "day" | "year"
-  ): string | number => {
-    switch (type) {
-      case "month":
-        return months[(months.indexOf(birthdate.month) - 1 + 12) % 12];
-      case "day":
-        return birthdate.day > 1 ? +birthdate.day - 1 : 31; // Adjust for months with fewer days
-      case "year":
-        return birthdate.year > 1900 ? +birthdate.year - 1 : +birthdate.year;
-      default:
-        return "";
-    }
-  };
-
-  // Function to calculate next value for month, day, or year
-  const getNextValue = (type: "month" | "day" | "year"): string | number => {
-    switch (type) {
-      case "month":
-        return months[(months.indexOf(birthdate.month) + 1) % 12];
-      case "day":
-        return birthdate.day < 31 ? +birthdate.day + 1 : 1; // Adjust for months with fewer days
-      case "year":
-        return birthdate.year < new Date().getFullYear()
-          ? +birthdate.year + 1
-          : +birthdate.year;
-      default:
-        return "";
-    }
-  };
-
   // Function to calculate age based on birthdate
   const calculateAge = () => {
     if (!birthdate.day || !birthdate.month || !birthdate.year) return;
@@ -175,20 +137,94 @@ function BirthdayScreen() {
     calculateAge();
   }, [birthdate]);
 
+  // Function to handle swipe changes
+  const handleSwipeChange = (type: keyof typeof birthdate, index: string) => {
+    setBirthdate((prev) => ({ ...prev, [type]: index }));
+  };
+
+  const renderDatePicker = (type: keyof typeof birthdate, data: string[]) => {
+    const opacity = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.timing(opacity, {
+        toValue: 0.5,
+        duration: 200, // Increase the duration for smoother transition
+        useNativeDriver: true,
+      }).start(() => {
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 200, // Increase the duration for smoother transition
+          useNativeDriver: true,
+        }).start();
+      });
+    }, [birthdate[type]]);
+
+    return (
+      <Animated.FlatList
+        data={data}
+        keyExtractor={(item) => item}
+        renderItem={({ item, index }) => {
+          const currentIndex = data.indexOf(birthdate[type]);
+          const isCurrent = index === currentIndex;
+          const isNearby =
+            index >= currentIndex - 2 && index <= currentIndex + 2;
+          const color = isCurrent ? "black" : "gray";
+          const opacityValue = isNearby ? 1 : 0.3;
+
+          return (
+            <Animated.View style={{ opacity }}>
+              <Text
+                style={[styles.dateValue, { color, opacity: opacityValue }]}
+              >
+                {item}
+              </Text>
+            </Animated.View>
+          );
+        }}
+        getItemLayout={(data, index) => ({
+          length: 40,
+          offset: 40 * index,
+          index,
+        })}
+        initialScrollIndex={data.indexOf(birthdate[type])}
+        onMomentumScrollEnd={(event) => {
+          const index = Math.floor(event.nativeEvent.contentOffset.y / 40);
+          handleSwipeChange(type, data[index]);
+        }}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={40}
+        decelerationRate="fast"
+        style={{ height: 200, paddingVertical: 80 }} // Ensure FlatList height fits the desired number of items and adds padding
+      />
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Celebrate Your Journey</Text>
-      <Text style={styles.subtitle}>When is your birthdate?</Text>
-      <View style={styles.dateInputs}>
-        {renderDatePicker("month")}
-        {renderDatePicker("day")}
-        {renderDatePicker("year")}
-      </View>
-      <Text style={styles.ageText}>Age: {age}</Text>
-      <Text style={styles.warning}>This can't be changed later.</Text>
-      <Button title="Submit" onPress={handleBirthdateSubmit} />
-      <Button title="Back" onPress={handleBack} />
-    </SafeAreaView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Ionicons name="chevron-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Celebrate Your Journey</Text>
+        <Text style={styles.subtitle}>When is your birthdate?</Text>
+        <View style={styles.dateInputs}>
+          {renderDatePicker("month", months)}
+          {renderDatePicker("day", days)}
+          {renderDatePicker("year", years)}
+        </View>
+        <Text style={styles.ageText}>Age: {age}</Text>
+        <Text style={styles.warning}>This can't be changed later.</Text>
+        <Text style={styles.affirmation}>
+          Honor the day your soul chose to shine in this world.
+        </Text>
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={handleBirthdateSubmit}
+        >
+          <Ionicons name="chevron-forward" size={24} color="white" />
+        </TouchableOpacity>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -199,6 +235,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  backButton: {
+    position: "absolute",
+    top: 40,
+    left: 16,
+    zIndex: 1,
+  },
   title: {
     fontSize: 24,
     marginBottom: 16,
@@ -208,6 +250,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 16,
     textAlign: "center",
+  },
+  dateInputs: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    marginBottom: 20,
+  },
+  dateValue: {
+    fontSize: 24,
+    height: 40,
+    textAlign: "center",
+    lineHeight: 40,
   },
   ageText: {
     fontSize: 18,
@@ -220,34 +273,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
-  datePicker: {
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  dateValue: {
-    fontSize: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: "black",
-    paddingBottom: 10,
-    width: 80,
+  affirmation: {
+    position: "absolute",
+    bottom: 70,
     textAlign: "center",
-  },
-  dateUpDown: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: 80,
-    marginTop: 5,
-  },
-  dateChange: {
-    fontSize: 12,
+    width: "100%",
+    fontStyle: "italic",
     color: "gray",
-    textAlign: "center",
   },
-  dateInputs: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    marginBottom: 20,
+  nextButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#000",
+    borderRadius: 50,
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
