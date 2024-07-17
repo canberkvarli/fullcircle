@@ -15,7 +15,7 @@ function WelcomeScreen() {
 
   const handleStart = () => {
     router.replace({
-      pathname: "onboarding/EmailScreen",
+      pathname: "onboarding/NameScreen",
       params: { userId, phoneNumber },
     });
   };

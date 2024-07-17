@@ -36,7 +36,7 @@ function EmailScreen() {
         { merge: true }
       );
       router.replace({
-        pathname: "onboarding/FirstNameScreen",
+        pathname: "onboarding/NameScreen",
         params: { userId, phoneNumber, email },
       });
     } catch (error: any) {

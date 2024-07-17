@@ -65,7 +65,7 @@ function BirthdayScreen() {
         title="Back"
         onPress={() =>
           router.replace({
-            pathname: "onboarding/FirstNameScreen",
+            pathname: "onboarding/NameScreen",
             params: { userId, phoneNumber, email, firstName, lastName },
           })
         }
