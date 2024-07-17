@@ -141,7 +141,15 @@ function PhoneVerificationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() =>
+          router.replace({
+            pathname: "onboarding/PhoneScreen",
+            params: { phoneNumber },
+          })
+        }
+      >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Verify your connection</Text>

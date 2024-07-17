@@ -39,7 +39,7 @@ function NameScreen() {
       );
       router.replace({
         pathname: "onboarding/EmailScreen",
-        params: { userId, phoneNumber, email, birthdate, firstName },
+        params: { userId, phoneNumber, email, firstName, lastName },
       });
     } catch (error: any) {
       Alert.alert("Error", "Failed to save name: " + error.message);
@@ -48,7 +48,15 @@ function NameScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() =>
+          router.replace({
+            pathname: "onboarding/PhoneNumberScreen",
+            params: { userId, phoneNumber },
+          })
+        }
+      >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>What's your name?</Text>

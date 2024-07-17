@@ -43,7 +43,6 @@ function PhoneNumberScreen(): JSX.Element {
           phoneNumber: formattedPhoneNumber,
         },
       });
-      console.log("phoneNumber", formattedPhoneNumber);
     } catch (error) {
       console.error("Failed to sign in with phone number: ", error);
       Alert.alert("Error", "Failed to send verification code.");
