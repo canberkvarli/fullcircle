@@ -1,5 +1,9 @@
 import React from "react";
-
+import { View, Text } from "react-native";
 export default function AddBasicInfoScreen() {
-  return <div>AddBasicInfoScreen</div>;
+  return (
+    <View>
+      <Text>AddBasicInfoScreen</Text>
+    </View>
+  );
 }
