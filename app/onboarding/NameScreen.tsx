@@ -19,7 +19,13 @@ function NameScreen() {
   const params = useLocalSearchParams();
   const { userId, phoneNumber, email, birthdate } = params;
 
-  const handleFirstNameSubmit = async () => {
+  const handleInputChange = (text: string, type: string) => {
+    if (/^[a-zA-Z\s]*$/.test(text)) {
+      type === "firstName" ? setFirstName(text) : setLastName(text);
+    }
+  };
+
+  const handleNameSubmit = async () => {
     if (firstName.trim() === "") {
       Alert.alert("Error", "First name cannot be empty");
       return;
@@ -34,7 +40,7 @@ function NameScreen() {
       const docRef = doc(FIRESTORE, "users", userId);
       await setDoc(
         docRef,
-        { firstName: firstName, lastName: lastName },
+        { firstName: firstName.trim(), lastName: lastName.trim() || null },
         { merge: true }
       );
       router.replace({
@@ -65,14 +71,14 @@ function NameScreen() {
         placeholder="First name"
         placeholderTextColor="gray"
         value={firstName}
-        onChangeText={setFirstName}
+        onChangeText={(text) => handleInputChange(text, "firstName")}
       />
       <TextInput
         style={styles.input}
         placeholder="Last Name (optional)"
         placeholderTextColor="gray"
         value={lastName}
-        onChangeText={setLastName}
+        onChangeText={(text) => handleInputChange(text, "lastName")}
       />
       <TouchableOpacity onPress={() => console.log("Why? clicked")}>
         <Text style={styles.optionalText}>
@@ -83,10 +89,7 @@ function NameScreen() {
       <Text style={styles.affirmation}>
         Every name carries a unique vibration.
       </Text>
-      <TouchableOpacity
-        style={styles.submitButton}
-        onPress={handleFirstNameSubmit}
-      >
+      <TouchableOpacity style={styles.submitButton} onPress={handleNameSubmit}>
         <Ionicons name="chevron-forward" size={24} color="white" />
       </TouchableOpacity>
     </SafeAreaView>

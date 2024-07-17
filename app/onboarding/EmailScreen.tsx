@@ -8,6 +8,7 @@ import {
   Alert,
   View,
   Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +18,7 @@ import { doc, setDoc } from "firebase/firestore";
 function EmailScreen() {
   const [email, setEmail] = useState("");
   const [marketingRequested, setMarketingRequested] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
+  const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { userId, phoneNumber, firstName, lastName } = params;
@@ -28,6 +29,11 @@ function EmailScreen() {
       return;
     }
 
+    if (!isValidEmail(email)) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
     if (!userId || typeof userId !== "string") {
       Alert.alert("Error", "Invalid user ID");
       return;
@@ -35,33 +41,33 @@ function EmailScreen() {
 
     try {
       const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(
-        docRef,
-        { email: email, phoneNumber: phoneNumber, marketingRequested },
-        { merge: true }
-      );
-      // Show modal after email is submitted
+      await setDoc(docRef, { email, marketingRequested }, { merge: true });
       setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
     }
   };
 
+  const isValidEmail = (email: string) => {
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+  };
+
   const handleModalOption = (option: number) => {
-    if (option === 1) {
-      // Handle linking Apple account (if implemented)
-      Alert.alert("Connect Apple Account", "Feature coming soon!");
-    } else if (option === 2) {
-      // Handle linking Google account (if implemented)
-      Alert.alert("Connect Google Account", "Feature coming soon!");
-    } else {
-      // No thanks, skip to next screen
-      router.replace({
-        pathname: "onboarding/BirthdateScreen",
-        params: { userId, phoneNumber, firstName, lastName, email },
-      });
+    switch (option) {
+      case 1:
+        Alert.alert("Connect Apple Account", "Feature coming soon!");
+        break;
+      case 2:
+        Alert.alert("Connect Google Account", "Feature coming soon!");
+        break;
+      default:
+        router.replace({
+          pathname: "onboarding/BirthdateScreen",
+          params: { userId, phoneNumber, firstName, lastName, email },
+        });
+        break;
     }
-    setModalVisible(false); // Close modal after handling option
+    setModalVisible(false);
   };
 
   return (
@@ -71,7 +77,7 @@ function EmailScreen() {
         onPress={() =>
           router.replace({
             pathname: "onboarding/NameScreen",
-            params: { userId, phoneNumber, email, firstName, lastName },
+            params: { userId, phoneNumber, firstName, lastName },
           })
         }
       >
@@ -86,11 +92,12 @@ function EmailScreen() {
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
+        autoCapitalize="none"
       />
       <View style={styles.toggleContainer}>
         <TouchableOpacity
           style={styles.toggle}
-          onPress={() => setMarketingRequested(!marketingRequested)}
+          onPress={() => setMarketingRequested((prev) => !prev)}
         >
           <Ionicons
             name={marketingRequested ? "radio-button-on" : "radio-button-off"}
@@ -110,39 +117,35 @@ function EmailScreen() {
         <Ionicons name="chevron-forward" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Modal for linking accounts */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Connect your account?</Text>
-            <Text style={styles.modalSubtitle}>
-              Linking your account makes it easier to connect.
-            </Text>
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => handleModalOption(1)} // Option 1: Connect Apple account
-            >
-              <Text>Connect your Apple account</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => handleModalOption(2)} // Option 2: Connect Google account
-            >
-              <Text>Connect your Google account</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => handleModalOption(3)} // Option 3: No thanks, skip
-            >
-              <Text>No thanks</Text>
-            </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Connect your account?</Text>
+              <Text style={styles.modalSubtitle}>
+                Linking your account makes it easier to connect.
+              </Text>
+              {[
+                { option: 1, text: "Connect your Apple account" },
+                { option: 2, text: "Connect your Google account" },
+                { option: 3, text: "No thanks" },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.option}
+                  style={styles.modalOption}
+                  onPress={() => handleModalOption(item.option)}
+                >
+                  <Text>{item.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     backgroundColor: "white",
