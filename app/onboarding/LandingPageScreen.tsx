@@ -1,14 +1,14 @@
-// app/LandingPageScreen.tsx
-import React from "react";
+// LandingPageScreen.tsx
+import React, { useEffect } from "react";
 import LottieView from "lottie-react-native";
 import { StyleSheet, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useUserContext } from "@/context/UserContext";
 
 function LandingPageScreen(): JSX.Element {
-  const router = useRouter();
+  const { navigateToNextScreen } = useUserContext();
 
   const handleAnimationFinish = () => {
-    router.replace("onboarding/LoginSignupScreen");
+    navigateToNextScreen();
   };
 
   return (
