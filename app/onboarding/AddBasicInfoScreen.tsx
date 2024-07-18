@@ -1,9 +1,111 @@
 import React from "react";
-import { View, Text } from "react-native";
-export default function AddBasicInfoScreen() {
+import {
+  StyleSheet,
+  Text,
+  View,
+  ImageBackground,
+  TouchableOpacity,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+
+function AddBasicInfoScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { userId, phoneNumber } = params;
+
+  const handleContinue = () => {
+    router.replace({
+      pathname: "onboarding/NextScreen",
+      params: { userId, phoneNumber },
+    });
+  };
+
   return (
-    <View>
-      <Text>AddBasicInfoScreen</Text>
-    </View>
+    <ImageBackground
+      source={require("../../assets/images/labyrinth.jpg")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <Text style={styles.title}>Share Your Light</Text>
+        <Text style={styles.subtitle}>
+          Complete these steps to enhance your connections
+        </Text>
+        <View style={styles.bottomContainer}>
+          <Text style={styles.affirmation}>
+            Your light is a beacon for others
+          </Text>
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinue}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Adding a dark overlay for better text visibility
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+  },
+  title: {
+    fontSize: 36,
+    color: "white",
+    textAlign: "center",
+    marginBottom: 10,
+    fontWeight: "bold",
+  },
+  subtitle: {
+    fontSize: 20,
+    color: "white",
+    textAlign: "center",
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  bottomContainer: {
+    position: "absolute",
+    bottom: 40,
+    width: "100%",
+    alignItems: "center",
+  },
+  affirmation: {
+    color: "white",
+    fontSize: 18,
+    fontStyle: "italic",
+    marginBottom: 20,
+  },
+  continueButton: {
+    backgroundColor: "#FFD700",
+    paddingVertical: 15,
+    paddingHorizontal: 80,
+    borderRadius: 50,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.39,
+    shadowRadius: 8.3,
+    elevation: 13,
+  },
+  continueButtonText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+});
+
+export default AddBasicInfoScreen;
