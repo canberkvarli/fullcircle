@@ -15,7 +15,7 @@ function AddBasicInfoScreen() {
 
   const handleContinue = () => {
     router.replace({
-      pathname: "onboarding/NextScreen",
+      pathname: "onboarding/LocationScreen",
       params: { userId, phoneNumber },
     });
   };

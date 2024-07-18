@@ -92,5 +92,7 @@
 	<string>Automatic</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string	string>We need your location to connect you with nearby souls.</string>
 </dict>
 </plist>
