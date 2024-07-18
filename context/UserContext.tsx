@@ -1,7 +1,8 @@
-import { useRouter } from "expo-router";
 import React, { createContext, useContext, useState } from "react";
+import { doc, setDoc } from "firebase/firestore";
+import { FIRESTORE } from "@/services/FirebaseConfig";
+import { useRouter } from "expo-router";
 
-// Define the UserData type with all necessary fields
 type UserData = {
   userId: string;
   phoneNumber: string;
@@ -16,7 +17,6 @@ type UserData = {
   // Add other optional fields as needed
 };
 
-// Define the context type
 type UserContextType = {
   currentScreen: string;
   setCurrentScreen: React.Dispatch<React.SetStateAction<string>>;
@@ -24,11 +24,12 @@ type UserContextType = {
   setScreens: React.Dispatch<React.SetStateAction<string[]>>;
   userData: UserData;
   setUserData: React.Dispatch<React.SetStateAction<UserData>>;
+  updateUserData: (data: Partial<UserData>) => void;
   navigateToNextScreen: () => void;
   navigateToPreviousScreen: () => void;
+  saveProgress: () => void;
 };
 
-// Initial values for user data and screens
 const initialUserData: UserData = {
   userId: "",
   phoneNumber: "",
@@ -61,25 +62,16 @@ const initialScreens = [
   // Add other screen identifiers in order
 ];
 
-// Initial context with default values
-const initialContext: UserContextType = {
-  currentScreen: "",
-  setCurrentScreen: () => {},
-  screens: initialScreens,
-  setScreens: () => {},
-  userData: initialUserData,
-  setUserData: () => {},
-  navigateToNextScreen: () => {},
-  navigateToPreviousScreen: () => {},
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+export const useUserContext = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("useUserContext must be used within a UserProvider");
+  }
+  return context;
 };
 
-// Create the context
-const UserContext = createContext<UserContextType>(initialContext);
-
-// Custom hook to use the context
-export const useUserContext = () => useContext(UserContext);
-
-// Provider component to wrap the app
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -88,27 +80,51 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [userData, setUserData] = useState<UserData>(initialUserData);
   const router = useRouter();
 
-  // Navigate to the next screen
+  // Save progress in Firestore
+  const saveProgress = async () => {
+    try {
+      if (userData.userId) {
+        const docRef = doc(FIRESTORE, "users", userData.userId);
+        await setDoc(docRef, { currentScreen }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Failed to save progress: ", error);
+    }
+  };
+
+  const updateUserData = async (data: Partial<UserData>) => {
+    setUserData((prevData) => ({ ...prevData, ...data }));
+    try {
+      if (userData.userId) {
+        const docRef = doc(FIRESTORE, "users", userData.userId);
+        await setDoc(docRef, data, { merge: true });
+      }
+    } catch (error) {
+      console.error("Failed to update user data: ", error);
+    }
+    saveProgress();
+  };
+
   const navigateToNextScreen = () => {
     const currentIndex = screens.indexOf(currentScreen);
     if (currentIndex !== -1 && currentIndex < screens.length - 1) {
       const nextScreen = screens[currentIndex + 1];
       setCurrentScreen(nextScreen);
+      saveProgress();
       router.replace(`onboarding/${nextScreen}`);
     }
   };
 
-  // Navigate to the previous screen
   const navigateToPreviousScreen = () => {
     const currentIndex = screens.indexOf(currentScreen);
     if (currentIndex > 0) {
       const previousScreen = screens[currentIndex - 1];
       setCurrentScreen(previousScreen);
+      saveProgress();
       router.replace(`onboarding/${previousScreen}`);
     }
   };
 
-  // Context value
   const contextValue: UserContextType = {
     currentScreen,
     setCurrentScreen,
@@ -116,8 +132,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setScreens,
     userData,
     setUserData,
+    updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
+    saveProgress,
   };
 
   return (

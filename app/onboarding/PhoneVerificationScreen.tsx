@@ -13,12 +13,14 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
 import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { useUserContext } from "@/context/UserContext";
 
 function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState(
     new Array(6).fill("")
   );
+  const { updateUserData, saveProgress, userData } = useUserContext();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -39,7 +41,7 @@ function PhoneVerificationScreen() {
       return;
     }
 
-    setLoading(true); // Start loading indicator
+    setLoading(true);
 
     try {
       const credential = PhoneAuthProvider.credential(
@@ -55,16 +57,10 @@ function PhoneVerificationScreen() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
+        updateUserData({ ...userData, userId: user.uid }); // Update user data
+        await saveProgress(); // Save progress
         // User exists in the database, directly navigate to HomeScreen
-        Alert.alert("Success", "Phone number verified and logged in!", [
-          {
-            text: "OK",
-            onPress: () => {
-              setLoading(false);
-              router.replace("onboarding/HomeScreen");
-            },
-          },
-        ]);
+        setLoading(false);
       } else {
         const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
         const match = phoneRegex.exec(phoneNumber as string);
@@ -76,16 +72,15 @@ function PhoneVerificationScreen() {
         const [, countryCode, areaCode, phone] = match;
 
         // User doesn't exist, create a new user and navigate to EmailScreen
-        await setDoc(docRef, {
-          country: countryCode,
-          area: areaCode,
-          number: phone,
-          phoneNumber: user.phoneNumber,
-        });
-        setLoading(false);
+        updateUserData({
+          ...userData,
+          userId: user.uid,
+          phoneNumber: user.phoneNumber || "",
+        }); // Update user data
+        await saveProgress(); // Save progress
         router.replace({
           pathname: "onboarding/WelcomeScreen",
-          params: { userId: user.uid, phoneNumber: user.phoneNumber },
+          params: { userId: user.uid, phoneNumber: user.phoneNumber || "" },
         });
       }
     } catch (error: any) {

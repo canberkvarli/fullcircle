@@ -11,13 +11,14 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { FIRESTORE } from "../../services/FirebaseConfig";
 import { doc, setDoc } from "firebase/firestore";
+import { useUserContext } from "@/context/UserContext";
 
 function NameScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { userId, phoneNumber, email, birthdate } = params;
+  const { userId, phoneNumber, email } = params;
 
   const handleInputChange = (text: string, type: string) => {
     if (/^[a-zA-Z\s]*$/.test(text)) {

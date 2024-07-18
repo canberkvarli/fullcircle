@@ -7,17 +7,23 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useUserContext } from "@/context/UserContext";
 
 function WelcomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { userId, phoneNumber } = params;
+  const { setUserData, saveProgress, userData } = useUserContext();
 
   const handleStart = () => {
-    router.replace({
-      pathname: "onboarding/NameScreen",
-      params: { userId, phoneNumber },
-    });
+    if (typeof userId === "string" && typeof phoneNumber === "string") {
+      setUserData({ ...userData, userId, phoneNumber });
+      saveProgress();
+      router.replace({
+        pathname: "onboarding/NameScreen",
+        params: { userId, phoneNumber },
+      });
+    }
   };
 
   return (
