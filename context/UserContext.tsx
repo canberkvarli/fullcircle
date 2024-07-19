@@ -6,8 +6,9 @@ import { useRouter } from "expo-router";
 type UserData = {
   userId: string;
   phoneNumber: string;
-  email: string;
-  MFAEnabled: boolean;
+  email?: string;
+  MFAEnabled?: boolean;
+  marketingRequested?: boolean;
   firstName?: string;
   lastName?: string;
   birthdate?: string;
@@ -35,6 +36,7 @@ const initialUserData: UserData = {
   phoneNumber: "",
   email: "",
   MFAEnabled: false,
+  marketingRequested: false,
 };
 
 // Define the list of onboarding screens

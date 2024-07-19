@@ -10,18 +10,19 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { FIRESTORE } from "../../services/FirebaseConfig";
-import { doc, setDoc } from "firebase/firestore";
+import { useUserContext } from "../../context/UserContext";
 
 function EmailScreen() {
-  const [email, setEmail] = useState("");
+  const {
+    userData,
+    updateUserData,
+    navigateToNextScreen,
+    navigateToPreviousScreen,
+  } = useUserContext();
+  const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const { userId, phoneNumber, firstName, lastName } = params;
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
@@ -34,14 +35,8 @@ function EmailScreen() {
       return;
     }
 
-    if (!userId || typeof userId !== "string") {
-      Alert.alert("Error", "Invalid user ID");
-      return;
-    }
-
     try {
-      const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(docRef, { email, marketingRequested }, { merge: true });
+      await updateUserData({ email, marketingRequested });
       setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
@@ -61,10 +56,8 @@ function EmailScreen() {
         Alert.alert("Connect Google Account", "Feature coming soon!");
         break;
       default:
-        router.replace({
-          pathname: "onboarding/BirthdateScreen",
-          params: { userId, phoneNumber, firstName, lastName, email },
-        });
+        console.log("default option: navigation next screen.");
+        navigateToNextScreen();
         break;
     }
     setModalVisible(false);
@@ -74,12 +67,7 @@ function EmailScreen() {
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() =>
-          router.replace({
-            pathname: "onboarding/NameScreen",
-            params: { userId, phoneNumber, firstName, lastName },
-          })
-        }
+        onPress={navigateToPreviousScreen}
       >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>
