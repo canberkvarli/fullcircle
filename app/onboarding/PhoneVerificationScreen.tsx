@@ -59,8 +59,9 @@ function PhoneVerificationScreen() {
       if (docSnap.exists()) {
         updateUserData({ ...userData, userId: user.uid });
         saveProgress("HomeScreen");
-        // TODO: Continue where the user left off on the onboarding.
-        console.log("Current User!:", user);
+        router.replace({
+          pathname: "onboarding/HomeScreen",
+        });
       } else {
         const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
         const match = phoneRegex.exec(phoneNumber as string);
