@@ -13,16 +13,18 @@ function WelcomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { userId, phoneNumber } = params;
-  const { setUserData, saveProgress, userData } = useUserContext();
+  const { saveProgress } = useUserContext();
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (typeof userId === "string" && typeof phoneNumber === "string") {
-      setUserData({ ...userData, userId, phoneNumber });
-      saveProgress();
-      router.replace({
-        pathname: "onboarding/NameScreen",
-        params: { userId, phoneNumber },
-      });
+      try {
+        saveProgress("NameScreen");
+        router.replace({
+          pathname: "onboarding/NameScreen",
+        });
+      } catch (error) {
+        console.error("Failed to save progress:", error);
+      }
     }
   };
 

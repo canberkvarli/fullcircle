@@ -82,6 +82,7 @@ function PhoneNumberScreen(): JSX.Element {
                 containerStyle={styles.phoneInput}
                 textContainerStyle={styles.textContainer}
                 codeTextStyle={styles.codeText}
+                autoFocus={true}
               />
             </View>
             <TextInput

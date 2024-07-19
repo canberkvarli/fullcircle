@@ -57,10 +57,10 @@ function PhoneVerificationScreen() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        updateUserData({ ...userData, userId: user.uid }); // Update user data
-        await saveProgress(); // Save progress
-        // User exists in the database, directly navigate to HomeScreen
-        setLoading(false);
+        updateUserData({ ...userData, userId: user.uid });
+        saveProgress("HomeScreen");
+        // TODO: Continue where the user left off on the onboarding.
+        console.log("Current User!:", user);
       } else {
         const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
         const match = phoneRegex.exec(phoneNumber as string);
@@ -71,20 +71,23 @@ function PhoneVerificationScreen() {
         }
         const [, countryCode, areaCode, phone] = match;
 
-        // User doesn't exist, create a new user and navigate to EmailScreen
         updateUserData({
-          ...userData,
           userId: user.uid,
           phoneNumber: user.phoneNumber || "",
-        }); // Update user data
-        await saveProgress(); // Save progress
+          countryCode: countryCode,
+          areaCode: areaCode,
+          number: phone,
+          currentOnboardingScreen: "WelcomeScreen",
+        });
         router.replace({
           pathname: "onboarding/WelcomeScreen",
           params: { userId: user.uid, phoneNumber: user.phoneNumber || "" },
         });
       }
+      setLoading(false);
     } catch (error: any) {
       setLoading(false);
+      setVerificationCode(new Array(6).fill(""));
       Alert.alert("Error", "Failed to verify code: " + error.message);
     }
   };
