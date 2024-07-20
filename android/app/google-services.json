@@ -12,7 +12,20 @@
           "package_name": "com.fullcircle.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "856286042200-ktlha92dck5rbus240mm8db3sg4dheak.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fullcircle.app",
+            "certificate_hash": "0c89a1fdc8b3bacd020d36b70bf108cbae5ab6c9"
+          }
+        },
+        {
+          "client_id": "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBzOFmb54yrhXJ5c7XfmXmDzJlQg6oNiSQ"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
