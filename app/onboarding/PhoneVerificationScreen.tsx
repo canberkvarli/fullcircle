@@ -20,7 +20,7 @@ function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState(
     new Array(6).fill("")
   );
-  const { updateUserData, saveProgress, userData } = useUserContext();
+  const { updateUserData } = useUserContext();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -57,10 +57,15 @@ function PhoneVerificationScreen() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        updateUserData({ ...userData, userId: user.uid });
-        saveProgress("HomeScreen");
+        const userDataFromFirestore = docSnap.data();
+        const userCurrentOnboardingScreen =
+          userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
+        updateUserData({
+          userId: user.uid,
+          currentOnboardingScreen: userCurrentOnboardingScreen,
+        });
         router.replace({
-          pathname: "onboarding/HomeScreen",
+          pathname: `onboarding/${userCurrentOnboardingScreen}`,
         });
       } else {
         const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
@@ -82,7 +87,7 @@ function PhoneVerificationScreen() {
         });
         router.replace({
           pathname: "onboarding/WelcomeScreen",
-          params: { userId: user.uid, phoneNumber: user.phoneNumber || "" },
+          params: { userId: user.uid, phoneNumber: user.phoneNumber },
         });
       }
       setLoading(false);
@@ -144,7 +149,7 @@ function PhoneVerificationScreen() {
         style={styles.backButton}
         onPress={() =>
           router.replace({
-            pathname: "onboarding/PhoneScreen",
+            pathname: "onboarding/PhoneNumberScreen",
             params: { phoneNumber },
           })
         }

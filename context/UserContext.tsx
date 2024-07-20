@@ -7,6 +7,7 @@ type UserData = {
   userId: string;
   currentOnboardingScreen: string;
   phoneNumber: string;
+  verificationId?: string | null;
   countryCode: string;
   areaCode: string;
   number: string;
@@ -32,12 +33,14 @@ type UserContextType = {
   updateUserData: (data: Partial<UserData>) => void;
   navigateToNextScreen: () => void;
   navigateToPreviousScreen: () => void;
+  navigateToScreen: (screen: string) => void;
   saveProgress: (screen?: string) => void;
 };
 
 // Define the list of onboarding screens
 const initialScreens = [
   "LandingPageScreen",
+  "LoginSignupScreen",
   "PhoneNumberScreen",
   "PhoneVerificationScreen",
   "WelcomeScreen",
@@ -63,7 +66,10 @@ const initialScreens = [
 const initialUserData: UserData = {
   userId: "",
   phoneNumber: "",
+  verificationId: "",
   email: "",
+  firstName: "",
+  lastName: "",
   MFAEnabled: false,
   marketingRequested: false,
   countryCode: "",
@@ -118,9 +124,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const saveProgress = async (screen?: string) => {
     console.log("Saving progress...");
     try {
-      const screenToSave = screen || currentOnboardingScreen;
+      const screenToSave = screen || userData.currentOnboardingScreen;
       console.log("Saving progress for screen: ", screenToSave);
-      console.log("User ID:", userData.userId);
 
       if (userData.userId) {
         const docRef = doc(FIRESTORE, "users", userData.userId);
@@ -141,25 +146,30 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateUserData = async (data: Partial<UserData>) => {
     console.log("Updating user data: ", data);
     setUserData((prevData) => ({ ...prevData, ...data }));
-    try {
-      if (data.userId) {
-        const docRef = doc(FIRESTORE, "users", data.userId);
+
+    // Only try to update Firestore if userId is available
+    if (data.userId || userData.userId) {
+      try {
+        const docRef = doc(FIRESTORE, "users", data.userId || userData.userId);
         await setDoc(docRef, data, { merge: true });
         console.log("User data updated successfully");
-      } else {
-        console.log("User ID is not set in the data");
+      } catch (error) {
+        console.error("Failed to update user data: ", error);
       }
-    } catch (error) {
-      console.error("Failed to update user data: ", error);
+    } else {
+      console.log("User ID is not set, skipping Firestore update");
     }
   };
 
   const navigateToNextScreen = () => {
+    const { currentOnboardingScreen } = userData;
     const currentIndex = screens.indexOf(currentOnboardingScreen);
     if (currentIndex !== -1 && currentIndex < screens.length - 1) {
       const nextScreen = screens[currentIndex + 1];
       setcurrentOnboardingScreen(nextScreen);
-      saveProgress(nextScreen);
+      if (userData.userId) {
+        saveProgress(nextScreen);
+      }
       router.replace(`onboarding/${nextScreen}`);
     }
   };
@@ -169,9 +179,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (currentIndex > 0) {
       const previousScreen = screens[currentIndex - 1];
       setcurrentOnboardingScreen(previousScreen);
-      saveProgress(previousScreen);
+      if (userData.userId) {
+        saveProgress(previousScreen);
+      }
       router.replace(`onboarding/${previousScreen}`);
     }
+  };
+
+  const navigateToScreen = (screen: string) => {
+    setcurrentOnboardingScreen(screen);
+    if (userData.userId) {
+      saveProgress(screen);
+    }
+    router.replace(`onboarding/${screen}`);
   };
 
   const contextValue: UserContextType = {
@@ -184,6 +204,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
+    navigateToScreen,
     saveProgress,
   };
 

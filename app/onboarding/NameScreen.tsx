@@ -7,18 +7,19 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { FIRESTORE } from "../../services/FirebaseConfig";
-import { doc, setDoc } from "firebase/firestore";
 import { useUserContext } from "@/context/UserContext";
 
 function NameScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const { userId, phoneNumber, email } = params;
+  const {
+    userData,
+    navigateToNextScreen,
+    navigateToPreviousScreen,
+    updateUserData,
+    saveProgress,
+  } = useUserContext();
 
   const handleInputChange = (text: string, type: string) => {
     if (/^[a-zA-Z\s]*$/.test(text)) {
@@ -32,22 +33,18 @@ function NameScreen() {
       return;
     }
 
-    if (!userId || typeof userId !== "string") {
+    if (!userData.userId || typeof userData.userId !== "string") {
       Alert.alert("Error", "Invalid user ID");
       return;
     }
 
     try {
-      const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(
-        docRef,
-        { firstName: firstName.trim(), lastName: lastName.trim() || null },
-        { merge: true }
-      );
-      router.replace({
-        pathname: "onboarding/EmailScreen",
-        params: { userId, phoneNumber, email, firstName, lastName },
+      saveProgress("NameScreen");
+      updateUserData({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
       });
+      navigateToNextScreen();
     } catch (error: any) {
       Alert.alert("Error", "Failed to save name: " + error.message);
     }
@@ -57,12 +54,7 @@ function NameScreen() {
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() =>
-          router.replace({
-            pathname: "onboarding/PhoneNumberScreen",
-            params: { userId, phoneNumber },
-          })
-        }
+        onPress={() => navigateToPreviousScreen()}
       >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>

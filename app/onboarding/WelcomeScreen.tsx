@@ -13,15 +13,13 @@ function WelcomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { userId, phoneNumber } = params;
-  const { saveProgress } = useUserContext();
+  const { navigateToNextScreen, updateUserData } = useUserContext();
 
   const handleStart = async () => {
     if (typeof userId === "string" && typeof phoneNumber === "string") {
       try {
-        saveProgress("NameScreen");
-        router.replace({
-          pathname: "onboarding/NameScreen",
-        });
+        await updateUserData({ currentOnboardingScreen: "NameScreen" });
+        navigateToNextScreen();
       } catch (error) {
         console.error("Failed to save progress:", error);
       }
