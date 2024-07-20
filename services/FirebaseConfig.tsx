@@ -18,7 +18,6 @@ const firebaseConfig = {
   appId: "1:856286042200:web:47e12ebc6f37be0787522d",
   measurementId: "G-ZRLEPSRCBL",
 };
-
 // Initialize Firebase
 const FIREBASE_APP = initializeApp(firebaseConfig);
 
@@ -30,6 +29,8 @@ const FIREBASE_AUTH = initializeAuth(FIREBASE_APP, {
 // Initialize Firestore
 const FIRESTORE = getFirestore(FIREBASE_APP);
 
+//DISABLE CAPTCHA FOR TESTING
+FIREBASE_AUTH.settings.appVerificationDisabledForTesting = true;
 // Initialize Storage
 const STORAGE = getStorage(FIREBASE_APP, "gs://circle-f39c5.appspot.com");
 

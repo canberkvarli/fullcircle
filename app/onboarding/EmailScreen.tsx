@@ -67,7 +67,7 @@ function EmailScreen() {
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={navigateToPreviousScreen}
+        onPress={() => navigateToPreviousScreen()}
       >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>

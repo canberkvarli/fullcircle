@@ -144,8 +144,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateUserData = async (data: Partial<UserData>) => {
-    console.log("Updating user data: ", data);
     setUserData((prevData) => ({ ...prevData, ...data }));
+    console.log("updated user data: ", userData);
 
     // Only try to update Firestore if userId is available
     if (data.userId || userData.userId) {
@@ -175,7 +175,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const navigateToPreviousScreen = () => {
+    console.log("navigating to prev screen");
     const currentIndex = screens.indexOf(currentOnboardingScreen);
+    console.log("currentOnbpardingScreen:", currentOnboardingScreen);
+    console.log("currentIndex", currentIndex);
     if (currentIndex > 0) {
       const previousScreen = screens[currentIndex - 1];
       setcurrentOnboardingScreen(previousScreen);

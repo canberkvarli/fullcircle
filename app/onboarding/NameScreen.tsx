@@ -52,12 +52,12 @@ function NameScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigateToPreviousScreen()}
       >
         <Ionicons name="chevron-back" size={24} color="black" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <Text style={styles.title}>What's your name?</Text>
       <TextInput
         style={styles.input}
