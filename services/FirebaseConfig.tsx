@@ -1,10 +1,6 @@
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  initializeAuth,
-  getReactNativePersistence,
-} from "firebase/auth";
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -29,8 +25,6 @@ const FIREBASE_AUTH = initializeAuth(FIREBASE_APP, {
 // Initialize Firestore
 const FIRESTORE = getFirestore(FIREBASE_APP);
 
-//DISABLE CAPTCHA FOR TESTING
-FIREBASE_AUTH.settings.appVerificationDisabledForTesting = true;
 // Initialize Storage
 const STORAGE = getStorage(FIREBASE_APP, "gs://circle-f39c5.appspot.com");
 

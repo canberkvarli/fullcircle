@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   Text,
@@ -19,6 +19,7 @@ function EmailScreen() {
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
+    saveProgress,
   } = useUserContext();
   const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(false);
@@ -37,6 +38,7 @@ function EmailScreen() {
 
     try {
       await updateUserData({ email, marketingRequested });
+      await saveProgress("EmailScreen");
       setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
@@ -67,7 +69,10 @@ function EmailScreen() {
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigateToPreviousScreen()}
+        onPress={() => {
+          console.log("navigating to previous screen");
+          navigateToPreviousScreen();
+        }}
       >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>

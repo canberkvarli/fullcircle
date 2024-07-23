@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   Text,
@@ -11,15 +11,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useUserContext } from "@/context/UserContext";
 
 function NameScreen() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const {
     userData,
     navigateToNextScreen,
-    navigateToPreviousScreen,
     updateUserData,
-    saveProgress,
+    saveProgress
   } = useUserContext();
+
+  const [firstName, setFirstName] = useState(userData.firstName || "");
+  const [lastName, setLastName] = useState(userData.lastName || "");
+
+  useEffect(() => {
+    setFirstName(userData.firstName || "");
+    setLastName(userData.lastName || "");
+  }, [userData]);
 
   const handleInputChange = (text: string, type: string) => {
     if (/^[a-zA-Z\s]*$/.test(text)) {
@@ -39,25 +44,19 @@ function NameScreen() {
     }
 
     try {
-      saveProgress("NameScreen");
-      updateUserData({
+      await updateUserData({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-      });
+      }); // Wait for the user data update
+      await saveProgress("NameScreen");
       navigateToNextScreen();
-    } catch (error: any) {
-      Alert.alert("Error", "Failed to save name: " + error.message);
+    } catch (error) {
+      console.error("Error submitting name:", error);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigateToPreviousScreen()}
-      >
-        <Ionicons name="chevron-back" size={24} color="black" />
-      </TouchableOpacity> */}
       <Text style={styles.title}>What's your name?</Text>
       <TextInput
         style={styles.input}

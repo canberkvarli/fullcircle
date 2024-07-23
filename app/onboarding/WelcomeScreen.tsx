@@ -6,23 +6,16 @@ import {
   ImageBackground,
   TouchableOpacity,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 
 function WelcomeScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const { userId, phoneNumber } = params;
-  const { navigateToNextScreen, updateUserData } = useUserContext();
+  const { navigateToNextScreen } = useUserContext();
 
   const handleStart = async () => {
-    if (typeof userId === "string" && typeof phoneNumber === "string") {
-      try {
-        await updateUserData({ currentOnboardingScreen: "NameScreen" });
-        navigateToNextScreen();
-      } catch (error) {
-        console.error("Failed to save progress:", error);
-      }
+    try {
+      navigateToNextScreen();
+    } catch (error) {
+      console.error("Failed to save progress:", error);
     }
   };
 
