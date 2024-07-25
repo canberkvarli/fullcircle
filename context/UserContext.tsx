@@ -37,6 +37,7 @@ type UserContextType = {
   navigateToScreen: (screen: string) => void;
   saveProgress: (screen?: string) => void;
   fetchUserData: (userId: string) => Promise<void>;
+  getIdToken: () => Promise<string | null>;
 };
 
 const initialScreens = [
@@ -98,29 +99,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [userData, setUserData] = useState<UserData>(initialUserData);
   const router = useRouter();
 
-  useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log("user from listener", user);
-        console.log("userID from listener!", user.uid);
-        await fetchUserData(user.uid);
-        await updateUserData({ userId: user.uid });
-      } else {
-        setUserData(initialUserData);
-      }
-
-      if (initializing) setInitializing(false);
-    });
-
-    return () => subscriber(); // Unsubscribe on unmount
-  }, [initializing]);
-
   const fetchUserData = async (userId: string) => {
     console.log("Fetching user data for:", userId);
     const docRef = doc(FIRESTORE, "users", userId);
-
     try {
       const docSnap = await getDoc(docRef);
+      console.log("Getting the docSnap...");
       if (docSnap.exists()) {
         const data = docSnap.data() as UserData;
         console.log("Fetched user data:", data);
@@ -137,22 +121,47 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } else {
         console.log("Document does not exist. Initializing new user data.");
-        await setDoc(
-          docRef,
-          { currentOnboardingScreen: "PhoneNumberScreen", userId },
-          { merge: true }
-        );
-        setUserData((prevData) => ({
-          ...prevData,
+        // Create a new user document with default values
+        await updateUserData({
           userId,
           currentOnboardingScreen: "PhoneNumberScreen",
-        }));
+          // Add more fields as needed
+        });
         router.replace("onboarding/PhoneNumberScreen");
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
   };
+
+  const getIdToken = async () => {
+    try {
+      const user = auth().currentUser;
+      if (user) {
+        const idToken = await user.getIdToken();
+        return idToken;
+      }
+    } catch (error) {
+      console.error("Failed to get ID token:", error);
+      return null;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(async (user) => {
+      if (user) {
+        console.log("userID from listener!", user.uid);
+        await fetchUserData(user.uid);
+      } else {
+        setUserData(initialUserData);
+      }
+
+      if (initializing) setInitializing(false);
+    });
+
+    return () => subscriber(); // Unsubscribe on unmount
+  }, [initializing]);
 
   const saveProgress = async (screen?: string) => {
     try {
@@ -172,13 +181,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateUserData = async (data: Partial<UserData>) => {
+    console.log("Updating user data with...", data);
     try {
-      setUserData((prevData) => ({ ...prevData, ...data }));
-      if (data.userId || userData.userId) {
-        const userIdToUpdate = data.userId || userData.userId;
-        const docRef = doc(FIRESTORE, "users", userIdToUpdate);
-        await setDoc(docRef, data, { merge: true });
+      // Ensure that userId is included in the data
+      const userIdToUpdate = data.userId || userData.userId;
+      if (!userIdToUpdate) {
+        throw new Error("User ID is required to update data");
       }
+
+      // Set document reference
+      const docRef = doc(FIRESTORE, "users", userIdToUpdate);
+
+      // Use merge to update existing document or create a new one if it does not exist
+      await setDoc(docRef, data, { merge: true });
+
+      // Update local state
+      setUserData((prevData) => ({ ...prevData, ...data }));
     } catch (error) {
       console.error("Failed to update user data: ", error);
     }
@@ -236,6 +254,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     navigateToScreen,
     saveProgress,
     fetchUserData,
+    getIdToken,
   };
 
   if (initializing) {

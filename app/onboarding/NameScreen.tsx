@@ -15,7 +15,7 @@ function NameScreen() {
     userData,
     navigateToNextScreen,
     updateUserData,
-    saveProgress
+    saveProgress,
   } = useUserContext();
 
   const [firstName, setFirstName] = useState(userData.firstName || "");

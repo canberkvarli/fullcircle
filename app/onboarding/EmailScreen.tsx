@@ -10,6 +10,8 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from "react-native";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import auth from "@react-native-firebase/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useUserContext } from "../../context/UserContext";
 
@@ -24,6 +26,11 @@ function EmailScreen() {
   const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+
+  GoogleSignin.configure({
+    webClientId:
+      "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
+  });
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
@@ -49,16 +56,34 @@ function EmailScreen() {
     return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
   };
 
-  const handleModalOption = (option: number) => {
+  const handleModalOption = async (option: number) => {
     switch (option) {
       case 1:
         Alert.alert("Connect Apple Account", "Feature coming soon!");
         break;
       case 2:
-        Alert.alert("Connect Google Account", "Feature coming soon!");
+        try {
+          await GoogleSignin.hasPlayServices();
+          const { idToken } = await GoogleSignin.signIn();
+          const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+          const { user } = await auth().signInWithCredential(googleCredential);
+          console.log("userID from Google Sign-In:", user.uid);
+
+          await updateUserData({
+            userId: user.uid,
+            GoogleSSOEnabled: true,
+          });
+
+          if (!user.emailVerified) {
+            await user.sendEmailVerification();
+            navigateToNextScreen();
+          }
+        } catch (error) {
+          console.error("Google sign-in error: ", error);
+          Alert.alert("Error", "Failed to link Google account: " + error);
+        }
         break;
       default:
-        console.log("default option: navigation next screen.");
         navigateToNextScreen();
         break;
     }

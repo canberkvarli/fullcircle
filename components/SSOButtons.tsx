@@ -4,13 +4,12 @@ import { useRouter } from "expo-router";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useUserContext } from "@/context/UserContext";
 import auth from "@react-native-firebase/auth";
-import { doc, setDoc, getDoc, collection } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { FIRESTORE } from "@/services/FirebaseConfig";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
-  const { updateUserData, saveProgress, userData, fetchUserData } =
-    useUserContext();
+  const { updateUserData, fetchUserData } = useUserContext();
 
   GoogleSignin.configure({
     webClientId:
@@ -22,37 +21,51 @@ function SSOButtons(): JSX.Element {
     console.log("Sign in with Apple");
   };
 
-  async function handleSignInWithGoogle() {
+  const handleSignInWithGoogle = async () => {
     try {
-      // Configure Google Sign-In
-      GoogleSignin.configure({
-        webClientId:
-          "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
       });
-
-      // Sign in with Google
-      await GoogleSignin.hasPlayServices();
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const userCredential = await auth().signInWithCredential(
-        googleCredential
-      );
-      const user = userCredential.user;
 
-      // Fetch or create user data
-      const userData = await fetchUserData(user.uid);
-      console.log("userData from fetch", userData);
+      const { user } = await auth().signInWithCredential(googleCredential);
 
-      // if (userData ) {
-      //   // Use user data as needed, e.g., update context, navigate to onboarding screen
-      //   updateUserData(userData);
-      //   router.replace(`onboarding/${userData.currentOnboardingScreen}`);
-      //   saveProgress(userData.currentOnboardingScreen);
-      // }
+      if (auth().currentUser) {
+        const googleUserData = {
+          userId: user.uid,
+          email: user.email || "",
+          firstName: user.displayName?.split(" ")[0] || "",
+          lastName: user.displayName?.split(" ")[1] || "",
+          GoogleSSOEnabled: true,
+          // Add other fields as needed
+        };
+
+        console.log("googleUserData", googleUserData);
+
+        // Attempt to write to Firestore
+        try {
+          await setDoc(
+            doc(FIRESTORE, "users", googleUserData.userId),
+            googleUserData
+          );
+          console.log("User data successfully written to Firestore");
+        } catch (firestoreError) {
+          console.error("Error writing document to Firestore:", firestoreError);
+        }
+
+        if (!user.emailVerified) {
+          await user.sendEmailVerification();
+          router.replace("/onboarding/WelcomeScreen");
+        }
+        return auth().signInWithCredential(googleCredential);
+      } else {
+        console.log("User is not authenticated");
+      }
     } catch (error) {
-      console.error("Error during Google sign-in", error);
+      console.error("Google sign-in error: ", error);
     }
-  }
+  };
 
   const handleSignInWithPhoneNumber = () => {
     router.replace("onboarding/PhoneNumberScreen");
