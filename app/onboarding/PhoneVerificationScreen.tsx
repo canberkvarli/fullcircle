@@ -11,16 +11,13 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
-import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 import { useUserContext } from "@/context/UserContext";
 
 function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState(
     new Array(6).fill("")
   );
-  const { updateUserData } = useUserContext();
+  const { handlePhoneNumberSignIn } = useUserContext();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -44,52 +41,7 @@ function PhoneVerificationScreen() {
     setLoading(true);
 
     try {
-      const credential = PhoneAuthProvider.credential(
-        verificationId as string,
-        code
-      );
-      const userCredential = await signInWithCredential(
-        FIREBASE_AUTH,
-        credential
-      );
-      const { user } = userCredential;
-      const docRef = doc(FIRESTORE, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const userDataFromFirestore = docSnap.data();
-        const userCurrentOnboardingScreen =
-          userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
-        updateUserData({
-          userId: user.uid,
-          currentOnboardingScreen: userCurrentOnboardingScreen,
-        });
-        router.replace({
-          pathname: `onboarding/${userCurrentOnboardingScreen}`,
-        });
-      } else {
-        const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
-        const match = phoneRegex.exec(phoneNumber as string);
-        if (!match) {
-          setLoading(false);
-          Alert.alert("Error", "Invalid phone number format");
-          return;
-        }
-        const [, countryCode, areaCode, phone] = match;
-
-        updateUserData({
-          userId: user.uid,
-          phoneNumber: user.phoneNumber || "",
-          countryCode: countryCode,
-          areaCode: areaCode,
-          number: phone,
-          currentOnboardingScreen: "WelcomeScreen",
-        });
-        router.replace({
-          pathname: "onboarding/WelcomeScreen",
-          params: { userId: user.uid, phoneNumber: user.phoneNumber },
-        });
-      }
+      await handlePhoneNumberSignIn(verificationId as string, code as string);
       setLoading(false);
     } catch (error: any) {
       setLoading(false);

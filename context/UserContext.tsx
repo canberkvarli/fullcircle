@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { FIRESTORE } from "@/services/FirebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
+import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import auth from "@react-native-firebase/auth";
 
 type UserData = {
@@ -38,6 +39,10 @@ type UserContextType = {
   saveProgress: (screen?: string) => void;
   fetchUserData: (userId: string) => Promise<void>;
   getIdToken: () => Promise<string | null>;
+  handlePhoneNumberSignIn: (
+    verificationId: string,
+    verificationCode: string
+  ) => Promise<void>;
 };
 
 const initialScreens = [
@@ -106,14 +111,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const docSnap = await getDoc(docRef);
       console.log("Getting the docSnap...");
       if (docSnap.exists()) {
-        const data = docSnap.data() as UserData;
-        console.log("Fetched user data:", data);
-        setUserData(data);
-
-        if (data.currentOnboardingScreen) {
-          setcurrentOnboardingScreen(data.currentOnboardingScreen);
-          router.replace(`onboarding/${data.currentOnboardingScreen}`);
-        }
+        const userDataFromFirestore = docSnap.data();
+        const userCurrentOnboardingScreen =
+          userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
+        console.log("userDataFromFirestore:", userDataFromFirestore);
+        updateUserData({
+          userId: userId,
+          currentOnboardingScreen: userCurrentOnboardingScreen,
+        });
+        router.replace({
+          pathname: `onboarding/${userCurrentOnboardingScreen}`,
+        });
       } else {
         console.log("Document does not exist. Initializing new user data.");
         // Create a new user document with default values
@@ -134,6 +142,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const handlePhoneNumberSignIn = async (
+    verificationId: string,
+    code: string
+  ) => {
+    try {
+      const credential = PhoneAuthProvider.credential(verificationId, code);
+      await signInWithCredential(FIREBASE_AUTH, credential);
+
+      // Fetch the updated user data
+      const user = FIREBASE_AUTH.currentUser;
+      if (user) {
+        console.log("New User ID after phone sign-in:", user.uid);
+        await fetchUserData(user.uid);
+      }
+    } catch (error) {
+      console.error("Phone number sign-in error:", error);
+    }
+  };
+
   const getIdToken = async () => {
     try {
       const user = auth().currentUser;
@@ -151,13 +178,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const subscriber = auth().onAuthStateChanged(async (user) => {
       if (user) {
-        console.log("userID from listener!", user.uid);
+        console.log("User ID from listener:", user.uid);
         await fetchUserData(user.uid);
       } else {
         setUserData(initialUserData);
       }
 
-      if (initializing) setInitializing(false);
+      if (initializing) {
+        console.log("UserContext initialized");
+        setInitializing(false);
+      }
     });
 
     return () => subscriber(); // Unsubscribe on unmount
@@ -181,17 +211,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateUserData = async (data: Partial<UserData>) => {
-    console.log("Updating user data with...", data);
-    try {
-      const userIdToUpdate = data.userId || userData.userId;
-      if (!userIdToUpdate) {
-        throw new Error("User ID is required to update data");
+    setUserData((prevData) => ({ ...prevData, ...data }));
+
+    if (data.userId) {
+      const userDocRef = doc(FIRESTORE, "users", data.userId);
+      try {
+        await setDoc(userDocRef, { ...userData, ...data }, { merge: true });
+        console.log("User data updated successfully.");
+      } catch (error) {
+        console.error("Error updating user data in Firestore:", error);
       }
-      const docRef = doc(FIRESTORE, "users", userIdToUpdate);
-      await setDoc(docRef, data, { merge: true });
-      setUserData((prevData) => ({ ...prevData, ...data }));
-    } catch (error) {
-      console.error("Failed to update user data: ", error);
     }
   };
 
@@ -200,7 +229,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const currentIndex = screens.indexOf(currentOnboardingScreen);
     if (currentIndex !== -1 && currentIndex < screens.length - 1) {
       const nextScreen = screens[currentIndex + 1];
-      // Directly set userData's currentOnboardingScreen to ensure it updates
       const updatedUserData = {
         ...userData,
         currentOnboardingScreen: nextScreen,
@@ -248,6 +276,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     saveProgress,
     fetchUserData,
     getIdToken,
+    handlePhoneNumberSignIn,
   };
 
   if (initializing) {
