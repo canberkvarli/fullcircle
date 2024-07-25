@@ -11,9 +11,11 @@ function SSOButtons(): JSX.Element {
   const router = useRouter();
   const { updateUserData, fetchUserData } = useUserContext();
 
+  const webClientId =
+    "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com";
+
   GoogleSignin.configure({
-    webClientId:
-      "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
+    webClientId: webClientId,
   });
 
   const handleSignInWithApple = () => {
@@ -28,37 +30,31 @@ function SSOButtons(): JSX.Element {
       });
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
       const { user } = await auth().signInWithCredential(googleCredential);
 
-      if (auth().currentUser) {
+      if (user) {
         const googleUserData = {
           userId: user.uid,
           email: user.email || "",
           firstName: user.displayName?.split(" ")[0] || "",
           lastName: user.displayName?.split(" ")[1] || "",
           GoogleSSOEnabled: true,
-          // Add other fields as needed
         };
-
         console.log("googleUserData", googleUserData);
 
-        // Attempt to write to Firestore
         try {
           await setDoc(
             doc(FIRESTORE, "users", googleUserData.userId),
-            googleUserData
+            googleUserData,
+            { merge: true }
           );
           console.log("User data successfully written to Firestore");
+
+          await fetchUserData(user.uid); // Ensure user data is fetched
+          router.replace("onboarding/PhoneNumberScreen"); // Navigate to PhoneNumberScreen
         } catch (firestoreError) {
           console.error("Error writing document to Firestore:", firestoreError);
         }
-
-        if (!user.emailVerified) {
-          await user.sendEmailVerification();
-          router.replace("/onboarding/WelcomeScreen");
-        }
-        return auth().signInWithCredential(googleCredential);
       } else {
         console.log("User is not authenticated");
       }

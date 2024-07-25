@@ -112,21 +112,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (data.currentOnboardingScreen) {
           setcurrentOnboardingScreen(data.currentOnboardingScreen);
-          if (data.currentOnboardingScreen !== "WelcomeScreen") {
-            setScreens((prevScreens) =>
-              prevScreens.filter((screen) => screen !== "WelcomeScreen")
-            );
-          }
           router.replace(`onboarding/${data.currentOnboardingScreen}`);
         }
       } else {
         console.log("Document does not exist. Initializing new user data.");
         // Create a new user document with default values
-        await updateUserData({
+        const defaultUserData = {
           userId,
           currentOnboardingScreen: "PhoneNumberScreen",
+          phoneNumber: "",
+          countryCode: "",
+          areaCode: "",
+          number: "",
           // Add more fields as needed
-        });
+        };
+        await updateUserData(defaultUserData);
         router.replace("onboarding/PhoneNumberScreen");
       }
     } catch (error) {
@@ -183,19 +183,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateUserData = async (data: Partial<UserData>) => {
     console.log("Updating user data with...", data);
     try {
-      // Ensure that userId is included in the data
       const userIdToUpdate = data.userId || userData.userId;
       if (!userIdToUpdate) {
         throw new Error("User ID is required to update data");
       }
-
-      // Set document reference
       const docRef = doc(FIRESTORE, "users", userIdToUpdate);
-
-      // Use merge to update existing document or create a new one if it does not exist
       await setDoc(docRef, data, { merge: true });
-
-      // Update local state
       setUserData((prevData) => ({ ...prevData, ...data }));
     } catch (error) {
       console.error("Failed to update user data: ", error);
