@@ -39,10 +39,6 @@ type UserContextType = {
   saveProgress: (screen?: string) => void;
   fetchUserData: (userId: string) => Promise<void>;
   getIdToken: () => Promise<string | null>;
-  handlePhoneNumberSignIn: (
-    verificationId: string,
-    verificationCode: string
-  ) => Promise<void>;
 };
 
 const initialScreens = [
@@ -122,42 +118,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         router.replace({
           pathname: `onboarding/${userCurrentOnboardingScreen}`,
         });
-      } else {
-        console.log("Document does not exist. Initializing new user data.");
-        // Create a new user document with default values
-        const defaultUserData = {
-          userId,
-          currentOnboardingScreen: "PhoneNumberScreen",
-          phoneNumber: "",
-          countryCode: "",
-          areaCode: "",
-          number: "",
-          // Add more fields as needed
-        };
-        await updateUserData(defaultUserData);
-        router.replace("onboarding/PhoneNumberScreen");
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
-    }
-  };
-
-  const handlePhoneNumberSignIn = async (
-    verificationId: string,
-    code: string
-  ) => {
-    try {
-      const credential = PhoneAuthProvider.credential(verificationId, code);
-      await signInWithCredential(FIREBASE_AUTH, credential);
-
-      // Fetch the updated user data
-      const user = FIREBASE_AUTH.currentUser;
-      if (user) {
-        console.log("New User ID after phone sign-in:", user.uid);
-        await fetchUserData(user.uid);
-      }
-    } catch (error) {
-      console.error("Phone number sign-in error:", error);
     }
   };
 
@@ -211,16 +174,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateUserData = async (data: Partial<UserData>) => {
-    setUserData((prevData) => ({ ...prevData, ...data }));
-
-    if (data.userId) {
-      const userDocRef = doc(FIRESTORE, "users", data.userId);
-      try {
-        await setDoc(userDocRef, { ...userData, ...data }, { merge: true });
-        console.log("User data updated successfully.");
-      } catch (error) {
-        console.error("Error updating user data in Firestore:", error);
+    console.log("Updating user data with...", data);
+    try {
+      // Ensure that userId is included in the data
+      const userIdToUpdate = data.userId || userData.userId;
+      if (!userIdToUpdate) {
+        throw new Error("User ID is required to update data");
       }
+
+      // Set document reference
+      const docRef = doc(FIRESTORE, "users", userIdToUpdate);
+
+      // Use merge to update existing document or create a new one if it does not exist
+      await setDoc(docRef, data, { merge: true });
+
+      // Update local state
+      setUserData((prevData) => ({ ...prevData, ...data }));
+    } catch (error) {
+      console.error("Failed to update user data: ", error);
     }
   };
 
@@ -276,7 +247,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     saveProgress,
     fetchUserData,
     getIdToken,
-    handlePhoneNumberSignIn,
   };
 
   if (initializing) {

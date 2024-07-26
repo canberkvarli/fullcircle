@@ -8,11 +8,9 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { FIRESTORE } from "../../services/FirebaseConfig";
-import { doc, setDoc } from "firebase/firestore";
-import { GestureHandlerRootView, FlatList } from "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useUserContext } from "@/context/UserContext";
 
 const months = [
   "Jan",
@@ -28,7 +26,6 @@ const months = [
   "Nov",
   "Dec",
 ];
-
 const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 const years = Array.from(
   { length: new Date().getFullYear() - 1900 + 1 },
@@ -36,6 +33,13 @@ const years = Array.from(
 );
 
 function BirthdayScreen() {
+  const {
+    userData,
+    updateUserData,
+    navigateToNextScreen,
+    navigateToPreviousScreen,
+  } = useUserContext();
+
   const [birthdate, setBirthdate] = useState<{
     month: string;
     day: string;
@@ -45,17 +49,48 @@ function BirthdayScreen() {
     day: days[0],
     year: years[0],
   });
-  const [age, setAge] = useState<string>(""); // State to hold calculated age
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const {
-    userId,
-    phoneNumber,
-    email,
-    firstName,
-    lastName,
-    marketingRequested,
-  } = params;
+  const [age, setAge] = useState<string>("");
+
+  // Set initial state with user data if available
+  useEffect(() => {
+    if (userData.birthdate) {
+      const [month, dayYear] = userData.birthdate.split(" ");
+      const [day, year] = dayYear.split(", ");
+      setBirthdate({
+        month,
+        day,
+        year,
+      });
+    }
+  }, [userData.birthdate]);
+
+  // Calculate age whenever birthdate changes
+  useEffect(() => {
+    const calculateAge = () => {
+      if (!birthdate.day || !birthdate.month || !birthdate.year) return;
+
+      const today = new Date();
+      const birthDate = new Date(
+        +birthdate.year,
+        months.indexOf(birthdate.month),
+        +birthdate.day
+      );
+
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
+        age--;
+      }
+
+      setAge(age.toString());
+    };
+
+    calculateAge();
+  }, [birthdate]);
 
   // Function to handle birthdate submission
   const handleBirthdateSubmit = async () => {
@@ -65,77 +100,21 @@ function BirthdayScreen() {
       return;
     }
 
-    if (!userId || typeof userId !== "string") {
-      Alert.alert("Error", "Invalid user ID");
-      return;
-    }
-
     try {
-      const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(
-        docRef,
-        { birthdate: `${month} ${day}, ${year}` },
-        { merge: true }
-      );
-      router.replace({
-        pathname: "onboarding/AddBasicInfoScreen",
-        params: {
-          userId,
-          phoneNumber,
-          email,
-          firstName,
-          lastName,
-          birthdate: `${month} ${day}, ${year}`,
-        },
+      const userId = userData.userId;
+      if (!userId || typeof userId !== "string") {
+        Alert.alert("Error", "Invalid user ID");
+        return;
+      }
+
+      await updateUserData({
+        birthdate: `${month} ${day}, ${year}`,
       });
+      navigateToNextScreen();
     } catch (error: any) {
       Alert.alert("Error", "Failed to save birthdate: " + error.message);
     }
   };
-
-  // Function to handle navigation back to previous screen
-  const handleBack = () => {
-    router.replace({
-      pathname: "onboarding/EmailScreen",
-      params: {
-        userId,
-        phoneNumber,
-        email,
-        firstName,
-        lastName,
-        marketingRequested,
-      },
-    });
-  };
-
-  // Function to calculate age based on birthdate
-  const calculateAge = () => {
-    if (!birthdate.day || !birthdate.month || !birthdate.year) return;
-
-    const today = new Date();
-    const birthDate = new Date(
-      +birthdate.year,
-      months.indexOf(birthdate.month),
-      +birthdate.day
-    );
-
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-
-    setAge(age.toString());
-  };
-
-  // Calculate age whenever birthdate changes
-  React.useEffect(() => {
-    calculateAge();
-  }, [birthdate]);
 
   // Function to handle swipe changes
   const handleSwipeChange = (type: keyof typeof birthdate, index: string) => {
@@ -202,7 +181,10 @@ function BirthdayScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigateToPreviousScreen()}
+        >
           <Ionicons name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Celebrate Your Journey</Text>
