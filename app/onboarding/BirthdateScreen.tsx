@@ -138,15 +138,16 @@ function BirthdayScreen() {
       });
     }, [birthdate[type]]);
 
+    const currentIndex = data.indexOf(birthdate[type]);
+    const validIndex = currentIndex !== -1 ? currentIndex : 0; // Ensure a valid index
+
     return (
       <Animated.FlatList
         data={data}
         keyExtractor={(item) => item}
         renderItem={({ item, index }) => {
-          const currentIndex = data.indexOf(birthdate[type]);
-          const isCurrent = index === currentIndex;
-          const isNearby =
-            index >= currentIndex - 2 && index <= currentIndex + 2;
+          const isCurrent = index === validIndex;
+          const isNearby = index >= validIndex - 2 && index <= validIndex + 2;
           const color = isCurrent ? "black" : "gray";
           const opacityValue = isNearby ? 1 : 0.3;
 
@@ -165,7 +166,7 @@ function BirthdayScreen() {
           offset: 40 * index,
           index,
         })}
-        initialScrollIndex={data.indexOf(birthdate[type])}
+        initialScrollIndex={validIndex}
         onMomentumScrollEnd={(event) => {
           const index = Math.floor(event.nativeEvent.contentOffset.y / 40);
           handleSwipeChange(type, data[index]);
