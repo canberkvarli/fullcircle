@@ -11,16 +11,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useUserContext } from "@/context/UserContext";
 
 function NameScreen() {
-  const { userData, navigateToNextScreen, updateUserData, saveProgress } =
-    useUserContext();
+  const { userData, navigateToNextScreen, updateUserData } = useUserContext();
 
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
-
-  useEffect(() => {
-    setFirstName(userData.firstName || "");
-    setLastName(userData.lastName || "");
-  }, [userData]);
 
   const handleInputChange = (text: string, type: string) => {
     if (/^[a-zA-Z\s]*$/.test(text)) {
