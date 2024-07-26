@@ -20,7 +20,8 @@ type UserData = {
   lastName?: string;
   birthdate?: string;
   height?: string;
-  location?: string;
+  longitude?: number;
+  latitude?: number;
   jobTitle?: string;
   // Add other optional fields as needed
 };
@@ -46,11 +47,11 @@ const initialScreens = [
   "LoginSignupScreen",
   "PhoneNumberScreen",
   "PhoneVerificationScreen",
-  "WelcomeScreen",
+  // "WelcomeScreen",
   "NameScreen",
   "EmailScreen",
   "BirthdateScreen",
-  "AddBasicInfoScreen",
+  // "AddBasicInfoScreen",
   "LocationScreen",
   "GenderScreen",
   "SexualOrientationScreen",

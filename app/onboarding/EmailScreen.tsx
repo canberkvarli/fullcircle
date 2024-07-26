@@ -45,7 +45,6 @@ function EmailScreen() {
 
     try {
       await updateUserData({ email, marketingRequested });
-      await saveProgress("EmailScreen");
       setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);

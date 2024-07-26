@@ -11,9 +11,7 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { FIRESTORE } from "../../services/FirebaseConfig";
-import { doc, setDoc } from "firebase/firestore";
+import { useUserContext } from "@/context/UserContext";
 
 const DEFAULT_LOCATION = {
   latitude: 40.7128,
@@ -23,21 +21,12 @@ const DEFAULT_LOCATION = {
 };
 
 const LocationScreen = () => {
-  const router = useRouter();
-  const params = useLocalSearchParams();
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
   const [region, setRegion] = useState(DEFAULT_LOCATION);
-  const {
-    userId,
-    phoneNumber,
-    email,
-    firstName,
-    lastName,
-    marketingRequested,
-    birthdate,
-  } = params;
+  const { navigateToNextScreen, navigateToPreviousScreen, updateUserData } =
+    useUserContext();
 
   useEffect(() => {
     (async () => {
@@ -92,53 +81,19 @@ const LocationScreen = () => {
   };
 
   const handleContinue = async () => {
-    if (typeof userId !== "string") {
-      Alert.alert("Error", "Invalid user ID");
-      return;
-    }
-
     try {
-      const docRef = doc(FIRESTORE, "users", userId);
-      await setDoc(
-        docRef,
-        {
-          location: {
-            latitude: region.latitude,
-            longitude: region.longitude,
-          },
-        },
-        { merge: true }
-      );
-      router.replace({
-        pathname: "onboarding/NextScreen",
-        params: {
-          userId,
-          phoneNumber,
-          email,
-          firstName,
-          lastName,
-          marketingRequested,
-          birthdate,
-        },
+      await updateUserData({
+        latitude: region.latitude,
+        longitude: region.longitude,
       });
+      navigateToNextScreen();
     } catch (error: any) {
       Alert.alert("Error", "Failed to save location: " + error.message);
     }
   };
 
   const handleBack = () => {
-    router.replace({
-      pathname: "onboarding/BirthdateScreen",
-      params: {
-        userId,
-        phoneNumber,
-        email,
-        firstName,
-        lastName,
-        marketingRequested,
-        birthdate,
-      },
-    });
+    navigateToPreviousScreen();
   };
 
   return (

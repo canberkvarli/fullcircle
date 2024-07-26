@@ -44,7 +44,6 @@ function NameScreen() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       }); // Wait for the user data update
-      await saveProgress("NameScreen");
       navigateToNextScreen();
     } catch (error) {
       console.error("Error submitting name:", error);
