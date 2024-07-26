@@ -20,10 +20,22 @@ type UserData = {
   lastName?: string;
   birthdate?: string;
   height?: string;
+  region?: string;
   longitude?: number;
   latitude?: number;
+  genders?: string[];
   jobTitle?: string;
-  // Add other optional fields as needed
+  sexualOrientation?: string[];
+  datePreferences?: string[];
+  ethnicity?: string[];
+  childrenPreference?: string;
+  jobLocation?: string;
+  educationDegree?: string;
+  spiritualPractices?: string[];
+  photos?: string[];
+  hiddenFields?: {
+    [key: string]: boolean; // Keys are field names, values are hidden status
+  }; // Add other optional fields as needed
 };
 
 type UserContextType = {
@@ -108,10 +120,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const docSnap = await getDoc(docRef);
       console.log("Getting the docSnap...");
       if (docSnap.exists()) {
-        const userDataFromFirestore = docSnap.data();
+        const userDataFromFirestore = docSnap.data() as UserData;
         const userCurrentOnboardingScreen =
           userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
         console.log("userDataFromFirestore:", userDataFromFirestore);
+        setUserData(userDataFromFirestore);
         updateUserData({
           userId: userId,
           currentOnboardingScreen: userCurrentOnboardingScreen,

@@ -21,6 +21,11 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
+        }
+      },
       "package": "com.fullcircle.app"
     },
     "web": {

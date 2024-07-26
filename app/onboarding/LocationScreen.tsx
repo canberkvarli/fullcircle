@@ -8,14 +8,14 @@ import {
   PermissionsAndroid,
   Platform,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { useUserContext } from "@/context/UserContext";
 
 const DEFAULT_LOCATION = {
-  latitude: 40.7128,
-  longitude: -74.006,
+  latitude: 36.7783,
+  longitude: -119.4179,
   latitudeDelta: 0.0922,
   longitudeDelta: 0.0421,
 };
@@ -25,6 +25,7 @@ const LocationScreen = () => {
     null
   );
   const [region, setRegion] = useState(DEFAULT_LOCATION);
+  const [regionName, setRegionName] = useState("Loading...");
   const { navigateToNextScreen, navigateToPreviousScreen, updateUserData } =
     useUserContext();
 
@@ -44,40 +45,63 @@ const LocationScreen = () => {
 
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
-      setRegion({
+      const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
-      });
+      };
+      setRegion(newRegion);
+      await updateRegionName(newRegion);
     })();
   }, []);
 
   const hasLocationPermission = async () => {
-    const permission = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
-
-    const hasPermission = await PermissionsAndroid.check(permission);
-    if (hasPermission) return true;
-
-    const status = await PermissionsAndroid.request(permission);
-    return status === PermissionsAndroid.RESULTS.GRANTED;
+    if (Platform.OS === "android") {
+      const permission = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
+      const hasPermission = await PermissionsAndroid.check(permission);
+      if (hasPermission) return true;
+      const status = await PermissionsAndroid.request(permission);
+      return status === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
   };
 
   const handleGetCurrentLocation = async () => {
+    console.log("handleGetCurrentLocation");
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission to access location was denied");
       return;
     }
-
     let location = await Location.getCurrentPositionAsync({});
-    setLocation(location);
-    setRegion({
+    const newRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
-    });
+    };
+    setLocation(location);
+    setRegion(newRegion);
+    await updateRegionName(newRegion);
+  };
+
+  const updateRegionName = async (region: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    try {
+      const [place] = await Location.reverseGeocodeAsync(region);
+      if (place) {
+        setRegionName(
+          place.city || place.region || place.country || "Unknown Location"
+        );
+      } else {
+        setRegionName("Unknown Location");
+      }
+    } catch (error) {
+      setRegionName("Error fetching location");
+    }
   };
 
   const handleContinue = async () => {
@@ -87,29 +111,39 @@ const LocationScreen = () => {
         longitude: region.longitude,
       });
       navigateToNextScreen();
-    } catch (error: any) {
-      Alert.alert("Error", "Failed to save location: " + error.message);
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to save location: " +
+          (error instanceof Error ? error.message : String(error))
+      );
     }
-  };
-
-  const handleBack = () => {
-    navigateToPreviousScreen();
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigateToPreviousScreen()}
+      >
         <Ionicons name="chevron-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Where are you rooted?</Text>
       <Text style={styles.subtitle}>
         Share your location to connect with nearby souls.
       </Text>
+      <Text style={styles.regionName}>{regionName}</Text>
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
+          provider={PROVIDER_GOOGLE}
           region={region}
-          onRegionChangeComplete={setRegion}
+          onRegionChangeComplete={(newRegion) => {
+            setRegion(newRegion);
+            updateRegionName(newRegion);
+          }}
+          showsUserLocation
+          showsMyLocationButton
         >
           {location && (
             <Marker
@@ -118,6 +152,7 @@ const LocationScreen = () => {
                 longitude: location.coords.longitude,
               }}
               title={"You are here"}
+              pinColor="blue"
             />
           )}
         </MapView>
@@ -161,12 +196,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
+  regionName: {
+    fontSize: 16,
+    marginBottom: 16,
+    textAlign: "center",
+  },
   mapContainer: {
     width: "100%",
     height: 300,
     borderRadius: 20,
     overflow: "hidden",
     marginBottom: 20,
+    position: "relative",
   },
   map: {
     width: "100%",
