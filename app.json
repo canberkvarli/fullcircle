@@ -14,9 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fullcircle.app"
+      "bundleIdentifier": "com.fullcircle.app",
+      "googleServicesFile": "./ios/fullcircle/Info.plist"
     },
     "android": {
+      "googleServicesFile": "android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -24,8 +26,7 @@
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
-        },
-        "googleServicesFile": "android/app/google-services.json"
+        }
       },
       "package": "com.fullcircle.app"
     },

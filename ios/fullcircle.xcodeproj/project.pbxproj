@@ -16,6 +16,7 @@
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		BF69E396183EDA3A101A0F9C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 9CF627139CB5753C233E008E /* PrivacyInfo.xcprivacy */; };
+		BFAF9FD9B4EC4DE9B8CE8160 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 75292C3ABE1F4E05B9B1091A /* GoogleService-Info.plist */; };
 		F4A5E3162C463C9A00015E63 /* AntDesign.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4A5E3022C463C9A00015E63 /* AntDesign.ttf */; };
 		F4A5E3172C463C9A00015E63 /* Entypo.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4A5E3032C463C9A00015E63 /* Entypo.ttf */; };
 		F4A5E3182C463C9A00015E63 /* EvilIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4A5E3042C463C9A00015E63 /* EvilIcons.ttf */; };
@@ -48,6 +49,7 @@
 		58EEBF8E8E6FB1BC6CAF49B5 /* libPods-fullcircle.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-fullcircle.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C2E3173556A471DD304B334 /* Pods-fullcircle.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-fullcircle.debug.xcconfig"; path = "Target Support Files/Pods-fullcircle/Pods-fullcircle.debug.xcconfig"; sourceTree = "<group>"; };
 		73ACACC62AD047F293849ED7 /* fullcircle-Bridging-Header.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "fullcircle-Bridging-Header.h"; path = "fullcircle/fullcircle-Bridging-Header.h"; sourceTree = "<group>"; };
+		75292C3ABE1F4E05B9B1091A /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "fullcircle/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		7A4D352CD337FB3A3BF06240 /* Pods-fullcircle.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-fullcircle.release.xcconfig"; path = "Target Support Files/Pods-fullcircle/Pods-fullcircle.release.xcconfig"; sourceTree = "<group>"; };
 		928DECAB541E467BAECF23E6 /* noop-file.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = "noop-file.swift"; path = "fullcircle/noop-file.swift"; sourceTree = "<group>"; };
 		9CF627139CB5753C233E008E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = fullcircle/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 				928DECAB541E467BAECF23E6 /* noop-file.swift */,
 				73ACACC62AD047F293849ED7 /* fullcircle-Bridging-Header.h */,
 				9CF627139CB5753C233E008E /* PrivacyInfo.xcprivacy */,
+				75292C3ABE1F4E05B9B1091A /* GoogleService-Info.plist */,
 			);
 			name = fullcircle;
 			sourceTree = "<group>";
@@ -220,7 +223,6 @@
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				CFF0E50A718A68F71DD2E2D7 /* [CP] Embed Pods Frameworks */,
 				E830E34D3F9113DB528D75E8 /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
@@ -292,6 +294,7 @@
 				F4A5E3212C463C9A00015E63 /* Fontisto.ttf in Resources */,
 				F4A5E3282C463C9A00015E63 /* Zocial.ttf in Resources */,
 				F4A5E31B2C463C9A00015E63 /* FontAwesome5_Brands.ttf in Resources */,
+				BFAF9FD9B4EC4DE9B8CE8160 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -429,24 +432,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-fullcircle/Pods-fullcircle-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		CFF0E50A718A68F71DD2E2D7 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-fullcircle/Pods-fullcircle-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-fullcircle/Pods-fullcircle-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		E830E34D3F9113DB528D75E8 /* [CP-User] [RNFB] Core Configuration */ = {
@@ -629,7 +614,7 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				USE_HERMES = true;
+				USE_HERMES = false;
 			};
 			name = Debug;
 		};
@@ -690,7 +675,7 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				USE_HERMES = true;
+				USE_HERMES = false;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
