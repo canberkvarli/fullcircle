@@ -24,7 +24,8 @@
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
-        }
+        },
+        "googleServicesFile": "android/app/google-services.json"
       },
       "package": "com.fullcircle.app"
     },
