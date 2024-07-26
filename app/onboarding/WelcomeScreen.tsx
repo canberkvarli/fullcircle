@@ -11,14 +11,6 @@ import { useUserContext } from "@/context/UserContext";
 function WelcomeScreen() {
   const { navigateToNextScreen } = useUserContext();
 
-  const handleStart = async () => {
-    try {
-      navigateToNextScreen();
-    } catch (error) {
-      console.error("Failed to save progress:", error);
-    }
-  };
-
   return (
     <ImageBackground
       source={require("../../assets/images/welcome.jpg")}
@@ -31,7 +23,10 @@ function WelcomeScreen() {
           <Text style={styles.affirmation}>
             Your presence here is a blessing
           </Text>
-          <TouchableOpacity style={styles.startButton} onPress={handleStart}>
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={() => navigateToNextScreen()}
+          >
             <Text style={styles.startButtonText}>Start</Text>
           </TouchableOpacity>
         </View>

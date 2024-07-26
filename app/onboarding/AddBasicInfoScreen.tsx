@@ -6,19 +6,10 @@ import {
   ImageBackground,
   TouchableOpacity,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useUserContext } from "@/context/UserContext";
 
 function AddBasicInfoScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const { userId, phoneNumber } = params;
-
-  const handleContinue = () => {
-    router.replace({
-      pathname: "onboarding/LocationScreen",
-      params: { userId, phoneNumber },
-    });
-  };
+  const { navigateToNextScreen } = useUserContext();
 
   return (
     <ImageBackground
@@ -37,7 +28,7 @@ function AddBasicInfoScreen() {
           </Text>
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={handleContinue}
+            onPress={() => navigateToNextScreen()}
           >
             <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
