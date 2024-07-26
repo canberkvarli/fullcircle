@@ -66,7 +66,7 @@ const initialScreens = [
   // "AddBasicInfoScreen",
   "LocationScreen",
   "GenderScreen",
-  "SexualOrientationScreen",
+  "SexualSexualOritentationScreen",
   "DatePreferenceScreen",
   "HeightScreen",
   "EthnicityScreen",
