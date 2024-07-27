@@ -56,16 +56,16 @@ type UserContextType = {
   fetchUserData: (userId: string) => Promise<void>;
   getIdToken: () => Promise<string | null>;
 };
-
+// TODO-TESTING: Uncomment later.
 const initialScreens = [
   "LandingPageScreen",
-  "LoginSignupScreen",
-  "PhoneNumberScreen",
-  "PhoneVerificationScreen",
+  // "LoginSignupScreen",
+  // "PhoneNumberScreen",
+  // "PhoneVerificationScreen",
   // "WelcomeScreen",
-  "NameScreen",
-  "EmailScreen",
-  "BirthdateScreen",
+  // "NameScreen",
+  // "EmailScreen",
+  // "BirthdateScreen",
   // "AddBasicInfoScreen",
   "LocationScreen",
   "GenderScreen",

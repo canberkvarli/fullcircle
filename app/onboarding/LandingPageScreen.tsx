@@ -7,8 +7,9 @@ import { useRouter } from "expo-router";
 function LandingPageScreen(): JSX.Element {
   const router = useRouter();
 
+  // TODO-TESTING: Revert back to LoginSignUpScreen.
   const handleAnimationFinish = () => {
-    router.replace("onboarding/LoginSignupScreen");
+    router.replace("onboarding/LocationScreen");
   };
 
   return (
