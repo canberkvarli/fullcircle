@@ -15,21 +15,28 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 
 const DEFAULT_LOCATION = {
-  latitude: 37.8715, // Berkeley coordinates
+  latitude: 37.8715,
   longitude: -122.273,
   latitudeDelta: 0.0922,
   longitudeDelta: 0.0421,
 };
 
 const LocationScreen = () => {
+  const {
+    navigateToNextScreen,
+    navigateToPreviousScreen,
+    updateUserData,
+    userData,
+  } = useUserContext();
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
   const [region, setRegion] = useState(DEFAULT_LOCATION);
-  const [regionName, setRegionName] = useState("Loading...");
+  const [regionName, setRegionName] = useState(
+    userData?.location?.city || "Loading..."
+  );
+  const [place, setPlace] = useState();
   const [loading, setLoading] = useState(true);
-  const { navigateToNextScreen, navigateToPreviousScreen, updateUserData } =
-    useUserContext();
 
   useEffect(() => {
     (async () => {
@@ -85,6 +92,7 @@ const LocationScreen = () => {
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     };
+    console.log("Location from current Location:", location);
     setLocation(location);
     setRegion(newRegion);
     await updateRegionName(newRegion);
@@ -102,6 +110,9 @@ const LocationScreen = () => {
             place[0].country ||
             "Unknown Location"
         );
+        // TODO: FIX TypeScript and timezone.
+        setPlace(place);
+        console.log("PLACE from current Location", place[0]);
       } else {
         setRegionName("Unknown Location");
       }
@@ -112,7 +123,22 @@ const LocationScreen = () => {
 
   const handleContinue = async () => {
     try {
+      const placeDetails = place[0] || {};
       await updateUserData({
+        location: {
+          city: regionName, // Set to the name of the city from regionName
+          country: placeDetails.country || "Unknown",
+          district: placeDetails.district || "Unknown",
+          formattedAddress: placeDetails.formattedAddress || "Unknown",
+          isoCountryCode: placeDetails.isoCountryCode || "Unknown",
+          name: placeDetails.name || "Unknown",
+          postalCode: placeDetails.postalCode || "Unknown",
+          region: placeDetails.region || "Unknown",
+          street: placeDetails.street || "Unknown",
+          streetNumber: placeDetails.streetNumber || "Unknown",
+          subregion: placeDetails.subregion || "Unknown",
+          timezone: placeDetails.timezone || "Unknown", // Handle timezone if needed
+        },
         latitude: region.latitude,
         longitude: region.longitude,
       });

@@ -23,7 +23,7 @@ type UserData = {
   birthday?: string;
   birthyear?: string;
   height?: string;
-  region?: string;
+  regionName?: string;
   longitude?: number;
   latitude?: number;
   genders?: string[];
@@ -38,7 +38,22 @@ type UserData = {
   photos?: string[];
   hiddenFields?: {
     [key: string]: boolean; // Keys are field names, values are hidden status
-  }; // Add other optional fields as needed
+  };
+  location?: {
+    city?: string;
+    country?: string;
+    district?: string;
+    formattedAddress?: string;
+    isoCountryCode?: string;
+    name?: string;
+    postalCode?: string;
+    region?: string;
+    street?: string;
+    streetNumber?: string;
+    subregion?: string;
+    timezone?: string; // Optionally include timezone if needed
+  };
+  // Add other optional fields as needed
 };
 
 type UserContextType = {
@@ -59,14 +74,14 @@ type UserContextType = {
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
   "LandingPageScreen",
-  // "LoginSignupScreen",
-  // "PhoneNumberScreen",
-  // "PhoneVerificationScreen",
+  "LoginSignupScreen",
+  "PhoneNumberScreen",
+  "PhoneVerificationScreen",
   // "WelcomeScreen",
-  // "NameScreen",
-  // "EmailScreen",
-  // "BirthdateScreen",
-  // "AddBasicInfoScreen",
+  "NameScreen",
+  "EmailScreen",
+  "BirthdateScreen",
+  "AddBasicInfoScreen",
   "LocationScreen",
   "GenderScreen",
   "SexualSexualOritentationScreen",
