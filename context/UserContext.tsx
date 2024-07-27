@@ -19,6 +19,9 @@ type UserData = {
   firstName?: string;
   lastName?: string;
   birthdate?: string;
+  birthmonth?: string;
+  birthday?: string;
+  birthyear?: string;
   height?: string;
   region?: string;
   longitude?: number;
@@ -91,6 +94,7 @@ const initialUserData: UserData = {
   areaCode: "",
   number: "",
   currentOnboardingScreen: initialScreens[0],
+  hiddenFields: {},
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);

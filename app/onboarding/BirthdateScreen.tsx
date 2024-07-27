@@ -28,7 +28,7 @@ const months = [
 ];
 const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 const years = Array.from(
-  { length: new Date().getFullYear() - 1900 + 1 },
+  { length: new Date().getFullYear() - 1930 + 1 },
   (_, i) => (1930 + i).toString()
 );
 
@@ -45,25 +45,11 @@ function BirthdayScreen() {
     day: string;
     year: string;
   }>({
-    month: months[0],
-    day: days[0],
-    year: years[0],
+    month: userData?.birthmonth || months[0],
+    day: userData?.birthday || days[0],
+    year: userData?.birthyear || years[0],
   });
   const [age, setAge] = useState<string>("");
-
-  // Set initial state with user data if available
-  useEffect(() => {
-    if (userData.birthdate) {
-      const [month, dayYear] = userData.birthdate.split(" ");
-      const [day, year] = dayYear.split(", ");
-      setBirthdate({
-        month,
-        day,
-        year,
-      });
-    }
-  }, [userData.birthdate]);
-
   // Calculate age whenever birthdate changes
   useEffect(() => {
     const calculateAge = () => {
@@ -108,6 +94,9 @@ function BirthdayScreen() {
       }
 
       await updateUserData({
+        birthmonth: month,
+        birthday: day,
+        birthyear: year,
         birthdate: `${month} ${day}, ${year}`,
       });
       navigateToNextScreen();
