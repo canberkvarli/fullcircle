@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
-import { Ionicons } from "@expo/vector-icons";
+import RadioIcon from "react-native-vector-icons/Fontisto";
+import NavigationIcon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "../../context/UserContext";
 
 function EmailScreen() {
@@ -98,7 +99,7 @@ function EmailScreen() {
           navigateToPreviousScreen();
         }}
       >
-        <Ionicons name="chevron-back" size={24} color="black" />
+        <NavigationIcon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Stay Connected</Text>
       <Text style={styles.subtitle}>Enter your email address</Text>
@@ -117,8 +118,8 @@ function EmailScreen() {
           style={styles.toggle}
           onPress={() => setMarketingRequested((prev) => !prev)}
         >
-          <Ionicons
-            name={marketingRequested ? "radio-button-on" : "radio-button-off"}
+          <RadioIcon
+            name={marketingRequested ? "radio-btn-active" : "radio-btn-passive"}
             size={24}
             color="black"
           />
@@ -132,7 +133,7 @@ function EmailScreen() {
         Open the channels of communication and connection
       </Text>
       <TouchableOpacity style={styles.submitButton} onPress={handleEmailSubmit}>
-        <Ionicons name="chevron-forward" size={24} color="white" />
+        <NavigationIcon name="chevron-right" size={24} />
       </TouchableOpacity>
 
       <Modal
@@ -229,8 +230,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#000",
-    borderRadius: 50,
     padding: 10,
     justifyContent: "center",
     alignItems: "center",

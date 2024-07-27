@@ -5,12 +5,13 @@ import {
   View,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
   PermissionsAndroid,
   Platform,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 
 const DEFAULT_LOCATION = {
@@ -26,6 +27,7 @@ const LocationScreen = () => {
   );
   const [region, setRegion] = useState(DEFAULT_LOCATION);
   const [regionName, setRegionName] = useState("Loading...");
+  const [loading, setLoading] = useState(true);
   const { navigateToNextScreen, navigateToPreviousScreen, updateUserData } =
     useUserContext();
 
@@ -33,6 +35,7 @@ const LocationScreen = () => {
     (async () => {
       if (Platform.OS === "android" && !(await hasLocationPermission())) {
         setRegion(DEFAULT_LOCATION);
+        setLoading(false);
         return;
       }
 
@@ -40,6 +43,7 @@ const LocationScreen = () => {
       if (status !== "granted") {
         Alert.alert("Permission to access location was denied");
         setRegion(DEFAULT_LOCATION);
+        setLoading(false);
         return;
       }
 
@@ -52,7 +56,9 @@ const LocationScreen = () => {
         longitudeDelta: 0.0421,
       };
       setRegion(newRegion);
+      console.log("new Region from get Current Location:", newRegion);
       await updateRegionName(newRegion);
+      setLoading(false);
     })();
   }, []);
 
@@ -68,13 +74,13 @@ const LocationScreen = () => {
   };
 
   const handleGetCurrentLocation = async () => {
-    console.log("handleGetCurrentLocation");
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission to access location was denied");
       return;
     }
     let location = await Location.getCurrentPositionAsync({});
+    console.log("location from Location Expo:", location);
     const newRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
@@ -86,10 +92,9 @@ const LocationScreen = () => {
     await updateRegionName(newRegion);
   };
 
-  const updateRegionName = async (region: {
-    latitude: number;
-    longitude: number;
-  }) => {
+  const updateRegionName = async (
+    region: Pick<Location.LocationGeocodedLocation, "latitude" | "longitude">
+  ) => {
     try {
       const [place] = await Location.reverseGeocodeAsync(region);
       if (place) {
@@ -126,7 +131,7 @@ const LocationScreen = () => {
         style={styles.backButton}
         onPress={() => navigateToPreviousScreen()}
       >
-        <Ionicons name="chevron-back" size={24} color="black" />
+        <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Where are you rooted?</Text>
       <Text style={styles.subtitle}>
@@ -134,28 +139,25 @@ const LocationScreen = () => {
       </Text>
       <Text style={styles.regionName}>{regionName}</Text>
       <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          region={region}
-          onRegionChangeComplete={(newRegion) => {
-            setRegion(newRegion);
-            updateRegionName(newRegion);
-          }}
-          showsUserLocation
-          showsMyLocationButton
-        >
-          {location && (
-            <Marker
-              coordinate={{
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-              }}
-              title={"You are here"}
-              pinColor="blue"
-            />
-          )}
-        </MapView>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <MapView
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            region={region}
+            onRegionChangeComplete={(newRegion) => {
+              setRegion(newRegion);
+              updateRegionName(newRegion);
+            }}
+            showsUserLocation
+            showsMyLocationButton
+          >
+            <View style={styles.markerFixed}>
+              <Icon name="map-marker" size={40} color="red" />
+            </View>
+          </MapView>
+        )}
         <TouchableOpacity
           style={styles.currentLocationButton}
           onPress={handleGetCurrentLocation}
@@ -167,7 +169,7 @@ const LocationScreen = () => {
         Ground yourself in the present moment
       </Text>
       <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-        <Ionicons name="chevron-forward" size={24} color="white" />
+        <Icon name="chevron-right" size={24} />
       </TouchableOpacity>
     </View>
   );
@@ -177,8 +179,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    justifyContent: "center",
-    alignItems: "center",
+    marginTop: 25,
   },
   backButton: {
     position: "absolute",
@@ -187,9 +188,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 16,
-    textAlign: "center",
+    fontSize: 45,
+    textAlign: "left",
+    marginTop: 50,
+    marginBottom: 30,
+    paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 18,
@@ -213,6 +216,13 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
+  markerFixed: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    marginLeft: -20,
+    marginTop: -40,
+  },
   currentLocationButton: {
     position: "absolute",
     bottom: 10,
@@ -229,17 +239,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   affirmation: {
+    position: "absolute",
+    bottom: 70,
     textAlign: "center",
+    width: "100%",
     fontStyle: "italic",
     color: "gray",
-    marginBottom: 40,
   },
   continueButton: {
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#000",
-    borderRadius: 50,
     padding: 10,
     justifyContent: "center",
     alignItems: "center",

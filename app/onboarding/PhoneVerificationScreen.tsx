@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
 import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -77,16 +77,17 @@ function PhoneVerificationScreen() {
         }
         const [, countryCode, areaCode, phone] = match;
 
+        // TODO: Fix static screens. For now changed the screen name to NameScreen from WelcomeScreen.
         updateUserData({
           userId: user.uid,
           phoneNumber: user.phoneNumber || "",
           countryCode: countryCode,
           areaCode: areaCode,
           number: phone,
-          currentOnboardingScreen: "WelcomeScreen",
+          currentOnboardingScreen: "NameScreen",
         });
         router.replace({
-          pathname: "onboarding/WelcomeScreen",
+          pathname: "onboarding/NameScreen",
           params: { userId: user.uid, phoneNumber: user.phoneNumber },
         });
       }
@@ -154,7 +155,7 @@ function PhoneVerificationScreen() {
           })
         }
       >
-        <Ionicons name="chevron-back" size={24} color="black" />
+        <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Verify your connection</Text>
       <View style={styles.subtitleContainer}>

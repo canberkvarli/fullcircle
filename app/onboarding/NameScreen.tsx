@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 
 function NameScreen() {
@@ -71,9 +71,12 @@ function NameScreen() {
       <Text style={styles.affirmation}>
         Every name carries a unique vibration.
       </Text>
-      <TouchableOpacity style={styles.submitButton} onPress={handleNameSubmit}>
-        <Ionicons name="chevron-forward" size={24} color="white" />
-      </TouchableOpacity>
+      <Icon
+        style={styles.submitButton}
+        name="chevron-right"
+        size={24}
+        onPress={handleNameSubmit}
+      />
     </SafeAreaView>
   );
 }
@@ -129,7 +132,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#000",
     borderRadius: 50,
     padding: 10,
     justifyContent: "center",

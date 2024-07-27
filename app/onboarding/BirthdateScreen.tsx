@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 
@@ -29,7 +29,7 @@ const months = [
 const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 const years = Array.from(
   { length: new Date().getFullYear() - 1900 + 1 },
-  (_, i) => (1900 + i).toString()
+  (_, i) => (1930 + i).toString()
 );
 
 function BirthdayScreen() {
@@ -186,7 +186,7 @@ function BirthdayScreen() {
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
         >
-          <Ionicons name="chevron-back" size={24} color="black" />
+          <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Celebrate Your Journey</Text>
         <Text style={styles.subtitle}>When is your birthdate?</Text>
@@ -204,7 +204,7 @@ function BirthdayScreen() {
           style={styles.nextButton}
           onPress={handleBirthdateSubmit}
         >
-          <Ionicons name="chevron-forward" size={24} color="white" />
+          <Icon name="chevron-right" size={24} />
         </TouchableOpacity>
       </SafeAreaView>
     </GestureHandlerRootView>
@@ -268,8 +268,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#000",
-    borderRadius: 50,
     padding: 10,
     justifyContent: "center",
     alignItems: "center",
