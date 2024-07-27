@@ -9,14 +9,14 @@ import {
   PermissionsAndroid,
   Platform,
 } from "react-native";
-import MapView, { PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 
 const DEFAULT_LOCATION = {
-  latitude: 36.7783,
-  longitude: -119.4179,
+  latitude: 37.8715, // Berkeley coordinates
+  longitude: -122.273,
   latitudeDelta: 0.0922,
   longitudeDelta: 0.0421,
 };
@@ -56,7 +56,6 @@ const LocationScreen = () => {
         longitudeDelta: 0.0421,
       };
       setRegion(newRegion);
-      console.log("new Region from get Current Location:", newRegion);
       await updateRegionName(newRegion);
       setLoading(false);
     })();
@@ -80,7 +79,6 @@ const LocationScreen = () => {
       return;
     }
     let location = await Location.getCurrentPositionAsync({});
-    console.log("location from Location Expo:", location);
     const newRegion = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
@@ -96,10 +94,13 @@ const LocationScreen = () => {
     region: Pick<Location.LocationGeocodedLocation, "latitude" | "longitude">
   ) => {
     try {
-      const [place] = await Location.reverseGeocodeAsync(region);
-      if (place) {
+      const place = await Location.reverseGeocodeAsync(region);
+      if (place.length > 0) {
         setRegionName(
-          place.city || place.region || place.country || "Unknown Location"
+          place[0].city ||
+            place[0].region ||
+            place[0].country ||
+            "Unknown Location"
         );
       } else {
         setRegionName("Unknown Location");
@@ -153,9 +154,15 @@ const LocationScreen = () => {
             showsUserLocation
             showsMyLocationButton
           >
-            <View style={styles.markerFixed}>
+            <Marker
+              coordinate={{
+                latitude: region.latitude,
+                longitude: region.longitude,
+              }}
+              title={"You are here"}
+            >
               <Icon name="map-marker" size={40} color="red" />
-            </View>
+            </Marker>
           </MapView>
         )}
         <TouchableOpacity
