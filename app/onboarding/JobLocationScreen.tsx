@@ -5,26 +5,15 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Alert,
-  FlatList,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
 
-const educationLevels = [
-  "High School",
-  "Undergrad",
-  "Postgrad",
-  "Associate Degree",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "Doctorate",
-  "Professional Certification",
-];
-
-function EducationScreen() {
+function JobLocationScreen() {
   const {
     userData,
     updateUserData,
@@ -32,14 +21,14 @@ function EducationScreen() {
     navigateToPreviousScreen,
   } = useUserContext();
 
-  const [selectedEducation, setSelectedEducation] = useState<string>(
-    userData?.educationDegree || educationLevels[0]
+  const [jobLocation, setJobLocation] = useState<string>(
+    userData?.jobLocation || ""
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData.hiddenFields || {}
   );
 
-  const handleEducationSubmit = async () => {
+  const handleJobLocationSubmit = async () => {
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
@@ -48,12 +37,12 @@ function EducationScreen() {
       }
 
       await updateUserData({
-        educationDegree: selectedEducation,
+        jobLocation: jobLocation,
         hiddenFields,
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Error", "Failed to save education level: " + error.message);
+      Alert.alert("Error", "Failed to save job location: " + error.message);
     }
   };
 
@@ -62,30 +51,6 @@ function EducationScreen() {
       ...prev,
       [fieldName]: !prev[fieldName],
     }));
-  };
-
-  const renderEducationOptions = (data: string[]) => {
-    return (
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => {
-          const isSelected = item === selectedEducation;
-          const color = isSelected ? "black" : "gray";
-          const backgroundColor = isSelected ? "lightblue" : "transparent";
-
-          return (
-            <TouchableOpacity
-              style={[styles.optionContainer, { backgroundColor }]}
-              onPress={() => setSelectedEducation(item)}
-            >
-              <Text style={[styles.optionText, { color }]}>{item}</Text>
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={{ paddingVertical: 20 }}
-      />
-    );
   };
 
   return (
@@ -97,27 +62,30 @@ function EducationScreen() {
         >
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>Your Path of Learning</Text>
-        <Text style={styles.subtitle}>
-          What is your highest education level?
-        </Text>
-        <View style={styles.educationInputs}>
-          {renderEducationOptions(educationLevels)}
+        <Text style={styles.title}>Your calling</Text>
+        <Text style={styles.subtitle}>Where do you work?</Text>
+        <View style={styles.jobInputContainer}>
+          <TextInput
+            style={styles.jobInput}
+            placeholder="Enter your workplace"
+            value={jobLocation}
+            onChangeText={setJobLocation}
+          />
         </View>
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide From Others</Text>
           <Checkbox
-            value={hiddenFields["educationDegree"] || false}
-            onValueChange={() => toggleHidden("educationDegree")}
+            value={hiddenFields["jobLocation"] || false}
+            onValueChange={() => toggleHidden("jobLocation")}
             style={styles.checkbox}
           />
         </View>
         <Text style={styles.affirmation}>
-          Your journey of learning is a path to wisdom.
+          Your work is a reflection of your inner purpose.
         </Text>
         <TouchableOpacity
           style={styles.nextButton}
-          onPress={handleEducationSubmit}
+          onPress={handleJobLocationSubmit}
         >
           <Icon name="chevron-right" size={24} />
         </TouchableOpacity>
@@ -138,10 +106,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   title: {
-    fontSize: 35,
+    fontSize: 45,
     textAlign: "left",
     marginTop: 50,
-    marginBottom: 10,
+    marginBottom: 30,
     paddingHorizontal: 16,
   },
   subtitle: {
@@ -149,20 +117,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
-  educationInputs: {
-    flex: 1,
-    justifyContent: "center",
+  jobInputContainer: {
     marginBottom: 20,
+    paddingHorizontal: 16,
   },
-  optionContainer: {
-    padding: 15,
-    marginVertical: 5,
+  jobInput: {
     borderWidth: 1,
+    borderColor: "gray",
     borderRadius: 5,
-  },
-  optionText: {
+    padding: 10,
     fontSize: 18,
-    textAlign: "center",
   },
   hiddenContainer: {
     flexDirection: "row",
@@ -197,4 +161,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EducationScreen;
+export default JobLocationScreen;

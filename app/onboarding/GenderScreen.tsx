@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   Text,
@@ -21,10 +21,10 @@ function GenderScreen() {
   } = useUserContext();
 
   const [selectedGender, setSelectedGender] = useState<string | null>(
-    userData.gender || null
+    userData?.gender || null
   );
-  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
-    userData.hiddenFields || {}
+  const [hiddenFields, setHiddenFields] = useState<string[]>(
+    userData?.hiddenFields || []
   );
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -33,10 +33,11 @@ function GenderScreen() {
   };
 
   const toggleHidden = (fieldName: string) => {
-    setHiddenFields((prev) => ({
-      ...prev,
-      [fieldName]: !prev[fieldName],
-    }));
+    setHiddenFields((prev) =>
+      prev.includes(fieldName)
+        ? prev.filter((field) => field !== fieldName)
+        : [...prev, fieldName]
+    );
   };
 
   const handleNext = async () => {
@@ -54,6 +55,12 @@ function GenderScreen() {
     });
     navigateToPreviousScreen();
   };
+
+  useEffect(() => {
+    setHiddenFields((prev) =>
+      prev.includes("gender") ? prev : [...prev, "gender"]
+    );
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -143,7 +150,7 @@ function GenderScreen() {
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide Gender Field</Text>
           <Checkbox
-            value={hiddenFields["gender"] || false}
+            value={hiddenFields.includes("gender")}
             onValueChange={() => toggleHidden("gender")}
             style={styles.checkbox}
           />
@@ -159,7 +166,6 @@ function GenderScreen() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

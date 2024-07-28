@@ -29,10 +29,16 @@ export default function OnboardingStackLayout() {
         name="DatePreferenceScreen"
         options={{ headerShown: false }}
       />
+      <Stack.Screen name="HeightScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="EthnicityScreen" options={{ headerShown: false }} />
       <Stack.Screen
-        name="HeightScreen"
+        name="FamilyVisionScreen"
         options={{ headerShown: false }}
       />
+      <Stack.Screen name="JobLocationScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="JobTitleScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="EducationScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="SpiritualScreen" options={{ headerShown: false }} />
       <Stack.Screen name="HomeScreen" options={{ headerShown: false }} />
     </Stack>
   );

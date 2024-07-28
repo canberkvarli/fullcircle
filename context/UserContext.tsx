@@ -26,18 +26,16 @@ type UserData = {
   longitude?: number;
   latitude?: number;
   gender?: string;
-  jobTitle?: string;
   sexualOrientation?: string[];
   datePreferences?: string[];
   ethnicities?: string[];
   childrenPreference?: string;
   jobLocation?: string;
+  jobTitle?: string;
   educationDegree?: string;
   spiritualPractices?: string[];
   photos?: string[];
-  hiddenFields?: {
-    [key: string]: boolean; // Keys are field names, values are hidden status
-  };
+  hiddenFields?: string[];
   location?: {
     city?: string;
     country?: string;
@@ -107,7 +105,7 @@ const initialUserData: UserData = {
   areaCode: "",
   number: "",
   currentOnboardingScreen: initialScreens[0],
-  hiddenFields: {},
+  hiddenFields: [],
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -216,11 +214,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // Set document reference
       const docRef = doc(FIRESTORE, "users", userIdToUpdate);
 
+      // Fetch the current document to get existing hiddenFields
+      const docSnap = await getDoc(docRef);
+      const existingData = docSnap.exists()
+        ? (docSnap.data() as Partial<UserData>)
+        : {};
+
+      // Merge hiddenFields
+      const mergedHiddenFields = Array.from(
+        new Set([
+          ...(existingData.hiddenFields || []),
+          ...(data.hiddenFields || []),
+        ])
+      );
+
+      // Update with merged hiddenFields
+      const updatedData = {
+        ...data,
+        hiddenFields: mergedHiddenFields,
+      };
+
       // Use merge to update existing document or create a new one if it does not exist
-      await setDoc(docRef, data, { merge: true });
+      await setDoc(docRef, updatedData, { merge: true });
 
       // Update local state
-      setUserData((prevData) => ({ ...prevData, ...data }));
+      setUserData((prevData) => ({ ...prevData, ...updatedData }));
     } catch (error) {
       console.error("Failed to update user data: ", error);
     }

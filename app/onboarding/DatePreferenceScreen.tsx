@@ -1,67 +1,52 @@
 import React, { useState, useEffect } from "react";
-import {
-  SafeAreaView,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  Alert,
-  ScrollView,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Checkbox from "expo-checkbox";
-import { useUserContext } from "@/context/UserContext";
+import { useUserContext } from "../../context/UserContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-const options = ["Men", "Women", "Everyone"];
-
-const DatePreferenceScreen = () => {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [hidden, setHidden] = useState(false);
+const DatePreferenceScreen: React.FC = () => {
   const {
     userData,
     updateUserData,
-    navigateToPreviousScreen,
     navigateToNextScreen,
+    navigateToPreviousScreen,
   } = useUserContext();
 
-  useEffect(() => {
-    if (userData.datePreferences) {
-      setSelectedOptions(userData.datePreferences);
-    }
-    if (userData.hiddenFields?.datePreferences) {
-      setHidden(true);
-    }
-  }, [userData]);
+  const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
+    userData?.datePreferences || []
+  );
+  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
+    userData?.hiddenFields || {}
+  );
 
-  const toggleOption = (option: string) => {
-    if (selectedOptions.includes(option)) {
-      setSelectedOptions(selectedOptions.filter((item) => item !== option));
-    } else {
-      if (selectedOptions.length < 3) {
-        setSelectedOptions([...selectedOptions, option]);
-      } else {
-        Alert.alert("Error", "You can only select up to 3 options");
-      }
-    }
+  const handlePreferenceChange = (preference: string) => {
+    setSelectedPreferences((prevPreferences) =>
+      prevPreferences.includes(preference)
+        ? prevPreferences.filter((item) => item !== preference)
+        : [...prevPreferences, preference]
+    );
   };
 
   const handleSubmit = async () => {
-    if (selectedOptions.length === 0) {
-      Alert.alert("Error", "Please select at least one option");
-      return;
-    }
-
     try {
-      const hiddenFields = { ...userData.hiddenFields };
-      if (hidden) {
-        hiddenFields.datePreferences = true;
-      } else {
-        delete hiddenFields.datePreferences;
+      const userId = userData.userId;
+      if (!userId || typeof userId !== "string") {
+        Alert.alert("Error", "Invalid user ID");
+        return;
       }
 
+      const updatedHiddenFields = {
+        ...userData.hiddenFields,
+        datePreferences: hiddenFields.datePreferences,
+      };
+
       await updateUserData({
-        datePreferences: selectedOptions,
-        hiddenFields,
+        datePreferences: selectedPreferences,
+        hiddenFields: {
+          ...(userData.hiddenFields || {}),
+          datePreferences: !!selectedPreferences,
+        },
       });
       navigateToNextScreen();
     } catch (error: any) {
@@ -69,47 +54,89 @@ const DatePreferenceScreen = () => {
     }
   };
 
+  const toggleHidden = (fieldName: string) => {
+    setHiddenFields((prev) => ({
+      ...prev,
+      [fieldName]: !prev[fieldName],
+    }));
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={navigateToPreviousScreen}
-      >
-        <Icon name="chevron-left" size={24} color="black" />
-      </TouchableOpacity>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <Text style={styles.title}>Who Do You Want to Date?</Text>
-        <Text style={styles.subtitle}>Choose up to 3</Text>
-        <View style={styles.optionsContainer}>
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigateToPreviousScreen()}
+        >
+          <Icon name="chevron-left" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Date Preferences</Text>
+        <Text style={styles.subtitle}>
+          Seek connections that nourish your soul.
+        </Text>
+        <View style={styles.preferenceContainer}>
+          <TouchableOpacity
+            style={[
+              styles.preferenceButton,
+              selectedPreferences.includes("Men") && styles.selectedButton,
+            ]}
+            onPress={() => handlePreferenceChange("Men")}
+          >
+            <Text
               style={[
-                styles.optionButton,
-                selectedOptions.includes(option) && styles.selectedOption,
+                styles.preferenceText,
+                selectedPreferences.includes("Men") && styles.selectedText,
               ]}
-              onPress={() => toggleOption(option)}
             >
-              <Text style={styles.optionText}>{option}</Text>
-            </TouchableOpacity>
-          ))}
+              Men
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.preferenceButton,
+              selectedPreferences.includes("Women") && styles.selectedButton,
+            ]}
+            onPress={() => handlePreferenceChange("Women")}
+          >
+            <Text
+              style={[
+                styles.preferenceText,
+                selectedPreferences.includes("Women") && styles.selectedText,
+              ]}
+            >
+              Women
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.preferenceButton,
+              selectedPreferences.includes("Everyone") && styles.selectedButton,
+            ]}
+            onPress={() => handlePreferenceChange("Everyone")}
+          >
+            <Text
+              style={[
+                styles.preferenceText,
+                selectedPreferences.includes("Everyone") && styles.selectedText,
+              ]}
+            >
+              Everyone
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.hiddenContainer}>
-          <Text style={styles.hiddenText}>Hide from others</Text>
+          <Text style={styles.hiddenText}>Hide From Others</Text>
           <Checkbox
-            value={hidden}
-            onValueChange={setHidden}
+            value={hiddenFields["datePreferences"] || false}
+            onValueChange={() => toggleHidden("datePreferences")}
             style={styles.checkbox}
           />
         </View>
-      </ScrollView>
-      <Text style={styles.affirmation}>
-        Seek connections that nourish your soul.
-      </Text>
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Icon name="chevron-right" size={24} />
-      </TouchableOpacity>
-    </SafeAreaView>
+        <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
+          <Icon name="chevron-right" size={24} />
+        </TouchableOpacity>
+      </View>
+    </GestureHandlerRootView>
   );
 };
 
@@ -117,18 +144,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    marginTop: 25,
   },
   backButton: {
     position: "absolute",
     top: 40,
     left: 16,
     zIndex: 1,
-  },
-  scrollViewContent: {
-    paddingBottom: 100, // Ensure enough space for the content to scroll
-    justifyContent: "center",
-    alignItems: "center",
   },
   title: {
     fontSize: 45,
@@ -138,62 +159,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 16,
-    textAlign: "center",
+    fontSize: 20,
+    textAlign: "left",
+    marginBottom: 20,
+    paddingHorizontal: 16,
   },
-  optionsContainer: {
+  preferenceContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginVertical: 20,
+    justifyContent: "space-around",
+    marginBottom: 20,
   },
-  optionButton: {
-    flexBasis: "45%",
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
+  preferenceButton: {
+    padding: 10,
     borderWidth: 1,
-    borderColor: "gray",
     borderRadius: 5,
-    margin: 5,
   },
-  selectedOption: {
+  selectedButton: {
     backgroundColor: "lightblue",
   },
-  optionText: {
-    fontSize: 16,
+  preferenceText: {
+    fontSize: 18,
+  },
+  selectedText: {
+    color: "white",
   },
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 20,
-    paddingHorizontal: 16,
+    justifyContent: "center",
+    marginBottom: 30,
   },
   hiddenText: {
-    fontSize: 18,
-    marginRight: 8, // Add margin between the text and checkbox
+    fontSize: 16,
+    marginRight: 10,
   },
   checkbox: {
+    alignSelf: "center",
+    borderColor: "gray",
+    borderWidth: 1,
+    borderRadius: 5,
     width: 20,
     height: 20,
   },
-  affirmation: {
-    bottom: 50,
-    textAlign: "center",
-    width: "100%",
-    fontStyle: "italic",
-    color: "gray",
-  },
-  submitButton: {
+  nextButton: {
     position: "absolute",
-    bottom: 20,
-    right: 20,
-    borderRadius: 50,
-    padding: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    bottom: 30,
+    right: 30,
+    zIndex: 1,
   },
 });
 

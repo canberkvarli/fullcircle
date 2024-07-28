@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  View,
-  Switch,
   Alert,
   ScrollView,
+  View,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
+import { Checkbox } from "expo-checkbox";
 
 const options = [
   "Straight",
@@ -25,8 +25,6 @@ const options = [
 ];
 
 const SexualOrientationScreen = () => {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [showOrientation, setShowOrientation] = useState<boolean>(false);
   const {
     userData,
     updateUserData,
@@ -34,17 +32,24 @@ const SexualOrientationScreen = () => {
     navigateToNextScreen,
   } = useUserContext();
 
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [hiddenFields, setHiddenFields] = useState<string[]>(
+    userData?.hiddenFields || []
+  );
+
   useEffect(() => {
     if (userData.sexualOrientation) {
       setSelectedOptions(userData.sexualOrientation);
     }
-    if (
-      userData.hiddenFields &&
-      userData.hiddenFields.sexualOrientation !== undefined
-    ) {
-      setShowOrientation(!userData.hiddenFields.sexualOrientation);
-    }
   }, [userData]);
+
+  const toggleHidden = (fieldName: string) => {
+    setHiddenFields((prev) =>
+      prev.includes(fieldName)
+        ? prev.filter((field) => field !== fieldName)
+        : [...prev, fieldName]
+    );
+  };
 
   const toggleOption = (option: string) => {
     if (selectedOptions.includes(option)) {
@@ -67,10 +72,7 @@ const SexualOrientationScreen = () => {
     try {
       await updateUserData({
         sexualOrientation: selectedOptions,
-        hiddenFields: {
-          ...(userData.hiddenFields || {}),
-          sexualOrientation: !showOrientation,
-        },
+        hiddenFields,
       });
       navigateToNextScreen();
     } catch (error: any) {
@@ -107,15 +109,12 @@ const SexualOrientationScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
-        <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>
-            Show my orientation on my profile
-          </Text>
-          <Switch
-            value={showOrientation}
-            onValueChange={setShowOrientation}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={showOrientation ? "#f5dd4b" : "#f4f3f4"}
+        <View style={styles.hiddenContainer}>
+          <Text style={styles.hiddenText}>Hide from others</Text>
+          <Checkbox
+            value={hiddenFields.includes("sexualOrientation")}
+            onValueChange={() => toggleHidden("sexualOrientation")}
+            style={styles.checkbox}
           />
         </View>
       </ScrollView>
@@ -142,24 +141,25 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   scrollViewContent: {
-    paddingBottom: 100, // Ensure enough space for the content to scroll
+    paddingBottom: 100,
     justifyContent: "center",
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    marginBottom: 8,
+    fontSize: 45,
     textAlign: "center",
+    marginTop: 50,
+    marginBottom: 30,
   },
   subtitle: {
     fontSize: 16,
-    marginBottom: 16,
     textAlign: "center",
+    marginBottom: 16,
   },
   minititle: {
     fontSize: 16,
-    marginBottom: 16,
     textAlign: "center",
+    marginBottom: 16,
   },
   optionsContainer: {
     flexDirection: "row",
@@ -183,26 +183,33 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
   },
-  toggleContainer: {
+  hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 20,
+    justifyContent: "space-between",
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
-  toggleLabel: {
-    fontSize: 16,
-    marginRight: 10,
+  hiddenText: {
+    fontSize: 18,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
   },
   affirmation: {
+    marginTop: 20,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    marginBottom: 20,
+    position: "absolute",
+    bottom: 70,
   },
   submitButton: {
-    alignSelf: "flex-end",
-    marginBottom: 20,
-    borderRadius: 50,
+    position: "absolute",
+    bottom: 20,
+    right: 20,
     padding: 10,
     justifyContent: "center",
     alignItems: "center",

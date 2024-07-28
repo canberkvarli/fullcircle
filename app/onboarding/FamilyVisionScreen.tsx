@@ -5,16 +5,21 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
-  ScrollView,
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { Checkbox } from "expo-checkbox";
+import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
 
-const EthnicityScreen = () => {
+const options = [
+  "Don’t have children",
+  "Have children",
+  "Open to children",
+  "Want Children",
+];
+
+function FamilyVisionScreen() {
   const {
     userData,
     updateUserData,
@@ -22,40 +27,14 @@ const EthnicityScreen = () => {
     navigateToPreviousScreen,
   } = useUserContext();
 
-  const ethnicities = [
-    "American Indian",
-    "East Asian",
-    "Black/African Descent",
-    "Middle Eastern",
-    "Hispanic Latino",
-    "South Asian",
-    "Pacific Islander",
-    "White/Caucasian",
-  ];
-
-  const [selectedEthnicities, setSelectedEthnicities] = useState<string[]>(
-    userData?.ethnicities?.filter((ethnicity) =>
-      ethnicities.includes(ethnicity)
-    ) || []
-  );
-  const [otherEthnicity, setOtherEthnicity] = useState<string>(
-    userData?.ethnicities?.find(
-      (ethnicity) => !ethnicities.includes(ethnicity)
-    ) || ""
+  const [selectedOption, setSelectedOption] = useState<string>(
+    userData?.childrenPreference || options[0]
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
-    userData?.hiddenFields || {}
+    userData.hiddenFields || {}
   );
 
-  const handleEthnicitySelect = (ethnicity: string) => {
-    setSelectedEthnicities((prev) =>
-      prev.includes(ethnicity)
-        ? prev.filter((item) => item !== ethnicity)
-        : [...prev, ethnicity]
-    );
-  };
-
-  const handleEthnicitySubmit = async () => {
+  const handleOptionSubmit = async () => {
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
@@ -63,17 +42,13 @@ const EthnicityScreen = () => {
         return;
       }
 
-      const allEthnicities = otherEthnicity
-        ? [...selectedEthnicities, otherEthnicity]
-        : selectedEthnicities;
-
       await updateUserData({
-        ethnicities: allEthnicities,
+        childrenPreference: selectedOption,
         hiddenFields,
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Error", "Failed to save ethnicities: " + error.message);
+      Alert.alert("Error", "Failed to save preference: " + error.message);
     }
   };
 
@@ -93,49 +68,50 @@ const EthnicityScreen = () => {
         >
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>Celebrate your heritage</Text>
-        <ScrollView style={styles.ethnicityInputs}>
-          {ethnicities.map((ethnicity) => (
+        <Text style={styles.title}>Family Visions</Text>
+        <Text style={styles.subtitle}>Do you have or want children?</Text>
+        <View style={styles.optionsContainer}>
+          {options.map((option) => (
             <TouchableOpacity
-              key={ethnicity}
+              key={option}
               style={[
-                styles.ethnicityOption,
-                selectedEthnicities.includes(ethnicity) &&
-                  styles.selectedEthnicity,
+                styles.optionButton,
+                selectedOption === option && styles.selectedOptionButton,
               ]}
-              onPress={() => handleEthnicitySelect(ethnicity)}
+              onPress={() => setSelectedOption(option)}
             >
-              <Text style={styles.ethnicityText}>{ethnicity}</Text>
+              <Text
+                style={[
+                  styles.optionText,
+                  selectedOption === option && styles.selectedOptionText,
+                ]}
+              >
+                {option}
+              </Text>
             </TouchableOpacity>
           ))}
-          <TextInput
-            style={styles.otherInput}
-            placeholder="Other"
-            value={otherEthnicity}
-            onChangeText={setOtherEthnicity}
-          />
-        </ScrollView>
+        </View>
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide From Others</Text>
           <Checkbox
-            value={hiddenFields["ethnicity"] || false}
-            onValueChange={() => toggleHidden("ethnicity")}
+            value={hiddenFields["childrenPreference"] || false}
+            onValueChange={() => toggleHidden("childrenPreference")}
             style={styles.checkbox}
           />
         </View>
         <Text style={styles.affirmation}>
-          Your heritage is a rich tapestry of your identity.
+          Your vision of family is sacred and unique.
         </Text>
         <TouchableOpacity
           style={styles.nextButton}
-          onPress={handleEthnicitySubmit}
+          onPress={handleOptionSubmit}
         >
           <Icon name="chevron-right" size={24} />
         </TouchableOpacity>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -149,38 +125,40 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   title: {
-    fontSize: 35,
+    fontSize: 45,
     textAlign: "left",
     marginTop: 50,
-    marginBottom: 10,
+    marginBottom: 30,
     paddingHorizontal: 16,
   },
-  ethnicityInputs: {
-    marginTop: 20,
+  subtitle: {
+    fontSize: 18,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  optionsContainer: {
     marginBottom: 20,
   },
-  ethnicityOption: {
-    padding: 12,
+  optionButton: {
+    padding: 10,
+    marginVertical: 5,
     borderWidth: 1,
     borderRadius: 5,
-    marginVertical: 5,
   },
-  selectedEthnicity: {
+  selectedOptionButton: {
     backgroundColor: "lightblue",
   },
-  ethnicityText: {
-    fontSize: 16,
+  optionText: {
+    fontSize: 18,
+    textAlign: "center",
   },
-  otherInput: {
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 5,
-    marginVertical: 5,
+  selectedOptionText: {
+    fontWeight: "bold",
   },
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
     paddingHorizontal: 16,
   },
   hiddenText: {
@@ -189,9 +167,10 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
-    marginLeft: 10,
+    left: 10,
   },
   affirmation: {
+    marginTop: 20,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
@@ -209,4 +188,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EthnicityScreen;
+export default FamilyVisionScreen;

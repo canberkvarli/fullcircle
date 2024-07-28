@@ -45,7 +45,7 @@ function EmailScreen() {
     }
 
     try {
-      await updateUserData({ email, marketingRequested });
+      await updateUserData({ email, marketingRequested: marketingRequested ? false : true });
       setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
