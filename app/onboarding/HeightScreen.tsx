@@ -7,14 +7,13 @@ import {
   TouchableOpacity,
   Animated,
   Alert,
-  FlatList,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
 import Checkbox from "expo-checkbox";
 
-const cmHeights = Array.from({ length: 71 }, (_, i) => `${i + 130} cm`);
+const cmHeights = Array.from({ length: 131 }, (_, i) => `${i + 130} cm`);
 const ftHeights = [
   "2 ft",
   "2.1 ft",
@@ -133,7 +132,7 @@ function HeightScreen() {
       [fieldName]: !prev[fieldName],
     }));
   };
-
+  // TODO-FIX: Last two values can't be selected because it does not center them.
   const renderHeightPicker = (data: string[]) => {
     const opacity = useRef(new Animated.Value(1)).current;
 
@@ -159,10 +158,9 @@ function HeightScreen() {
         data={data}
         keyExtractor={(item) => item}
         renderItem={({ item, index }) => {
-          const isCurrent = index === validIndex;
-          const isNearby = index >= validIndex - 2 && index <= validIndex + 2;
+          const isCurrent = item === selectedHeight;
           const color = isCurrent ? "black" : "gray";
-          const opacityValue = isNearby ? 1 : 0.3;
+          const opacityValue = isCurrent ? 1 : 0.3;
 
           return (
             <Animated.View style={{ opacity }}>
@@ -181,8 +179,11 @@ function HeightScreen() {
         })}
         initialScrollIndex={validIndex}
         onMomentumScrollEnd={(event) => {
-          const index = Math.floor(event.nativeEvent.contentOffset.y / 40);
-          handleSwipeChange(data[index]);
+          const offset = event.nativeEvent.contentOffset.y;
+          const index = Math.min(Math.round(offset / 40), data.length - 1);
+          if (index >= 0 && index < data.length) {
+            handleSwipeChange(data[index]);
+          }
         }}
         showsVerticalScrollIndicator={false}
         snapToInterval={40}
@@ -192,7 +193,6 @@ function HeightScreen() {
     );
   };
 
-  // Use the selected unit's data source
   const heightData = unit === "cm" ? cmHeights : ftHeights;
 
   return (
