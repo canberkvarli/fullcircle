@@ -1,16 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Button,
-  StyleSheet,
-  Alert,
   SafeAreaView,
   Text,
+  StyleSheet,
   TouchableOpacity,
   View,
   Switch,
+  Alert,
+  ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useUserContext } from "../../context/UserContext"; // Adjust import based on your file structure
+import Icon from "react-native-vector-icons/FontAwesome";
+import { useUserContext } from "@/context/UserContext";
 
 const options = [
   "Straight",
@@ -27,13 +27,24 @@ const options = [
 const SexualOrientationScreen = () => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showOrientation, setShowOrientation] = useState<boolean>(false);
-  const router = useRouter();
   const {
     userData,
     updateUserData,
     navigateToPreviousScreen,
     navigateToNextScreen,
   } = useUserContext();
+
+  useEffect(() => {
+    if (userData.sexualOrientation) {
+      setSelectedOptions(userData.sexualOrientation);
+    }
+    if (
+      userData.hiddenFields &&
+      userData.hiddenFields.sexualOrientation !== undefined
+    ) {
+      setShowOrientation(!userData.hiddenFields.sexualOrientation);
+    }
+  }, [userData]);
 
   const toggleOption = (option: string) => {
     if (selectedOptions.includes(option)) {
@@ -72,48 +83,48 @@ const SexualOrientationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Love is Love</Text>
-      <Text style={styles.subtitle}>Share your sexual orientation</Text>
-      <Text style={styles.minititle}>Select up to 3</Text>
-      <View style={styles.optionsContainer}>
-        {options.map((option) => (
-          <TouchableOpacity
-            key={option}
-            style={[
-              styles.optionButton,
-              selectedOptions.includes(option) && styles.selectedOption,
-            ]}
-            onPress={() => toggleOption(option)}
-          >
-            <Text style={styles.optionText}>{option}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>
-          Show my orientation on my profile
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={navigateToPreviousScreen}
+      >
+        <Icon name="chevron-left" size={24} color="black" />
+      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <Text style={styles.title}>Love is Love</Text>
+        <Text style={styles.subtitle}>Share your sexual orientation</Text>
+        <Text style={styles.minititle}>Select up to 3</Text>
+        <View style={styles.optionsContainer}>
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.optionButton,
+                selectedOptions.includes(option) && styles.selectedOption,
+              ]}
+              onPress={() => toggleOption(option)}
+            >
+              <Text style={styles.optionText}>{option}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>
+            Show my orientation on my profile
+          </Text>
+          <Switch
+            value={showOrientation}
+            onValueChange={setShowOrientation}
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={showOrientation ? "#f5dd4b" : "#f4f3f4"}
+          />
+        </View>
+        <Text style={styles.affirmation}>
+          Embrace love in all its beautiful forms.
         </Text>
-        <Switch
-          value={showOrientation}
-          onValueChange={setShowOrientation}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={showOrientation ? "#f5dd4b" : "#f4f3f4"}
-        />
-      </View>
-      <Text style={styles.affirmation}>
-        Embrace love in all its beautiful forms.
-      </Text>
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity
-          onPress={navigateToPreviousScreen}
-          style={styles.chevronButton}
-        >
-          <Text style={styles.chevronText}>{"<"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleSubmit} style={styles.chevronButton}>
-          <Text style={styles.chevronText}>{">"}</Text>
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        <Icon name="chevron-right" size={24} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -122,6 +133,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
+  },
+  backButton: {
+    position: "absolute",
+    top: 40,
+    left: 16,
+    zIndex: 1,
+  },
+  scrollViewContent: {
+    paddingBottom: 100, // Ensure enough space for the content to scroll
     justifyContent: "center",
     alignItems: "center",
   },
@@ -172,28 +193,21 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   affirmation: {
-    fontSize: 16,
-    marginVertical: 20,
+    position: "absolute",
+    bottom: 70,
     textAlign: "center",
-    fontStyle: "italic",
-  },
-  buttonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     width: "100%",
-    paddingHorizontal: 16,
-    marginTop: 20,
+    fontStyle: "italic",
+    color: "gray",
   },
-  chevronButton: {
-    width: 50,
-    height: 50,
+  submitButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    borderRadius: 50,
+    padding: 10,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f0f0f0",
-    borderRadius: 25,
-  },
-  chevronText: {
-    fontSize: 24,
   },
 });
 

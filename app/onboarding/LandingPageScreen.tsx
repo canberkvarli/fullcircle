@@ -9,7 +9,7 @@ function LandingPageScreen(): JSX.Element {
 
   // TODO-TESTING: Revert back to LoginSignupScreen.
   const handleAnimationFinish = () => {
-    router.replace("onboarding/LoginSignupScreen");
+    router.replace("onboarding/SexualOrientationScreen");
   };
 
   return (
