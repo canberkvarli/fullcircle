@@ -114,7 +114,6 @@ const LocationScreen = () => {
             "Unknown Location"
         );
         setPlace(place);
-        console.log("PLACE from the current Location", place[0]);
       } else {
         setRegionName("Unknown Location");
       }
@@ -131,7 +130,6 @@ const LocationScreen = () => {
         location: {
           city: regionName,
           country: placeDetails.country || "Unknown",
-          district: placeDetails.district || "Unknown",
           formattedAddress: placeDetails.formattedAddress || "Unknown",
           isoCountryCode: placeDetails.isoCountryCode || "Unknown",
           name: placeDetails.name || "Unknown",
@@ -140,7 +138,7 @@ const LocationScreen = () => {
           street: placeDetails.street || "Unknown",
           streetNumber: placeDetails.streetNumber || "Unknown",
           subregion: placeDetails.subregion || "Unknown",
-          timezone: placeDetails.timezone || "Unknown",
+          // timezone: placeDetails.timezone || "Unknown",
         },
         latitude: region.latitude,
         longitude: region.longitude,

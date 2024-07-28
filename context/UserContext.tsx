@@ -42,7 +42,6 @@ type UserData = {
   location?: {
     city?: string;
     country?: string;
-    district?: string;
     formattedAddress?: string;
     isoCountryCode?: string;
     name?: string;
@@ -51,7 +50,7 @@ type UserData = {
     street?: string;
     streetNumber?: string;
     subregion?: string;
-    timezone?: string; // Optionally include timezone if needed
+    // timezone?: string; // Optionally include timezone if needed
   };
   // Add other optional fields as needed
 };
