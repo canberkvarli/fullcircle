@@ -35,7 +35,10 @@ const LocationScreen = () => {
   const [regionName, setRegionName] = useState(
     userData?.location?.city || "Loading..."
   );
-  const [place, setPlace] = useState();
+  const [place, setPlace] = useState<
+    Location.LocationGeocodedAddress[] | undefined
+  >(undefined);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -110,9 +113,8 @@ const LocationScreen = () => {
             place[0].country ||
             "Unknown Location"
         );
-        // TODO: FIX TypeScript and timezone.
         setPlace(place);
-        console.log("PLACE from current Location", place[0]);
+        console.log("PLACE from the current Location", place[0]);
       } else {
         setRegionName("Unknown Location");
       }
@@ -123,10 +125,11 @@ const LocationScreen = () => {
 
   const handleContinue = async () => {
     try {
-      const placeDetails = place[0] || {};
+      const placeDetails: Location.LocationGeocodedAddress =
+        place?.[0] || ({} as Location.LocationGeocodedAddress);
       await updateUserData({
         location: {
-          city: regionName, // Set to the name of the city from regionName
+          city: regionName,
           country: placeDetails.country || "Unknown",
           district: placeDetails.district || "Unknown",
           formattedAddress: placeDetails.formattedAddress || "Unknown",
@@ -137,7 +140,7 @@ const LocationScreen = () => {
           street: placeDetails.street || "Unknown",
           streetNumber: placeDetails.streetNumber || "Unknown",
           subregion: placeDetails.subregion || "Unknown",
-          timezone: placeDetails.timezone || "Unknown", // Handle timezone if needed
+          timezone: placeDetails.timezone || "Unknown",
         },
         latitude: region.latitude,
         longitude: region.longitude,
@@ -167,7 +170,11 @@ const LocationScreen = () => {
       <Text style={styles.regionName}>{regionName}</Text>
       <View style={styles.mapContainer}>
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator
+            size="large"
+            color="#0000ff"
+            style={styles.loadingIndicator}
+          />
         ) : (
           <MapView
             style={styles.map}
@@ -286,6 +293,10 @@ const styles = StyleSheet.create({
     padding: 10,
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingIndicator: {
+    justifyContent: "center",
+    top: "30%",
   },
 });
 
