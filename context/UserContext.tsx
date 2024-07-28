@@ -29,7 +29,7 @@ type UserData = {
   jobTitle?: string;
   sexualOrientation?: string[];
   datePreferences?: string[];
-  ethnicity?: string[];
+  ethnicities?: string[];
   childrenPreference?: string;
   jobLocation?: string;
   educationDegree?: string;

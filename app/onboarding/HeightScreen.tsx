@@ -7,13 +7,77 @@ import {
   TouchableOpacity,
   Animated,
   Alert,
+  FlatList,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
-import { Checkbox } from "expo-checkbox";
+import Checkbox from "expo-checkbox";
 
-const heights = Array.from({ length: 71 }, (_, i) => `${i + 130} cm`);
+const cmHeights = Array.from({ length: 71 }, (_, i) => `${i + 130} cm`);
+const ftHeights = [
+  "2 ft",
+  "2.1 ft",
+  "2.2 ft",
+  "2.3 ft",
+  "2.4 ft",
+  "2.5 ft",
+  "2.6 ft",
+  "2.7 ft",
+  "2.8 ft",
+  "2.9 ft",
+  "3 ft",
+  "3.1 ft",
+  "3.2 ft",
+  "3.3 ft",
+  "3.4 ft",
+  "3.5 ft",
+  "3.6 ft",
+  "3.7 ft",
+  "3.8 ft",
+  "3.9 ft",
+  "4 ft",
+  "4.1 ft",
+  "4.2 ft",
+  "4.3 ft",
+  "4.4 ft",
+  "4.5 ft",
+  "4.6 ft",
+  "4.7 ft",
+  "4.8 ft",
+  "4.9 ft",
+  "5 ft",
+  "5.1 ft",
+  "5.2 ft",
+  "5.3 ft",
+  "5.4 ft",
+  "5.5 ft",
+  "5.6 ft",
+  "5.7 ft",
+  "5.8 ft",
+  "5.9 ft",
+  "6 ft",
+  "6.1 ft",
+  "6.2 ft",
+  "6.3 ft",
+  "6.4 ft",
+  "6.5 ft",
+  "6.6 ft",
+  "6.7 ft",
+  "6.8 ft",
+  "6.9 ft",
+  "7 ft",
+  "7.1 ft",
+  "7.2 ft",
+  "7.3 ft",
+  "7.4 ft",
+  "7.5 ft",
+  "7.6 ft",
+  "7.7 ft",
+  "7.8 ft",
+  "7.9 ft",
+  "8 ft",
+];
 
 function HeightScreen() {
   const {
@@ -24,13 +88,23 @@ function HeightScreen() {
   } = useUserContext();
 
   const [selectedHeight, setSelectedHeight] = useState<string>(
-    userData?.height || heights[0]
+    userData?.height || cmHeights[0]
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData.hiddenFields || {}
   );
+  const [unit, setUnit] = useState<"cm" | "ft">("cm");
 
-  // Function to handle height submission
+  const heights = unit === "cm" ? cmHeights : ftHeights;
+
+  useEffect(() => {
+    if (unit === "cm" && !selectedHeight.includes("cm")) {
+      setSelectedHeight(cmHeights[0]);
+    } else if (unit === "ft" && !selectedHeight.includes("ft")) {
+      setSelectedHeight(ftHeights[0]);
+    }
+  }, [unit]);
+
   const handleHeightSubmit = async () => {
     try {
       const userId = userData.userId;
@@ -49,7 +123,6 @@ function HeightScreen() {
     }
   };
 
-  // Function to handle swipe changes
   const handleSwipeChange = (index: string) => {
     setSelectedHeight(index);
   };
@@ -119,6 +192,9 @@ function HeightScreen() {
     );
   };
 
+  // Use the selected unit's data source
+  const heightData = unit === "cm" ? cmHeights : ftHeights;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
@@ -129,10 +205,33 @@ function HeightScreen() {
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Stand Tall</Text>
-        <Text style={styles.subtitle}>What's your height?</Text>
-        <View style={styles.heightInputs}>{renderHeightPicker(heights)}</View>
+        <View style={styles.unitToggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.unitButton,
+              unit === "cm" && styles.selectedUnitButton,
+            ]}
+            onPress={() => setUnit("cm")}
+          >
+            <Text style={styles.unitButtonText}>CM</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.unitButton,
+              unit === "ft" && styles.selectedUnitButton,
+            ]}
+            onPress={() => setUnit("ft")}
+          >
+            <Text style={styles.unitButtonText}>FT</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.heightInputs}>
+          <Text style={styles.subtitle}>What's your height?</Text>
+          {renderHeightPicker(heightData)}
+        </View>
         <View style={styles.hiddenContainer}>
-          <Text style={styles.hiddenText}>Hide Height Field</Text>
+          <Text style={styles.hiddenText}>Hide From Others</Text>
           <Checkbox
             value={hiddenFields["height"] || false}
             onValueChange={() => toggleHidden("height")}
@@ -157,8 +256,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    justifyContent: "center",
-    alignItems: "center",
   },
   backButton: {
     position: "absolute",
@@ -168,8 +265,27 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 45,
-    textAlign: "center",
+    textAlign: "left",
+    marginTop: 50,
     marginBottom: 30,
+    paddingHorizontal: 16,
+  },
+  unitToggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  unitButton: {
+    padding: 10,
+    marginHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 5,
+  },
+  selectedUnitButton: {
+    backgroundColor: "lightblue",
+  },
+  unitButtonText: {
+    fontSize: 18,
   },
   subtitle: {
     fontSize: 18,
@@ -177,7 +293,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   heightInputs: {
-    flexDirection: "row",
     justifyContent: "center",
     marginBottom: 20,
   },
@@ -190,7 +305,6 @@ const styles = StyleSheet.create({
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     marginTop: 20,
     paddingHorizontal: 16,
   },
@@ -200,6 +314,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
+    left: 10,
   },
   affirmation: {
     marginTop: 20,
