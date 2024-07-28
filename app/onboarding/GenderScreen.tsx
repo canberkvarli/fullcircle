@@ -8,7 +8,7 @@ import {
   View,
   TextInput,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { Checkbox } from "expo-checkbox";
 
@@ -20,8 +20,8 @@ function GenderScreen() {
     userData,
   } = useUserContext();
 
-  const [selectedGenders, setSelectedGenders] = useState<string[]>(
-    userData.genders || []
+  const [selectedGender, setSelectedGender] = useState<string | null>(
+    userData.gender || null
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData.hiddenFields || {}
@@ -29,11 +29,7 @@ function GenderScreen() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const toggleGender = (gender: string) => {
-    setSelectedGenders((prev) =>
-      prev.includes(gender)
-        ? prev.filter((item) => item !== gender)
-        : [...prev, gender]
-    );
+    setSelectedGender((prev) => (prev === gender ? null : gender));
   };
 
   const toggleHidden = (fieldName: string) => {
@@ -44,113 +40,121 @@ function GenderScreen() {
   };
 
   const handleNext = async () => {
-    await updateUserData({ genders: selectedGenders, hiddenFields });
+    await updateUserData({
+      gender: selectedGender || "",
+      hiddenFields,
+    });
     navigateToNextScreen();
   };
 
   const handlePrevious = async () => {
-    await updateUserData({ genders: selectedGenders, hiddenFields });
+    await updateUserData({
+      gender: selectedGender || "",
+      hiddenFields,
+    });
     navigateToPreviousScreen();
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={handlePrevious}>
-        <Ionicons name="chevron-back" size={24} color="black" />
+        <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
-      <Text style={styles.title}>How do you identify?</Text>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <Text style={styles.title}>How do you identify?</Text>
 
-      <TouchableOpacity
-        style={[
-          styles.option,
-          selectedGenders.includes("Man") && styles.optionSelected,
-        ]}
-        onPress={() => toggleGender("Man")}
-      >
-        <Text style={styles.optionTitle}>Man</Text>
-        <Text style={styles.optionSubtitle}>Radiate your masculine energy</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.option,
+            selectedGender === "Man" && styles.optionSelected,
+          ]}
+          onPress={() => toggleGender("Man")}
+        >
+          <Text style={styles.optionTitle}>Man</Text>
+          <Text style={styles.optionSubtitle}>
+            Radiate your masculine energy
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.option,
-          selectedGenders.includes("Woman") && styles.optionSelected,
-        ]}
-        onPress={() => toggleGender("Woman")}
-      >
-        <Text style={styles.optionTitle}>Woman</Text>
-        <Text style={styles.optionSubtitle}>Embrace your feminine essence</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.option,
+            selectedGender === "Woman" && styles.optionSelected,
+          ]}
+          onPress={() => toggleGender("Woman")}
+        >
+          <Text style={styles.optionTitle}>Woman</Text>
+          <Text style={styles.optionSubtitle}>
+            Embrace your feminine essence
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setDropdownOpen(!dropdownOpen)}
-      >
-        <Text style={styles.dropdownButtonText}>
-          {dropdownOpen ? "Hide" : "More options"}
+        <TouchableOpacity
+          style={styles.dropdownButton}
+          onPress={() => setDropdownOpen(!dropdownOpen)}
+        >
+          <Text style={styles.dropdownButtonText}>
+            {dropdownOpen ? "Hide" : "More options"}
+          </Text>
+          <Icon
+            name={dropdownOpen ? "chevron-up" : "chevron-down"}
+            size={24}
+            color="black"
+          />
+        </TouchableOpacity>
+
+        {dropdownOpen && (
+          <View style={styles.dropdown}>
+            {[
+              { title: "Non-binary" },
+              { title: "Genderqueer" },
+              { title: "Agender" },
+              { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
+              {
+                title: "Other",
+                subtitle: "Describe your unique path",
+                input: true,
+              },
+            ].map((option) => (
+              <TouchableOpacity
+                key={option.title}
+                style={[
+                  styles.option,
+                  selectedGender === option.title && styles.optionSelected,
+                ]}
+                onPress={() => toggleGender(option.title)}
+              >
+                <Text style={styles.optionTitle}>{option.title}</Text>
+                {option.subtitle && (
+                  <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+                )}
+                {option.input && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter here"
+                    onChangeText={(text) => setSelectedGender(text)}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.hiddenContainer}>
+          <Text style={styles.hiddenText}>Hide Gender Field</Text>
+          <Checkbox
+            value={hiddenFields["gender"] || false}
+            onValueChange={() => toggleHidden("gender")}
+            style={styles.checkbox}
+          />
+        </View>
+
+        <Text style={styles.affirmation}>
+          In the circle of life, every soul shines uniquely.
         </Text>
-        <Ionicons
-          name={dropdownOpen ? "chevron-up" : "chevron-down"}
-          size={24}
-          color="black"
-        />
-      </TouchableOpacity>
-
-      {dropdownOpen && (
-        <ScrollView style={styles.dropdown}>
-          {[
-            { title: "Non-binary" },
-            { title: "Genderqueer" },
-            { title: "Agender" },
-            { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
-            {
-              title: "Other",
-              subtitle: "Describe your unique path",
-              input: true,
-            },
-          ].map((option) => (
-            <TouchableOpacity
-              key={option.title}
-              style={[
-                styles.option,
-                selectedGenders.includes(option.title) && styles.optionSelected,
-              ]}
-              onPress={() => toggleGender(option.title)}
-            >
-              <Text style={styles.optionTitle}>{option.title}</Text>
-              {option.subtitle && (
-                <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
-              )}
-              {option.input && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter here"
-                  onChangeText={(text) =>
-                    setSelectedGenders((prev) =>
-                      prev.filter((item) => item !== "Other").concat(text)
-                    )
-                  }
-                />
-              )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      <View style={styles.hiddenContainer}>
-        <Text style={styles.hiddenText}>Hide Gender Field</Text>
-        <Checkbox
-          value={hiddenFields["genders"] || false}
-          onValueChange={() => toggleHidden("genders")}
-          style={styles.checkbox}
-        />
-      </View>
-
-      <Text style={styles.affirmation}>
-        In the circle of life, every soul shines uniquely.
-      </Text>
+      </ScrollView>
       <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
-        <Ionicons name="chevron-forward" size={24} color="white" />
+        <Icon name="chevron-right" size={24} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -168,18 +172,24 @@ const styles = StyleSheet.create({
     left: 16,
     zIndex: 1,
   },
+  scrollViewContent: {
+    paddingBottom: 140, // Ensure enough space for the content to scroll
+  },
   title: {
-    fontSize: 30,
+    fontSize: 45,
     textAlign: "left",
-    marginTop: 100,
+    marginTop: 50,
     marginBottom: 30,
     paddingHorizontal: 16,
+    left: 15,
   },
   option: {
     padding: 20,
     margin: 10,
+    left: 30,
     borderRadius: 10,
     borderWidth: 1,
+    width: 270,
     borderColor: "black",
   },
   optionSelected: {
@@ -205,7 +215,6 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     marginTop: 10,
-    maxHeight: 200,
   },
   hiddenContainer: {
     flexDirection: "row",
@@ -222,19 +231,18 @@ const styles = StyleSheet.create({
     height: 20,
   },
   affirmation: {
-    position: "absolute",
-    bottom: 70,
+    marginTop: 20,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
+    position: "absolute",
+    bottom: 70,
   },
   submitButton: {
     position: "absolute",
     bottom: 20,
     right: 20,
-    backgroundColor: "#000",
-    borderRadius: 50,
     padding: 10,
     justifyContent: "center",
     alignItems: "center",

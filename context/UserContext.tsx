@@ -26,7 +26,7 @@ type UserData = {
   regionName?: string;
   longitude?: number;
   latitude?: number;
-  genders?: string[];
+  gender?: string;
   jobTitle?: string;
   sexualOrientation?: string[];
   datePreferences?: string[];
@@ -80,7 +80,7 @@ const initialScreens = [
   "NameScreen",
   "EmailScreen",
   "BirthdateScreen",
-  "AddBasicInfoScreen",
+  // "AddBasicInfoScreen",
   "LocationScreen",
   "GenderScreen",
   "SexualSexualOritentationScreen",
