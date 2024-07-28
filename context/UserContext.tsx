@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
+import { FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
-import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import auth from "@react-native-firebase/auth";
 
 type UserData = {
@@ -73,16 +72,16 @@ type UserContextType = {
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
   "LandingPageScreen",
-  // "LoginSignupScreen",
-  // "PhoneNumberScreen",
-  // "PhoneVerificationScreen",
+  "LoginSignupScreen",
+  "PhoneNumberScreen",
+  "PhoneVerificationScreen",
   // "WelcomeScreen",
-  // "NameScreen",
-  // "EmailScreen",
-  // "BirthdateScreen",
+  "NameScreen",
+  "EmailScreen",
+  "BirthdateScreen",
   // "AddBasicInfoScreen",
-  // "LocationScreen",
-  // "GenderScreen",
+  "LocationScreen",
+  "GenderScreen",
   "SexualOrientationScreen",
   "DatePreferenceScreen",
   "HeightScreen",

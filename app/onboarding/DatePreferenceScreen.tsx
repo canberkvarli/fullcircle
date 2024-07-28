@@ -5,28 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  Switch,
   Alert,
   ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import Checkbox from "expo-checkbox";
 import { useUserContext } from "@/context/UserContext";
 
-const options = [
-  "Straight",
-  "Gay",
-  "Lesbian",
-  "Bisexual",
-  "Asexual",
-  "Demisexual",
-  "Pansexual",
-  "Queer",
-  "Questioning",
-];
+const options = ["Men", "Women", "Everyone"];
 
-const SexualOrientationScreen = () => {
+const DatePreferenceScreen = () => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [showOrientation, setShowOrientation] = useState<boolean>(false);
+  const [hidden, setHidden] = useState(false);
   const {
     userData,
     updateUserData,
@@ -35,14 +25,11 @@ const SexualOrientationScreen = () => {
   } = useUserContext();
 
   useEffect(() => {
-    if (userData.sexualOrientation) {
-      setSelectedOptions(userData.sexualOrientation);
+    if (userData.datePreferences) {
+      setSelectedOptions(userData.datePreferences);
     }
-    if (
-      userData.hiddenFields &&
-      userData.hiddenFields.sexualOrientation !== undefined
-    ) {
-      setShowOrientation(!userData.hiddenFields.sexualOrientation);
+    if (userData.hiddenFields?.datePreferences) {
+      setHidden(true);
     }
   }, [userData]);
 
@@ -65,19 +52,20 @@ const SexualOrientationScreen = () => {
     }
 
     try {
+      const hiddenFields = { ...userData.hiddenFields };
+      if (hidden) {
+        hiddenFields.datePreferences = true;
+      } else {
+        delete hiddenFields.datePreferences;
+      }
+
       await updateUserData({
-        sexualOrientation: selectedOptions,
-        hiddenFields: {
-          ...(userData.hiddenFields || {}),
-          sexualOrientation: !showOrientation,
-        },
+        datePreferences: selectedOptions,
+        hiddenFields,
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert(
-        "Error",
-        "Failed to save sexual orientation: " + error.message
-      );
+      Alert.alert("Error", "Failed to save date preferences: " + error.message);
     }
   };
 
@@ -90,9 +78,8 @@ const SexualOrientationScreen = () => {
         <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <Text style={styles.title}>Love is Love</Text>
-        <Text style={styles.subtitle}>Share your sexual orientation</Text>
-        <Text style={styles.minititle}>Select up to 3</Text>
+        <Text style={styles.title}>Who Do You Want to Date?</Text>
+        <Text style={styles.subtitle}>Choose up to 3</Text>
         <View style={styles.optionsContainer}>
           {options.map((option) => (
             <TouchableOpacity
@@ -107,20 +94,17 @@ const SexualOrientationScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
-        <View style={styles.toggleContainer}>
-          <Text style={styles.toggleLabel}>
-            Show my orientation on my profile
-          </Text>
-          <Switch
-            value={showOrientation}
-            onValueChange={setShowOrientation}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={showOrientation ? "#f5dd4b" : "#f4f3f4"}
+        <View style={styles.hiddenContainer}>
+          <Text style={styles.hiddenText}>Hide from others</Text>
+          <Checkbox
+            value={hidden}
+            onValueChange={setHidden}
+            style={styles.checkbox}
           />
         </View>
       </ScrollView>
       <Text style={styles.affirmation}>
-        Embrace love in all its beautiful forms.
+        Seek connections that nourish your soul.
       </Text>
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Icon name="chevron-right" size={24} />
@@ -147,16 +131,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    marginBottom: 8,
-    textAlign: "center",
+    fontSize: 45,
+    textAlign: "left",
+    marginTop: 50,
+    marginBottom: 30,
+    paddingHorizontal: 16,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  minititle: {
     fontSize: 16,
     marginBottom: 16,
     textAlign: "center",
@@ -183,25 +164,32 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
   },
-  toggleContainer: {
+  hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 20,
+    justifyContent: "space-between",
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
-  toggleLabel: {
-    fontSize: 16,
-    marginRight: 10,
+  hiddenText: {
+    fontSize: 18,
+    marginRight: 8, // Add margin between the text and checkbox
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
   },
   affirmation: {
+    bottom: 50,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    marginBottom: 20,
   },
   submitButton: {
-    alignSelf: "flex-end",
-    marginBottom: 20,
+    position: "absolute",
+    bottom: 20,
+    right: 20,
     borderRadius: 50,
     padding: 10,
     justifyContent: "center",
@@ -209,4 +197,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SexualOrientationScreen;
+export default DatePreferenceScreen;

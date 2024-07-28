@@ -25,6 +25,14 @@ export default function OnboardingStackLayout() {
         name="SexualOrientationScreen"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="DatePreferenceScreen"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HeightScreen"
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="HomeScreen" options={{ headerShown: false }} />
     </Stack>
   );

@@ -89,7 +89,7 @@ function InterestScreen() {
         title="Back"
         onPress={() =>
           router.replace({
-            pathname: "onboarding/SexualSexualOritentationScreen",
+            pathname: "onboarding/SexualOrientationScreen",
             params: {
               userId,
               phoneNumber,
