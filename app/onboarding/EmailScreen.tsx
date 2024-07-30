@@ -181,14 +181,12 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 20,
-    left: 16,
+    bottom: 20,
   },
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
+    marginTop: 40,
     marginBottom: 16,
     paddingHorizontal: 16,
   },

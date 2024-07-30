@@ -171,8 +171,8 @@ function BirthdayScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <OnboardingProgressBar currentScreen="BirthdateScreen" />
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="BirthdateScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
+    marginTop: 40,
     marginBottom: 16,
     paddingHorizontal: 16,
   },

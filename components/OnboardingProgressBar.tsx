@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
-    top: 45,
+    top: 65,
     justifyContent: "space-between",
   },
   stepContainer: {

@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
+    marginTop: 65,
     marginBottom: 30,
     paddingHorizontal: 16,
   },
