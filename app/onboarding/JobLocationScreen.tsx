@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -56,6 +57,7 @@ function JobLocationScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="JobLocationScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -98,12 +100,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
     fontSize: 45,
@@ -114,8 +114,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 16,
-    textAlign: "center",
+    textAlign: "left",
+    paddingHorizontal: 16,
+    marginBottom: 30,
   },
   jobInputContainer: {
     marginBottom: 20,
@@ -143,13 +144,11 @@ const styles = StyleSheet.create({
     left: 10,
   },
   affirmation: {
-    marginTop: 20,
+    top: 280,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
   },
   nextButton: {
     position: "absolute",
