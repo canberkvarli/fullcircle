@@ -8,6 +8,7 @@ import {
   Alert,
   FlatList,
 } from "react-native";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -91,6 +92,7 @@ function EducationScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="EducationScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -113,7 +115,7 @@ function EducationScreen() {
           />
         </View>
         <Text style={styles.affirmation}>
-          Your journey of learning is a path to wisdom.
+          Your journey of learning is a path to wisdom
         </Text>
         <TouchableOpacity
           style={styles.nextButton}
@@ -130,29 +132,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
-    fontSize: 35,
+    fontSize: 45,
     textAlign: "left",
     marginTop: 50,
-    marginBottom: 10,
+    marginBottom: 30,
     paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 16,
-    textAlign: "center",
+    textAlign: "left",
+    paddingHorizontal: 16,
+    marginBottom: 30,
   },
   educationInputs: {
     flex: 1,
     justifyContent: "center",
     marginBottom: 20,
+    bottom: 10,
   },
   optionContainer: {
     padding: 15,
@@ -179,13 +181,12 @@ const styles = StyleSheet.create({
     left: 10,
   },
   affirmation: {
-    marginTop: 20,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
+    paddingBottom: 50,
+    marginTop: 10,
   },
   nextButton: {
     position: "absolute",

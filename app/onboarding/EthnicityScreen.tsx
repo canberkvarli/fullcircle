@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     marginVertical: 5,
-    width: "70%",
+    width: "100%",
   },
   selectedEthnicity: {
     backgroundColor: "lightblue",
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     marginVertical: 5,
-    width: "70%", // Ensure full width in the container
+    width: "100%", // Ensure full width in the container
   },
   hiddenContainer: {
     flexDirection: "row",
