@@ -97,6 +97,25 @@ function SpiritualScreen() {
     }));
   };
 
+  const renderItem = ({ item }: { item: string }) => {
+    const isSelected = selectedPractices.includes(item);
+    return (
+      <TouchableOpacity
+        style={[
+          styles.optionContainer,
+          isSelected && styles.selectedOptionContainer,
+        ]}
+        onPress={() => togglePractice(item)}
+      >
+        <Text
+          style={[styles.optionText, isSelected && styles.selectedOptionText]}
+        >
+          {item}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
@@ -111,42 +130,25 @@ function SpiritualScreen() {
         <Text style={styles.subtitle}>
           Which spiritual practices resonate with you?
         </Text>
-        <View style={styles.spiritualInputs}>
-          <FlatList
-            data={spiritualPractices}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => {
-              const isSelected = selectedPractices.includes(item);
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.optionContainer,
-                    isSelected && styles.selectedOptionContainer,
-                  ]}
-                  onPress={() => togglePractice(item)}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      isSelected && styles.selectedOptionText,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-            contentContainerStyle={{ paddingVertical: 20 }}
-          />
-          <View style={styles.otherInputContainer}>
-            <TextInput
-              style={styles.otherInput}
-              placeholder="Other"
-              value={otherPractice}
-              onChangeText={setOtherPractice}
-            />
-          </View>
-        </View>
+        <FlatList
+          data={[...spiritualPractices, "Other"]}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) =>
+            item === "Other" ? (
+              <View style={styles.optionContainer}>
+                <TextInput
+                  style={[styles.optionText]}
+                  placeholder="Other"
+                  value={otherPractice}
+                  onChangeText={setOtherPractice}
+                />
+              </View>
+            ) : (
+              renderItem({ item })
+            )
+          }
+          contentContainerStyle={styles.spiritualInputs}
+        />
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide From Others</Text>
           <Checkbox
@@ -192,15 +194,15 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   spiritualInputs: {
-    flex: 1,
-    justifyContent: "center",
-    marginBottom: 20,
+    paddingVertical: 20,
   },
   optionContainer: {
     padding: 15,
     marginVertical: 5,
     borderWidth: 1,
     borderRadius: 5,
+    width: "100%",
+    bottom: 20,
   },
   selectedOptionContainer: {
     backgroundColor: "lightblue",
@@ -211,16 +213,6 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: "black",
-  },
-  otherInputContainer: {
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
-  otherInput: {
-    fontSize: 18,
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
   },
   hiddenContainer: {
     flexDirection: "row",
@@ -237,13 +229,12 @@ const styles = StyleSheet.create({
     left: 10,
   },
   affirmation: {
-    marginTop: 20,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
+    paddingBottom: 50,
+    marginTop: 10,
   },
   nextButton: {
     position: "absolute",
