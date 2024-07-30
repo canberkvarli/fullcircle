@@ -11,6 +11,7 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { Checkbox } from "expo-checkbox";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 
 const options = [
   "Straight",
@@ -89,6 +90,7 @@ const SexualOrientationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingProgressBar currentScreen="SexualOrientationScreen" />
       <TouchableOpacity
         style={styles.backButton}
         onPress={navigateToPreviousScreen}
@@ -139,26 +141,23 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   scrollViewContent: {
     paddingBottom: 100,
-    justifyContent: "center",
-    alignItems: "center",
   },
   title: {
     fontSize: 45,
-    textAlign: "center",
-    marginTop: 50,
-    marginBottom: 30,
+    textAlign: "left",
+    marginTop: 40,
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
   subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 16,
+    fontSize: 18,
+    textAlign: "left",
+    paddingHorizontal: 16,
+    marginBottom: 30,
   },
   minititle: {
     fontSize: 16,
@@ -190,7 +189,6 @@ const styles = StyleSheet.create({
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     marginTop: 20,
     paddingHorizontal: 16,
   },
@@ -200,6 +198,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
+    marginLeft: 10,
   },
   affirmation: {
     marginTop: 20,

@@ -65,11 +65,11 @@ function GenderScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <OnboardingProgressBar currentScreen="GenderScreen" />
-      <TouchableOpacity style={styles.backButton} onPress={handlePrevious}>
-        <Icon name="chevron-left" size={24} color="black" />
-      </TouchableOpacity>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <OnboardingProgressBar currentScreen="GenderScreen" />
+        <TouchableOpacity style={styles.backButton} onPress={handlePrevious}>
+          <Icon name="chevron-left" size={24} color="black" />
+        </TouchableOpacity>
         <Text style={styles.title}>How do you identify?</Text>
 
         <TouchableOpacity
