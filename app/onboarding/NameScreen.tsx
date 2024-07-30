@@ -71,7 +71,7 @@ function NameScreen() {
         </Text>
       </TouchableOpacity>
       <Text style={styles.affirmation}>
-        Every name carries a unique vibration.
+        Every name carries a unique vibration
       </Text>
       <Icon
         style={styles.submitButton}
@@ -117,8 +117,7 @@ const styles = StyleSheet.create({
     color: "blue",
   },
   affirmation: {
-    position: "absolute",
-    bottom: 70,
+    top: 240,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",

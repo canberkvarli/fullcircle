@@ -165,7 +165,7 @@ const LocationScreen = () => {
       </TouchableOpacity>
       <Text style={styles.title}>Where are you rooted?</Text>
       <Text style={styles.subtitle}>
-        Share your location to connect with nearby souls.
+        Share your location to connect with nearby souls
       </Text>
       <Text style={styles.regionName}>{regionName}</Text>
       <View style={styles.mapContainer}>
@@ -277,9 +277,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   affirmation: {
-    position: "absolute",
-    left: 10,
-    bottom: 70,
+    top: 10,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",

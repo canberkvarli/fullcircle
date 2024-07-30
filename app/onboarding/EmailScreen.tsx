@@ -219,9 +219,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   affirmation: {
-    position: "absolute",
-    left: 10,
-    bottom: 70,
+    top: 300,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",

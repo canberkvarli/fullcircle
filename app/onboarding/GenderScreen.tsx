@@ -11,6 +11,7 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { Checkbox } from "expo-checkbox";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 
 function GenderScreen() {
   const {
@@ -64,6 +65,7 @@ function GenderScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingProgressBar currentScreen="GenderScreen" />
       <TouchableOpacity style={styles.backButton} onPress={handlePrevious}>
         <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
@@ -148,7 +150,7 @@ function GenderScreen() {
         )}
 
         <View style={styles.hiddenContainer}>
-          <Text style={styles.hiddenText}>Hide Gender Field</Text>
+          <Text style={styles.hiddenText}>Hide from others</Text>
           <Checkbox
             value={hiddenFields.gender || false}
             onValueChange={() => toggleHidden("gender")}
@@ -157,7 +159,7 @@ function GenderScreen() {
         </View>
 
         <Text style={styles.affirmation}>
-          In the circle of life, every soul shines uniquely.
+          In the circle of life, every soul shines uniquely
         </Text>
       </ScrollView>
       <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
@@ -174,21 +176,17 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   scrollViewContent: {
-    paddingBottom: 140, // Ensure enough space for the content to scroll
+    paddingBottom: 140,
   },
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
-    marginBottom: 30,
+    marginTop: 40,
+    marginBottom: 16,
     paddingHorizontal: 16,
-    left: 15,
   },
   option: {
     padding: 20,
@@ -226,7 +224,6 @@ const styles = StyleSheet.create({
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     marginTop: 20,
     paddingHorizontal: 16,
   },
@@ -236,15 +233,14 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 20,
     height: 20,
+    marginLeft: 10,
   },
   affirmation: {
-    marginTop: 20,
+    top: 110,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
   },
   submitButton: {
     position: "absolute",
