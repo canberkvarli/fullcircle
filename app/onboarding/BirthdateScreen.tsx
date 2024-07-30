@@ -9,6 +9,7 @@ import {
   Animated,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 
@@ -170,6 +171,7 @@ function BirthdayScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <OnboardingProgressBar currentScreen="BirthdateScreen" />
       <SafeAreaView style={styles.container}>
         <TouchableOpacity
           style={styles.backButton}

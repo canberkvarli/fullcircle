@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
+import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 
 function NameScreen() {
   const { userData, navigateToNextScreen, updateUserData } = useUserContext();
@@ -46,6 +47,7 @@ function NameScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingProgressBar currentScreen="NameScreen" />
       <Text style={styles.title}>What's your name?</Text>
       <TextInput
         style={styles.input}

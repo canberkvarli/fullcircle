@@ -14,6 +14,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import RadioIcon from "react-native-vector-icons/Fontisto";
 import NavigationIcon from "react-native-vector-icons/FontAwesome";
+import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { useUserContext } from "../../context/UserContext";
 
 function EmailScreen() {
@@ -45,7 +46,10 @@ function EmailScreen() {
     }
 
     try {
-      await updateUserData({ email, marketingRequested: marketingRequested ? false : true });
+      await updateUserData({
+        email,
+        marketingRequested: marketingRequested ? false : true,
+      });
       setModalVisible(true);
     } catch (error: any) {
       Alert.alert("Error", "Failed to save email: " + error.message);
@@ -92,6 +96,7 @@ function EmailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingProgressBar currentScreen="EmailScreen" />
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {

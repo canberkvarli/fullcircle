@@ -1,0 +1,18 @@
+{
+    "NameScreen": "user",
+    "EmailScreen": "envelope",
+    "BirthdateScreen": "calendar",
+    "LocationScreen": "map-marker",
+    "GenderScreen": "transgender",
+    "SexualOrientationScreen": "heart",
+    "DatePreferenceScreen": "calendar-day",
+    "HeightScreen": "arrows-alt-v",
+    "EthnicityScreen": "users",
+    "FamilyVisionScreen": "child",
+    "JobLocationScreen": "briefcase",
+    "JobTitleScreen": "user-tie",
+    "EducationScreen": "graduation-cap",
+    "SpiritualScreen": "spa",
+    "PhotosScreen": "camera"
+  }
+  
