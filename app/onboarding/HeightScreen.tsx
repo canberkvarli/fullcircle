@@ -11,6 +11,7 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Checkbox from "expo-checkbox";
 
 const cmHeights = Array.from({ length: 131 }, (_, i) => `${i + 130} cm`);
@@ -200,6 +201,7 @@ function HeightScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="HeightScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -241,7 +243,7 @@ function HeightScreen() {
           />
         </View>
         <Text style={styles.affirmation}>
-          Every inch of you is perfectly designed.
+          Every inch of you is perfectly designed
         </Text>
         <TouchableOpacity
           style={styles.nextButton}
@@ -258,18 +260,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
-    marginBottom: 30,
+    marginTop: 40,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   unitToggleContainer: {
@@ -306,8 +306,8 @@ const styles = StyleSheet.create({
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 30,
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
   hiddenText: {
     fontSize: 16,
@@ -322,9 +322,11 @@ const styles = StyleSheet.create({
     height: 20,
   },
   affirmation: {
-    fontSize: 18,
+    top: 110,
     textAlign: "center",
-    marginBottom: 20,
+    width: "100%",
+    fontStyle: "italic",
+    color: "gray",
   },
   nextButton: {
     position: "absolute",
