@@ -23,9 +23,9 @@ function GenderScreen() {
   const [selectedGender, setSelectedGender] = useState<string | null>(
     userData?.gender || null
   );
-  const [hiddenFields, setHiddenFields] = useState<string[]>(
-    userData?.hiddenFields || []
-  );
+  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
+    gender: userData?.hiddenFields?.gender || false,
+  });
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const toggleGender = (gender: string) => {
@@ -33,11 +33,10 @@ function GenderScreen() {
   };
 
   const toggleHidden = (fieldName: string) => {
-    setHiddenFields((prev) =>
-      prev.includes(fieldName)
-        ? prev.filter((field) => field !== fieldName)
-        : [...prev, fieldName]
-    );
+    setHiddenFields((prev) => ({
+      ...prev,
+      [fieldName]: !prev[fieldName],
+    }));
   };
 
   const handleNext = async () => {
@@ -57,9 +56,10 @@ function GenderScreen() {
   };
 
   useEffect(() => {
-    setHiddenFields((prev) =>
-      prev.includes("gender") ? prev : [...prev, "gender"]
-    );
+    setHiddenFields((prev) => ({
+      ...prev,
+      gender: prev.gender !== undefined ? prev.gender : false,
+    }));
   }, []);
 
   return (
@@ -150,7 +150,7 @@ function GenderScreen() {
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide Gender Field</Text>
           <Checkbox
-            value={hiddenFields.includes("gender")}
+            value={hiddenFields.gender || false}
             onValueChange={() => toggleHidden("gender")}
             style={styles.checkbox}
           />
@@ -166,6 +166,7 @@ function GenderScreen() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

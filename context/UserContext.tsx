@@ -35,7 +35,7 @@ type UserData = {
   educationDegree?: string;
   spiritualPractices?: string[];
   photos?: string[];
-  hiddenFields?: string[];
+  hiddenFields?: { [key: string]: boolean };
   location?: {
     city?: string;
     country?: string;
@@ -48,8 +48,8 @@ type UserData = {
     streetNumber?: string;
     subregion?: string;
     // timezone?: string; // Optionally include timezone if needed
+    // Add other optional fields as needed
   };
-  // Add other optional fields as needed
 };
 
 type UserContextType = {
@@ -105,7 +105,7 @@ const initialUserData: UserData = {
   areaCode: "",
   number: "",
   currentOnboardingScreen: initialScreens[0],
-  hiddenFields: [],
+  hiddenFields: {},
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -203,42 +203,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateUserData = async (data: Partial<UserData>) => {
-    console.log("Updating user data with...", data);
     try {
-      // Ensure that userId is included in the data
       const userIdToUpdate = data.userId || userData.userId;
       if (!userIdToUpdate) {
         throw new Error("User ID is required to update data");
       }
 
-      // Set document reference
       const docRef = doc(FIRESTORE, "users", userIdToUpdate);
-
-      // Fetch the current document to get existing hiddenFields
-      const docSnap = await getDoc(docRef);
-      const existingData = docSnap.exists()
-        ? (docSnap.data() as Partial<UserData>)
-        : {};
-
+      const docSnapshot = await getDoc(docRef);
+      let existingData: Record<string, any> = {};
+      if (docSnapshot.exists()) {
+        existingData = docSnapshot.data();
+      }
       // Merge hiddenFields
-      const mergedHiddenFields = Array.from(
-        new Set([
-          ...(existingData.hiddenFields || []),
-          ...(data.hiddenFields || []),
-        ])
-      );
+      let updatedHiddenFields = existingData.hiddenFields || {};
+      if (data.hiddenFields) {
+        updatedHiddenFields = {
+          ...updatedHiddenFields,
+          ...data.hiddenFields,
+        };
+      }
 
-      // Update with merged hiddenFields
       const updatedData = {
+        ...existingData,
         ...data,
-        hiddenFields: mergedHiddenFields,
+        hiddenFields: updatedHiddenFields,
       };
 
-      // Use merge to update existing document or create a new one if it does not exist
       await setDoc(docRef, updatedData, { merge: true });
 
       // Update local state
-      setUserData((prevData) => ({ ...prevData, ...updatedData }));
+      setUserData((prevData) => {
+        const newData = { ...prevData, ...data };
+        newData.hiddenFields = updatedHiddenFields;
+        return newData;
+      });
     } catch (error) {
       console.error("Failed to update user data: ", error);
     }

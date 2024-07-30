@@ -16,9 +16,18 @@ const DatePreferenceScreen: React.FC = () => {
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
     userData?.datePreferences || []
   );
-  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
-    userData?.hiddenFields || {}
-  );
+  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
+    datePreferences: userData?.hiddenFields?.datePreferences || false,
+  });
+
+  useEffect(() => {
+    setHiddenFields((prev) => ({
+      ...prev,
+      datePreferences:
+        prev.datePreferences !== undefined ? prev.datePreferences : false,
+    }));
+    setSelectedPreferences(userData?.datePreferences || []);
+  }, [userData]);
 
   const handlePreferenceChange = (preference: string) => {
     setSelectedPreferences((prevPreferences) =>
@@ -30,22 +39,11 @@ const DatePreferenceScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      const userId = userData.userId;
-      if (!userId || typeof userId !== "string") {
-        Alert.alert("Error", "Invalid user ID");
-        return;
-      }
-
-      const updatedHiddenFields = {
-        ...userData.hiddenFields,
-        datePreferences: hiddenFields.datePreferences,
-      };
-
       await updateUserData({
         datePreferences: selectedPreferences,
         hiddenFields: {
           ...(userData.hiddenFields || {}),
-          datePreferences: !!selectedPreferences,
+          datePreferences: hiddenFields.datePreferences,
         },
       });
       navigateToNextScreen();
@@ -127,7 +125,7 @@ const DatePreferenceScreen: React.FC = () => {
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide From Others</Text>
           <Checkbox
-            value={hiddenFields["datePreferences"] || false}
+            value={hiddenFields.datePreferences || false}
             onValueChange={() => toggleHidden("datePreferences")}
             style={styles.checkbox}
           />

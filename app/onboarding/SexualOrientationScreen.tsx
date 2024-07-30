@@ -33,22 +33,26 @@ const SexualOrientationScreen = () => {
   } = useUserContext();
 
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [hiddenFields, setHiddenFields] = useState<string[]>(
-    userData?.hiddenFields || []
-  );
+  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
+    sexualOrientation: userData?.hiddenFields?.sexualOrientation || false,
+  });
 
   useEffect(() => {
+    setHiddenFields((prev) => ({
+      ...prev,
+      sexualOrientation:
+        prev.sexualOrientation !== undefined ? prev.sexualOrientation : false,
+    }));
     if (userData.sexualOrientation) {
       setSelectedOptions(userData.sexualOrientation);
     }
   }, [userData]);
 
   const toggleHidden = (fieldName: string) => {
-    setHiddenFields((prev) =>
-      prev.includes(fieldName)
-        ? prev.filter((field) => field !== fieldName)
-        : [...prev, fieldName]
-    );
+    setHiddenFields((prev) => ({
+      ...prev,
+      [fieldName]: !prev[fieldName],
+    }));
   };
 
   const toggleOption = (option: string) => {
@@ -112,7 +116,7 @@ const SexualOrientationScreen = () => {
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide from others</Text>
           <Checkbox
-            value={hiddenFields.includes("sexualOrientation")}
+            value={hiddenFields.sexualOrientation || false}
             onValueChange={() => toggleHidden("sexualOrientation")}
             style={styles.checkbox}
           />

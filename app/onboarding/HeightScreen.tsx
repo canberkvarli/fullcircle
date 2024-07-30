@@ -15,16 +15,67 @@ import Checkbox from "expo-checkbox";
 
 const cmHeights = Array.from({ length: 131 }, (_, i) => `${i + 130} cm`);
 const ftHeights = [
-  "2 ft", "2.1 ft", "2.2 ft", "2.3 ft", "2.4 ft", "2.5 ft",
-  "2.6 ft", "2.7 ft", "2.8 ft", "2.9 ft", "3 ft", "3.1 ft",
-  "3.2 ft", "3.3 ft", "3.4 ft", "3.5 ft", "3.6 ft", "3.7 ft",
-  "3.8 ft", "3.9 ft", "4 ft", "4.1 ft", "4.2 ft", "4.3 ft",
-  "4.4 ft", "4.5 ft", "4.6 ft", "4.7 ft", "4.8 ft", "4.9 ft",
-  "5 ft", "5.1 ft", "5.2 ft", "5.3 ft", "5.4 ft", "5.5 ft",
-  "5.6 ft", "5.7 ft", "5.8 ft", "5.9 ft", "6 ft", "6.1 ft",
-  "6.2 ft", "6.3 ft", "6.4 ft", "6.5 ft", "6.6 ft", "6.7 ft",
-  "6.8 ft", "6.9 ft", "7 ft", "7.1 ft", "7.2 ft", "7.3 ft",
-  "7.4 ft", "7.5 ft", "7.6 ft", "7.7 ft", "7.8 ft", "7.9 ft", "8 ft",
+  "2 ft",
+  "2.1 ft",
+  "2.2 ft",
+  "2.3 ft",
+  "2.4 ft",
+  "2.5 ft",
+  "2.6 ft",
+  "2.7 ft",
+  "2.8 ft",
+  "2.9 ft",
+  "3 ft",
+  "3.1 ft",
+  "3.2 ft",
+  "3.3 ft",
+  "3.4 ft",
+  "3.5 ft",
+  "3.6 ft",
+  "3.7 ft",
+  "3.8 ft",
+  "3.9 ft",
+  "4 ft",
+  "4.1 ft",
+  "4.2 ft",
+  "4.3 ft",
+  "4.4 ft",
+  "4.5 ft",
+  "4.6 ft",
+  "4.7 ft",
+  "4.8 ft",
+  "4.9 ft",
+  "5 ft",
+  "5.1 ft",
+  "5.2 ft",
+  "5.3 ft",
+  "5.4 ft",
+  "5.5 ft",
+  "5.6 ft",
+  "5.7 ft",
+  "5.8 ft",
+  "5.9 ft",
+  "6 ft",
+  "6.1 ft",
+  "6.2 ft",
+  "6.3 ft",
+  "6.4 ft",
+  "6.5 ft",
+  "6.6 ft",
+  "6.7 ft",
+  "6.8 ft",
+  "6.9 ft",
+  "7 ft",
+  "7.1 ft",
+  "7.2 ft",
+  "7.3 ft",
+  "7.4 ft",
+  "7.5 ft",
+  "7.6 ft",
+  "7.7 ft",
+  "7.8 ft",
+  "7.9 ft",
+  "8 ft",
 ];
 
 function HeightScreen() {
@@ -38,12 +89,10 @@ function HeightScreen() {
   const [selectedHeight, setSelectedHeight] = useState<string>(
     userData?.height || cmHeights[0]
   );
-  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
-    userData.hiddenFields || {}
-  );
+  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
+    height: userData?.hiddenFields?.height || false,
+  });
   const [unit, setUnit] = useState<"cm" | "ft">("cm");
-
-  const heights = unit === "cm" ? cmHeights : ftHeights;
 
   useEffect(() => {
     if (unit === "cm" && !selectedHeight.includes("cm")) {
@@ -61,13 +110,11 @@ function HeightScreen() {
         return;
       }
 
-      const updatedHiddenFields = {
-        ...userData.hiddenFields,
-        height: hiddenFields.height,
-      };
-
       await updateUserData({
-        hiddenFields: updatedHiddenFields,
+        hiddenFields: {
+          ...userData.hiddenFields,
+          height: hiddenFields.height,
+        },
         height: selectedHeight,
       });
       navigateToNextScreen();
