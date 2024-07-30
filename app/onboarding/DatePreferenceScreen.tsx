@@ -4,6 +4,8 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import Checkbox from "expo-checkbox";
 import { useUserContext } from "../../context/UserContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const DatePreferenceScreen: React.FC = () => {
   const {
@@ -61,7 +63,8 @@ const DatePreferenceScreen: React.FC = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="DatePreferenceScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -133,7 +136,7 @@ const DatePreferenceScreen: React.FC = () => {
         <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
           <Icon name="chevron-right" size={24} />
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </GestureHandlerRootView>
   );
 };
@@ -142,30 +145,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 40,
   },
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
-    marginBottom: 30,
+    marginTop: 40,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 18,
     textAlign: "left",
-    marginBottom: 20,
     paddingHorizontal: 16,
+    marginBottom: 30,
   },
   preferenceContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginBottom: 20,
+    marginBottom: 30,
   },
   preferenceButton: {
     padding: 10,
@@ -184,8 +185,8 @@ const styles = StyleSheet.create({
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 30,
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
   hiddenText: {
     fontSize: 16,

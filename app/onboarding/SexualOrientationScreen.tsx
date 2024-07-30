@@ -125,7 +125,7 @@ const SexualOrientationScreen = () => {
         </View>
       </ScrollView>
       <Text style={styles.affirmation}>
-        Embrace love in all its beautiful forms.
+        Embrace love in all its beautiful forms
       </Text>
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Icon name="chevron-right" size={24} />
@@ -201,13 +201,11 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   affirmation: {
-    marginTop: 20,
+    bottom: 40,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
   },
   submitButton: {
     position: "absolute",
