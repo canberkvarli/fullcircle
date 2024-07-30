@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, SafeAreaView } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import onboardingProgressBarIcons from "../assets/icons/onboardingProgressBarIcons.json";
 
@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
+    top: 45,
     justifyContent: "space-between",
   },
   stepContainer: {

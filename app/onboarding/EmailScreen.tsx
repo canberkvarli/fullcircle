@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   Text,
@@ -23,7 +23,6 @@ function EmailScreen() {
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
-    saveProgress,
   } = useUserContext();
   const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(false);
@@ -183,9 +182,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 40,
+    top: 20,
     left: 16,
-    zIndex: 1,
   },
   title: {
     fontSize: 45,
@@ -224,12 +222,12 @@ const styles = StyleSheet.create({
   },
   affirmation: {
     position: "absolute",
-    bottom: 85,
+    left: 10,
+    bottom: 70,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    left: 15,
   },
   submitButton: {
     position: "absolute",
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // Modal styles
   modalContainer: {
     flex: 1,
     justifyContent: "center",

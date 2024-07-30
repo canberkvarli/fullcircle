@@ -206,24 +206,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    justifyContent: "center",
-    alignItems: "center",
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 45,
+    textAlign: "left",
+    marginTop: 50,
     marginBottom: 16,
-    textAlign: "center",
+    paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 16,
-    textAlign: "center",
+    textAlign: "left",
+    paddingHorizontal: 16,
+    marginBottom: 30,
   },
   dateInputs: {
     flexDirection: "row",
@@ -249,11 +248,12 @@ const styles = StyleSheet.create({
   },
   affirmation: {
     position: "absolute",
-    bottom: 70,
+    bottom: 85,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
+    left: 15,
   },
   nextButton: {
     position: "absolute",
