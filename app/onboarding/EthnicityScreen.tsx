@@ -10,6 +10,7 @@ import {
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { Checkbox } from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
@@ -87,6 +88,7 @@ const EthnicityScreen = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="EthnicityScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -94,7 +96,7 @@ const EthnicityScreen = () => {
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Celebrate your heritage</Text>
-        <ScrollView style={styles.ethnicityInputs}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {ethnicities.map((ethnicity) => (
             <TouchableOpacity
               key={ethnicity}
@@ -124,7 +126,7 @@ const EthnicityScreen = () => {
           />
         </View>
         <Text style={styles.affirmation}>
-          Your heritage is a rich tapestry of your identity.
+          Your heritage is a rich tapestry of your identity
         </Text>
         <TouchableOpacity
           style={styles.nextButton}
@@ -141,29 +143,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
-    fontSize: 35,
+    fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
-    marginBottom: 10,
+    marginTop: 40,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
-  ethnicityInputs: {
-    marginTop: 20,
-    marginBottom: 20,
+  scrollContainer: {
+    paddingBottom: 20,
+    alignItems: "center",
   },
   ethnicityOption: {
     padding: 12,
     borderWidth: 1,
     borderRadius: 5,
     marginVertical: 5,
+    width: "70%",
   },
   selectedEthnicity: {
     backgroundColor: "lightblue",
@@ -176,12 +177,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     marginVertical: 5,
+    width: "70%", // Ensure full width in the container
   },
   hiddenContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
     paddingHorizontal: 16,
+    marginTop: 10,
   },
   hiddenText: {
     fontSize: 18,
@@ -196,13 +198,13 @@ const styles = StyleSheet.create({
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
+    paddingBottom: 50,
+    marginTop: 10,
   },
   nextButton: {
     position: "absolute",
-    bottom: 20,
-    right: 20,
+    bottom: 16,
+    right: 16,
     padding: 10,
     justifyContent: "center",
     alignItems: "center",
