@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
@@ -62,6 +63,7 @@ function FamilyVisionScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="FamilyVisionScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -100,7 +102,7 @@ function FamilyVisionScreen() {
           />
         </View>
         <Text style={styles.affirmation}>
-          Your vision of family is sacred and unique.
+          Your vision of family is sacred and unique
         </Text>
         <TouchableOpacity
           style={styles.nextButton}
@@ -117,24 +119,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
-    marginBottom: 30,
+    marginTop: 40,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 16,
-    textAlign: "center",
+    textAlign: "left",
+    paddingHorizontal: 16,
+    marginBottom: 30,
   },
   optionsContainer: {
     marginBottom: 20,
@@ -170,13 +171,11 @@ const styles = StyleSheet.create({
     left: 10,
   },
   affirmation: {
-    marginTop: 20,
+    top: 140,
     textAlign: "center",
     width: "100%",
     fontStyle: "italic",
     color: "gray",
-    position: "absolute",
-    bottom: 70,
   },
   nextButton: {
     position: "absolute",
