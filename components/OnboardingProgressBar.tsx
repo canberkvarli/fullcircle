@@ -1,9 +1,24 @@
 import React from "react";
-import { View, StyleSheet, SafeAreaView } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { View, StyleSheet } from "react-native";
+import * as FontAwesome from "react-native-vector-icons/FontAwesome";
+import * as MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import onboardingProgressBarIcons from "../assets/icons/onboardingProgressBarIcons.json";
 
-function OnboardingProgressBar({ currentScreen }: { currentScreen: string }) {
+const iconLibraries = {
+  FontAwesome,
+  MaterialCommunityIcons,
+};
+
+interface IconConfig {
+  type: keyof typeof iconLibraries;
+  name: string;
+}
+
+const OnboardingProgressBar = ({
+  currentScreen,
+}: {
+  currentScreen: string;
+}) => {
   const onboardingScreens = [
     "NameScreen",
     "EmailScreen",
@@ -26,26 +41,29 @@ function OnboardingProgressBar({ currentScreen }: { currentScreen: string }) {
 
   return (
     <View style={styles.container}>
-      {onboardingScreens.map((screen, index) => (
-        <View key={screen} style={styles.stepContainer}>
-          {index === currentIndex ? (
-            <Icon
-              name={
-                onboardingProgressBarIcons[
-                  screen as keyof typeof onboardingProgressBarIcons
-                ]
-              }
-              size={24}
-              color="blue" // Icon color for the current screen
-            />
-          ) : (
-            <View style={styles.dot} />
-          )}
-        </View>
-      ))}
+      {onboardingScreens.map((screen, index) => {
+        const iconConfig = onboardingProgressBarIcons[
+          screen as keyof typeof onboardingProgressBarIcons
+        ] as unknown as IconConfig;
+
+        if (!iconConfig) return <View key={screen} style={styles.dot} />;
+
+        const { type, name } = iconConfig;
+        const IconComponent = iconLibraries[type]?.default;
+
+        return (
+          <View key={screen} style={styles.stepContainer}>
+            {index === currentIndex ? (
+              <IconComponent name={name} size={24} color="blue" />
+            ) : (
+              <View style={styles.dot} />
+            )}
+          </View>
+        );
+      })}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -63,9 +81,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 6,
     backgroundColor: "gray",
-  },
-  completedLine: {
-    backgroundColor: "blue",
   },
 });
 

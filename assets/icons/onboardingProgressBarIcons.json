@@ -1,18 +1,17 @@
 {
-    "NameScreen": "user",
-    "EmailScreen": "envelope",
-    "BirthdateScreen": "calendar",
-    "LocationScreen": "map-marker",
-    "GenderScreen": "transgender",
-    "SexualOrientationScreen": "heart",
-    "DatePreferenceScreen": "star",
-    "HeightScreen": "tree",
-    "EthnicityScreen": "pagelines",
-    "FamilyVisionScreen": "child",
-    "JobLocationScreen": "briefcase",
-    "JobTitleScreen": "pied-piper-alt",
-    "EducationScreen": "graduation-cap",
-    "SpiritualScreen": "spa",
-    "PhotosScreen": "camera"
-  }
-  
+  "NameScreen": { "type": "FontAwesome", "name": "user" },
+  "EmailScreen": { "type": "FontAwesome", "name": "envelope" },
+  "BirthdateScreen": { "type": "FontAwesome", "name": "birthday-cake" },
+  "LocationScreen": { "type": "FontAwesome", "name": "map-marker" },
+  "GenderScreen": { "type": "FontAwesome", "name": "venus-mars" },
+  "SexualOrientationScreen": { "type": "FontAwesome", "name": "heart" },
+  "DatePreferenceScreen": { "type": "FontAwesome", "name": "calendar" },
+  "HeightScreen": { "type": "FontAwesome", "name": "arrows-v" },
+  "EthnicityScreen": { "type": "FontAwesome", "name": "globe" },
+  "FamilyVisionScreen": { "type": "FontAwesome", "name": "child" },
+  "JobLocationScreen": { "type": "FontAwesome", "name": "briefcase" },
+  "JobTitleScreen": { "type": "FontAwesome", "name": "id-badge" },
+  "EducationScreen": { "type": "FontAwesome", "name": "graduation-cap" },
+  "SpiritualScreen": { "type": "MaterialCommunityIcons", "name": "meditation" },
+  "PhotosScreen": { "type": "FontAwesome", "name": "camera" }
+}
