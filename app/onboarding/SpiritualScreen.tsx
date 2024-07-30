@@ -9,6 +9,7 @@ import {
   Alert,
   FlatList,
 } from "react-native";
+import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -99,6 +100,7 @@ function SpiritualScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        <OnboardingProgressBar currentScreen="SpiritualScreen" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -171,24 +173,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
+    bottom: 20,
   },
   title: {
-    fontSize: 35,
+    fontSize: 45,
     textAlign: "left",
-    marginTop: 50,
-    marginBottom: 10,
+    marginTop: 40,
+    marginBottom: 16,
     paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 16,
-    textAlign: "center",
+    textAlign: "left",
+    paddingHorizontal: 16,
+    marginBottom: 30,
   },
   spiritualInputs: {
     flex: 1,

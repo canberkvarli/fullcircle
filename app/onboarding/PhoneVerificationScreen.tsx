@@ -147,7 +147,6 @@ function PhoneVerificationScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
-        style={styles.backButton}
         onPress={() =>
           router.replace({
             pathname: "onboarding/PhoneNumberScreen",
@@ -198,21 +197,15 @@ function PhoneVerificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    padding: 16,
     marginTop: 25,
-  },
-  backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 1,
   },
   title: {
     fontSize: 45,
     textAlign: "left",
-    marginTop: 16,
+    marginTop: 40,
     marginBottom: 16,
-    marginLeft: 40,
+    paddingHorizontal: 16,
   },
   subtitleContainer: {
     flexDirection: "row",

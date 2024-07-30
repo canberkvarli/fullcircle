@@ -56,14 +56,12 @@ function PhoneNumberScreen(): JSX.Element {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0} // Adjust as needed
       >
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.replace("onboarding/LoginSignupScreen")}
-          >
-            <Icon name="chevron-left" size={24} color="black" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.replace("onboarding/LoginSignupScreen")}
+        >
+          <Icon name="chevron-left" size={24} color="black" />
+        </TouchableOpacity>
         <Text style={styles.title}>Your Journey Begins Here</Text>
         <View style={styles.mainContent}>
           <Text style={styles.subtitle}>Enter your phone number to start.</Text>
@@ -117,12 +115,8 @@ function PhoneNumberScreen(): JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
     padding: 16,
+    marginTop: 25,
   },
   mainContent: {
     justifyContent: "center",
@@ -144,6 +138,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     width: "80%",
+    marginRight: 50,
   },
   countryInputContainer: {
     borderBottomColor: "gray",
@@ -178,6 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 20,
     textAlign: "center",
+    marginBottom: 20,
   },
   notificationText: {
     fontSize: 12,
