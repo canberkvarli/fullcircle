@@ -1,29 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Button, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+} from "@react-native-google-signin/google-signin";
 import { useUserContext } from "@/context/UserContext";
 import auth from "@react-native-firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { FIRESTORE } from "@/services/FirebaseConfig";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
-  const { updateUserData, fetchUserData } = useUserContext();
+  const { fetchUserData } = useUserContext();
+  const [isInProgress, setIsInProgress] = useState(false);
 
   const webClientId =
     "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com";
 
-  GoogleSignin.configure({
-    webClientId: webClientId,
-  });
-
-  const handleSignInWithApple = () => {
-    // Placeholder for Apple sign-in functionality
-    console.log("Sign in with Apple");
-  };
+  GoogleSignin.configure({ webClientId });
 
   const handleSignInWithGoogle = async () => {
+    setIsInProgress(true);
     try {
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
@@ -40,27 +36,22 @@ function SSOButtons(): JSX.Element {
           lastName: user.displayName?.split(" ")[1] || "",
           GoogleSSOEnabled: true,
         };
-        console.log("googleUserData", googleUserData);
+        console.log("Google user data", googleUserData);
 
-        try {
-          await setDoc(
-            doc(FIRESTORE, "users", googleUserData.userId),
-            googleUserData,
-            { merge: true }
-          );
-          console.log("User data successfully written to Firestore");
-
-          await fetchUserData(user.uid); // Ensure user data is fetched
-          router.replace("onboarding/PhoneNumberScreen"); // Navigate to PhoneNumberScreen
-        } catch (firestoreError) {
-          console.error("Error writing document to Firestore:", firestoreError);
-        }
+        await fetchUserData(user.uid); // Fetch user data if it exists
+        router.replace("onboarding/PhoneNumberScreen"); // Navigate to PhoneNumberScreen
       } else {
         console.log("User is not authenticated");
       }
     } catch (error) {
       console.error("Google sign-in error: ", error);
+    } finally {
+      setIsInProgress(false);
     }
+  };
+
+  const handleSignInWithApple = () => {
+    console.log("Sign in with Apple");
   };
 
   const handleSignInWithPhoneNumber = () => {
@@ -69,7 +60,12 @@ function SSOButtons(): JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Button title="Sign in with Google" onPress={handleSignInWithGoogle} />
+      <GoogleSigninButton
+        size={GoogleSigninButton.Size.Wide}
+        color={GoogleSigninButton.Color.Dark}
+        onPress={handleSignInWithGoogle}
+        disabled={isInProgress}
+      />
       <Button title="Sign in with Apple" onPress={handleSignInWithApple} />
       <Button
         title="Sign in with Phone Number"
