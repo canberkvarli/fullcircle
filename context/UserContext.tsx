@@ -254,7 +254,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       setUserData(updatedUserData);
       await saveProgress(nextScreen); // Save progress before navigating
-      setcurrentOnboardingScreen(nextScreen);
       router.replace(`onboarding/${nextScreen}`);
     }
   };
@@ -270,15 +269,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       setUserData(updatedUserData);
       await saveProgress(previousScreen); // Save progress before navigating
-      setcurrentOnboardingScreen(previousScreen);
       router.replace(`onboarding/${previousScreen}`);
     }
   };
 
   const navigateToScreen = async (screen: string) => {
-    await saveProgress(screen); // Save progress before navigating
-    setcurrentOnboardingScreen(screen);
-    router.replace(`onboarding/${screen}`);
+    if (screen === "NameScreen") {
+      router.replace("onboarding/LoginSignupScreen");
+    } else {
+      await saveProgress(screen);
+      router.replace(`onboarding/${screen}`);
+    }
   };
 
   const contextValue: UserContextType = {

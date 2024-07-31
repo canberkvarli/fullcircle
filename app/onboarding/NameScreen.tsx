@@ -9,10 +9,12 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
+import NavigationIcon from "react-native-vector-icons/FontAwesome";
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 
 function NameScreen() {
-  const { userData, navigateToNextScreen, updateUserData } = useUserContext();
+  const { userData, navigateToNextScreen, updateUserData, navigateToScreen } =
+    useUserContext();
 
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
@@ -48,6 +50,15 @@ function NameScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <OnboardingProgressBar currentScreen="NameScreen" />
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => {
+          console.log("navigating to previous screen");
+          navigateToScreen("LoginSignupScreen");
+        }}
+      >
+        <NavigationIcon name="chevron-left" size={24} color="black" />
+      </TouchableOpacity>
       <Text style={styles.title}>What's your name?</Text>
       <TextInput
         style={styles.input}
@@ -88,6 +99,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     marginTop: 25,
+  },
+  backButton: {
+    bottom: 20,
   },
   title: {
     fontSize: 45,
