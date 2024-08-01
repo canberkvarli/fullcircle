@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
-import auth from "@react-native-firebase/auth";
+import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 type UserData = {
   userId: string;
@@ -59,6 +59,10 @@ type UserContextType = {
   setScreens: React.Dispatch<React.SetStateAction<string[]>>;
   userData: UserData;
   setUserData: React.Dispatch<React.SetStateAction<UserData>>;
+  googleCredential: FirebaseAuthTypes.AuthCredential | null;
+  setGoogleCredential: React.Dispatch<
+    React.SetStateAction<FirebaseAuthTypes.AuthCredential | null>
+  >;
   updateUserData: (data: Partial<UserData>) => void;
   navigateToNextScreen: () => void;
   navigateToPreviousScreen: () => void;
@@ -126,6 +130,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<string>(initialScreens[0]);
   const [screens, setScreens] = useState<string[]>(initialScreens);
   const [userData, setUserData] = useState<UserData>(initialUserData);
+  const [googleCredential, setGoogleCredential] =
+    useState<FirebaseAuthTypes.AuthCredential | null>(null);
   const router = useRouter();
 
   const fetchUserData = async (userId: string) => {
@@ -289,6 +295,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setScreens,
     userData,
     setUserData,
+    googleCredential,
+    setGoogleCredential,
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,

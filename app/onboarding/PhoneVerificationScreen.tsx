@@ -44,15 +44,16 @@ function PhoneVerificationScreen() {
     setLoading(true);
 
     try {
-      const credential = PhoneAuthProvider.credential(
+      const phoneCredential = PhoneAuthProvider.credential(
         verificationId as string,
         code
       );
       const userCredential = await signInWithCredential(
         FIREBASE_AUTH,
-        credential
+        phoneCredential
       );
       const { user } = userCredential;
+      console.log("user from userCredential", user);
       const docRef = doc(FIRESTORE, "users", user.uid);
       const docSnap = await getDoc(docRef);
 
