@@ -13,14 +13,21 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { FIREBASE_AUTH, FIRESTORE } from "../../services/FirebaseConfig";
 import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useUserContext } from "@/context/UserContext";
 
+// TODO: CLEANUP
 function PhoneVerificationScreen() {
   const [verificationCode, setVerificationCode] = useState(
     new Array(6).fill("")
   );
-  const { updateUserData } = useUserContext();
+  const {
+    updateUserData,
+    googleCredential,
+    googleUserData,
+    navigateToNextScreen,
+    fetchUserData,
+  } = useUserContext();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -33,6 +40,18 @@ function PhoneVerificationScreen() {
       handleVerifyCode();
     }
   }, [verificationCode]);
+
+  const destructurePhoneNumber = (phoneNumber: any) => {
+    const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
+    const match = phoneRegex.exec(phoneNumber);
+
+    if (!match) {
+      throw new Error("Invalid phone number format");
+    }
+
+    const [, countryCode, areaCode, number] = match;
+    return { countryCode, areaCode, number };
+  };
 
   const handleVerifyCode = async () => {
     const code = verificationCode.join("");
@@ -53,45 +72,65 @@ function PhoneVerificationScreen() {
         phoneCredential
       );
       const { user } = userCredential;
-      console.log("user from userCredential", user);
-      const docRef = doc(FIRESTORE, "users", user.uid);
+      const userId = googleCredential ? googleUserData.userId : user.uid;
+      const docRef = doc(FIRESTORE, "users", userId);
       const docSnap = await getDoc(docRef);
+      const { countryCode, areaCode, number } = destructurePhoneNumber(
+        phoneNumber as string
+      );
+      // Check if the user was authenticated via Google SSO
+      if (googleCredential) {
+        // User signed in with Google SSO
+        console.log("googleCredential", googleCredential);
+        await setDoc(docRef, { ...googleUserData }, { merge: true });
 
-      if (docSnap.exists()) {
-        const userDataFromFirestore = docSnap.data();
-        const userCurrentOnboardingScreen =
-          userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
-        updateUserData({
-          userId: user.uid,
-          currentOnboardingScreen: userCurrentOnboardingScreen,
-        });
-        router.replace({
-          pathname: `onboarding/${userCurrentOnboardingScreen}`,
-        });
-      } else {
-        const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
-        const match = phoneRegex.exec(phoneNumber as string);
-        if (!match) {
-          setLoading(false);
-          Alert.alert("Error", "Invalid phone number format");
-          return;
-        }
-        const [, countryCode, areaCode, phone] = match;
-
-        // TODO: Fix static screens. For now changed the screen name to NameScreen from WelcomeScreen.
-        updateUserData({
-          userId: user.uid,
-          phoneNumber: user.phoneNumber || "",
+        // Ensure that googleUserData is set in context after saving to Firestore
+        await updateUserData({
+          userId: googleUserData.userId,
+          phoneNumber: phoneNumber as string,
           countryCode: countryCode,
           areaCode: areaCode,
-          number: phone,
-          currentOnboardingScreen: "NameScreen",
+          number: number,
+          // You may want to include other necessary fields from googleUserData here
         });
-        router.replace({
-          pathname: "onboarding/NameScreen",
-          params: { userId: user.uid, phoneNumber: user.phoneNumber },
-        });
+        await fetchUserData(userId); // Call fetchUserData to ensure context is updated
+        navigateToNextScreen();
+      } else {
+        // User signed in with phone only
+        console.log(
+          "google credential not found, continuing with phonenubmer sso"
+        );
+        if (docSnap.exists()) {
+          console.log("user exist in the firestore");
+          await fetchUserData(userId);
+          const userDataFromFirestore = docSnap.data();
+          const userCurrentOnboardingScreen =
+            userDataFromFirestore.currentOnboardingScreen ||
+            "PhoneNumberScreen";
+          updateUserData({
+            userId: userId,
+            currentOnboardingScreen: userCurrentOnboardingScreen,
+          });
+          router.replace({
+            pathname: `onboarding/${userCurrentOnboardingScreen}`,
+          });
+        } else {
+          console.log("user DOES NOT exist in the firestore");
+          // New user case for phone sign-in
+          await updateUserData({
+            userId: user.uid,
+            phoneNumber: user.phoneNumber || "",
+            countryCode: countryCode,
+            areaCode: areaCode,
+            number: number,
+            currentOnboardingScreen: "NameScreen",
+          });
+          router.replace({
+            pathname: "onboarding/NameScreen",
+          });
+        }
       }
+
       setLoading(false);
     } catch (error: any) {
       setLoading(false);

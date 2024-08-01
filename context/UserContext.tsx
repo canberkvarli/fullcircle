@@ -63,6 +63,8 @@ type UserContextType = {
   setGoogleCredential: React.Dispatch<
     React.SetStateAction<FirebaseAuthTypes.AuthCredential | null>
   >;
+  googleUserData: UserData;
+  setGoogleUserData: React.Dispatch<React.SetStateAction<UserData>>;
   updateUserData: (data: Partial<UserData>) => void;
   navigateToNextScreen: () => void;
   navigateToPreviousScreen: () => void;
@@ -130,6 +132,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<string>(initialScreens[0]);
   const [screens, setScreens] = useState<string[]>(initialScreens);
   const [userData, setUserData] = useState<UserData>(initialUserData);
+  const [googleUserData, setGoogleUserData] =
+    useState<UserData>(initialUserData);
   const [googleCredential, setGoogleCredential] =
     useState<FirebaseAuthTypes.AuthCredential | null>(null);
   const router = useRouter();
@@ -295,6 +299,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setScreens,
     userData,
     setUserData,
+    googleUserData,
+    setGoogleUserData,
     googleCredential,
     setGoogleCredential,
     updateUserData,

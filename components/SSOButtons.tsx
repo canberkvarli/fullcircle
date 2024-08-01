@@ -10,7 +10,8 @@ import auth from "@react-native-firebase/auth";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
-  const { fetchUserData } = useUserContext();
+  const { setGoogleCredential, setGoogleUserData, navigateToNextScreen } =
+    useUserContext();
   const [isInProgress, setIsInProgress] = useState(false);
 
   const webClientId =
@@ -27,7 +28,7 @@ function SSOButtons(): JSX.Element {
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       const { user } = await auth().signInWithCredential(googleCredential);
-
+      setGoogleCredential(googleCredential);
       if (user) {
         const googleUserData = {
           userId: user.uid,
@@ -35,11 +36,16 @@ function SSOButtons(): JSX.Element {
           firstName: user.displayName?.split(" ")[0] || "",
           lastName: user.displayName?.split(" ")[1] || "",
           GoogleSSOEnabled: true,
+          marketingRequested: false,
+          countryCode: "",
+          areaCode: "",
+          number: "",
+          phoneNumber: "",
+          currentOnboardingScreen: "",
+          hiddenFields: {},
         };
-        console.log("Google user data", googleUserData);
-
-        await fetchUserData(user.uid); // Fetch user data if it exists
-        router.replace("onboarding/PhoneNumberScreen"); // Navigate to PhoneNumberScreen
+        setGoogleUserData(googleUserData);
+        navigateToNextScreen();
       } else {
         console.log("User is not authenticated");
       }
@@ -47,6 +53,14 @@ function SSOButtons(): JSX.Element {
       console.error("Google sign-in error: ", error);
     } finally {
       setIsInProgress(false);
+    }
+  };
+  const signOut = async () => {
+    try {
+      await GoogleSignin.revokeAccess();
+      await GoogleSignin.signOut();
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -71,6 +85,9 @@ function SSOButtons(): JSX.Element {
         title="Sign in with Phone Number"
         onPress={handleSignInWithPhoneNumber}
       />
+      <View>
+        <Button onPress={signOut} title="LogOut" color="red"></Button>
+      </View>
     </View>
   );
 }

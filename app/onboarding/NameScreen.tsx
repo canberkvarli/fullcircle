@@ -8,14 +8,14 @@ import {
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import NavigationIcon from "react-native-vector-icons/FontAwesome";
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 
 function NameScreen() {
-  const { userData, navigateToNextScreen, updateUserData, navigateToScreen } =
-    useUserContext();
-
+  const { userData, navigateToNextScreen, updateUserData } = useUserContext();
+  const router = useRouter();
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
 
@@ -53,8 +53,7 @@ function NameScreen() {
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
-          console.log("navigating to previous screen");
-          navigateToScreen("LoginSignupScreen");
+          router.replace("onboarding/LoginSignupScreen");
         }}
       >
         <NavigationIcon name="chevron-left" size={24} color="black" />
