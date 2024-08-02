@@ -96,7 +96,6 @@ const LocationScreen = () => {
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     };
-    console.log("Location from current Location:", location);
     setLocation(location);
     setRegion(newRegion);
     await updateRegionName(newRegion);

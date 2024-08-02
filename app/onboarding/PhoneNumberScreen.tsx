@@ -19,8 +19,6 @@ import Icon from "react-native-vector-icons/FontAwesome";
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
-  const [confirm, setConfirm] =
-    useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -31,10 +29,7 @@ function PhoneNumberScreen(): JSX.Element {
     }
 
     try {
-      const confirmation = await auth().signInWithPhoneNumber(
-        formattedPhoneNumber
-      );
-      setConfirm(confirmation);
+      const confirmation = await auth().verifyPhoneNumber(formattedPhoneNumber);
 
       router.replace({
         pathname: "onboarding/PhoneVerificationScreen",

@@ -10,8 +10,14 @@ import auth from "@react-native-firebase/auth";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
-  const { setGoogleCredential, setGoogleUserData, navigateToNextScreen } =
-    useUserContext();
+  const {
+    setGoogleCredential,
+    setGoogleUserData,
+    navigateToNextScreen,
+    setCurrentUser,
+    signOut,
+    currentUser,
+  } = useUserContext();
   const [isInProgress, setIsInProgress] = useState(false);
 
   const webClientId =
@@ -44,6 +50,7 @@ function SSOButtons(): JSX.Element {
           currentOnboardingScreen: "",
           hiddenFields: {},
         };
+        setCurrentUser(user);
         setGoogleUserData(googleUserData);
         navigateToNextScreen();
       } else {
@@ -53,14 +60,6 @@ function SSOButtons(): JSX.Element {
       console.error("Google sign-in error: ", error);
     } finally {
       setIsInProgress(false);
-    }
-  };
-  const signOut = async () => {
-    try {
-      await GoogleSignin.revokeAccess();
-      await GoogleSignin.signOut();
-    } catch (error) {
-      console.error(error);
     }
   };
 

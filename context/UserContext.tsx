@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { FIRESTORE } from "@/services/FirebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
@@ -72,6 +72,11 @@ type UserContextType = {
   saveProgress: (screen?: string) => void;
   fetchUserData: (userId: string) => Promise<void>;
   getIdToken: () => Promise<string | null>;
+  currentUser: FirebaseAuthTypes.User | null;
+  setCurrentUser: React.Dispatch<
+    React.SetStateAction<FirebaseAuthTypes.User | null>
+  >;
+  signOut: () => Promise<void>;
 };
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
@@ -127,7 +132,6 @@ export const useUserContext = () => {
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [initializing, setInitializing] = useState(true);
   const [currentOnboardingScreen, setcurrentOnboardingScreen] =
     useState<string>(initialScreens[0]);
   const [screens, setScreens] = useState<string[]>(initialScreens);
@@ -136,6 +140,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<UserData>(initialUserData);
   const [googleCredential, setGoogleCredential] =
     useState<FirebaseAuthTypes.AuthCredential | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseAuthTypes.User | null>(
+    null
+  );
+  const [initializing, setInitializing] = useState(true);
   const router = useRouter();
 
   const fetchUserData = async (userId: string) => {
@@ -163,6 +171,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
+    setCurrentUser(user);
+    console.log("currentUser:", user);
+    if (initializing) setInitializing(false);
+    if (user) {
+      await fetchUserData(user.uid);
+    }
+  };
+
+  useEffect(() => {
+    const subscriber = FIREBASE_AUTH.onAuthStateChanged((user) => {
+      onAuthStateChanged(user as FirebaseAuthTypes.User | null);
+    });
+    return subscriber; // unsubscribe on unmount
+  }, []);
+
   const getIdToken = async () => {
     try {
       const user = auth().currentUser;
@@ -176,24 +200,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     return null;
   };
-
-  useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log("User ID from listener:", user.uid);
-        await fetchUserData(user.uid);
-      } else {
-        setUserData(initialUserData);
-      }
-
-      if (initializing) {
-        console.log("UserContext initialized");
-        setInitializing(false);
-      }
-    });
-
-    return () => subscriber(); // Unsubscribe on unmount
-  }, [initializing]);
 
   const saveProgress = async (screen?: string) => {
     try {
@@ -253,6 +259,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const signOut = async () => {
+    try {
+      await FIREBASE_AUTH.signOut();
+      setCurrentUser(null);
+      router.replace("/onboarding/LoginSignupScreen");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   const navigateToNextScreen = async () => {
     const { currentOnboardingScreen } = userData;
     const currentIndex = screens.indexOf(currentOnboardingScreen);
@@ -299,10 +315,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setScreens,
     userData,
     setUserData,
-    googleUserData,
-    setGoogleUserData,
     googleCredential,
     setGoogleCredential,
+    googleUserData,
+    setGoogleUserData,
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
@@ -310,6 +326,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     saveProgress,
     fetchUserData,
     getIdToken,
+    currentUser,
+    setCurrentUser,
+    signOut,
   };
 
   if (initializing) {

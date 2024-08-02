@@ -214,7 +214,7 @@ function PhoneVerificationScreen() {
             onChangeText={(text) => handleCodeChange(text, index)}
             onKeyPress={(e) => handleKeyPress(e, index)}
             value={verificationCode[index]}
-            inputMode="numeric" // Ensures only numeric input is allowed
+            inputMode="numeric"
           />
         ))}
       </View>

@@ -14,7 +14,8 @@ import NavigationIcon from "react-native-vector-icons/FontAwesome";
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 
 function NameScreen() {
-  const { userData, navigateToNextScreen, updateUserData } = useUserContext();
+  const { userData, navigateToNextScreen, updateUserData, signOut } =
+    useUserContext();
   const router = useRouter();
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
@@ -54,6 +55,7 @@ function NameScreen() {
         style={styles.backButton}
         onPress={() => {
           router.replace("onboarding/LoginSignupScreen");
+          signOut();
         }}
       >
         <NavigationIcon name="chevron-left" size={24} color="black" />

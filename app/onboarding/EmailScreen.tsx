@@ -99,7 +99,6 @@ function EmailScreen() {
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
-          console.log("navigating to previous screen");
           navigateToPreviousScreen();
         }}
       >
