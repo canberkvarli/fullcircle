@@ -25,8 +25,8 @@ function PhoneVerificationScreen() {
     updateUserData,
     googleCredential,
     googleUserData,
-    navigateToNextScreen,
     fetchUserData,
+    currentUser,
   } = useUserContext();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -69,7 +69,7 @@ function PhoneVerificationScreen() {
       );
       const userCredential = await signInWithCredential(
         FIREBASE_AUTH,
-        phoneCredential
+        phoneCredential as any
       );
       const { user } = userCredential;
       const userId = googleCredential ? googleUserData.userId : user.uid;
@@ -85,7 +85,8 @@ function PhoneVerificationScreen() {
           "User signed in with Google SSO (from phoneverificationscreen)"
         );
         await setDoc(docRef, { ...googleUserData }, { merge: true });
-
+        // Link phone number to the user.
+        // await currentUser?.linkWithCredential(phoneCredential as any);
         // Ensure that googleUserData is set in context after saving to Firestore
         await updateUserData({
           userId: googleUserData.userId,

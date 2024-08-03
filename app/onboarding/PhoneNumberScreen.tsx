@@ -10,15 +10,17 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import auth from "@react-native-firebase/auth";
 import PhoneInput from "react-native-phone-number-input";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -27,6 +29,8 @@ function PhoneNumberScreen(): JSX.Element {
       Alert.alert("Error", "Please enter a valid phone number.");
       return;
     }
+
+    setLoading(true);
 
     try {
       const confirmation = await auth().verifyPhoneNumber(formattedPhoneNumber);
@@ -41,6 +45,8 @@ function PhoneNumberScreen(): JSX.Element {
     } catch (error) {
       console.error("Failed to sign in with phone number: ", error);
       Alert.alert("Error", "Failed to send verification code.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,9 +104,13 @@ function PhoneNumberScreen(): JSX.Element {
           </Text>
         </View>
         <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
-            <Icon name="chevron-right" size={24} color="black" />
-          </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : (
+            <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
+              <Icon name="chevron-right" size={24} color="black" />
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
