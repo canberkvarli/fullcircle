@@ -81,7 +81,9 @@ function PhoneVerificationScreen() {
       // Check if the user was authenticated via Google SSO
       if (googleCredential) {
         // User signed in with Google SSO
-        console.log("googleCredential", googleCredential);
+        console.log(
+          "User signed in with Google SSO (from phoneverificationscreen)"
+        );
         await setDoc(docRef, { ...googleUserData }, { merge: true });
 
         // Ensure that googleUserData is set in context after saving to Firestore
@@ -91,10 +93,12 @@ function PhoneVerificationScreen() {
           countryCode: countryCode,
           areaCode: areaCode,
           number: number,
+          currentOnboardingScreen:
+            googleUserData.currentOnboardingScreen || "NameScreen",
           // You may want to include other necessary fields from googleUserData here
         });
         await fetchUserData(userId); // Call fetchUserData to ensure context is updated
-        navigateToNextScreen();
+        // navigateToNextScreen();
       } else {
         // User signed in with phone only
         console.log(
@@ -124,9 +128,6 @@ function PhoneVerificationScreen() {
             areaCode: areaCode,
             number: number,
             currentOnboardingScreen: "NameScreen",
-          });
-          router.replace({
-            pathname: "onboarding/NameScreen",
           });
         }
       }

@@ -23,9 +23,12 @@ function EmailScreen() {
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
+    googleCredential,
   } = useUserContext();
-  const [email, setEmail] = useState(userData.email || "");
-  const [marketingRequested, setMarketingRequested] = useState(false);
+  const [email, setEmail] = useState(userData?.email || "");
+  const [marketingRequested, setMarketingRequested] = useState(
+    userData?.marketingRequested || false
+  );
   const [modalVisible, setModalVisible] = useState(false);
 
   GoogleSignin.configure({
@@ -59,31 +62,54 @@ function EmailScreen() {
     return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
   };
 
-  const handleModalOption = async (option: number) => {
+  const handleGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const { idToken } = await GoogleSignin.signIn();
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const { user } = await auth().signInWithCredential(googleCredential);
+      console.log("userID from Google Sign-In:", user.uid);
+
+      await updateUserData({
+        userId: user.uid,
+        GoogleSSOEnabled: true,
+      });
+
+      if (!user.emailVerified) {
+        await user.sendEmailVerification();
+        navigateToNextScreen();
+      }
+    } catch (error) {
+      console.error("Google sign-in error: ", error);
+      Alert.alert("Error", "Failed to link Google account: " + error);
+    }
+  };
+
+  const handleModalOption = (option: number) => {
     switch (option) {
       case 1:
         Alert.alert("Connect Apple Account", "Feature coming soon!");
         break;
       case 2:
-        try {
-          await GoogleSignin.hasPlayServices();
-          const { idToken } = await GoogleSignin.signIn();
-          const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-          const { user } = await auth().signInWithCredential(googleCredential);
-          console.log("userID from Google Sign-In:", user.uid);
-
-          await updateUserData({
-            userId: user.uid,
-            GoogleSSOEnabled: true,
-          });
-
-          if (!user.emailVerified) {
-            await user.sendEmailVerification();
-            navigateToNextScreen();
-          }
-        } catch (error) {
-          console.error("Google sign-in error: ", error);
-          Alert.alert("Error", "Failed to link Google account: " + error);
+        if (googleCredential) {
+          Alert.alert(
+            "Switch Google Account",
+            "Would you like to switch your Google account?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Switch",
+                onPress: () => {
+                  GoogleSignin.signOut().then(() => handleGoogleSignIn());
+                },
+              },
+            ]
+          );
+        } else {
+          handleGoogleSignIn();
         }
         break;
       default:
@@ -98,9 +124,7 @@ function EmailScreen() {
       <OnboardingProgressBar currentScreen="EmailScreen" />
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => {
-          navigateToPreviousScreen();
-        }}
+        onPress={navigateToPreviousScreen}
       >
         <NavigationIcon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
@@ -122,7 +146,7 @@ function EmailScreen() {
           onPress={() => setMarketingRequested((prev) => !prev)}
         >
           <RadioIcon
-            name={marketingRequested ? "radio-btn-active" : "radio-btn-passive"}
+            name={marketingRequested ? "radio-btn-passive" : "radio-btn-active"}
             size={24}
             color="black"
           />
@@ -159,10 +183,23 @@ function EmailScreen() {
               ].map((item) => (
                 <TouchableOpacity
                   key={item.option}
-                  style={styles.modalOption}
+                  style={[
+                    styles.modalOption,
+                    item.option === 2 && googleCredential
+                      ? styles.connectedOption
+                      : null,
+                  ]}
                   onPress={() => handleModalOption(item.option)}
                 >
-                  <Text>{item.text}</Text>
+                  <Text
+                    style={
+                      item.option === 2 && googleCredential
+                        ? styles.connectedText
+                        : null
+                    }
+                  >
+                    {item.text}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -261,6 +298,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "lightgray",
+  },
+  connectedOption: {
+    backgroundColor: "#d0f0c0",
+  },
+  connectedText: {
+    color: "green",
   },
 });
 

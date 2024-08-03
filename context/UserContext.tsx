@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
-import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 type UserData = {
   userId: string;
@@ -106,7 +107,6 @@ const initialScreens = [
 const initialUserData: UserData = {
   userId: "",
   phoneNumber: "",
-  verificationId: "",
   email: "",
   firstName: "",
   lastName: "",
@@ -151,7 +151,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const docRef = doc(FIRESTORE, "users", userId);
     try {
       const docSnap = await getDoc(docRef);
-      console.log("Getting the docSnap...");
       if (docSnap.exists()) {
         const userDataFromFirestore = docSnap.data() as UserData;
         const userCurrentOnboardingScreen =
@@ -165,6 +164,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         router.replace({
           pathname: `onboarding/${userCurrentOnboardingScreen}`,
         });
+      } else {
+        router.replace({
+          pathname: `onboarding/NameScreen`,
+        });
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -177,6 +180,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (initializing) setInitializing(false);
     if (user) {
       await fetchUserData(user.uid);
+    } else {
+      setUserData(initialUserData); // Reset user data if user is null
     }
   };
 
@@ -189,7 +194,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const getIdToken = async () => {
     try {
-      const user = auth().currentUser;
+      const user = FIREBASE_AUTH.currentUser;
       if (user) {
         const idToken = await user.getIdToken();
         return idToken;
@@ -261,9 +266,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
-      await FIREBASE_AUTH.signOut();
-      setCurrentUser(null);
-      router.replace("/onboarding/LoginSignupScreen");
+      if (googleCredential) {
+        await GoogleSignin.signOut()
+          .then(() => {
+            console.log("google user signed out!");
+          })
+          .then(() => {
+            setGoogleCredential(null);
+          });
+      }
+      await FIREBASE_AUTH.signOut()
+        .then(() => {
+          setCurrentUser(null);
+        })
+        .then(() => console.log("User signed out! currentUser:", currentUser));
+
+      // router.replace("/onboarding/LoginSignupScreen");
     } catch (error) {
       console.error("Error signing out:", error);
     }

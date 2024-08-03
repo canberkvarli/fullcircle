@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Button, StyleSheet } from "react-native";
+import { View, Button, StyleSheet, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import {
   GoogleSignin,
@@ -7,16 +7,18 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { useUserContext } from "@/context/UserContext";
 import auth from "@react-native-firebase/auth";
+import { setDoc, doc, getDoc } from "firebase/firestore";
+import { FIRESTORE } from "@/services/FirebaseConfig";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
   const {
     setGoogleCredential,
     setGoogleUserData,
-    navigateToNextScreen,
     setCurrentUser,
     signOut,
-    currentUser,
+    fetchUserData,
+    updateUserData,
   } = useUserContext();
   const [isInProgress, setIsInProgress] = useState(false);
 
@@ -34,25 +36,61 @@ function SSOButtons(): JSX.Element {
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       const { user } = await auth().signInWithCredential(googleCredential);
+
       setGoogleCredential(googleCredential);
+
       if (user) {
-        const googleUserData = {
-          userId: user.uid,
-          email: user.email || "",
-          firstName: user.displayName?.split(" ")[0] || "",
-          lastName: user.displayName?.split(" ")[1] || "",
-          GoogleSSOEnabled: true,
-          marketingRequested: false,
-          countryCode: "",
-          areaCode: "",
-          number: "",
-          phoneNumber: "",
-          currentOnboardingScreen: "",
-          hiddenFields: {},
-        };
+        // Check if the user already exists in Firestore
+        const userEmail = user.email || "";
+        const userId = user.uid;
+
+        const docRef = doc(FIRESTORE, "users", userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          // User exists, update user data
+          console.log(
+            "User from google sso EXISTS! updating user doc...",
+            docSnap.data()
+          );
+          const existingUserData = docSnap.data();
+
+          const updatedUserData = {
+            ...existingUserData,
+            GoogleSSOEnabled: true,
+            lastSignInTime: new Date().toISOString(),
+          };
+
+          await updateUserData(updatedUserData);
+          // navigateToScreen(existingUserData.currentOnboardingScreen);
+        } else {
+          console.log(
+            "User from google sso DOES NOT exist! Creating new doc..."
+          );
+          // User does not exist, create a new user document
+          const googleUserData = {
+            userId: userId,
+            email: userEmail,
+            firstName: user.displayName?.split(" ")[0] || "",
+            lastName: user.displayName?.split(" ")[1] || "",
+            GoogleSSOEnabled: true,
+            marketingRequested: false,
+            countryCode: "",
+            areaCode: "",
+            number: "",
+            phoneNumber: "",
+            currentOnboardingScreen: "",
+            hiddenFields: {},
+          };
+
+          // Save the new user data to Firestore
+          await setDoc(docRef, googleUserData);
+          console.log("New user created:", googleUserData);
+          setGoogleUserData(googleUserData);
+        }
+
         setCurrentUser(user);
-        setGoogleUserData(googleUserData);
-        navigateToNextScreen();
+        fetchUserData(user.uid); // Optionally fetch user data from Firestore
       } else {
         console.log("User is not authenticated");
       }
@@ -73,16 +111,22 @@ function SSOButtons(): JSX.Element {
 
   return (
     <View style={styles.container}>
+      {isInProgress && <ActivityIndicator size="large" color="#0000ff" />}
       <GoogleSigninButton
         size={GoogleSigninButton.Size.Wide}
         color={GoogleSigninButton.Color.Dark}
         onPress={handleSignInWithGoogle}
         disabled={isInProgress}
       />
-      <Button title="Sign in with Apple" onPress={handleSignInWithApple} />
+      <Button
+        title="Sign in with Apple"
+        onPress={handleSignInWithApple}
+        disabled={isInProgress}
+      />
       <Button
         title="Sign in with Phone Number"
         onPress={handleSignInWithPhoneNumber}
+        disabled={isInProgress}
       />
       <View>
         <Button onPress={signOut} title="LogOut" color="red"></Button>
