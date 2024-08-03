@@ -32,11 +32,27 @@ const DatePreferenceScreen: React.FC = () => {
   }, [userData]);
 
   const handlePreferenceChange = (preference: string) => {
-    setSelectedPreferences((prevPreferences) =>
-      prevPreferences.includes(preference)
+    setSelectedPreferences((prevPreferences) => {
+      if (preference === "Everyone") {
+        // If "Everyone" is selected, clear other preferences
+        return ["Everyone"];
+      }
+
+      // If "Men" or "Women" is toggled, remove "Everyone" if it's selected
+      const updatedPreferences = prevPreferences.includes(preference)
         ? prevPreferences.filter((item) => item !== preference)
-        : [...prevPreferences, preference]
-    );
+        : [...prevPreferences, preference];
+
+      // Remove "Everyone" if "Men" or "Women" is selected
+      if (
+        updatedPreferences.includes("Men") ||
+        updatedPreferences.includes("Women")
+      ) {
+        return updatedPreferences.filter((item) => item !== "Everyone");
+      }
+
+      return updatedPreferences;
+    });
   };
 
   const handleSubmit = async () => {
@@ -72,9 +88,6 @@ const DatePreferenceScreen: React.FC = () => {
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Date Preferences</Text>
-        <Text style={styles.subtitle}>
-          Seek connections that nourish your soul.
-        </Text>
         <View style={styles.preferenceContainer}>
           <TouchableOpacity
             style={[
@@ -133,6 +146,9 @@ const DatePreferenceScreen: React.FC = () => {
             style={styles.checkbox}
           />
         </View>
+        <Text style={styles.affirmation}>
+          Seek connections that nourish your soul.
+        </Text>
         <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
           <Icon name="chevron-right" size={24} />
         </TouchableOpacity>
@@ -199,6 +215,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: 20,
     height: 20,
+  },
+  affirmation: {
+    position: "absolute",
+    bottom: 85,
+    textAlign: "center",
+    width: "100%",
+    fontStyle: "italic",
+    color: "gray",
+    left: 15,
   },
   nextButton: {
     position: "absolute",

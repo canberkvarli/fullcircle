@@ -22,6 +22,7 @@ type UserData = {
   birthmonth?: string;
   birthday?: string;
   birthyear?: string;
+  age?: number;
   height?: string;
   regionName?: string;
   longitude?: number;
