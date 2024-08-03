@@ -1,10 +1,11 @@
 import React from "react";
 import { SafeAreaView, Text, StyleSheet } from "react-native";
+import { Box } from "native-base";
 
 function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Homepage</Text>
+      <Box>Hello world</Box>
     </SafeAreaView>
   );
 }
