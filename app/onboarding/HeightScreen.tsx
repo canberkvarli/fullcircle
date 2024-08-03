@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   Text,
   View,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -13,71 +12,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Checkbox from "expo-checkbox";
-
-const cmHeights = Array.from({ length: 131 }, (_, i) => `${i + 130} cm`);
-const ftHeights = [
-  "2 ft",
-  "2.1 ft",
-  "2.2 ft",
-  "2.3 ft",
-  "2.4 ft",
-  "2.5 ft",
-  "2.6 ft",
-  "2.7 ft",
-  "2.8 ft",
-  "2.9 ft",
-  "3 ft",
-  "3.1 ft",
-  "3.2 ft",
-  "3.3 ft",
-  "3.4 ft",
-  "3.5 ft",
-  "3.6 ft",
-  "3.7 ft",
-  "3.8 ft",
-  "3.9 ft",
-  "4 ft",
-  "4.1 ft",
-  "4.2 ft",
-  "4.3 ft",
-  "4.4 ft",
-  "4.5 ft",
-  "4.6 ft",
-  "4.7 ft",
-  "4.8 ft",
-  "4.9 ft",
-  "5 ft",
-  "5.1 ft",
-  "5.2 ft",
-  "5.3 ft",
-  "5.4 ft",
-  "5.5 ft",
-  "5.6 ft",
-  "5.7 ft",
-  "5.8 ft",
-  "5.9 ft",
-  "6 ft",
-  "6.1 ft",
-  "6.2 ft",
-  "6.3 ft",
-  "6.4 ft",
-  "6.5 ft",
-  "6.6 ft",
-  "6.7 ft",
-  "6.8 ft",
-  "6.9 ft",
-  "7 ft",
-  "7.1 ft",
-  "7.2 ft",
-  "7.3 ft",
-  "7.4 ft",
-  "7.5 ft",
-  "7.6 ft",
-  "7.7 ft",
-  "7.8 ft",
-  "7.9 ft",
-  "8 ft",
-];
+import { RulerPicker } from "react-native-ruler-picker";
 
 function HeightScreen() {
   const {
@@ -87,8 +22,8 @@ function HeightScreen() {
     navigateToPreviousScreen,
   } = useUserContext();
 
-  const [selectedHeight, setSelectedHeight] = useState<string>(
-    userData?.height || cmHeights[0]
+  const [selectedHeight, setSelectedHeight] = useState<number>(
+    parseInt(userData?.height ?? "130")
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
     height: userData?.hiddenFields?.height || false,
@@ -96,10 +31,10 @@ function HeightScreen() {
   const [unit, setUnit] = useState<"cm" | "ft">("cm");
 
   useEffect(() => {
-    if (unit === "cm" && !selectedHeight.includes("cm")) {
-      setSelectedHeight(cmHeights[0]);
-    } else if (unit === "ft" && !selectedHeight.includes("ft")) {
-      setSelectedHeight(ftHeights[0]);
+    if (unit === "cm" && selectedHeight > 240) {
+      setSelectedHeight(240); // Limit max height
+    } else if (unit === "ft" && selectedHeight > 8) {
+      setSelectedHeight(8); // Limit max height for feet
     }
   }, [unit]);
 
@@ -116,16 +51,12 @@ function HeightScreen() {
           ...userData.hiddenFields,
           height: hiddenFields.height,
         },
-        height: selectedHeight,
+        height: selectedHeight.toString() + (unit === "cm" ? " cm" : " ft"),
       });
       navigateToNextScreen();
     } catch (error: any) {
       Alert.alert("Error", "Failed to save height: " + error.message);
     }
-  };
-
-  const handleSwipeChange = (index: string) => {
-    setSelectedHeight(index);
   };
 
   const toggleHidden = (fieldName: string) => {
@@ -134,69 +65,6 @@ function HeightScreen() {
       [fieldName]: !prev[fieldName],
     }));
   };
-
-  // TODO-FIX: Last two values can't be selected because it does not center them.
-  const renderHeightPicker = (data: string[]) => {
-    const opacity = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-      Animated.timing(opacity, {
-        toValue: 0.5,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }).start();
-      });
-    }, [selectedHeight]);
-
-    const currentIndex = data.indexOf(selectedHeight);
-    const validIndex = currentIndex !== -1 ? currentIndex : 0;
-
-    return (
-      <Animated.FlatList
-        data={data}
-        keyExtractor={(item) => item}
-        renderItem={({ item, index }) => {
-          const isCurrent = item === selectedHeight;
-          const color = isCurrent ? "black" : "gray";
-          const opacityValue = isCurrent ? 1 : 0.3;
-
-          return (
-            <Animated.View style={{ opacity }}>
-              <Text
-                style={[styles.heightValue, { color, opacity: opacityValue }]}
-              >
-                {item}
-              </Text>
-            </Animated.View>
-          );
-        }}
-        getItemLayout={(data, index) => ({
-          length: 40,
-          offset: 40 * index,
-          index,
-        })}
-        initialScrollIndex={validIndex}
-        onMomentumScrollEnd={(event) => {
-          const offset = event.nativeEvent.contentOffset.y;
-          const index = Math.min(Math.round(offset / 40), data.length - 1);
-          if (index >= 0 && index < data.length) {
-            handleSwipeChange(data[index]);
-          }
-        }}
-        showsVerticalScrollIndicator={false}
-        snapToInterval={40}
-        decelerationRate="fast"
-        style={{ height: 200, paddingVertical: 80 }}
-      />
-    );
-  };
-
-  const heightData = unit === "cm" ? cmHeights : ftHeights;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -232,7 +100,19 @@ function HeightScreen() {
 
         <View style={styles.heightInputs}>
           <Text style={styles.subtitle}>What's your height?</Text>
-          {renderHeightPicker(heightData)}
+          <RulerPicker
+            min={unit === "cm" ? 130 : 2} // Set minimum based on unit
+            max={unit === "cm" ? 240 : 8} // Set maximum based on unit
+            step={unit === "cm" ? 1 : 0.1}
+            initialValue={selectedHeight}
+            onValueChange={(number) => setSelectedHeight(Number(number))}
+            unit={unit}
+            width={300}
+            height={300}
+            indicatorHeight={80}
+            indicatorColor="black"
+            valueTextStyle={styles.heightValue}
+          />
         </View>
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Hide From Others</Text>
@@ -297,7 +177,6 @@ const styles = StyleSheet.create({
   heightValue: {
     fontSize: 30,
     textAlign: "center",
-    paddingVertical: 5,
   },
   subtitle: {
     fontSize: 20,

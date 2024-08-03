@@ -6,7 +6,7 @@
   "GenderScreen": { "type": "FontAwesome", "name": "venus-mars" },
   "SexualOrientationScreen": { "type": "FontAwesome", "name": "heart" },
   "DatePreferenceScreen": { "type": "FontAwesome", "name": "calendar" },
-  "HeightScreen": { "type": "FontAwesome", "name": "arrows-v" },
+  "HeightScreen": { "type": "FontAwesome", "name": "tree" },
   "EthnicityScreen": { "type": "FontAwesome", "name": "globe" },
   "FamilyVisionScreen": { "type": "FontAwesome", "name": "child" },
   "JobLocationScreen": { "type": "FontAwesome", "name": "briefcase" },
