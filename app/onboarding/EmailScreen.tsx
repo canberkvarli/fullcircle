@@ -27,7 +27,7 @@ function EmailScreen() {
   } = useUserContext();
   const [email, setEmail] = useState(userData?.email || "");
   const [marketingRequested, setMarketingRequested] = useState(
-    userData?.marketingRequested || false
+    userData?.marketingRequested ?? true
   );
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -74,6 +74,8 @@ function EmailScreen() {
         userId: user.uid,
         GoogleSSOEnabled: true,
       });
+
+      //Link google account to this user.
 
       if (!user.emailVerified) {
         await user.sendEmailVerification();

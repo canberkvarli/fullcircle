@@ -111,7 +111,7 @@ const initialUserData: UserData = {
   firstName: "",
   lastName: "",
   GoogleSSOEnabled: false,
-  marketingRequested: false,
+  marketingRequested: true,
   countryCode: "",
   areaCode: "",
   number: "",
