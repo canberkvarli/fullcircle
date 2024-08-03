@@ -103,6 +103,7 @@ const initialScreens = [
   "EducationScreen",
   "SpiritualScreen",
   "PhotosScreen",
+  "HomeScreen",
 ];
 
 const initialUserData: UserData = {

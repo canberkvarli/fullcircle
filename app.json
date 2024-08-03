@@ -48,6 +48,12 @@
           "locationAlwaysAndWhenInUsePermission": "Allow FullCircle to use your location.",
           "isAndroidForegroundServiceEnabled": true
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Circle to share your photos."
+        }
       ]
     ],
     "experiments": {

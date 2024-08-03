@@ -26,6 +26,6 @@ const FIREBASE_AUTH = initializeAuth(FIREBASE_APP, {
 const FIRESTORE = getFirestore(FIREBASE_APP);
 
 // Initialize Storage
-const STORAGE = getStorage(FIREBASE_APP, "gs://circle-f39c5.appspot.com");
+const STORAGE = getStorage(FIREBASE_APP, "gs://fullcircle-3d01a.appspot.com");
 
 export { FIREBASE_APP, FIREBASE_AUTH, FIRESTORE, STORAGE };
