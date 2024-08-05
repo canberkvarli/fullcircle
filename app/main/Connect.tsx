@@ -23,7 +23,6 @@ export default function Connect() {
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   useEffect(() => {
-    // Simulate loading data
     const loadData = async () => {
       setTimeout(() => {
         setLoading(false);
@@ -34,14 +33,12 @@ export default function Connect() {
   }, []);
 
   const handleLike = () => {
-    // Move to the next potential match
     setCurrentMatchIndex(
       (prevIndex) => (prevIndex + 1) % potentialMatches.length
     );
   };
 
   const handleDislike = () => {
-    // Move to the next potential match
     setCurrentMatchIndex(
       (prevIndex) => (prevIndex + 1) % potentialMatches.length
     );
@@ -69,8 +66,10 @@ export default function Connect() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Display current potential match */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.matchContainer}>
           <PotentialMatch match={currentMatch} />
           <Text style={styles.nameText}>{currentMatch.firstName}</Text>
@@ -79,7 +78,7 @@ export default function Connect() {
               onPress={handleDislike}
               style={styles.dislikeButton}
             >
-              <Icon name="thumbs-down" size={30} color="red" />
+              <Icon name="times" size={30} color="red" />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
               <Icon name="heart" size={30} color="black" />
@@ -88,7 +87,6 @@ export default function Connect() {
         </View>
       </ScrollView>
 
-      {/* Age Filter Modal */}
       <Modal
         animationType="slide"
         transparent={true}

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import InfoCard from "@/components/InfoCard";
 
 const PotentialMatch = ({
   match,
@@ -14,77 +14,47 @@ const PotentialMatch = ({
     educationDegree: string;
   };
 }) => {
+  const infoSections = [
+    { title: "Children Preference", content: match.childrenPreference },
+    { title: "Education Level", content: match.educationDegree },
+  ];
+
   return (
     <View style={styles.container}>
       <Text style={styles.userName}>{match.firstName}</Text>
       {match.photos.map((photo, index) => (
-        <View key={index} style={styles.photoContainer}>
+        <View key={index}>
           <Image source={{ uri: photo }} style={styles.photo} />
-          {index > 0 && (
-            <View style={styles.heartIconContainer}>
-              <Icon
-                name="heart"
-                size={30}
-                color="black"
-                style={styles.heartIcon}
-              />
-            </View>
+          {index < infoSections.length && (
+            <InfoCard
+              title={infoSections[index].title}
+              content={infoSections[index].content}
+            />
           )}
         </View>
       ))}
-      {/* Additional user info sprinkled in between photos */}
-      <Text style={styles.infoText}>
-        Children Preference: {match.childrenPreference}
-      </Text>
-      <Text style={styles.infoText}>
-        Education Level: {match.educationDegree}
-      </Text>
-      {/* Add more user info as needed */}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    // alignItems: "center",
+    padding: 16,
     marginBottom: 20,
   },
   userName: {
     fontSize: 24,
     fontWeight: "bold",
-    top: 10,
     marginBottom: 20,
     paddingLeft: 30,
     textAlign: "left",
     zIndex: 1,
   },
-  photoContainer: {
-    position: "relative",
-    width: 400,
-    height: 400,
-    marginVertical: 10,
-  },
   photo: {
     width: 400,
     height: 400,
-    maxWidth: 400,
-    borderRadius: 40,
-  },
-  heartIconContainer: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
-  },
-  heartIcon: {
-    borderWidth: 2,
-    borderColor: "white",
-    borderRadius: 15,
-    padding: 5,
-  },
-  infoText: {
-    fontSize: 18,
-    marginVertical: 5,
-    textAlign: "center",
+    borderRadius: 30,
+    marginVertical: 10,
   },
 });
 
