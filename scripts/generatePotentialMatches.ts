@@ -25,6 +25,7 @@ interface PotentialMatch {
   datePreferences: string[];
   childrenPreference: string;
   location: Location;
+  educationDegree: string;
 }
 
 // Function to generate a random location
@@ -81,6 +82,12 @@ const fetchUnsplashImages = async (query: string, count: number, page: number): 
       datePreferences: ['Everyone', 'Men', 'Women'],
       childrenPreference: Math.random() > 0.5 ? 'Open to Children' : 'Don’t want Children',
       location: generateRandomLocation(),
+      educationDegree: faker.helpers.arrayElement([
+        "High School",
+        "Bachelor",
+        "Master",
+        "Doctorate",
+      ]),
     };
   };
   
@@ -130,6 +137,7 @@ interface PotentialMatch {
   datePreferences: string[];
   childrenPreference: string;
   location: Location;
+  educationDegree: string;
 }
 
 const potentialMatches: PotentialMatch[] = ${JSON.stringify(potentialMatches, null, 2)};

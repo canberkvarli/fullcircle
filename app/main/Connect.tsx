@@ -7,21 +7,19 @@ import {
   StyleSheet,
   ActivityIndicator,
   Button,
-  Image,
+  ScrollView,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import Checkbox from "expo-checkbox";
 import Icon from "react-native-vector-icons/FontAwesome";
 import potentialMatches from "@/data/potentialMatches";
-import useFetchUnsplashImages from "@/hooks/useFetchUnsplashImages";
+import PotentialMatch from "@/components/PotentialMatch";
 
 export default function Connect() {
   const [loading, setLoading] = useState(true);
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [ageRange, setAgeRange] = useState([22, 30]);
   const [dealbreaker, setDealbreaker] = useState(false);
-  const { images } = useFetchUnsplashImages("beatiful woman", 6);
 
   useEffect(() => {
     // Simulate loading data
@@ -33,30 +31,6 @@ export default function Connect() {
 
     loadData();
   }, []);
-
-  const handleLike = () => {
-    console.log(`Liked user: ${potentialMatches[currentMatchIndex].firstName}`);
-    moveToNextUser();
-  };
-
-  const handleDecline = () => {
-    console.log(
-      `Declined user: ${potentialMatches[currentMatchIndex].firstName}`
-    );
-    moveToNextUser();
-  };
-
-  const moveToNextUser = () => {
-    if (currentMatchIndex < potentialMatches.length - 1) {
-      setCurrentMatchIndex(currentMatchIndex + 1);
-    } else {
-      // Reset to the first user or handle end of matches
-      console.log("No more matches available");
-    }
-  };
-
-  // Get current user data
-  const currentMatch = potentialMatches[currentMatchIndex];
 
   if (loading) {
     return (
@@ -77,31 +51,13 @@ export default function Connect() {
           <Icon name="caret-down" size={24} />
         </TouchableOpacity>
       </View>
-      <View style={styles.userContainer}>
-        <Text
-          style={styles.userName}
-        >{`${currentMatch.firstName} ${currentMatch.lastName}`}</Text>
-        <Text>{`Age: ${
-          new Date().getFullYear() - parseInt(currentMatch.birthyear)
-        }`}</Text>
-        <View>
-          <View>
-            {currentMatch.photos.map((photo, index) => (
-              <Image key={index} source={{ uri: photo }} style={styles.image} />
-            ))}
-          </View>
-        </View>
-      </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity onPress={handleDecline}>
-          <Text style={styles.declineButton}>X</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleLike}>
-          <Text style={styles.likeButton}>❤️</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Wrap content in ScrollView */}
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {potentialMatches.map((match, index) => (
+          <PotentialMatch key={index} match={match} />
+        ))}
+      </ScrollView>
 
       {/* Age Filter Modal */}
       <Modal
@@ -164,41 +120,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 5,
-    marginBottom: 16,
-  },
   ageText: {
     fontSize: 18,
     marginHorizontal: 8,
   },
-  userContainer: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  userPhoto: {
-    width: 300,
-    height: 300,
-    borderRadius: 15,
-    marginVertical: 16,
-  },
-  actionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  declineButton: {
-    fontSize: 30,
-    color: "red",
-  },
-  likeButton: {
-    fontSize: 30,
-    color: "green",
+  scrollViewContent: {
+    flexGrow: 1,
   },
   modalOverlay: {
     flex: 1,
