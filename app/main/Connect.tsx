@@ -20,6 +20,7 @@ export default function Connect() {
   const [modalVisible, setModalVisible] = useState(false);
   const [ageRange, setAgeRange] = useState([22, 30]);
   const [dealbreaker, setDealbreaker] = useState(false);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   useEffect(() => {
     // Simulate loading data
@@ -32,6 +33,20 @@ export default function Connect() {
     loadData();
   }, []);
 
+  const handleLike = () => {
+    // Move to the next potential match
+    setCurrentMatchIndex(
+      (prevIndex) => (prevIndex + 1) % potentialMatches.length
+    );
+  };
+
+  const handleDislike = () => {
+    // Move to the next potential match
+    setCurrentMatchIndex(
+      (prevIndex) => (prevIndex + 1) % potentialMatches.length
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -40,11 +55,13 @@ export default function Connect() {
     );
   }
 
+  const currentMatch = potentialMatches[currentMatchIndex];
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => console.log("Preferences clicked")}>
-          <Icon name="cog" size={24} />
+          <Icon name="sliders" size={24} />
         </TouchableOpacity>
         <Text style={styles.ageText}>Age</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -52,11 +69,23 @@ export default function Connect() {
         </TouchableOpacity>
       </View>
 
-      {/* Wrap content in ScrollView */}
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {potentialMatches.map((match, index) => (
-          <PotentialMatch key={index} match={match} />
-        ))}
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* Display current potential match */}
+        <View style={styles.matchContainer}>
+          <PotentialMatch match={currentMatch} />
+          <Text style={styles.nameText}>{currentMatch.firstName}</Text>
+          <View style={styles.actions}>
+            <TouchableOpacity
+              onPress={handleDislike}
+              style={styles.dislikeButton}
+            >
+              <Icon name="thumbs-down" size={30} color="red" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
+              <Icon name="heart" size={30} color="black" />
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
 
       {/* Age Filter Modal */}
@@ -124,8 +153,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginHorizontal: 8,
   },
-  scrollViewContent: {
+  scrollContainer: {
     flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  matchContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  nameText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  actions: {
+    flexDirection: "row",
+    marginTop: 20,
+  },
+  dislikeButton: {
+    marginHorizontal: 20,
+  },
+  likeButton: {
+    marginHorizontal: 20,
   },
   modalOverlay: {
     flex: 1,

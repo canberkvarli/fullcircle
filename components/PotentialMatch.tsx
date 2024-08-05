@@ -33,12 +33,12 @@ const PotentialMatch = ({
         </View>
       ))}
       {/* Additional user info sprinkled in between photos */}
-      <Text
-        style={styles.infoText}
-      >{`Children Preference: ${match.childrenPreference}`}</Text>
-      <Text
-        style={styles.infoText}
-      >{`Education Level: ${match.educationDegree}`}</Text>
+      <Text style={styles.infoText}>
+        Children Preference: {match.childrenPreference}
+      </Text>
+      <Text style={styles.infoText}>
+        Education Level: {match.educationDegree}
+      </Text>
       {/* Add more user info as needed */}
     </View>
   );
@@ -46,29 +46,29 @@ const PotentialMatch = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
+    // alignItems: "center",
     marginBottom: 20,
   },
   userName: {
     fontSize: 24,
     fontWeight: "bold",
-    position: "absolute",
     top: 10,
-    left: 10,
+    marginBottom: 20,
+    paddingLeft: 30,
+    textAlign: "left",
     zIndex: 1,
   },
   photoContainer: {
     position: "relative",
-    width: "100%",
-    height: "100%",
+    width: 400,
+    height: 400,
+    marginVertical: 10,
   },
   photo: {
-    width: "100%",
+    width: 400,
     height: 400,
-    borderRadius: 5,
-  },
-  photoText: {
-    position: "absolute",
+    maxWidth: 400,
+    borderRadius: 40,
   },
   heartIconContainer: {
     position: "absolute",
