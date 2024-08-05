@@ -54,7 +54,7 @@ function NameScreen() {
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
-          router.replace("onboarding/LoginSignupScreen");
+          router.replace("onboarding/LoginSignupScreen" as any);
           signOut();
         }}
       >

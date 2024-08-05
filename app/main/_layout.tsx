@@ -1,10 +1,23 @@
 import React from "react";
+import { View, Image } from "react-native";
 import { Tabs } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useUserContext } from "@/context/UserContext";
 
 export default function MainStackLayout() {
+  const { userData } = useUserContext();
+
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        tabBarStyle: {
+          height: 80,
+          backgroundColor: "black",
+          paddingBottom: 20,
+          paddingTop: 10,
+        },
+      }}
+    >
       <Tabs.Screen
         name="Connect"
         options={{
@@ -50,9 +63,26 @@ export default function MainStackLayout() {
         options={{
           headerShown: false,
           tabBarLabel: "Sacred Self",
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="user" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size, focused }) =>
+            userData?.photos && userData.photos.length > 0 ? (
+              <View
+                style={{
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  overflow: "hidden",
+                  borderWidth: focused ? 2 : 0,
+                  borderColor: focused ? "white" : "transparent",
+                }}
+              >
+                <Image
+                  source={{ uri: userData.photos[0] }}
+                  style={{ width: size, height: size }}
+                />
+              </View>
+            ) : (
+              <Icon name="user" color={color} size={size} />
+            ),
         }}
       />
     </Tabs>
