@@ -40,7 +40,6 @@ export default function OnboardingStackLayout() {
       <Stack.Screen name="EducationScreen" options={{ headerShown: false }} />
       <Stack.Screen name="SpiritualScreen" options={{ headerShown: false }} />
       <Stack.Screen name="PhotosScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="HomeScreen" options={{ headerShown: false }} />
     </Stack>
   );
 }

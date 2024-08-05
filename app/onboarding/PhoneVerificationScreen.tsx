@@ -17,8 +17,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useUserContext } from "@/context/UserContext";
 
 // TODO: CLEANUP
-function PhoneVerificationScreen() {
-  const [verificationCode, setVerificationCode] = useState(
+const PhoneVerificationScreen = () => {
+  const [verificationCode, setVerificationCode] = useState<string[]>(
     new Array(6).fill("")
   );
   const {
@@ -41,7 +41,7 @@ function PhoneVerificationScreen() {
     }
   }, [verificationCode]);
 
-  const destructurePhoneNumber = (phoneNumber: any) => {
+  const destructurePhoneNumber = (phoneNumber: string) => {
     const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
     const match = phoneRegex.exec(phoneNumber);
 
@@ -78,25 +78,23 @@ function PhoneVerificationScreen() {
       const { countryCode, areaCode, number } = destructurePhoneNumber(
         phoneNumber as string
       );
-      // Check if the user was authenticated via Google SSO
+
       if (googleCredential) {
-        // User signed in with Google SSO
         console.log(
           "User signed in with Google SSO (from phoneverificationscreen)"
         );
         await setDoc(docRef, { ...googleUserData }, { merge: true });
-        // Ensure that googleUserData is set in context after saving to Firestore
         await updateUserData({
           userId: googleUserData.userId,
           phoneNumber: phoneNumber as string,
-          countryCode: countryCode,
-          areaCode: areaCode,
-          number: number,
+          countryCode,
+          areaCode,
+          number,
           currentOnboardingScreen:
             googleUserData.currentOnboardingScreen || "NameScreen",
           // You may want to include other necessary fields from googleUserData here
         });
-        await fetchUserData(userId); // Call fetchUserData to ensure context is updated
+        await fetchUserData(userId);
       } else {
         // User signed in with phone only
         console.log(
@@ -111,11 +109,11 @@ function PhoneVerificationScreen() {
             "PhoneNumberScreen";
 
           updateUserData({
-            userId: userId,
+            userId,
             currentOnboardingScreen: userCurrentOnboardingScreen,
           });
           router.replace({
-            pathname: `onboarding/${userCurrentOnboardingScreen}`,
+            pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
           });
         } else {
           console.log("user DOES NOT exist in the firestore");
@@ -123,9 +121,9 @@ function PhoneVerificationScreen() {
           await updateUserData({
             userId: user.uid,
             phoneNumber: user.phoneNumber || "",
-            countryCode: countryCode,
-            areaCode: areaCode,
-            number: number,
+            countryCode,
+            areaCode,
+            number,
             currentOnboardingScreen: "NameScreen",
           });
         }
@@ -189,7 +187,7 @@ function PhoneVerificationScreen() {
       <TouchableOpacity
         onPress={() =>
           router.replace({
-            pathname: "onboarding/PhoneNumberScreen",
+            pathname: "onboarding/PhoneNumberScreen" as any,
             params: { phoneNumber },
           })
         }
@@ -222,7 +220,7 @@ function PhoneVerificationScreen() {
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <TouchableOpacity
-          onPress={() => router.replace("onboarding/PhoneNumberScreen")}
+          onPress={() => router.replace("onboarding/PhoneNumberScreen" as any)}
         >
           <Text style={styles.changeNumberLink}>Didn't get a code?</Text>
         </TouchableOpacity>
@@ -232,7 +230,7 @@ function PhoneVerificationScreen() {
       </Text>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

@@ -36,7 +36,7 @@ function PhoneNumberScreen(): JSX.Element {
       const confirmation = await auth().verifyPhoneNumber(formattedPhoneNumber);
 
       router.replace({
-        pathname: "onboarding/PhoneVerificationScreen",
+        pathname: "onboarding/PhoneVerificationScreen" as any,
         params: {
           verificationId: confirmation.verificationId,
           phoneNumber: formattedPhoneNumber,
@@ -59,7 +59,7 @@ function PhoneNumberScreen(): JSX.Element {
       >
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.replace("onboarding/LoginSignupScreen")}
+          onPress={() => router.replace("onboarding/LoginSignupScreen" as any)}
         >
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>

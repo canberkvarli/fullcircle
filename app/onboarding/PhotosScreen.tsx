@@ -22,8 +22,8 @@ function PhotosScreen() {
   const {
     userData,
     updateUserData,
-    navigateToNextScreen,
     navigateToPreviousScreen,
+    completeOnboarding,
   } = useUserContext();
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>(
     userData?.photos || []
@@ -98,7 +98,7 @@ function PhotosScreen() {
       });
 
       console.log("Photos uploaded successfully!");
-      navigateToNextScreen();
+      completeOnboarding();
     } catch (error: any) {
       Alert.alert("Error", "Failed to save photos: " + error.message);
     } finally {
@@ -106,11 +106,11 @@ function PhotosScreen() {
     }
   };
 
-  const handleDeletePhoto = (index: number) => {
-    const newPhotos = [...selectedPhotos];
-    newPhotos[index] = ""; // Clear the selected photo
-    setSelectedPhotos(newPhotos);
-  };
+  // const handleDeletePhoto = (index: number) => {
+  //   const newPhotos = [...selectedPhotos];
+  //   newPhotos[index] = ""; // Clear the selected photo
+  //   setSelectedPhotos(newPhotos);
+  // };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

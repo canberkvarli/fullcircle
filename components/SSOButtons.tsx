@@ -62,7 +62,13 @@ function SSOButtons(): JSX.Element {
           };
 
           await updateUserData(updatedUserData);
-          // navigateToScreen(existingUserData.currentOnboardingScreen);
+          if (existingUserData.onboardingCompleted) {
+            router.replace("main/Connect" as any);
+          } else {
+            router.replace(
+              `onboarding/${existingUserData.currentOnboardingScreen}` as any
+            );
+          }
         } else {
           console.log(
             "User from google sso DOES NOT exist! Creating new doc..."
@@ -87,6 +93,9 @@ function SSOButtons(): JSX.Element {
           await setDoc(docRef, googleUserData);
           console.log("New user created:", googleUserData);
           setGoogleUserData(googleUserData);
+          router.replace(
+            `onboarding/${googleUserData.currentOnboardingScreen}` as any
+          );
         }
 
         setCurrentUser(user);
@@ -106,7 +115,7 @@ function SSOButtons(): JSX.Element {
   };
 
   const handleSignInWithPhoneNumber = () => {
-    router.replace("onboarding/PhoneNumberScreen");
+    router.replace("onboarding/PhoneNumberScreen" as any);
   };
 
   return (

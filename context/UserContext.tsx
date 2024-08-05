@@ -52,6 +52,7 @@ type UserData = {
     // timezone?: string; // Optionally include timezone if needed
     // Add other optional fields as needed
   };
+  onboardingCompleted?: boolean;
 };
 
 type UserContextType = {
@@ -79,6 +80,7 @@ type UserContextType = {
     React.SetStateAction<FirebaseAuthTypes.User | null>
   >;
   signOut: () => Promise<void>;
+  completeOnboarding: () => void;
 };
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
@@ -103,7 +105,6 @@ const initialScreens = [
   "EducationScreen",
   "SpiritualScreen",
   "PhotosScreen",
-  "HomeScreen",
 ];
 
 const initialUserData: UserData = {
@@ -153,22 +154,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const docRef = doc(FIRESTORE, "users", userId);
     try {
       const docSnap = await getDoc(docRef);
+      const userDataFromFirestore = docSnap.data() as UserData;
+      const userCurrentOnboardingScreen =
+        userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
       if (docSnap.exists()) {
-        const userDataFromFirestore = docSnap.data() as UserData;
-        const userCurrentOnboardingScreen =
-          userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
         console.log("userDataFromFirestore:", userDataFromFirestore);
         setUserData(userDataFromFirestore);
-        updateUserData({
-          userId: userId,
-          currentOnboardingScreen: userCurrentOnboardingScreen,
-        });
-        router.replace({
-          pathname: `onboarding/${userCurrentOnboardingScreen}`,
-        });
+        if (userDataFromFirestore.onboardingCompleted) {
+          router.replace({
+            pathname: `/main/Connect` as any,
+          });
+        } else {
+          router.replace({
+            pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
+          });
+        }
       } else {
         router.replace({
-          pathname: `onboarding/NameScreen`,
+          pathname: `onboarding/NameScreen` as any,
         });
       }
     } catch (error) {
@@ -290,17 +293,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const navigateToNextScreen = async () => {
-    const { currentOnboardingScreen } = userData;
-    const currentIndex = screens.indexOf(currentOnboardingScreen);
-    if (currentIndex !== -1 && currentIndex < screens.length - 1) {
-      const nextScreen = screens[currentIndex + 1];
-      const updatedUserData = {
-        ...userData,
-        currentOnboardingScreen: nextScreen,
-      };
-      setUserData(updatedUserData);
-      await saveProgress(nextScreen); // Save progress before navigating
-      router.replace(`onboarding/${nextScreen}`);
+    const currentScreenIndex = screens.indexOf(
+      userData.currentOnboardingScreen
+    );
+    const nextScreenIndex = currentScreenIndex + 1;
+    if (nextScreenIndex < screens.length) {
+      const nextScreen = screens[nextScreenIndex];
+      await saveProgress(nextScreen);
+      updateUserData({ currentOnboardingScreen: nextScreen });
+      router.replace(`onboarding/${nextScreen}` as any);
+    } else {
+      await updateUserData({ onboardingCompleted: true });
+      router.replace("/");
     }
   };
 
@@ -314,17 +318,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         currentOnboardingScreen: previousScreen,
       };
       setUserData(updatedUserData);
-      await saveProgress(previousScreen); // Save progress before navigating
-      router.replace(`onboarding/${previousScreen}`);
+      await saveProgress(previousScreen);
+      router.replace(`onboarding/${previousScreen}` as any);
     }
   };
 
   const navigateToScreen = async (screen: string) => {
     if (screen === "NameScreen") {
-      router.replace("onboarding/LoginSignupScreen");
+      router.replace("onboarding/LoginSignupScreen" as any);
     } else {
       await saveProgress(screen);
-      router.replace(`onboarding/${screen}`);
+      router.replace(`onboarding/${screen}` as any);
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      await updateUserData({
+        onboardingCompleted: true,
+        currentOnboardingScreen: "Connect",
+      });
+      router.replace("/main/Connect" as any);
+    } catch (error) {
+      console.error("Failed to complete onboarding: ", error);
     }
   };
 
@@ -349,6 +365,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     currentUser,
     setCurrentUser,
     signOut,
+    completeOnboarding,
   };
 
   if (initializing) {
