@@ -24,11 +24,11 @@ export default function SacredSelf() {
         <Text style={styles.title}>Circle</Text>
         <View style={styles.icons}>
           <TouchableOpacity onPress={() => console.log("Preferences clicked")}>
-            <Icon name="cog" size={24} color="black" />
+            <Icon name="sliders" size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => console.log("Settings clicked")}>
             <Icon
-              name="sliders"
+              name="cog"
               size={24}
               color="black"
               style={styles.iconSpacing}

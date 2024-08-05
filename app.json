@@ -63,6 +63,7 @@
       "router": {
         "origin": false
       },
+      "UNSPLASH_ACCESS_KEY": "dET0JZqiMDsodHvnQjp0uXIjMCcKfeq02l14rAWS4kw",
       "eas": {
         "projectId": "5e864641-186b-4d06-99f9-b7ad85439ff4"
       }
