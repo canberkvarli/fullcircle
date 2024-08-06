@@ -68,16 +68,16 @@ export default function SacredSelf() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "My Hinge" && styles.activeTab]}
-          onPress={() => handleTabSwitch("My Hinge")}
+          style={[styles.tab, activeTab === "My Circle" && styles.activeTab]}
+          onPress={() => handleTabSwitch("My Circle")}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === "My Hinge" && styles.activeTabText,
+              activeTab === "My Circle" && styles.activeTabText,
             ]}
           >
-            My Hinge
+            My Circle
           </Text>
         </TouchableOpacity>
       </View>
@@ -86,7 +86,7 @@ export default function SacredSelf() {
         {activeTab === "Get more" ? (
           <Text>Get more content goes here...</Text>
         ) : (
-          <Text>My Hinge content goes here...</Text>
+          <Text>My Circle content goes here...</Text>
         )}
       </View>
     </SafeAreaView>
