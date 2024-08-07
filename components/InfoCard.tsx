@@ -1,13 +1,30 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 
-const InfoCard = ({ title, content }: { title: string; content: string }) => {
+const InfoCard = ({
+  title,
+  content,
+  onLike,
+  onDislike,
+}: {
+  title: string;
+  content: string;
+  onLike: () => void;
+  onDislike: () => void;
+}) => {
   return (
     <View style={styles.infoCard}>
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoContent}>{content}</Text>
-      <Icon name="heart" size={30} color="red" style={styles.heartIcon} />
+      <View style={styles.iconContainer}>
+        <TouchableOpacity onPress={onDislike}>
+          <Icon name="times" size={30} color="red" style={styles.icon} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onLike}>
+          <Icon name="heart" size={30} color="red" style={styles.icon} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -31,10 +48,13 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     textAlign: "center",
   },
-  heartIcon: {
-    right: 20,
-    bottom: 10,
-    textAlign: "right",
+  iconContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+  icon: {
+    marginHorizontal: 10,
   },
 });
 

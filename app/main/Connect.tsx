@@ -6,8 +6,8 @@ import {
   Modal,
   StyleSheet,
   ActivityIndicator,
-  Button,
   ScrollView,
+  Button,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import Checkbox from "expo-checkbox";
@@ -33,12 +33,14 @@ export default function Connect() {
   }, []);
 
   const handleLike = () => {
+    console.log("Like");
     setCurrentMatchIndex(
       (prevIndex) => (prevIndex + 1) % potentialMatches.length
     );
   };
 
   const handleDislike = () => {
+    console.log("Dislike");
     setCurrentMatchIndex(
       (prevIndex) => (prevIndex + 1) % potentialMatches.length
     );
@@ -71,7 +73,11 @@ export default function Connect() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.matchContainer}>
-          <PotentialMatch match={currentMatch} />
+          <PotentialMatch
+            match={currentMatch}
+            onLike={handleLike}
+            onDislike={handleDislike}
+          />
           <Text style={styles.nameText}>{currentMatch.firstName}</Text>
           <View style={styles.actions}>
             <TouchableOpacity

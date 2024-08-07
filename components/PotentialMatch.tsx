@@ -4,6 +4,8 @@ import InfoCard from "@/components/InfoCard";
 
 const PotentialMatch = ({
   match,
+  onLike,
+  onDislike,
 }: {
   match: {
     firstName: string;
@@ -13,6 +15,8 @@ const PotentialMatch = ({
     childrenPreference: string;
     educationDegree: string;
   };
+  onLike: () => void;
+  onDislike: () => void;
 }) => {
   const infoSections = [
     { title: "Children Preference", content: match.childrenPreference },
@@ -29,6 +33,8 @@ const PotentialMatch = ({
             <InfoCard
               title={infoSections[index].title}
               content={infoSections[index].content}
+              onLike={onLike}
+              onDislike={onDislike}
             />
           )}
         </View>

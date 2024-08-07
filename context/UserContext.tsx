@@ -151,8 +151,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchUserData = async (userId: string) => {
     console.log("Fetching user data for:", userId);
-    const docRef = doc(FIRESTORE, "users", userId);
     try {
+      if (userId === "") {
+        return;
+      }
+      const docRef = doc(FIRESTORE, "users", userId);
       const docSnap = await getDoc(docRef);
       const userDataFromFirestore = docSnap.data() as UserData;
       const userCurrentOnboardingScreen =
