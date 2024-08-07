@@ -14,6 +14,7 @@ import Checkbox from "expo-checkbox";
 import Icon from "react-native-vector-icons/FontAwesome";
 import potentialMatches from "@/data/potentialMatches";
 import PotentialMatch from "@/components/PotentialMatch";
+import { useUserContext } from "@/context/UserContext";
 
 export default function Connect() {
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,7 @@ export default function Connect() {
   const [ageRange, setAgeRange] = useState([22, 30]);
   const [dealbreaker, setDealbreaker] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const { likeMatch, dislikeMatch } = useUserContext();
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,20 +33,6 @@ export default function Connect() {
 
     loadData();
   }, []);
-
-  const handleLike = () => {
-    console.log("Like");
-    setCurrentMatchIndex(
-      (prevIndex) => (prevIndex + 1) % potentialMatches.length
-    );
-  };
-
-  const handleDislike = () => {
-    console.log("Dislike");
-    setCurrentMatchIndex(
-      (prevIndex) => (prevIndex + 1) % potentialMatches.length
-    );
-  };
 
   if (loading) {
     return (
@@ -73,20 +61,19 @@ export default function Connect() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.matchContainer}>
-          <PotentialMatch
-            match={currentMatch}
-            onLike={handleLike}
-            onDislike={handleDislike}
-          />
+          <PotentialMatch currentMatch={currentMatch} />
           <Text style={styles.nameText}>{currentMatch.firstName}</Text>
           <View style={styles.actions}>
             <TouchableOpacity
-              onPress={handleDislike}
+              onPress={() => dislikeMatch(currentMatch.userId)}
               style={styles.dislikeButton}
             >
               <Icon name="times" size={30} color="red" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
+            <TouchableOpacity
+              onPress={() => likeMatch(currentMatch.userId)}
+              style={styles.likeButton}
+            >
               <Icon name="heart" size={30} color="black" />
             </TouchableOpacity>
           </View>

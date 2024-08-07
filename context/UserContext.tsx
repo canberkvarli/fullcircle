@@ -53,6 +53,8 @@ type UserData = {
     // Add other optional fields as needed
   };
   onboardingCompleted?: boolean;
+  likedMatches?: string[];
+  dislikedMatches?: string[];
 };
 
 type UserContextType = {
@@ -81,6 +83,8 @@ type UserContextType = {
   >;
   signOut: () => Promise<void>;
   completeOnboarding: () => void;
+  likeMatch: (matchId: string) => Promise<void>;
+  dislikeMatch: (matchId: string) => Promise<void>;
 };
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
@@ -347,6 +351,30 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const likeMatch = async (matchId: string) => {
+    if (!currentUser) return;
+    try {
+      updateUserData({
+        likedMatches: [...(userData.likedMatches || []), matchId],
+      });
+      console.log(`Liked match: ${matchId}`);
+    } catch (error) {
+      console.error("Failed to like match: ", error);
+    }
+  };
+
+  const dislikeMatch = async (matchId: string) => {
+    if (!currentUser) return;
+    try {
+      updateUserData({
+        dislikedMatches: [...(userData.likedMatches || []), matchId],
+      });
+      console.log(`Disliked match: ${matchId}`);
+    } catch (error) {
+      console.error("Failed to dislike match: ", error);
+    }
+  };
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -369,6 +397,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentUser,
     signOut,
     completeOnboarding,
+    likeMatch,
+    dislikeMatch,
   };
 
   if (initializing) {

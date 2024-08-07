@@ -1,27 +1,27 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useUserContext } from "@/context/UserContext";
 
 const InfoCard = ({
   title,
   content,
-  onLike,
-  onDislike,
+  currentMatch,
 }: {
   title: string;
   content: string;
-  onLike: () => void;
-  onDislike: () => void;
+  currentMatch: any;
 }) => {
+  const { likeMatch, dislikeMatch } = useUserContext();
   return (
     <View style={styles.infoCard}>
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoContent}>{content}</Text>
       <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={onDislike}>
+        <TouchableOpacity onPress={() => likeMatch(currentMatch.userId)}>
           <Icon name="times" size={30} color="red" style={styles.icon} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={onLike}>
+        <TouchableOpacity onPress={() => dislikeMatch(currentMatch.userId)}>
           <Icon name="heart" size={30} color="red" style={styles.icon} />
         </TouchableOpacity>
       </View>
