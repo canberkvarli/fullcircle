@@ -156,7 +156,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const docSnap = await getDoc(docRef);
       const userDataFromFirestore = docSnap.data() as UserData;
       const userCurrentOnboardingScreen =
-        userDataFromFirestore.currentOnboardingScreen || "PhoneNumberScreen";
+        userDataFromFirestore?.currentOnboardingScreen || "PhoneNumberScreen";
       if (docSnap.exists()) {
         console.log("userDataFromFirestore:", userDataFromFirestore);
         setUserData(userDataFromFirestore);
