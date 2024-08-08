@@ -96,7 +96,9 @@ function LoginSignupScreen(): JSX.Element {
             <View>
               <TouchableOpacity
                 style={[styles.button, styles.primaryButton]}
-                onPress={() => router.replace("onboarding/PhoneNumberScreen")}
+                onPress={() =>
+                  router.replace("onboarding/PhoneNumberScreen" as any)
+                }
               >
                 <Text style={styles.buttonText}>Create account</Text>
               </TouchableOpacity>
