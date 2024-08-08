@@ -65,20 +65,24 @@ export default function Connect() {
         <View style={styles.matchContainer}>
           <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
           <Text style={styles.nameText}>{currentPotentialMatch.firstName}</Text>
-          <View style={styles.actions}>
+
+          <View style={styles.actionsContainer}>
             <TouchableOpacity
               onPress={() => {
-                dislikeMatch(currentPotentialMatch.userId);
-                loadNextPotentialMatch();
+                dislikeMatch(currentPotentialMatch.userId).then(() => {
+                  loadNextPotentialMatch();
+                });
               }}
               style={styles.dislikeButton}
             >
-              <Icon name="times" size={30} color="red" />
+              <Icon name="times" style={styles.dislikeIcon} />
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={() => {
-                likeMatch(currentPotentialMatch.userId);
-                loadNextPotentialMatch();
+                likeMatch(currentPotentialMatch.userId).then(() => {
+                  loadNextPotentialMatch();
+                });
               }}
               style={styles.likeButton}
             >
@@ -168,12 +172,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
   },
-  actions: {
+  actionsContainer: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 20,
     marginTop: 20,
   },
   dislikeButton: {
-    marginHorizontal: 20,
+    backgroundColor: "black",
+    borderRadius: 50,
+    padding: 10,
+    borderColor: "white",
+    borderWidth: 2,
+  },
+  dislikeIcon: {
+    fontSize: 50,
+    color: "white",
   },
   likeButton: {
     marginHorizontal: 20,

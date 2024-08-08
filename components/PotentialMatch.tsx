@@ -1,34 +1,42 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import InfoCard from "@/components/InfoCard";
 import { useUserContext } from "@/context/UserContext";
+import Icon from "react-native-vector-icons/FontAwesome";
 
-// TODO: For now we are using faker to fill the data of a match.
-// Later use the fetchUserData to populate with real data.
 const PotentialMatch = ({
   currentPotentialMatch,
 }: {
-  currentPotentialMatch: {
-    firstName: string;
-    lastName: string;
-    birthyear: string;
-    photos: string[];
-    childrenPreference: string;
-    educationDegree: string;
-  };
+  currentPotentialMatch: any;
 }) => {
-  const { likeMatch, dislikeMatch } = useUserContext();
+  const { likeMatch, loadNextPotentialMatch } = useUserContext();
   const infoSections = [
-    { title: "Children Preference", content: currentPotentialMatch.childrenPreference },
-    { title: "Education Level", content: currentPotentialMatch.educationDegree },
+    {
+      title: "Children Preference",
+      content: currentPotentialMatch.childrenPreference,
+    },
+    {
+      title: "Education Level",
+      content: currentPotentialMatch.educationDegree,
+    },
   ];
 
   return (
     <View style={styles.container}>
       <Text style={styles.userName}>{currentPotentialMatch.firstName}</Text>
-      {currentPotentialMatch.photos.map((photo, index) => (
-        <View key={index}>
+      {currentPotentialMatch.photos.map((photo: any, index: number) => (
+        <View key={index} style={styles.photoContainer}>
           <Image source={{ uri: photo }} style={styles.photo} />
+          <TouchableOpacity
+            style={styles.heartIcon}
+            onPress={() => {
+              likeMatch(currentPotentialMatch.userId).then(() => {
+                loadNextPotentialMatch();
+              });
+            }}
+          >
+            <Icon name="heart" size={24} color="red" />
+          </TouchableOpacity>
           {index < infoSections.length && (
             <InfoCard
               title={infoSections[index].title}
@@ -55,11 +63,19 @@ const styles = StyleSheet.create({
     textAlign: "left",
     zIndex: 1,
   },
+  photoContainer: {
+    position: "relative",
+  },
   photo: {
     width: 400,
     height: 400,
     borderRadius: 30,
     marginVertical: 10,
+  },
+  heartIcon: {
+    position: "absolute",
+    right: 10,
+    bottom: 10,
   },
 });
 

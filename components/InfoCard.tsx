@@ -12,14 +12,18 @@ const InfoCard = ({
   content: string;
   currentPotentialMatch: any;
 }) => {
-  const { likeMatch } = useUserContext();
+  const { likeMatch, loadNextPotentialMatch } = useUserContext();
   return (
     <View style={styles.infoCard}>
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoContent}>{content}</Text>
       <View style={styles.iconContainer}>
         <TouchableOpacity
-          onPress={() => likeMatch(currentPotentialMatch.userId)}
+          onPress={() => {
+            likeMatch(currentPotentialMatch.userId).then(() =>
+              loadNextPotentialMatch()
+            );
+          }}
         >
           <Icon name="heart" size={30} color="red" style={styles.icon} />
         </TouchableOpacity>
