@@ -4,6 +4,7 @@ import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import potentialMatchesData from "@/data/potentialMatches";
 
 type UserData = {
   userId: string;
@@ -85,6 +86,9 @@ type UserContextType = {
   completeOnboarding: () => void;
   likeMatch: (matchId: string) => Promise<void>;
   dislikeMatch: (matchId: string) => Promise<void>;
+  currentPotentialMatch: any;
+  setCurrentPotentialMatch: React.Dispatch<React.SetStateAction<any>>;
+  loadNextPotentialMatch: () => void;
 };
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
@@ -150,6 +154,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentUser, setCurrentUser] = useState<FirebaseAuthTypes.User | null>(
     null
   );
+  const [currentPotentialMatchIndex, setCurrentPotentialMatchIndex] =
+    useState(0);
+  const [currentPotentialMatch, setCurrentPotentialMatch] =
+    useState<UserData | null>(null);
+  const [potentialMatches, setPotentialMatches] =
+    useState<UserData[]>(potentialMatchesData);
   const [initializing, setInitializing] = useState(true);
   const router = useRouter();
 
@@ -171,6 +181,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           router.replace({
             pathname: `/main/Connect` as any,
           });
+          setPotentialMatches(potentialMatches); //load potential matches from faker
         } else {
           router.replace({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
@@ -311,6 +322,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       router.replace(`onboarding/${nextScreen}` as any);
     } else {
       await updateUserData({ onboardingCompleted: true });
+      await setPotentialMatches(potentialMatches); //load potential matches from faker
       router.replace("/");
     }
   };
@@ -345,9 +357,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         onboardingCompleted: true,
         currentOnboardingScreen: "Connect",
       });
+      await setPotentialMatches(potentialMatches); //load potential matches from faker
       router.replace("/main/Connect" as any);
     } catch (error) {
       console.error("Failed to complete onboarding: ", error);
+    }
+  };
+
+  const loadNextPotentialMatch = () => {
+    if (potentialMatches.length === 0) return;
+
+    const nextIndex = currentPotentialMatchIndex + 1;
+
+    if (nextIndex < potentialMatches.length) {
+      setCurrentPotentialMatch(potentialMatches[nextIndex]);
+      setCurrentPotentialMatchIndex(nextIndex);
+    } else {
+      // Optionally handle what happens when there are no more potential matches
+      console.log("No more matches available.");
     }
   };
 
@@ -399,6 +426,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     completeOnboarding,
     likeMatch,
     dislikeMatch,
+    currentPotentialMatch,
+    setCurrentPotentialMatch,
+    loadNextPotentialMatch,
   };
 
   if (initializing) {

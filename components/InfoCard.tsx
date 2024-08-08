@@ -6,11 +6,11 @@ import { useUserContext } from "@/context/UserContext";
 const InfoCard = ({
   title,
   content,
-  currentMatch,
+  currentPotentialMatch,
 }: {
   title: string;
   content: string;
-  currentMatch: any;
+  currentPotentialMatch: any;
 }) => {
   const { likeMatch } = useUserContext();
   return (
@@ -18,7 +18,9 @@ const InfoCard = ({
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoContent}>{content}</Text>
       <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={() => likeMatch(currentMatch.userId)}>
+        <TouchableOpacity
+          onPress={() => likeMatch(currentPotentialMatch.userId)}
+        >
           <Icon name="heart" size={30} color="red" style={styles.icon} />
         </TouchableOpacity>
       </View>

@@ -26,6 +26,11 @@ interface PotentialMatch {
   childrenPreference: string;
   location: Location;
   educationDegree: string;
+  currentOnboardingScreen: string;
+  phoneNumber: string;
+  countryCode: string;
+  areaCode: string;
+  number: string;
 }
 
 // Function to generate a random location
@@ -88,6 +93,11 @@ const fetchUnsplashImages = async (query: string, count: number, page: number): 
         "Master",
         "Doctorate",
       ]),
+      currentOnboardingScreen: '',
+      phoneNumber: faker.phone.number(),
+      countryCode: faker.number.int({ min: 1, max: 100 }).toString(),
+      areaCode: faker.number.int({ min: 1, max: 100 }).toString(),
+      number: faker.number.int({ min: 1000000, max: 9999999 }).toString(),
     };
   };
   
@@ -138,6 +148,11 @@ interface PotentialMatch {
   childrenPreference: string;
   location: Location;
   educationDegree: string;
+  currentOnboardingScreen: string,
+  phoneNumber: string,
+  countryCode: string,
+  areaCode: string,
+  number: string
 }
 
 const potentialMatches: PotentialMatch[] = ${JSON.stringify(potentialMatches, null, 2)};
