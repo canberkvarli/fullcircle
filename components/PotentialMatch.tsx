@@ -35,7 +35,7 @@ const PotentialMatch = ({
               });
             }}
           >
-            <Icon name="heart" size={24} color="red" />
+            <Icon name="heart" size={40} color="red" />
           </TouchableOpacity>
           {index < infoSections.length && (
             <InfoCard
@@ -73,9 +73,9 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   heartIcon: {
-    position: "absolute",
-    right: 10,
-    bottom: 10,
+    alignItems: "flex-end",
+    bottom: 70,
+    right: 35,
   },
 });
 

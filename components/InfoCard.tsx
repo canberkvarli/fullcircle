@@ -53,8 +53,9 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "flex-end",
     marginTop: 10,
+    paddingRight: 20,
   },
   icon: {
     marginHorizontal: 10,
