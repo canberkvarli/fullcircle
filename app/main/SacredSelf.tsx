@@ -305,38 +305,44 @@ const styles = StyleSheet.create({
   },
   fullCircleImage: {
     width: "100%",
-    height: 500,
+    height: 300,
     borderRadius: 16,
   },
   fullCircleTextContainer: {
-    position: "absolute",
-    bottom: 16,
-    left: 16,
+    bottom: 180,
   },
   fullCircleText: {
-    fontSize: 24,
+    fontSize: 35,
     fontWeight: "bold",
     color: "white",
+    textAlign: "center",
+    bottom: 50,
   },
   subText: {
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: "bold",
     color: "white",
+    textAlign: "center",
+    padding: 10,
+    bottom: 20,
   },
   upgradeButton: {
     backgroundColor: "white",
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginTop: 8,
+    alignSelf: "center",
   },
   upgradeButtonText: {
     fontSize: 16,
     fontWeight: "bold",
     color: "black",
+    textAlign: "center",
   },
   iconButtonsContainer: {
     flexDirection: "column",
     marginTop: 16,
+    bottom: 160,
   },
   iconButton: {
     flexDirection: "row",
@@ -361,6 +367,5 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
   },
 });
