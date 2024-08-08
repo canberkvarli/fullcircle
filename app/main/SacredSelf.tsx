@@ -18,7 +18,7 @@ export default function SacredSelf() {
   const [showHeader, setShowHeader] = useState(false); // State to control header visibility
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const avatarHeight = 120; // Approximate height of avatar + padding
+  const avatarHeight = 150; // Approximate height of avatar + padding
 
   const handleTabSwitch = (tab: string) => {
     setActiveTab(tab);
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   fullCircleImage: {
     width: "100%",
-    height: 200,
+    height: 500,
     borderRadius: 16,
   },
   fullCircleTextContainer: {
