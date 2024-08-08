@@ -35,7 +35,7 @@ const PotentialMatch = ({
               });
             }}
           >
-            <Icon name="heart" size={40} color="red" />
+            <Icon name="heart" size={40} color="black" />
           </TouchableOpacity>
           {index < infoSections.length && (
             <InfoCard

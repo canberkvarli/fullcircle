@@ -25,7 +25,7 @@ const InfoCard = ({
             );
           }}
         >
-          <Icon name="heart" size={30} color="red" style={styles.icon} />
+          <Icon name="heart" size={30} color="grey" style={styles.icon} />
         </TouchableOpacity>
       </View>
     </View>

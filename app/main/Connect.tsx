@@ -20,12 +20,8 @@ export default function Connect() {
   const [modalVisible, setModalVisible] = useState(false);
   const [ageRange, setAgeRange] = useState([22, 30]);
   const [dealbreaker, setDealbreaker] = useState(false);
-  const {
-    likeMatch,
-    dislikeMatch,
-    currentPotentialMatch,
-    loadNextPotentialMatch,
-  } = useUserContext();
+  const { dislikeMatch, currentPotentialMatch, loadNextPotentialMatch } =
+    useUserContext();
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,33 +60,19 @@ export default function Connect() {
       >
         <View style={styles.matchContainer}>
           <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
-          <Text style={styles.nameText}>{currentPotentialMatch.firstName}</Text>
-
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                dislikeMatch(currentPotentialMatch.userId).then(() => {
-                  loadNextPotentialMatch();
-                });
-              }}
-              style={styles.dislikeButton}
-            >
-              <Icon name="times" style={styles.dislikeIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                likeMatch(currentPotentialMatch.userId).then(() => {
-                  loadNextPotentialMatch();
-                });
-              }}
-              style={styles.likeButton}
-            >
-              <Icon name="heart" size={30} color="black" />
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
+
+      <TouchableOpacity
+        onPress={() => {
+          dislikeMatch(currentPotentialMatch.userId).then(() => {
+            loadNextPotentialMatch();
+          });
+        }}
+        style={styles.dislikeButton}
+      >
+        <Icon name="times" style={styles.dislikeIcon} />
+      </TouchableOpacity>
 
       <Modal
         animationType="slide"
@@ -172,27 +154,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
   },
-  actionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
   dislikeButton: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
     backgroundColor: "black",
     borderRadius: 50,
     padding: 10,
     borderColor: "white",
     borderWidth: 2,
+    zIndex: 100, // Ensures it's above other components
   },
   dislikeIcon: {
     fontSize: 50,
     color: "white",
-  },
-  likeButton: {
-    marginHorizontal: 20,
   },
   modalOverlay: {
     flex: 1,
