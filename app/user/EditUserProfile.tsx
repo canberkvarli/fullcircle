@@ -56,7 +56,7 @@ export default function EditUserProfileScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel}>
           <Text style={styles.headerButton}>Cancel</Text>
@@ -117,9 +117,9 @@ export default function EditUserProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: "#fff",
+    marginTop: 25,
   },
   header: {
     flexDirection: "row",
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     fontSize: 16,
-    color: "#007AFF",
   },
   headerTitle: {
     fontSize: 18,
