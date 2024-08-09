@@ -2,136 +2,197 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
   Image,
-  ScrollView,
 } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
+import Icon from "react-native-vector-icons/FontAwesome";
+import * as ImagePicker from "expo-image-picker";
+import DraggableFlatList from "react-native-draggable-flatlist";
 import { useRouter } from "expo-router";
 
-export default function EditUserProfile({ navigation }: any) {
-  const { userData } = useUserContext();
-  const [photos, setPhotos] = useState(userData.photos || []);
+export default function EditUserProfileScreen() {
+  const { userData, updateUserData } = useUserContext();
+  const [photos, setPhotos] = useState<string[]>(userData.photos || []);
+  const [tab, setTab] = useState("Edit");
   const router = useRouter();
 
-  const handlePhotoPress = (index: number) => {
-    console.log(`Photo ${index} tapped`);
-  };
+  const pickImage = async (index: number) => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
 
-  const handlePhotoRemove = (index: number) => {
-    console.log(`Remove photo ${index} tapped`);
-    // Logic to open camera roll or image picker goes here
-  };
-
-  const handleSave = () => {
-    console.log("Profile saved");
-    // Logic to save profile updates goes here
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const updatedPhotos = [...photos];
+      updatedPhotos[index] = result.assets[0].uri;
+      setPhotos(updatedPhotos);
+      updateUserData({ photos: updatedPhotos });
+    }
   };
 
   const handleCancel = () => {
-    console.log("Profile edit canceled");
     router.back();
-    // Logic to cancel profile updates goes here
   };
 
+  const renderPhotoItem = ({ item, index }: any) => (
+    <TouchableOpacity
+      style={styles.photoContainer}
+      onPress={() => pickImage(index)}
+      key={`photo-${index}`}
+    >
+      <Image source={{ uri: item }} style={styles.photo} />
+      <TouchableOpacity
+        style={styles.removePhotoIcon}
+        onPress={() => pickImage(index)}
+      >
+        <Icon name="times-circle" size={24} color="white" />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={styles.headerButton}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.userName}>{userData.firstName}</Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.doneText}>Done</Text>
+        <Text style={styles.headerTitle}>{userData.firstName}</Text>
+        <TouchableOpacity onPress={() => console.log("Done")}>
+          <Text style={styles.headerButton}>Done</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.photoGrid}>
-          {photos.map((photo, index) => (
-            <View key={index} style={styles.photoContainer}>
-              <TouchableOpacity onPress={() => handlePhotoPress(index)}>
-                <Image source={{ uri: photo }} style={styles.photo} />
-                <TouchableOpacity
-                  style={styles.removeIcon}
-                  onPress={() => handlePhotoRemove(index)}
-                >
-                  <Icon name="times" size={16} color="white" />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-        <Text style={styles.editHint}>Tap to edit, drag to reorder</Text>
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tabButton, tab === "Edit" && styles.activeTabButton]}
+          onPress={() => setTab("Edit")}
+        >
+          <Text style={styles.tabText}>Edit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, tab === "View" && styles.activeTabButton]}
+          onPress={() => setTab("View")}
+        >
+          <Text style={styles.tabText}>View</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Additional user info goes here */}
-        <View style={styles.infoContainer}>
-          <Text>Email: {userData.email}</Text>
-          <Text>Birthdate: {userData.birthdate}</Text>
-          {/* Add more fields as needed */}
+      {tab === "Edit" && (
+        <View style={styles.contentContainer}>
+          <DraggableFlatList
+            data={photos}
+            renderItem={renderPhotoItem}
+            keyExtractor={(item, index) => `draggable-item-${item}-${index}`}
+            onDragEnd={({ data }) => {
+              setPhotos(data);
+              updateUserData({ photos: data });
+            }}
+            numColumns={3} // Set the number of columns for the grid
+            contentContainerStyle={styles.photoGrid}
+          />
+
+          <View style={styles.editFields}>
+            <Text style={styles.fieldLabel}>First Name</Text>
+            <TouchableOpacity onPress={() => console.log("Edit first name")}>
+              <Text style={styles.fieldValue}>{userData.firstName}</Text>
+            </TouchableOpacity>
+
+            {/* Repeat for other user data fields */}
+          </View>
         </View>
-      </ScrollView>
-    </View>
+      )}
+
+      {tab === "View" && (
+        <View style={styles.contentContainer}>
+          {/* Add content for the View tab */}
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#fff",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
-  cancelText: {
+  headerButton: {
+    fontSize: 16,
+    color: "#007AFF",
+  },
+  headerTitle: {
     fontSize: 18,
-    color: "red",
-  },
-  userName: {
-    fontSize: 20,
     fontWeight: "bold",
   },
-  doneText: {
-    fontSize: 18,
-    color: "blue",
+  tabBar: {
+    flexDirection: "row",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
-  scrollContent: {
-    paddingBottom: 20,
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  activeTabButton: {
+    borderBottomWidth: 2,
+    borderBottomColor: "#007AFF",
+  },
+  tabText: {
+    fontSize: 16,
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 16,
   },
   photoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: 16,
   },
   photoContainer: {
+    flex: 1 / 3, // Ensure that each photo container takes up one-third of the row
+    aspectRatio: 1,
+    marginBottom: 16,
     position: "relative",
-    width: "30%", // Adjust as necessary
-    marginBottom: 10,
   },
   photo: {
     width: "100%",
-    height: 100,
+    height: "100%",
     borderRadius: 8,
   },
-  removeIcon: {
+  removePhotoIcon: {
     position: "absolute",
-    top: 5,
-    right: 5,
-    backgroundColor: "red",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
     borderRadius: 12,
     padding: 4,
   },
-  editHint: {
-    color: "#7f8c8d",
-    marginBottom: 16,
+  editFields: {
+    marginTop: 16,
   },
-  infoContainer: {
-    // Add styling for user information
+  fieldLabel: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 8,
+  },
+  fieldValue: {
+    fontSize: 16,
+    color: "#007AFF",
+    marginBottom: 16,
   },
 });
