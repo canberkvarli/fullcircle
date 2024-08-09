@@ -10,6 +10,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="main" />
+          <Stack.Screen name="user" />
         </Stack>
       </UserProvider>
     </NativeBaseProvider>

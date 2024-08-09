@@ -9,6 +9,7 @@ import {
   Animated,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { Link } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 
 export default function SacredSelf() {
@@ -79,18 +80,20 @@ export default function SacredSelf() {
         scrollEventThrottle={16}
       >
         <View style={styles.profileSection}>
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: userData.photos?.[0] }}
-              style={styles.profileImage}
-            />
-            <TouchableOpacity
-              style={styles.editIconContainer}
-              onPress={() => console.log("Edit photo clicked")}
-            >
-              <Icon name="pencil" size={16} color="white" />
-            </TouchableOpacity>
-          </View>
+          <Link href={"/user/EditUserProfile" as any}>
+            <View style={styles.profileImageContainer}>
+              <Image
+                source={{ uri: userData.photos?.[0] }}
+                style={styles.profileImage}
+              />
+              <Icon
+                name="pencil"
+                size={16}
+                color="white"
+                style={styles.editIconContainer}
+              />
+            </View>
+          </Link>
           <View style={styles.userNameContainer}>
             <Text style={styles.userName}>{userData.firstName}</Text>
             <TouchableOpacity onPress={handleVerify}>
