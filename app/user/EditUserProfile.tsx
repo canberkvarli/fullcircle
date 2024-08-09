@@ -10,7 +10,10 @@ import {
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
 import * as ImagePicker from "expo-image-picker";
-import DraggableFlatList from "react-native-draggable-flatlist";
+import DraggableFlatList, {
+  ScaleDecorator,
+  RenderItemParams,
+} from "react-native-draggable-flatlist";
 import { useRouter } from "expo-router";
 
 export default function EditUserProfileScreen() {
@@ -39,21 +42,45 @@ export default function EditUserProfileScreen() {
     router.back();
   };
 
-  const renderPhotoItem = ({ item, index }: any) => (
-    <TouchableOpacity
-      style={styles.photoContainer}
-      onPress={() => pickImage(index)}
-      key={`photo-${index}`}
-    >
-      <Image source={{ uri: item }} style={styles.photo} />
-      <TouchableOpacity
-        style={styles.removePhotoIcon}
-        onPress={() => pickImage(index)}
-      >
-        <Icon name="times-circle" size={24} color="white" />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
+  const renderPhotoItem = ({
+    item,
+    drag,
+    isActive,
+    getIndex,
+  }: RenderItemParams<string>) => {
+    const index = getIndex?.() ?? 0;
+
+    return (
+      <ScaleDecorator>
+        <TouchableOpacity
+          style={[
+            styles.photoContainer,
+            { backgroundColor: isActive ? "#f0f0f0" : "transparent" },
+          ]}
+          disabled={isActive}
+          onLongPress={drag}
+          activeOpacity={1}
+        >
+          <TouchableOpacity
+            onPress={() => pickImage(index)}
+            style={styles.photoTouchable}
+          >
+            <Image source={{ uri: item }} style={styles.photo} />
+            <TouchableOpacity
+              style={styles.removePhotoIcon}
+              onPress={() => {
+                const updatedPhotos = photos.filter((_, i) => i !== index);
+                setPhotos(updatedPhotos);
+                updateUserData({ photos: updatedPhotos });
+              }}
+            >
+              <Icon name="times-circle" size={24} color="white" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </ScaleDecorator>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -84,25 +111,18 @@ export default function EditUserProfileScreen() {
 
       {tab === "Edit" && (
         <View style={styles.contentContainer}>
-          <DraggableFlatList
-            data={photos}
-            renderItem={renderPhotoItem}
-            keyExtractor={(item, index) => `draggable-item-${item}-${index}`}
-            onDragEnd={({ data }) => {
-              setPhotos(data);
-              updateUserData({ photos: data });
-            }}
-            numColumns={3} // Set the number of columns for the grid
-            contentContainerStyle={styles.photoGrid}
-          />
-
-          <View style={styles.editFields}>
-            <Text style={styles.fieldLabel}>First Name</Text>
-            <TouchableOpacity onPress={() => console.log("Edit first name")}>
-              <Text style={styles.fieldValue}>{userData.firstName}</Text>
-            </TouchableOpacity>
-
-            {/* Repeat for other user data fields */}
+          <View style={styles.photosContainer}>
+            <DraggableFlatList
+              data={photos}
+              renderItem={renderPhotoItem}
+              keyExtractor={(item, index) => `draggable-item-${index}`}
+              onDragEnd={({ data }) => {
+                setPhotos(data);
+                updateUserData({ photos: data });
+              }}
+              numColumns={3} // Ensure 3 columns
+              contentContainerStyle={styles.photoGrid}
+            />
           </View>
         </View>
       )}
@@ -154,19 +174,30 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 16,
   },
+  photosContainer: {
+    flexDirection: "column",
+    marginBottom: 16,
+  },
   contentContainer: {
     flex: 1,
     padding: 16,
   },
   photoGrid: {
     justifyContent: "space-between",
-    marginBottom: 16,
   },
   photoContainer: {
-    flex: 1 / 3, // Ensure that each photo container takes up one-third of the row
-    aspectRatio: 1,
+    flex: 1,
     marginBottom: 16,
     position: "relative",
+    width: "100%",
+    maxWidth: 120,
+    padding: 5,
+  },
+  photoTouchable: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: "hidden",
   },
   photo: {
     width: "100%",
@@ -184,14 +215,5 @@ const styles = StyleSheet.create({
   editFields: {
     marginTop: 16,
   },
-  fieldLabel: {
-    fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
-  },
-  fieldValue: {
-    fontSize: 16,
-    color: "#007AFF",
-    marginBottom: 16,
-  },
+  // Add other styles as necessary...
 });
