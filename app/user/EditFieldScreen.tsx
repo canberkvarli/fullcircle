@@ -36,21 +36,36 @@ function EditFieldScreen() {
   const router = useRouter();
   const { updateUserData, userData } = useUserContext();
   const { fieldName } = useLocalSearchParams();
-  const [selectedOption, setSelectedOption] = useState<string | null>(
-    (userData as any)[fieldName as string] || null
-  );
-  const [isVisible, setIsVisible] = useState(
-    (userData.hiddenFields as any)?.[fieldName as string] === false
-  );
+
+  // Set the initial state from userData
+  const currentFieldValue = (userData as any)[fieldName as string] || null;
+  const isHidden =
+    (userData.hiddenFields as any)?.[fieldName as string] === false;
+
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(isHidden);
   const [customGender, setCustomGender] = useState("");
 
   useEffect(() => {
-    if (fieldName === "Gender" && selectedOption === "Other") {
-      setCustomGender((userData as any)[fieldName as string] || "");
+    if (fieldName === "Gender") {
+      // Set selectedOption and customGender from userData
+      if (currentFieldValue === "Other") {
+        setSelectedOption("Other");
+        setCustomGender((userData as any)[fieldName as string] || ""); // Set custom gender from the database
+      } else {
+        setSelectedOption(currentFieldValue);
+        setCustomGender(""); // Clear custom gender if not "Other"
+      }
     }
-  }, [fieldName, selectedOption, userData]);
+  }, [fieldName, currentFieldValue, userData]);
 
   const handleSave = async () => {
+    // Ensure that the gender field cannot be empty
+    if (fieldName === "Gender" && !selectedOption) {
+      alert("Please select a gender or provide a custom value.");
+      return; // Prevent saving if no option is selected
+    }
+
     await updateUserData({
       [fieldName as string]:
         selectedOption === "Other" ? customGender : selectedOption,
@@ -70,9 +85,15 @@ function EditFieldScreen() {
     <TouchableOpacity
       style={styles.optionContainer}
       onPress={() => {
-        setSelectedOption(option.title);
-        if (option.input) {
-          setCustomGender("");
+        if (option.title === "Other") {
+          // Allow selecting "Other" only if no other option is selected
+          if (selectedOption !== "Other") {
+            setSelectedOption("Other");
+            setCustomGender((userData as any)[fieldName as string] || ""); // Populate input field with existing value
+          }
+        } else {
+          setSelectedOption(option.title);
+          setCustomGender(""); // Clear custom gender input if selecting any other option
         }
       }}
     >
@@ -81,18 +102,24 @@ function EditFieldScreen() {
         {option.subtitle && (
           <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
         )}
-        {option.input && selectedOption === option.title && (
-          <TextInput
-            style={styles.input}
-            placeholder="Enter here"
-            value={customGender}
-            onChangeText={setCustomGender}
-          />
-        )}
+        {option.input &&
+          (selectedOption === option.title || selectedOption === "Other") && (
+            <TextInput
+              style={styles.input}
+              placeholder="Enter here"
+              value={customGender}
+              onChangeText={setCustomGender}
+            />
+          )}
       </View>
       <Checkbox
         value={selectedOption === option.title}
-        onValueChange={() => setSelectedOption(option.title)}
+        onValueChange={() => {
+          if (option.title !== "Other") {
+            setSelectedOption(option.title);
+            setCustomGender(""); // Clear custom gender input if selecting any other option
+          }
+        }}
       />
     </TouchableOpacity>
   );
@@ -169,7 +196,6 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 16, // Adjust the top margin to space it out from the options
   },
   checkboxLabel: {
     marginLeft: 12,
