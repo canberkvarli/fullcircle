@@ -18,11 +18,11 @@ function EditFieldScreen() {
 
   const handleSave = () => {
     updateUserData({ [fieldName as string]: value });
-    router.replace("/user/EditUserProfile" as any);
+    router.back();
   };
 
   const handleBack = () => {
-    router.replace("/user/EditUserProfile" as any);
+    router.back();
   };
 
   return (

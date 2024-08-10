@@ -41,7 +41,7 @@ export default function EditUserProfile() {
   };
 
   const handleFieldPress = (fieldName: string) => {
-    router.replace("/user/EditFieldScreen", { fieldName });
+    router.push("/user/EditFieldScreen", { fieldName });
   };
 
   const renderItem = (item: { key: string; uri: string }, order: number) => {
