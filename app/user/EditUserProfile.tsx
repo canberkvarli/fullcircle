@@ -1,27 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  View,
   Text,
-  TouchableOpacity,
+  View,
   StyleSheet,
-  SafeAreaView,
+  TouchableOpacity,
   Image,
-  Dimensions,
+  SafeAreaView,
+  Alert,
 } from "react-native";
-import { useUserContext } from "@/context/UserContext";
-import Icon from "react-native-vector-icons/FontAwesome";
-import * as ImagePicker from "expo-image-picker";
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
+import * as ImagePicker from "expo-image-picker";
+import Icon from "react-native-vector-icons/FontAwesome";
+import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 
-export default function EditUserProfileScreen() {
+export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
   const [photos, setPhotos] = useState<string[]>(userData.photos || []);
+  const [originalPhotos, setOriginalPhotos] = useState<string[]>(
+    userData.photos || []
+  );
   const [tab, setTab] = useState("Edit");
   const router = useRouter();
+  const [isModified, setIsModified] = useState(false);
 
   const pickImage = async (index: number) => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -35,48 +39,68 @@ export default function EditUserProfileScreen() {
       const updatedPhotos = [...photos];
       updatedPhotos[index] = result.assets[0].uri;
       setPhotos(updatedPhotos);
+      setIsModified(true);
       updateUserData({ photos: updatedPhotos });
     }
   };
 
-  const handleCancel = () => {
-    router.back();
-  };
-
-  const renderPhotoItem = ({
+  const renderItem = ({
     item,
     drag,
     isActive,
     getIndex,
-  }: RenderItemParams<string>) => {
+  }: RenderItemParams<(typeof photos)[0]>) => {
     const index = getIndex?.() ?? 0;
-
     return (
       <ScaleDecorator>
         <TouchableOpacity
+          onLongPress={drag}
+          disabled={isActive}
           style={[
             styles.photoContainer,
             { backgroundColor: isActive ? "#f0f0f0" : "transparent" },
           ]}
-          onLongPress={drag}
-          activeOpacity={0.8}
         >
-          <TouchableOpacity onPress={() => pickImage(index)}>
-            <Image source={{ uri: item }} style={styles.photo} />
-            <TouchableOpacity
-              style={styles.removePhotoIcon}
-              onPress={() => {
-                const updatedPhotos = photos.filter((_, i) => i !== index);
-                setPhotos(updatedPhotos);
-                updateUserData({ photos: updatedPhotos });
-              }}
-            >
-              <Icon name="times-circle" size={24} color="white" />
-            </TouchableOpacity>
+          <Image source={{ uri: item }} style={styles.photo} />
+          <TouchableOpacity
+            style={styles.removePhotoIcon}
+            onPress={() => pickImage(index as any)}
+          >
+            <Icon name="camera" size={24} color="white" />
           </TouchableOpacity>
         </TouchableOpacity>
       </ScaleDecorator>
     );
+  };
+
+  const handleCancel = () => {
+    if (isModified) {
+      Alert.alert(
+        "Discard Changes?",
+        "You have unsaved changes. Do you want to discard them?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Discard",
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } else {
+      router.back();
+    }
+  };
+
+  const handleDone = async () => {
+    if (isModified) {
+      // Update Firestore with the new photo order
+      await updateUserData({ photos });
+      setIsModified(false);
+    }
+    router.back();
   };
 
   return (
@@ -86,7 +110,7 @@ export default function EditUserProfileScreen() {
           <Text style={styles.headerButton}>Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{userData.firstName}</Text>
-        <TouchableOpacity onPress={() => console.log("Done")}>
+        <TouchableOpacity onPress={handleDone}>
           <Text style={styles.headerButton}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -107,22 +131,17 @@ export default function EditUserProfileScreen() {
       </View>
 
       {tab === "Edit" && (
-        <View style={styles.contentContainer}>
-          <DraggableFlatList
-            data={photos}
-            renderItem={renderPhotoItem}
-            keyExtractor={(_item, index) => `draggable-item-${index}`}
-            onDragEnd={({ data }) => {
-              setPhotos(data);
-              updateUserData({ photos: data });
-            }}
-            numColumns={3} // Ensure 3 columns
-            contentContainerStyle={styles.photoGrid}
-          />
-          <Text style={styles.editInstruction}>
-            Tap to edit, drag to reorder.
-          </Text>
-        </View>
+        <DraggableFlatList
+          data={photos}
+          onDragEnd={({ data }) => {
+            setPhotos(data);
+            setIsModified(true);
+            updateUserData({ photos: data }); // Update in Firestore immediately
+          }}
+          keyExtractor={(_item, index) => `draggable-item-${index}`}
+          renderItem={renderItem}
+          contentContainerStyle={styles.photoList}
+        />
       )}
 
       {tab === "View" && (
@@ -137,7 +156,7 @@ export default function EditUserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 25,
+    padding: 16,
   },
   header: {
     flexDirection: "row",
@@ -174,20 +193,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#007AFF",
   },
-  contentContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  photoGrid: {
-    justifyContent: "space-between",
+  photoList: {
+    flexGrow: 1,
   },
   photoContainer: {
-    margin: 8,
-    width: Dimensions.get("window").width / 3 - 24, // Adjust size to fit 3 columns
-    aspectRatio: 1,
+    height: 100,
+    marginVertical: 8,
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#eee",
+    alignItems: "center",
+    justifyContent: "center",
   },
   photo: {
     width: "100%",
@@ -201,9 +217,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  editInstruction: {
-    textAlign: "center",
-    marginTop: 16,
-    color: "#888",
+  contentContainer: {
+    flex: 1,
+    padding: 16,
   },
 });
