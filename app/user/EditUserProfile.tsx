@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// @ts-nocheck // workaround for the draggable grid.
+import React, { useState } from "react";
 import {
   Text,
   View,
@@ -8,10 +9,7 @@ import {
   SafeAreaView,
   Alert,
 } from "react-native";
-import DraggableFlatList, {
-  RenderItemParams,
-  ScaleDecorator,
-} from "react-native-draggable-flatlist";
+import { DraggableGrid } from "react-native-draggable-grid";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
@@ -20,9 +18,6 @@ import { useRouter } from "expo-router";
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
   const [photos, setPhotos] = useState<string[]>(userData.photos || []);
-  const [originalPhotos, setOriginalPhotos] = useState<string[]>(
-    userData.photos || []
-  );
   const [tab, setTab] = useState("Edit");
   const router = useRouter();
   const [isModified, setIsModified] = useState(false);
@@ -40,36 +35,22 @@ export default function EditUserProfile() {
       updatedPhotos[index] = result.assets[0].uri;
       setPhotos(updatedPhotos);
       setIsModified(true);
-      updateUserData({ photos: updatedPhotos });
     }
   };
 
-  const renderItem = ({
-    item,
-    drag,
-    isActive,
-    getIndex,
-  }: RenderItemParams<(typeof photos)[0]>) => {
-    const index = getIndex?.() ?? 0;
+  const renderItem = (item: { key: string; uri: string }, order: number) => {
     return (
-      <ScaleDecorator>
-        <TouchableOpacity
-          onLongPress={drag}
-          disabled={isActive}
-          style={[
-            styles.photoContainer,
-            { backgroundColor: isActive ? "#f0f0f0" : "transparent" },
-          ]}
-        >
-          <Image source={{ uri: item }} style={styles.photo} />
+      <View style={styles.photoContainer} key={item.key}>
+        <View style={styles.photoWrapper}>
+          <Image source={{ uri: item.uri }} style={styles.photo} />
           <TouchableOpacity
             style={styles.removePhotoIcon}
-            onPress={() => pickImage(index as any)}
+            onPress={() => pickImage(order)}
           >
-            <Icon name="camera" size={24} color="white" />
+            <Icon name="times" size={12} color="white" />
           </TouchableOpacity>
-        </TouchableOpacity>
-      </ScaleDecorator>
+        </View>
+      </View>
     );
   };
 
@@ -96,12 +77,16 @@ export default function EditUserProfile() {
 
   const handleDone = async () => {
     if (isModified) {
-      // Update Firestore with the new photo order
       await updateUserData({ photos });
       setIsModified(false);
     }
     router.back();
   };
+
+  const photoData = photos.map((uri, index) => ({
+    key: `photo-${index}`,
+    uri,
+  }));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -131,16 +116,20 @@ export default function EditUserProfile() {
       </View>
 
       {tab === "Edit" && (
-        <DraggableFlatList
-          data={photos}
-          onDragEnd={({ data }) => {
-            setPhotos(data);
-            setIsModified(true);
-            updateUserData({ photos: data }); // Update in Firestore immediately
-          }}
-          keyExtractor={(_item, index) => `draggable-item-${index}`}
+        <DraggableGrid
+          numColumns={3}
           renderItem={renderItem}
-          contentContainerStyle={styles.photoList}
+          data={photoData}
+          disabledReSorted={true}
+          onDragRelease={(data) => {
+            const updatedPhotos = data.map((item) => item.uri);
+            setPhotos(updatedPhotos);
+            setIsModified(true);
+          }}
+          dragItemFlex={1}
+          dragAreaFlex={1}
+          hoverStyle={{ scale: 1.05 }}
+          style={styles.photoList}
         />
       )}
 
@@ -195,27 +184,37 @@ const styles = StyleSheet.create({
   },
   photoList: {
     flexGrow: 1,
+    marginTop: 16,
   },
   photoContainer: {
+    padding: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoWrapper: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "flex-end",
+    width: 100,
     height: 100,
-    marginVertical: 8,
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#eee",
-    alignItems: "center",
-    justifyContent: "center",
   },
   photo: {
     width: "100%",
     height: "100%",
+    position: "absolute",
   },
   removePhotoIcon: {
-    position: "absolute",
-    top: 8,
-    right: 8,
     backgroundColor: "rgba(0,0,0,0.6)",
     borderRadius: 12,
     padding: 4,
+    zIndex: 1,
+    alignSelf: "flex-end",
+    margin: 4,
+    bottom: 77,
+    left: 5,
   },
   contentContainer: {
     flex: 1,
