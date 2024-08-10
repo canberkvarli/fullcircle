@@ -1,47 +1,129 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
+  FlatList,
+  TextInput,
+  ScrollView,
 } from "react-native";
+import Checkbox from "expo-checkbox";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 
+const options = {
+  Gender: [
+    { title: "Man", subtitle: "Radiate your masculine energy" },
+    { title: "Woman", subtitle: "Embrace your feminine essence" },
+    { title: "Non-binary" },
+    { title: "Genderqueer" },
+    { title: "Agender" },
+    { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
+    {
+      title: "Other",
+      subtitle: "Describe your unique path",
+      input: true,
+    },
+  ],
+  "Sexual Orientation": ["Heterosexual", "Homosexual", "Bisexual"],
+  "I'm Interested In": ["Men", "Women", "Everyone"],
+  "Children Preference": ["Yes", "No", "Maybe"],
+};
+
 function EditFieldScreen() {
   const router = useRouter();
-  const { updateUserData } = useUserContext();
-  const { fieldName, fieldValue } = useLocalSearchParams();
-  const [value, setValue] = useState(fieldValue as string);
+  const { updateUserData, userData } = useUserContext();
+  const { fieldName } = useLocalSearchParams();
+  const [selectedOption, setSelectedOption] = useState<string | null>(
+    (userData as any)[fieldName as string] || null
+  );
+  const [isVisible, setIsVisible] = useState(
+    (userData.hiddenFields as any)?.[fieldName as string] === false
+  );
+  const [customGender, setCustomGender] = useState("");
 
-  const handleSave = () => {
-    updateUserData({ [fieldName as string]: value });
+  useEffect(() => {
+    if (fieldName === "Gender" && selectedOption === "Other") {
+      setCustomGender((userData as any)[fieldName as string] || "");
+    }
+  }, [fieldName, selectedOption, userData]);
+
+  const handleSave = async () => {
+    await updateUserData({
+      [fieldName as string]:
+        selectedOption === "Other" ? customGender : selectedOption,
+      hiddenFields: {
+        ...userData.hiddenFields,
+        [fieldName as string]: !isVisible,
+      },
+    });
     router.back();
   };
 
-  const handleBack = () => {
-    router.back();
-  };
+  const renderOption = (option: {
+    title: string;
+    subtitle?: string;
+    input?: boolean;
+  }) => (
+    <TouchableOpacity
+      style={styles.optionContainer}
+      onPress={() => {
+        setSelectedOption(option.title);
+        if (option.input) {
+          setCustomGender("");
+        }
+      }}
+    >
+      <View>
+        <Text style={styles.optionText}>{option.title}</Text>
+        {option.subtitle && (
+          <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+        )}
+        {option.input && selectedOption === option.title && (
+          <TextInput
+            style={styles.input}
+            placeholder="Enter here"
+            value={customGender}
+            onChangeText={setCustomGender}
+          />
+        )}
+      </View>
+      <Checkbox
+        value={selectedOption === option.title}
+        onValueChange={() => setSelectedOption(option.title)}
+      />
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Icon name="chevron-left" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit {fieldName}</Text>
-      </View>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={setValue}
-        autoFocus
-      />
-      <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-        <Text style={styles.saveButtonText}>Save</Text>
+      <TouchableOpacity onPress={handleSave}>
+        <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
+      <Text style={styles.headerTitle}>{fieldName}</Text>
+      <ScrollView style={styles.scrollContainer}>
+        <FlatList
+          data={
+            options[fieldName as keyof typeof options] as Array<{
+              title: string;
+              subtitle?: string;
+              input?: boolean;
+            }>
+          }
+          renderItem={({ item }) => renderOption(item)}
+          keyExtractor={(item) => item.title}
+          scrollEnabled={false} // Disable FlatList scrolling
+        />
+      </ScrollView>
+      <View style={styles.checkboxContainer}>
+        <Checkbox
+          value={isVisible}
+          onValueChange={() => setIsVisible(!isVisible)}
+        />
+        <Text style={styles.checkboxLabel}>Visible on profile</Text>
+      </View>
     </View>
   );
 }
@@ -50,36 +132,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
     justifyContent: "flex-start",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  backButton: {
-    marginRight: 16,
+  scrollContainer: {
+    flexGrow: 1, // Ensure ScrollView can grow
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "bold",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 4,
-    fontSize: 16,
+    textAlign: "center",
     marginBottom: 16,
   },
-  saveButton: {
-    backgroundColor: "#007AFF",
-    padding: 12,
-    borderRadius: 4,
+  optionContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderColor: "#ccc",
   },
-  saveButtonText: {
-    color: "white",
+  optionText: {
+    fontSize: 18,
+  },
+  optionSubtitle: {
+    fontSize: 14,
+    fontStyle: "italic",
+  },
+  input: {
+    height: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: "black",
+    marginVertical: 8,
+    fontSize: 16,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16, // Adjust the top margin to space it out from the options
+  },
+  checkboxLabel: {
+    marginLeft: 12,
     fontSize: 16,
   },
 });

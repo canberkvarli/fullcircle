@@ -1,5 +1,5 @@
 // @ts-nocheck // workaround for the draggable grid.
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -23,6 +23,28 @@ export default function EditUserProfile() {
   const [tab, setTab] = useState("Edit");
   const router = useRouter();
   const [isModified, setIsModified] = useState(false);
+  const [fieldVisibility, setFieldVisibility] = useState({});
+
+  useEffect(() => {
+    // Initialize field visibility based on hiddenFields
+    const initialVisibility = {
+      Gender: !userData.hiddenFields?.Gender,
+      Sexuality: !userData.hiddenFields?.sexualOrientation,
+      "I'm Interested In": !userData.hiddenFields?.datePreferences,
+      Work: !userData.hiddenFields?.jobLocation,
+      "Job Title": !userData.hiddenFields?.jobTitle,
+      "Education Level": !userData.hiddenFields?.educationDegree,
+      Name: true,
+      Age: true,
+      Height: true,
+      Location: true,
+      Ethnicities: true,
+      "Children Preference": true,
+      "Spiritual Practices": true,
+    };
+
+    setFieldVisibility(initialVisibility);
+  }, [userData]);
 
   const pickImage = async (index: number) => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -100,8 +122,8 @@ export default function EditUserProfile() {
   const IdentityFields = [
     {
       fieldName: "Gender",
-      value: userData.gender,
-      isVisible: !userData.hiddenFields?.gender,
+      value: userData.Gender,
+      isVisible: !userData.hiddenFields?.Gender,
     },
     {
       fieldName: "Sexuality",
@@ -215,35 +237,31 @@ export default function EditUserProfile() {
               {/* IdentityFields Section */}
               <Text style={styles.mainTitle}>Identity</Text>
               <View style={styles.separator} />
-              {IdentityFields.map((field) =>
-                field.isVisible ? (
-                  <UserField
-                    key={field.fieldName}
-                    title={field.title}
-                    fieldName={field.fieldName}
-                    value={field.value}
-                    isVisible={field.isVisible}
-                    onPress={() => handleFieldPress(field.fieldName)}
-                  />
-                ) : null
-              )}
+              {IdentityFields.map((field) => (
+                <UserField
+                  key={field.fieldName}
+                  title={field.title}
+                  fieldName={field.fieldName}
+                  value={field.value}
+                  onPress={() => handleFieldPress(field.fieldName)}
+                  isVisible={fieldVisibility[field.fieldName]}
+                />
+              ))}
             </View>
             <View style={styles.fieldsContainer}>
               {/* My Virtues Section */}
               <Text style={styles.mainTitle}>My Virtues</Text>
               <View style={styles.separator} />
-              {MyVirtuesFields.map((field) =>
-                field.isVisible ? (
-                  <UserField
-                    key={field.fieldName}
-                    title={field.title}
-                    fieldName={field.fieldName}
-                    value={field.value}
-                    isVisible={field.isVisible}
-                    onPress={() => handleFieldPress(field.fieldName)}
-                  />
-                ) : null
-              )}
+              {MyVirtuesFields.map((field) => (
+                <UserField
+                  key={field.fieldName}
+                  title={field.title}
+                  fieldName={field.fieldName}
+                  value={field.value}
+                  isVisible={fieldVisibility[field.fieldName]}
+                  onPress={() => handleFieldPress(field.fieldName)}
+                />
+              ))}
             </View>
             <View style={styles.fieldsContainer}>
               {/* My Vitals Section */}
@@ -255,7 +273,7 @@ export default function EditUserProfile() {
                   title={field.title}
                   fieldName={field.fieldName}
                   value={field.value}
-                  isVisible={true}
+                  isVisible={fieldVisibility[field.fieldName]}
                   onPress={() => handleFieldPress(field.title)}
                 />
               ))}
@@ -265,7 +283,6 @@ export default function EditUserProfile() {
               <Text style={styles.mainTitle}>My Vices</Text>
               <View style={styles.separator} />
               <UserField
-                title="Spiritual Practices"
                 fieldName="Spirituality"
                 value={userData.spiritualPractices}
                 isVisible={true}
