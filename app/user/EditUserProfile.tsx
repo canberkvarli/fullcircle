@@ -6,13 +6,14 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
+  Dimensions,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
 import * as ImagePicker from "expo-image-picker";
 import DraggableFlatList, {
-  ScaleDecorator,
   RenderItemParams,
+  ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { useRouter } from "expo-router";
 
@@ -57,14 +58,10 @@ export default function EditUserProfileScreen() {
             styles.photoContainer,
             { backgroundColor: isActive ? "#f0f0f0" : "transparent" },
           ]}
-          disabled={isActive}
           onLongPress={drag}
-          activeOpacity={1}
+          activeOpacity={0.8}
         >
-          <TouchableOpacity
-            onPress={() => pickImage(index)}
-            style={styles.photoTouchable}
-          >
+          <TouchableOpacity onPress={() => pickImage(index)}>
             <Image source={{ uri: item }} style={styles.photo} />
             <TouchableOpacity
               style={styles.removePhotoIcon}
@@ -111,19 +108,20 @@ export default function EditUserProfileScreen() {
 
       {tab === "Edit" && (
         <View style={styles.contentContainer}>
-          <View style={styles.photosContainer}>
-            <DraggableFlatList
-              data={photos}
-              renderItem={renderPhotoItem}
-              keyExtractor={(item, index) => `draggable-item-${index}`}
-              onDragEnd={({ data }) => {
-                setPhotos(data);
-                updateUserData({ photos: data });
-              }}
-              numColumns={3} // Ensure 3 columns
-              contentContainerStyle={styles.photoGrid}
-            />
-          </View>
+          <DraggableFlatList
+            data={photos}
+            renderItem={renderPhotoItem}
+            keyExtractor={(_item, index) => `draggable-item-${index}`}
+            onDragEnd={({ data }) => {
+              setPhotos(data);
+              updateUserData({ photos: data });
+            }}
+            numColumns={3} // Ensure 3 columns
+            contentContainerStyle={styles.photoGrid}
+          />
+          <Text style={styles.editInstruction}>
+            Tap to edit, drag to reorder.
+          </Text>
         </View>
       )}
 
@@ -151,6 +149,7 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     fontSize: 16,
+    color: "#007AFF",
   },
   headerTitle: {
     fontSize: 18,
@@ -173,10 +172,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-  },
-  photosContainer: {
-    flexDirection: "column",
-    marginBottom: 16,
+    color: "#007AFF",
   },
   contentContainer: {
     flex: 1,
@@ -186,23 +182,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   photoContainer: {
-    flex: 1,
-    marginBottom: 16,
-    position: "relative",
-    width: "100%",
-    maxWidth: 120,
-    padding: 5,
-  },
-  photoTouchable: {
-    width: "100%",
+    margin: 8,
+    width: Dimensions.get("window").width / 3 - 24, // Adjust size to fit 3 columns
     aspectRatio: 1,
     borderRadius: 8,
     overflow: "hidden",
+    backgroundColor: "#eee",
   },
   photo: {
     width: "100%",
     height: "100%",
-    borderRadius: 8,
   },
   removePhotoIcon: {
     position: "absolute",
@@ -212,8 +201,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  editFields: {
+  editInstruction: {
+    textAlign: "center",
     marginTop: 16,
+    color: "#888",
   },
-  // Add other styles as necessary...
 });
