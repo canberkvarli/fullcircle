@@ -8,12 +8,14 @@ import {
   Image,
   SafeAreaView,
   Alert,
+  ScrollView,
 } from "react-native";
 import { DraggableGrid } from "react-native-draggable-grid";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
+import UserField from "@/components/UserField";
 
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
@@ -36,6 +38,10 @@ export default function EditUserProfile() {
       setPhotos(updatedPhotos);
       setIsModified(true);
     }
+  };
+
+  const handleFieldPress = (fieldName: string) => {
+    router.replace("/user/EditFieldScreen", { fieldName });
   };
 
   const renderItem = (item: { key: string; uri: string }, order: number) => {
@@ -115,29 +121,81 @@ export default function EditUserProfile() {
         </TouchableOpacity>
       </View>
 
-      {tab === "Edit" && (
-        <DraggableGrid
-          numColumns={3}
-          renderItem={renderItem}
-          data={photoData}
-          disabledReSorted={true}
-          onDragRelease={(data) => {
-            const updatedPhotos = data.map((item) => item.uri);
-            setPhotos(updatedPhotos);
-            setIsModified(true);
-          }}
-          dragItemFlex={1}
-          dragAreaFlex={1}
-          hoverStyle={{ scale: 1.05 }}
-          style={styles.photoList}
-        />
-      )}
-
-      {tab === "View" && (
-        <View style={styles.contentContainer}>
-          {/* Add content for the View tab */}
-        </View>
-      )}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        {tab === "Edit" && (
+          <View style={styles.editContainer}>
+            <View style={styles.photosContainer}>
+              <DraggableGrid
+                numColumns={3}
+                renderItem={renderItem}
+                data={photoData}
+                disabledReSorted={false}
+                onDragRelease={(data) => {
+                  const updatedPhotos = data.map((item) => item.uri);
+                  setPhotos(updatedPhotos);
+                  setIsModified(true);
+                }}
+                dragItemFlex={1}
+                dragAreaFlex={1}
+                hoverStyle={{ scale: 1.05 }}
+                style={styles.photoList}
+              />
+            </View>
+            <View style={styles.fieldsContainer}>
+              <UserField
+                title="Identity"
+                fieldName="Gender"
+                value={userData.gender}
+                isVisible={!userData.hiddenFields.gender}
+                onPress={() => handleFieldPress("gender")}
+              />
+              <UserField
+                title="Sexual Orientation"
+                fieldName="Sexuality"
+                value={userData.sexualOrientation}
+                isVisible={!userData.hiddenFields.sexualOrientation}
+                onPress={() => handleFieldPress("sexualOrientation")}
+              />
+              <UserField
+                title="I'm Interested In"
+                fieldName="Date Preferences"
+                value={userData.datePreferences}
+                isVisible={!userData.hiddenFields.datePreferences}
+                onPress={() => handleFieldPress("datePreferences")}
+              />
+              <UserField
+                title="My Virtues"
+                fieldName="Work"
+                value={userData.jobLocation}
+                isVisible={!userData.hiddenFields.jobLocation}
+                onPress={() => handleFieldPress("jobLocation")}
+              />
+              <UserField
+                title="Job Title"
+                fieldName="Job Title"
+                value={userData.jobTitle}
+                isVisible={!userData.hiddenFields.jobTitle}
+                onPress={() => handleFieldPress("jobTitle")}
+              />
+              <UserField
+                title="Education Level"
+                fieldName="Education"
+                value={userData.educationDegree}
+                isVisible={!userData.hiddenFields.educationDegree}
+                onPress={() => handleFieldPress("educationDegree")}
+              />
+            </View>
+          </View>
+        )}
+        {tab === "View" && (
+          <View style={styles.contentContainer}>
+            {/* Add content for the View tab */}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -146,33 +204,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    marginTop: 25,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-  },
-  headerButton: {
-    fontSize: 16,
-    color: "#007AFF",
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
   },
+  headerButton: {
+    fontSize: 16,
+    color: "#007AFF",
+  },
   tabBar: {
     flexDirection: "row",
-    justifyContent: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    marginBottom: 16,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 12,
     alignItems: "center",
+    paddingVertical: 8,
   },
   activeTabButton: {
     borderBottomWidth: 2,
@@ -180,44 +235,46 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    color: "#007AFF",
+  },
+  editContainer: {
+    flex: 1,
+  },
+  photosContainer: {
+    flexDirection: "row",
+    marginBottom: 16,
   },
   photoList: {
-    flexGrow: 1,
-    marginTop: 16,
+    flex: 1,
   },
   photoContainer: {
-    padding: 5,
-    alignItems: "center",
-    justifyContent: "center",
+    position: "relative",
+    margin: 2,
   },
   photoWrapper: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "flex-end",
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#eee",
+    width: "100%",
+    aspectRatio: 1,
   },
   photo: {
     width: "100%",
     height: "100%",
-    position: "absolute",
+    borderRadius: 8,
   },
   removePhotoIcon: {
-    backgroundColor: "rgba(0,0,0,0.6)",
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     borderRadius: 12,
     padding: 4,
-    zIndex: 1,
-    alignSelf: "flex-end",
-    margin: 4,
-    bottom: 77,
-    left: 5,
+  },
+  fieldsContainer: {
+    marginTop: 16,
   },
   contentContainer: {
     flex: 1,
-    padding: 16,
+  },
+  scrollView: {
+    flexGrow: 1,
+    overflow: "hidden",
   },
 });

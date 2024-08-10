@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import NavigationIcon from "react-native-vector-icons/FontAwesome";
+import Icon from "react-native-vector-icons/FontAwesome";
 
 function EditFieldScreen() {
   const router = useRouter();
@@ -18,7 +18,7 @@ function EditFieldScreen() {
 
   const handleSave = () => {
     updateUserData({ [fieldName as string]: value });
-    router.back();
+    router.replace("/user/EditUserProfile" as any);
   };
 
   const handleBack = () => {
@@ -27,11 +27,18 @@ function EditFieldScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Edit {fieldName}</Text>
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-        <NavigationIcon name="chevron-left" size={24} color="black" />
-      </TouchableOpacity>
-      <TextInput style={styles.input} value={value} onChangeText={setValue} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <Icon name="chevron-left" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Edit {fieldName}</Text>
+      </View>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={setValue}
+        autoFocus
+      />
       <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
         <Text style={styles.saveButtonText}>Save</Text>
       </TouchableOpacity>
@@ -43,20 +50,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    justifyContent: "center",
+    justifyContent: "flex-start",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
   },
   backButton: {
-    bottom: 20,
+    marginRight: 16,
   },
-  label: {
+  headerTitle: {
     fontSize: 18,
-    marginBottom: 8,
+    fontWeight: "bold",
   },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 8,
+    padding: 12,
     borderRadius: 4,
+    fontSize: 16,
     marginBottom: 16,
   },
   saveButton: {
