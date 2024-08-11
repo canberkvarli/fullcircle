@@ -83,6 +83,13 @@ function EditFieldScreen() {
     }
   }, [fieldName, currentFieldValue]);
 
+  const fieldTitleMap: Record<string, string> = {
+    gender: "Gender",
+    sexualOrientation: "Sexuality",
+    datePreference: "Date Preference",
+    childrenPreference: "Children Preference",
+  };
+
   const handleSave = async () => {
     const newFieldValue =
       selectedOption === "Other" ? customInput : selectedOption;
@@ -172,7 +179,15 @@ function EditFieldScreen() {
       <TouchableOpacity onPress={handleSave}>
         <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>{fieldName}</Text>
+      <Text style={styles.headerTitle}>
+        {fieldTitleMap[fieldName as string] ||
+          (typeof fieldName === "string"
+            ? fieldName
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase())
+            : fieldName)}
+      </Text>
+
       <ScrollView style={styles.scrollContainer}>
         <FlatList
           data={
