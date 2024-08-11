@@ -81,6 +81,10 @@ function EditFieldScreen() {
   const [isVisible, setIsVisible] = useState(isHidden);
   const [customInput, setCustomInput] = useState("");
 
+  // New state variables for Job Location and Job Title
+  const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
+  const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
+
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
     sexualOrientation: "Sexuality",
@@ -109,6 +113,10 @@ function EditFieldScreen() {
         ? currentFieldValue
         : [];
       setSelectedDatePreferences(preferences);
+    } else if (fieldName === "jobLocation") {
+      setJobLocation(currentFieldValue || "");
+    } else if (fieldName === "jobTitle") {
+      setJobTitle(currentFieldValue || "");
     }
   }, [fieldName, currentFieldValue]);
 
@@ -125,6 +133,10 @@ function EditFieldScreen() {
       newFieldValue = selectedOrientations;
     } else if (fieldName === "datePreferences") {
       newFieldValue = selectedDatePreferences;
+    } else if (fieldName === "jobLocation") {
+      newFieldValue = jobLocation;
+    } else if (fieldName === "jobTitle") {
+      newFieldValue = jobTitle;
     }
 
     const isModified =
@@ -268,29 +280,45 @@ function EditFieldScreen() {
       </Text>
 
       <ScrollView style={styles.scrollContainer}>
-        <FlatList
-          data={
-            options[fieldName as keyof typeof options] as Array<
-              string | { title: string; subtitle?: string; input?: boolean }
-            >
-          }
-          renderItem={({ item }) => renderOption(item)}
-          keyExtractor={(item) =>
-            typeof item === "string" ? item : item.title
-          }
-          scrollEnabled={false}
-        />
+        {(fieldName === "jobLocation" || fieldName === "jobTitle") && (
+          <TextInput
+            style={styles.input}
+            placeholder={`Enter ${fieldTitleMap[fieldName as string]}`}
+            value={fieldName === "jobLocation" ? jobLocation : jobTitle}
+            onChangeText={
+              fieldName === "jobLocation" ? setJobLocation : setJobTitle
+            }
+          />
+        )}
+
+        {fieldName !== "jobLocation" && fieldName !== "jobTitle" && (
+          <FlatList
+            data={
+              options[fieldName as keyof typeof options] as Array<
+                string | { title: string; subtitle?: string; input?: boolean }
+              >
+            }
+            renderItem={({ item }) => renderOption(item)}
+            keyExtractor={(item) =>
+              typeof item === "string" ? item : item.title
+            }
+            scrollEnabled={false}
+          />
+        )}
       </ScrollView>
-      <TouchableOpacity
-        style={styles.checkboxContainer}
-        onPress={() => setIsVisible(!isVisible)}
-      >
-        <Checkbox
-          value={isVisible}
-          onValueChange={() => setIsVisible(!isVisible)}
-        />
-        <Text style={styles.checkboxLabel}>Visible on profile</Text>
-      </TouchableOpacity>
+
+      <View style={styles.toggleContainer}>
+        <Text style={styles.toggleText}>
+          {isVisible ? "Visible" : "Hidden"}
+        </Text>
+        <TouchableOpacity onPress={() => setIsVisible((prev) => !prev)}>
+          <Icon
+            name={isVisible ? "eye" : "eye-slash"}
+            size={24}
+            color="black"
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -302,43 +330,46 @@ const styles = StyleSheet.create({
     marginTop: 25,
     justifyContent: "flex-start",
   },
-  scrollContainer: {
-    flexGrow: 1, // Ensure ScrollView can grow
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 16,
   },
-  optionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-  },
-  optionText: {
-    fontSize: 18,
-  },
-  optionSubtitle: {
-    fontSize: 14,
-    fontStyle: "italic",
+  scrollContainer: {
+    flex: 1,
   },
   input: {
-    height: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: "black",
+    borderWidth: 1,
+    borderColor: "gray",
+    borderRadius: 8,
+    padding: 8,
     marginVertical: 8,
+  },
+  optionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  optionText: {
     fontSize: 16,
   },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  optionSubtitle: {
+    fontSize: 12,
+    color: "#666",
   },
-  checkboxLabel: {
-    marginLeft: 12,
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#ccc",
+  },
+  toggleText: {
     fontSize: 16,
   },
 });
