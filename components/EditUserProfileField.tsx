@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome"; // Adjust icon as per the library you're using
 
-interface UserFieldProps {
+interface EditUserProfileFieldProps {
   title: string;
   fieldName: string;
   value: string | string[] | undefined;
@@ -10,7 +10,7 @@ interface UserFieldProps {
   onPress: () => void;
 }
 
-const UserField: React.FC<UserFieldProps> = ({
+const EditUserProfileField: React.FC<EditUserProfileFieldProps> = ({
   title,
   fieldName,
   value,
@@ -69,4 +69,4 @@ const styles = {
   },
 };
 
-export default UserField;
+export default EditUserProfileField;

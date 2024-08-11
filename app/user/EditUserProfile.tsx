@@ -15,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
-import UserField from "@/components/UserField";
+import EditUserProfileField from "@/components/EditUserProfileField";
 
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
@@ -102,6 +102,7 @@ export default function EditUserProfile() {
         ]
       );
     } else {
+      console.log("nothing to discard");
       router.back();
     }
   };
@@ -238,7 +239,7 @@ export default function EditUserProfile() {
               <Text style={styles.mainTitle}>Identity</Text>
               <View style={styles.separator} />
               {IdentityFields.map((field) => (
-                <UserField
+                <EditUserProfileField
                   key={field.fieldName}
                   title={field.title}
                   fieldName={field.fieldName}
@@ -253,7 +254,7 @@ export default function EditUserProfile() {
               <Text style={styles.mainTitle}>My Virtues</Text>
               <View style={styles.separator} />
               {MyVirtuesFields.map((field) => (
-                <UserField
+                <EditUserProfileField
                   key={field.fieldName}
                   title={field.title}
                   fieldName={field.fieldName}
@@ -268,7 +269,7 @@ export default function EditUserProfile() {
               <Text style={styles.mainTitle}>My Vitals</Text>
               <View style={styles.separator} />
               {vitalFields.map((field, index) => (
-                <UserField
+                <EditUserProfileField
                   key={index}
                   title={field.title}
                   fieldName={field.fieldName}
@@ -282,7 +283,7 @@ export default function EditUserProfile() {
               {/* My Vices Section */}
               <Text style={styles.mainTitle}>My Vices</Text>
               <View style={styles.separator} />
-              <UserField
+              <EditUserProfileField
                 fieldName="Spirituality"
                 value={userData.spiritualPractices}
                 isVisible={true}

@@ -59,26 +59,32 @@ function EditFieldScreen() {
   }, [fieldName, currentFieldValue]);
 
   const handleSave = async () => {
-    // Ensure that the gender field cannot be empty
+    const newFieldValue =
+      selectedOption === "Other" ? customGender : selectedOption;
+
+    const isModified =
+      newFieldValue !== currentFieldValue || isVisible !== isHidden;
+
     if (fieldName === "Gender" && !selectedOption) {
       alert("Please select a gender or provide a custom value.");
       return; // Prevent saving if no option is selected
     }
 
-    // Ensure custom gender is not empty if "Other" is selected
     if (selectedOption === "Other" && customGender.trim() === "") {
       alert("Please provide a custom gender value.");
       return;
     }
 
-    await updateUserData({
-      [fieldName as string]:
-        selectedOption === "Other" ? customGender : selectedOption,
-      hiddenFields: {
-        ...userData.hiddenFields,
-        [fieldName as string]: !isVisible,
-      },
-    });
+    if (isModified) {
+      await updateUserData({
+        [fieldName as string]: newFieldValue,
+        hiddenFields: {
+          ...userData.hiddenFields,
+          [fieldName as string]: !isVisible,
+        },
+      });
+    }
+
     router.back();
   };
 
