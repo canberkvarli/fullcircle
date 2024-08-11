@@ -50,6 +50,16 @@ const options = {
     "Open to children",
     "Want Children",
   ],
+  educationLevels: [
+    "High School",
+    "Undergrad",
+    "Postgrad",
+    "Associate Degree",
+    "Bachelor's Degree",
+    "Master's Degree",
+    "Doctorate",
+    "Professional Certification",
+  ],
 };
 
 function EditFieldScreen() {
@@ -70,6 +80,15 @@ function EditFieldScreen() {
   >([]);
   const [isVisible, setIsVisible] = useState(isHidden);
   const [customInput, setCustomInput] = useState("");
+
+  const fieldTitleMap: Record<string, string> = {
+    gender: "Gender",
+    sexualOrientation: "Sexuality",
+    datePreferences: "Date Preference",
+    childrenPreference: "Children Preference",
+    jobLocation: "Work Location",
+    jobTitle: "Job Title",
+  };
 
   useEffect(() => {
     if (fieldName === "gender") {
@@ -92,13 +111,6 @@ function EditFieldScreen() {
       setSelectedDatePreferences(preferences);
     }
   }, [fieldName, currentFieldValue]);
-
-  const fieldTitleMap: Record<string, string> = {
-    gender: "Gender",
-    sexualOrientation: "Sexuality",
-    datePreferences: "Date Preference",
-    childrenPreference: "Children Preference",
-  };
 
   const handleSave = async () => {
     let newFieldValue;
@@ -146,7 +158,6 @@ function EditFieldScreen() {
 
   const handleDatePreferenceSelection = (title: string) => {
     if (title === "Everyone") {
-      // If "Everyone" is selected, clear other preferences
       if (
         selectedDatePreferences.includes("Men") ||
         selectedDatePreferences.includes("Women")
@@ -162,14 +173,12 @@ function EditFieldScreen() {
         ? selectedDatePreferences.filter((pref) => pref !== title)
         : [...selectedDatePreferences, title];
 
-      // If both "Men" and "Women" are selected, uncheck them
       if (newPreferences.includes("Men") && newPreferences.includes("Women")) {
         setSelectedDatePreferences([title]);
       } else {
         setSelectedDatePreferences(newPreferences);
       }
 
-      // If "Everyone" is checked, uncheck it when selecting Man or Woman
       if (newPreferences.includes("Men") || newPreferences.includes("Women")) {
         setSelectedDatePreferences(
           newPreferences.filter((pref) => pref !== "Everyone")
