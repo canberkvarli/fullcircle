@@ -65,6 +65,9 @@ function EditFieldScreen() {
   const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
     []
   );
+  const [selectedDatePreferences, setSelectedDatePreferences] = useState<
+    string[]
+  >([]);
   const [isVisible, setIsVisible] = useState(isHidden);
   const [customInput, setCustomInput] = useState("");
 
@@ -82,6 +85,11 @@ function EditFieldScreen() {
         ? currentFieldValue
         : [];
       setSelectedOrientations(orientations);
+    } else if (fieldName === "datePreferences") {
+      const preferences = Array.isArray(currentFieldValue)
+        ? currentFieldValue
+        : [];
+      setSelectedDatePreferences(preferences);
     }
   }, [fieldName, currentFieldValue]);
 
@@ -103,6 +111,8 @@ function EditFieldScreen() {
       newFieldValue = selectedGender === "Other" ? customInput : selectedGender;
     } else if (fieldName === "sexualOrientation") {
       newFieldValue = selectedOrientations;
+    } else if (fieldName === "datePreferences") {
+      newFieldValue = selectedDatePreferences;
     }
 
     const isModified =
@@ -132,6 +142,40 @@ function EditFieldScreen() {
     }
 
     router.back();
+  };
+
+  const handleDatePreferenceSelection = (title: string) => {
+    if (title === "Everyone") {
+      // If "Everyone" is selected, clear other preferences
+      if (
+        selectedDatePreferences.includes("Men") ||
+        selectedDatePreferences.includes("Women")
+      ) {
+        setSelectedDatePreferences(["Everyone"]);
+      } else {
+        setSelectedDatePreferences((prev) =>
+          prev.includes("Everyone") ? [] : ["Everyone"]
+        );
+      }
+    } else {
+      const newPreferences = selectedDatePreferences.includes(title)
+        ? selectedDatePreferences.filter((pref) => pref !== title)
+        : [...selectedDatePreferences, title];
+
+      // If both "Men" and "Women" are selected, uncheck them
+      if (newPreferences.includes("Men") && newPreferences.includes("Women")) {
+        setSelectedDatePreferences([title]);
+      } else {
+        setSelectedDatePreferences(newPreferences);
+      }
+
+      // If "Everyone" is checked, uncheck it when selecting Man or Woman
+      if (newPreferences.includes("Men") || newPreferences.includes("Women")) {
+        setSelectedDatePreferences(
+          newPreferences.filter((pref) => pref !== "Everyone")
+        );
+      }
+    }
   };
 
   const renderOption = (
@@ -167,6 +211,8 @@ function EditFieldScreen() {
             } else {
               setSelectedOrientations((prev) => [...prev, title]);
             }
+          } else if (fieldName === "datePreferences") {
+            handleDatePreferenceSelection(title);
           }
         }}
       >
@@ -186,6 +232,8 @@ function EditFieldScreen() {
           value={
             fieldName === "gender"
               ? selectedGender === title
+              : fieldName === "datePreferences"
+              ? selectedDatePreferences.includes(title)
               : selectedOrientations.includes(title)
           }
           onValueChange={() => {
