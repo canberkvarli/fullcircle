@@ -27,9 +27,29 @@ const options = {
       input: true,
     },
   ],
-  sexualOrientation: ["Heterosexual", "Homosexual", "Bisexual"],
+  sexualOrientation: [
+    "Straight",
+    "Gay",
+    "Lesbian",
+    "Bisexual",
+    "Asexual",
+    "Demisexual",
+    "Pansexual",
+    "Queer",
+    "Questioning",
+    {
+      title: "Other",
+      subtitle: "Describe your unique path",
+      input: true,
+    },
+  ],
   datePreference: ["Men", "Women", "Everyone"],
-  childrenPreference: ["Yes", "No", "Maybe"],
+  childrenPreference: [
+    "Don’t have children",
+    "Have children",
+    "Open to children",
+    "Want Children",
+  ],
 };
 
 function EditFieldScreen() {
@@ -43,37 +63,43 @@ function EditFieldScreen() {
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(isHidden);
-  const [customGender, setCustomGender] = useState("");
+  const [customInput, setCustomInput] = useState("");
 
   useEffect(() => {
-    if (fieldName === "gender") {
-      // Set selectedOption and customGender from userData
+    if (fieldName === "gender" || fieldName === "sexualOrientation") {
       if (
-        options["gender"].some((option) => option.title === currentFieldValue)
+        options[fieldName as keyof typeof options].some((option) =>
+          typeof option === "string"
+            ? option === currentFieldValue
+            : option.title === currentFieldValue
+        )
       ) {
         setSelectedOption(currentFieldValue);
-        setCustomGender(""); // Clear custom gender if not "Other"
+        setCustomInput(""); // Clear custom input if not "Other"
       } else if (currentFieldValue) {
         setSelectedOption("Other");
-        setCustomGender(currentFieldValue); // Set custom gender from the database
+        setCustomInput(currentFieldValue); // Set custom input from the database
       }
     }
   }, [fieldName, currentFieldValue]);
 
   const handleSave = async () => {
     const newFieldValue =
-      selectedOption === "Other" ? customGender : selectedOption;
+      selectedOption === "Other" ? customInput : selectedOption;
 
     const isModified =
       newFieldValue !== currentFieldValue || isVisible !== isHidden;
 
-    if (fieldName === "gender" && !selectedOption) {
-      alert("Please select a gender or provide a custom value.");
-      return; // Prevent saving if no option is selected
+    if (
+      (fieldName === "gender" || fieldName === "sexualOrientation") &&
+      !selectedOption
+    ) {
+      alert(`Please select a ${fieldName} or provide a custom value.`);
+      return;
     }
 
-    if (selectedOption === "Other" && customGender.trim() === "") {
-      alert("Please provide a custom gender value.");
+    if (selectedOption === "Other" && customInput.trim() === "") {
+      alert(`Please provide a custom ${fieldName} value.`);
       return;
     }
 
@@ -90,48 +116,56 @@ function EditFieldScreen() {
     router.back();
   };
 
-  const renderOption = (option: {
-    title: string;
-    subtitle?: string;
-    input?: boolean;
-  }) => (
-    <TouchableOpacity
-      style={styles.optionContainer}
-      onPress={() => {
-        if (option.title === "Other") {
-          setSelectedOption("Other");
-          setCustomGender(""); // Clear input when selecting Other
-        } else {
-          setSelectedOption(option.title);
-          setCustomGender(""); // Clear custom gender input if selecting any other option
+  const renderOption = (
+    option:
+      | {
+          title: string;
+          subtitle?: string;
+          input?: boolean;
         }
-      }}
-    >
-      <View>
-        <Text style={styles.optionText}>{option.title}</Text>
-        {option.subtitle && (
-          <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
-        )}
-        {option.input && selectedOption === "Other" && (
-          <TextInput
-            style={styles.input}
-            placeholder="Enter here"
-            value={customGender}
-            onChangeText={setCustomGender}
-          />
-        )}
-      </View>
-      <Checkbox
-        value={selectedOption === option.title}
-        onValueChange={() => {
-          if (option.title !== "Other") {
-            setSelectedOption(option.title);
-            setCustomGender(""); // Clear custom gender input if selecting any other option
+      | string
+  ) => {
+    const title = typeof option === "string" ? option : option.title;
+    const subtitle = typeof option === "string" ? null : option.subtitle;
+    const input = typeof option === "string" ? false : option.input;
+
+    return (
+      <TouchableOpacity
+        style={styles.optionContainer}
+        onPress={() => {
+          if (title === "Other") {
+            setSelectedOption("Other");
+            setCustomInput("");
+          } else {
+            setSelectedOption(title);
+            setCustomInput("");
           }
         }}
-      />
-    </TouchableOpacity>
-  );
+      >
+        <View>
+          <Text style={styles.optionText}>{title}</Text>
+          {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
+          {input && selectedOption === "Other" && (
+            <TextInput
+              style={styles.input}
+              placeholder="Enter here"
+              value={customInput}
+              onChangeText={setCustomInput}
+            />
+          )}
+        </View>
+        <Checkbox
+          value={selectedOption === title}
+          onValueChange={() => {
+            if (title !== "Other") {
+              setSelectedOption(title);
+              setCustomInput("");
+            }
+          }}
+        />
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -142,15 +176,15 @@ function EditFieldScreen() {
       <ScrollView style={styles.scrollContainer}>
         <FlatList
           data={
-            options[fieldName as keyof typeof options] as Array<{
-              title: string;
-              subtitle?: string;
-              input?: boolean;
-            }>
+            options[fieldName as keyof typeof options] as Array<
+              string | { title: string; subtitle?: string; input?: boolean }
+            >
           }
           renderItem={({ item }) => renderOption(item)}
-          keyExtractor={(item) => item.title}
-          scrollEnabled={false} // Disable FlatList scrolling
+          keyExtractor={(item) =>
+            typeof item === "string" ? item : item.title
+          }
+          scrollEnabled={false}
         />
       </ScrollView>
       <TouchableOpacity
