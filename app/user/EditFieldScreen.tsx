@@ -37,7 +37,6 @@ function EditFieldScreen() {
   const { updateUserData, userData } = useUserContext();
   const { fieldName } = useLocalSearchParams();
 
-  // Set the initial state from userData
   const currentFieldValue = (userData as any)[fieldName as string] || null;
   const isHidden =
     (userData.hiddenFields as any)?.[fieldName as string] === false;
@@ -49,21 +48,27 @@ function EditFieldScreen() {
   useEffect(() => {
     if (fieldName === "Gender") {
       // Set selectedOption and customGender from userData
-      if (currentFieldValue === "Other") {
-        setSelectedOption("Other");
-        setCustomGender((userData as any)[fieldName as string] || ""); // Set custom gender from the database
-      } else {
+      if (options.Gender.some((option) => option.title === currentFieldValue)) {
         setSelectedOption(currentFieldValue);
         setCustomGender(""); // Clear custom gender if not "Other"
+      } else if (currentFieldValue) {
+        setSelectedOption("Other");
+        setCustomGender(currentFieldValue); // Set custom gender from the database
       }
     }
-  }, [fieldName, currentFieldValue, userData]);
+  }, [fieldName, currentFieldValue]);
 
   const handleSave = async () => {
     // Ensure that the gender field cannot be empty
     if (fieldName === "Gender" && !selectedOption) {
       alert("Please select a gender or provide a custom value.");
       return; // Prevent saving if no option is selected
+    }
+
+    // Ensure custom gender is not empty if "Other" is selected
+    if (selectedOption === "Other" && customGender.trim() === "") {
+      alert("Please provide a custom gender value.");
+      return;
     }
 
     await updateUserData({
@@ -86,11 +91,8 @@ function EditFieldScreen() {
       style={styles.optionContainer}
       onPress={() => {
         if (option.title === "Other") {
-          // Allow selecting "Other" only if no other option is selected
-          if (selectedOption !== "Other") {
-            setSelectedOption("Other");
-            setCustomGender((userData as any)[fieldName as string] || ""); // Populate input field with existing value
-          }
+          setSelectedOption("Other");
+          setCustomGender(""); // Clear input when selecting Other
         } else {
           setSelectedOption(option.title);
           setCustomGender(""); // Clear custom gender input if selecting any other option
@@ -102,15 +104,14 @@ function EditFieldScreen() {
         {option.subtitle && (
           <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
         )}
-        {option.input &&
-          (selectedOption === option.title || selectedOption === "Other") && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter here"
-              value={customGender}
-              onChangeText={setCustomGender}
-            />
-          )}
+        {option.input && selectedOption === "Other" && (
+          <TextInput
+            style={styles.input}
+            placeholder="Enter here"
+            value={customGender}
+            onChangeText={setCustomGender}
+          />
+        )}
       </View>
       <Checkbox
         value={selectedOption === option.title}
@@ -144,13 +145,16 @@ function EditFieldScreen() {
           scrollEnabled={false} // Disable FlatList scrolling
         />
       </ScrollView>
-      <View style={styles.checkboxContainer}>
+      <TouchableOpacity
+        style={styles.checkboxContainer}
+        onPress={() => setIsVisible(!isVisible)}
+      >
         <Checkbox
           value={isVisible}
           onValueChange={() => setIsVisible(!isVisible)}
         />
         <Text style={styles.checkboxLabel}>Visible on profile</Text>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
