@@ -61,25 +61,27 @@ function EditFieldScreen() {
   const isHidden =
     (userData.hiddenFields as any)?.[fieldName as string] === false;
 
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
+    []
+  );
   const [isVisible, setIsVisible] = useState(isHidden);
   const [customInput, setCustomInput] = useState("");
 
   useEffect(() => {
-    if (fieldName === "gender" || fieldName === "sexualOrientation") {
-      if (
-        options[fieldName as keyof typeof options].some((option) =>
-          typeof option === "string"
-            ? option === currentFieldValue
-            : option.title === currentFieldValue
-        )
-      ) {
-        setSelectedOption(currentFieldValue);
+    if (fieldName === "gender") {
+      if (options.gender.some((option) => option.title === currentFieldValue)) {
+        setSelectedGender(currentFieldValue);
         setCustomInput("");
       } else if (currentFieldValue) {
-        setSelectedOption("Other");
+        setSelectedGender("Other");
         setCustomInput(currentFieldValue);
       }
+    } else if (fieldName === "sexualOrientation") {
+      const orientations = Array.isArray(currentFieldValue)
+        ? currentFieldValue
+        : [];
+      setSelectedOrientations(orientations);
     }
   }, [fieldName, currentFieldValue]);
 
@@ -91,22 +93,31 @@ function EditFieldScreen() {
   };
 
   const handleSave = async () => {
-    const newFieldValue =
-      selectedOption === "Other" ? customInput : selectedOption;
+    let newFieldValue;
+
+    if (fieldName === "gender") {
+      if (selectedGender === "Other" && customInput.trim() === "") {
+        alert("Please provide a value for your gender.");
+        return;
+      }
+      newFieldValue = selectedGender === "Other" ? customInput : selectedGender;
+    } else if (fieldName === "sexualOrientation") {
+      newFieldValue = selectedOrientations;
+    }
 
     const isModified =
       newFieldValue !== currentFieldValue || isVisible !== isHidden;
 
-    if (
-      (fieldName === "gender" || fieldName === "sexualOrientation") &&
-      !selectedOption
-    ) {
+    if (fieldName === "gender" && !selectedGender) {
       alert(`Please select a ${fieldName} or provide a custom value.`);
       return;
     }
 
-    if (selectedOption === "Other" && customInput.trim() === "") {
-      alert(`Please provide a custom ${fieldName} value.`);
+    if (
+      fieldName === "sexualOrientation" &&
+      selectedOrientations.length === 0
+    ) {
+      alert(`Please select at least one ${fieldName}.`);
       return;
     }
 
@@ -140,19 +151,29 @@ function EditFieldScreen() {
       <TouchableOpacity
         style={styles.optionContainer}
         onPress={() => {
-          if (title === "Other") {
-            setSelectedOption("Other");
-            setCustomInput("");
-          } else {
-            setSelectedOption(title);
-            setCustomInput("");
+          if (fieldName === "gender") {
+            if (title === "Other") {
+              setSelectedGender("Other");
+              setCustomInput("");
+            } else {
+              setSelectedGender(title);
+              setCustomInput("");
+            }
+          } else if (fieldName === "sexualOrientation") {
+            if (selectedOrientations.includes(title)) {
+              setSelectedOrientations((prev) =>
+                prev.filter((orientation) => orientation !== title)
+              );
+            } else {
+              setSelectedOrientations((prev) => [...prev, title]);
+            }
           }
         }}
       >
         <View>
           <Text style={styles.optionText}>{title}</Text>
           {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
-          {input && selectedOption === "Other" && (
+          {input && selectedGender === "Other" && (
             <TextInput
               style={styles.input}
               placeholder="Enter here"
@@ -162,12 +183,13 @@ function EditFieldScreen() {
           )}
         </View>
         <Checkbox
-          value={selectedOption === title}
+          value={
+            fieldName === "gender"
+              ? selectedGender === title
+              : selectedOrientations.includes(title)
+          }
           onValueChange={() => {
-            if (title !== "Other") {
-              setSelectedOption(title);
-              setCustomInput("");
-            }
+            // Handle checkbox state change here
           }}
         />
       </TouchableOpacity>
