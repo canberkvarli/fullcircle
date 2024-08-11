@@ -14,7 +14,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const options = {
-  Gender: [
+  gender: [
     { title: "Man", subtitle: "Radiate your masculine energy" },
     { title: "Woman", subtitle: "Embrace your feminine essence" },
     { title: "Non-binary" },
@@ -27,9 +27,9 @@ const options = {
       input: true,
     },
   ],
-  "Sexual Orientation": ["Heterosexual", "Homosexual", "Bisexual"],
-  "I'm Interested In": ["Men", "Women", "Everyone"],
-  "Children Preference": ["Yes", "No", "Maybe"],
+  sexualOrientation: ["Heterosexual", "Homosexual", "Bisexual"],
+  datePreference: ["Men", "Women", "Everyone"],
+  childrenPreference: ["Yes", "No", "Maybe"],
 };
 
 function EditFieldScreen() {
@@ -46,9 +46,11 @@ function EditFieldScreen() {
   const [customGender, setCustomGender] = useState("");
 
   useEffect(() => {
-    if (fieldName === "Gender") {
+    if (fieldName === "gender") {
       // Set selectedOption and customGender from userData
-      if (options.Gender.some((option) => option.title === currentFieldValue)) {
+      if (
+        options["gender"].some((option) => option.title === currentFieldValue)
+      ) {
         setSelectedOption(currentFieldValue);
         setCustomGender(""); // Clear custom gender if not "Other"
       } else if (currentFieldValue) {
@@ -65,7 +67,7 @@ function EditFieldScreen() {
     const isModified =
       newFieldValue !== currentFieldValue || isVisible !== isHidden;
 
-    if (fieldName === "Gender" && !selectedOption) {
+    if (fieldName === "gender" && !selectedOption) {
       alert("Please select a gender or provide a custom value.");
       return; // Prevent saving if no option is selected
     }

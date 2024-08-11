@@ -47,7 +47,7 @@ export default function SacredSelf() {
           <TouchableOpacity onPress={() => console.log("Preferences clicked")}>
             <Icon name="sliders" size={24} color="black" />
           </TouchableOpacity>
-          <Link href="/UserSettings">
+          <Link href={"/user/UserSettings" as any}>
             <Icon
               name="cog"
               size={24}

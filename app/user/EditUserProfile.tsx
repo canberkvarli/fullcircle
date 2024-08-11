@@ -28,19 +28,19 @@ export default function EditUserProfile() {
   useEffect(() => {
     // Initialize field visibility based on hiddenFields
     const initialVisibility = {
-      Gender: !userData.hiddenFields?.Gender,
-      Sexuality: !userData.hiddenFields?.sexualOrientation,
-      "I'm Interested In": !userData.hiddenFields?.datePreferences,
-      Work: !userData.hiddenFields?.jobLocation,
-      "Job Title": !userData.hiddenFields?.jobTitle,
-      "Education Level": !userData.hiddenFields?.educationDegree,
-      Name: true,
-      Age: true,
-      Height: true,
-      Location: true,
-      Ethnicities: true,
-      "Children Preference": true,
-      "Spiritual Practices": true,
+      gender: !userData.hiddenFields?.gender,
+      sexualOrientation: !userData.hiddenFields?.sexualOrientation,
+      datePreferences: !userData.hiddenFields?.datePreferences,
+      jobLocation: !userData.hiddenFields?.jobLocation,
+      jobTitle: !userData.hiddenFields?.jobTitle,
+      educationDegree: !userData.hiddenFields?.educationDegree,
+      name: true,
+      age: true,
+      height: !userData.hiddenFields?.height,
+      location: true,
+      ethnicities: true,
+      childrenPreference: true,
+      spiritualPractices: true,
     };
 
     setFieldVisibility(initialVisibility);
@@ -64,9 +64,22 @@ export default function EditUserProfile() {
 
   const handleFieldPress = (fieldName: string) => {
     router.push({
-      pathname: "/user/EditFieldScreen" as any,
+      pathname: "/user/EditFieldScreen",
       params: { fieldName },
     });
+  };
+
+  const renderField = (field: any) => {
+    return (
+      <EditUserProfileField
+        key={field.fieldName}
+        title={field.title}
+        fieldName={field.fieldName}
+        value={field.value}
+        isVisible={fieldVisibility[field.fieldName]}
+        onPress={() => handleFieldPress(field.fieldName)}
+      />
+    );
   };
 
   const renderItem = (item: { key: string; uri: string }, order: number) => {
@@ -102,7 +115,6 @@ export default function EditUserProfile() {
         ]
       );
     } else {
-      console.log("nothing to discard");
       router.back();
     }
   };
@@ -122,64 +134,70 @@ export default function EditUserProfile() {
 
   const IdentityFields = [
     {
-      fieldName: "Gender",
-      value: userData.Gender,
-      isVisible: !userData.hiddenFields?.Gender,
+      fieldName: "gender",
+      title: "Gender",
+      value: userData.gender,
     },
     {
-      fieldName: "Sexuality",
+      fieldName: "sexualOrientation",
+      title: "Sexuality",
       value: userData.sexualOrientation,
-      isVisible: !userData.hiddenFields?.sexualOrientation,
     },
     {
-      fieldName: "I'm Interested In",
+      fieldName: "datePreferences",
+      title: "I'm Interested In",
       value: userData.datePreferences,
-      isVisible: !userData.hiddenFields?.datePreferences,
     },
   ];
 
   const MyVirtuesFields = [
     {
-      fieldName: "Work",
+      fieldName: "jobLocation",
+      title: "Work",
       value: userData.jobLocation,
-      isVisible: !userData.hiddenFields?.jobLocation,
     },
     {
-      fieldName: "Job Title",
+      fieldName: "jobTitle",
+      title: "Job Title",
       value: userData.jobTitle,
-      isVisible: !userData.hiddenFields?.jobTitle,
     },
     {
-      fieldName: "Education Level",
+      fieldName: "educationDegree",
+      title: "Education Level",
       value: userData.educationDegree,
-      isVisible: !userData.hiddenFields?.educationDegree,
     },
   ];
 
   // Additional user info for sections
   const vitalFields = [
     {
-      fieldName: "Name",
+      fieldName: "name",
+      title: "Name",
       value: `${userData.firstName} ${userData.lastName}`,
     },
     {
-      fieldName: "Age",
+      fieldName: "age",
+      title: "Age",
       value: userData.age,
     },
     {
-      fieldName: "Height",
+      fieldName: "height",
+      title: "Height",
       value: userData.height,
     },
     {
-      fieldName: "Location",
+      fieldName: "location",
+      title: "Location",
       value: userData.location?.city,
     },
     {
-      fieldName: "Ethnicities",
+      fieldName: "ethnicities",
+      title: "Ethnicities",
       value: userData.ethnicities,
     },
     {
-      fieldName: "Children Preference",
+      fieldName: "childrenPreference",
+      title: "Children Preference",
       value: userData.childrenPreference,
     },
   ];
@@ -235,52 +253,21 @@ export default function EditUserProfile() {
               />
             </View>
             <View style={styles.fieldsContainer}>
-              {/* IdentityFields Section */}
               <Text style={styles.mainTitle}>Identity</Text>
               <View style={styles.separator} />
-              {IdentityFields.map((field) => (
-                <EditUserProfileField
-                  key={field.fieldName}
-                  title={field.title}
-                  fieldName={field.fieldName}
-                  value={field.value}
-                  onPress={() => handleFieldPress(field.fieldName)}
-                  isVisible={fieldVisibility[field.fieldName]}
-                />
-              ))}
+              {IdentityFields.map(renderField)}
             </View>
             <View style={styles.fieldsContainer}>
-              {/* My Virtues Section */}
               <Text style={styles.mainTitle}>My Virtues</Text>
               <View style={styles.separator} />
-              {MyVirtuesFields.map((field) => (
-                <EditUserProfileField
-                  key={field.fieldName}
-                  title={field.title}
-                  fieldName={field.fieldName}
-                  value={field.value}
-                  isVisible={fieldVisibility[field.fieldName]}
-                  onPress={() => handleFieldPress(field.fieldName)}
-                />
-              ))}
+              {MyVirtuesFields.map(renderField)}
             </View>
             <View style={styles.fieldsContainer}>
-              {/* My Vitals Section */}
               <Text style={styles.mainTitle}>My Vitals</Text>
               <View style={styles.separator} />
-              {vitalFields.map((field, index) => (
-                <EditUserProfileField
-                  key={index}
-                  title={field.title}
-                  fieldName={field.fieldName}
-                  value={field.value}
-                  isVisible={fieldVisibility[field.fieldName]}
-                  onPress={() => handleFieldPress(field.title)}
-                />
-              ))}
+              {vitalFields.map(renderField)}
             </View>
             <View style={styles.fieldsContainer}>
-              {/* My Vices Section */}
               <Text style={styles.mainTitle}>My Vices</Text>
               <View style={styles.separator} />
               <EditUserProfileField
@@ -320,7 +307,6 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     fontSize: 16,
-    color: "#007AFF",
   },
   tabBar: {
     flexDirection: "row",
@@ -328,8 +314,8 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    alignItems: "center",
     paddingVertical: 8,
+    alignItems: "center",
   },
   activeTabButton: {
     borderBottomWidth: 2,
@@ -337,6 +323,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
+    fontWeight: "bold",
   },
   editContainer: {
     flex: 1,
@@ -349,16 +336,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   photoContainer: {
+    flex: 1,
     position: "relative",
     margin: 2,
   },
   photoWrapper: {
-    width: "100%",
-    aspectRatio: 1,
+    position: "relative",
   },
   photo: {
-    width: "100%",
-    height: "100%",
+    width: 100,
+    height: 100,
     borderRadius: 8,
   },
   removePhotoIcon: {

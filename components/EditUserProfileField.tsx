@@ -21,7 +21,6 @@ const EditUserProfileField: React.FC<EditUserProfileFieldProps> = ({
     <TouchableOpacity onPress={onPress} style={styles.rowContainer as any}>
       <View style={styles.rowTextContainer}>
         <Text style={styles.titleText as any}>{title}</Text>
-        <Text style={styles.fieldNameText as any}>{fieldName}</Text>
         <Text style={styles.valueText as any}>
           {Array.isArray(value) ? value.join(", ") : value}
         </Text>
@@ -30,7 +29,7 @@ const EditUserProfileField: React.FC<EditUserProfileFieldProps> = ({
         <Text style={styles.visibilityText}>
           {isVisible ? "Visible" : "Hidden"}
         </Text>
-        <Icon name="chevron-right" size={24} color="gray" />
+        <Icon name="chevron-right" size={16} color="gray" />
       </View>
     </TouchableOpacity>
   );
@@ -48,7 +47,7 @@ const styles = {
     flex: 1,
   },
   titleText: {
-    color: "gray",
+    fontWeight: "bold",
     textAlign: "left",
   },
   fieldNameText: {
