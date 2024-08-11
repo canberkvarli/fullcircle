@@ -43,7 +43,7 @@ const options = {
       input: true,
     },
   ],
-  datePreference: ["Men", "Women", "Everyone"],
+  datePreferences: ["Men", "Women", "Everyone"],
   childrenPreference: [
     "Don’t have children",
     "Have children",
@@ -75,10 +75,10 @@ function EditFieldScreen() {
         )
       ) {
         setSelectedOption(currentFieldValue);
-        setCustomInput(""); // Clear custom input if not "Other"
+        setCustomInput("");
       } else if (currentFieldValue) {
         setSelectedOption("Other");
-        setCustomInput(currentFieldValue); // Set custom input from the database
+        setCustomInput(currentFieldValue);
       }
     }
   }, [fieldName, currentFieldValue]);
@@ -86,7 +86,7 @@ function EditFieldScreen() {
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
     sexualOrientation: "Sexuality",
-    datePreference: "Date Preference",
+    datePreferences: "Date Preference",
     childrenPreference: "Children Preference",
   };
 
