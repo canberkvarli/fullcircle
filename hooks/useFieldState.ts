@@ -56,6 +56,8 @@ import { useState, useEffect } from "react";
   );
   const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
   const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
+  const [firstName, setFirstName] = useState(currentFieldValue || "");
+  const [lastName, setLastName] = useState(currentFieldValue || "");
   const [customInput, setCustomInput] = useState("");
 
   useEffect(() => {
@@ -77,6 +79,10 @@ import { useState, useEffect } from "react";
       setJobLocation(currentFieldValue || "");
     } else if (fieldName === "jobTitle") {
       setJobTitle(currentFieldValue || "");
+    } else if (fieldName === "firstName") {
+      setFirstName(currentFieldValue || "");
+    } else if (fieldName === "lastName") {
+      setLastName(currentFieldValue || "");
     }
   }, [fieldName, currentFieldValue]);
 
@@ -141,10 +147,19 @@ import { useState, useEffect } from "react";
       selectedValue: jobTitle,
       onSelect: setJobTitle,
     },
-
+    firstName: {
+      title: "<NAME>",
+      options: [],
+      selectedValue: firstName,
+      onSelect: setFirstName,
+    },
+    lastName: {
+      title: "<NAME>",
+      options: [],
+      selectedValue: lastName,
+      onSelect: setLastName,
+    },
   };
-  
-  
 
   return {
     selectedGender, setSelectedGender,
@@ -154,6 +169,8 @@ import { useState, useEffect } from "react";
     jobLocation, setJobLocation,
     jobTitle, setJobTitle,
     customInput, setCustomInput,
+    firstName,
+    setFirstName,
     fieldConfig, OPTIONS
   };
 }
