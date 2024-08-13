@@ -1,0 +1,161 @@
+import { useState, useEffect } from "react";
+
+ function useFieldState(fieldName: string, currentFieldValue: any) {
+    const OPTIONS = {
+        gender: [
+          { title: "Man", subtitle: "Radiate your masculine energy" },
+          { title: "Woman", subtitle: "Embrace your feminine essence" },
+          { title: "Non-binary" },
+          { title: "Genderqueer" },
+          { title: "Agender" },
+          { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
+          {
+            title: "Other",
+            subtitle: "Describe your unique path",
+            input: true,
+          },
+        ],
+        sexualOrientation: [
+          "Straight",
+          "Gay",
+          "Lesbian",
+          "Bisexual",
+          "Asexual",
+          "Demisexual",
+          "Pansexual",
+          "Queer",
+          "Questioning",
+        ],
+        datePreferences: ["Men", "Women", "Everyone"],
+        childrenPreference: [
+          "Don’t have children",
+          "Have children",
+          "Open to children",
+          "Want Children",
+        ],
+        educationDegree: [
+          "High School",
+          "Undergrad",
+          "Postgrad",
+          "Associate Degree",
+          "Bachelor's Degree",
+          "Master's Degree",
+          "Doctorate",
+          "Professional Certification",
+        ],
+      };
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
+    []
+  );
+  const [selectedDatePreferences, setSelectedDatePreferences] = useState<
+    string[]
+  >([]);
+  const [selectedEducation, setSelectedEducation] = useState<string | null>(
+    null
+  );
+  const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
+  const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
+  const [customInput, setCustomInput] = useState("");
+
+  useEffect(() => {
+    if (fieldName === "gender") {
+      if (OPTIONS.gender.some((option) => option.title === currentFieldValue)) {
+        setSelectedGender(currentFieldValue);
+        setCustomInput("");
+      } else if (currentFieldValue) {
+        setSelectedGender("Other");
+        setCustomInput(currentFieldValue);
+      }
+    } else if (fieldName === "sexualOrientation") {
+      setSelectedOrientations(Array.isArray(currentFieldValue) ? currentFieldValue : []);
+    } else if (fieldName === "datePreferences") {
+      setSelectedDatePreferences(Array.isArray(currentFieldValue) ? currentFieldValue : []);
+    } else if (fieldName === "educationDegree") {
+      setSelectedEducation(currentFieldValue || null);
+    } else if (fieldName === "jobLocation") {
+      setJobLocation(currentFieldValue || "");
+    } else if (fieldName === "jobTitle") {
+      setJobTitle(currentFieldValue || "");
+    }
+  }, [fieldName, currentFieldValue]);
+
+  const fieldConfig: Record<string, any> = {
+    gender: {
+      title: "Gender",
+      options: OPTIONS.gender,
+      selectedValue: selectedGender,
+      onSelect: setSelectedGender,
+      customInput: customInput,
+      setCustomInput: setCustomInput,
+    },
+    sexualOrientation: {
+      title: "Sexuality",
+      options: OPTIONS.sexualOrientation,
+      selectedValue: selectedOrientations,
+      onSelect: (title: any) => {
+        setSelectedOrientations((prev) =>
+          prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]
+        );
+      },
+    },
+    datePreferences: {
+      title: "Date Preference",
+      options: OPTIONS.datePreferences,
+      selectedValue: selectedDatePreferences,
+      onSelect: (title: any) => {
+        setSelectedDatePreferences((prev) =>
+          prev.includes(title)
+            ? prev.filter((item) => item !== title)
+            : [...prev, title]
+        );
+      },
+    },
+    childrenPreference: {
+      title: "Children Preference",
+      options: OPTIONS.childrenPreference,
+      selectedValue: selectedDatePreferences,
+      onSelect: (title: any) => {
+        setSelectedDatePreferences((prev) =>
+          prev.includes(title)
+            ? prev.filter((item) => item !== title)
+            : [...prev, title]
+        );
+      },
+    },
+    educationDegree: {
+      title: "Education",
+      options: OPTIONS.educationDegree,
+      selectedValue: selectedEducation,
+      onSelect: setSelectedEducation,
+    },
+    jobLocation: {
+      title: "Location",
+      options: [],
+      selectedValue: jobLocation,
+      onSelect: setJobLocation,
+    },
+    jobTitle: {
+      title: "Job Title",
+      options: [],
+      selectedValue: jobTitle,
+      onSelect: setJobTitle,
+    },
+
+  };
+  
+  
+
+  return {
+    selectedGender, setSelectedGender,
+    selectedOrientations, setSelectedOrientations,
+    selectedDatePreferences, setSelectedDatePreferences,
+    selectedEducation, setSelectedEducation,
+    jobLocation, setJobLocation,
+    jobTitle, setJobTitle,
+    customInput, setCustomInput,
+    fieldConfig, OPTIONS
+  };
+}
+
+export default useFieldState;
