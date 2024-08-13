@@ -37,11 +37,6 @@ const options = {
     "Pansexual",
     "Queer",
     "Questioning",
-    {
-      title: "Other",
-      subtitle: "Describe your unique path",
-      input: true,
-    },
   ],
   datePreferences: ["Men", "Women", "Everyone"],
   childrenPreference: [
@@ -50,7 +45,7 @@ const options = {
     "Open to children",
     "Want Children",
   ],
-  educationLevels: [
+  educationDegree: [
     "High School",
     "Undergrad",
     "Postgrad",
@@ -78,10 +73,12 @@ function EditFieldScreen() {
   const [selectedDatePreferences, setSelectedDatePreferences] = useState<
     string[]
   >([]);
+  const [selectedEducation, setSelectedEducation] = useState<string | null>(
+    currentFieldValue || null
+  );
   const [isVisible, setIsVisible] = useState(isHidden);
   const [customInput, setCustomInput] = useState("");
 
-  // New state variables for Job Location and Job Title
   const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
   const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
 
@@ -92,6 +89,7 @@ function EditFieldScreen() {
     childrenPreference: "Children Preference",
     jobLocation: "Work",
     jobTitle: "Job Title",
+    educationDegree: "Education Level",
   };
 
   useEffect(() => {
@@ -113,6 +111,8 @@ function EditFieldScreen() {
         ? currentFieldValue
         : [];
       setSelectedDatePreferences(preferences);
+    } else if (fieldName === "educationDegree") {
+      setSelectedEducation(currentFieldValue || null);
     } else if (fieldName === "jobLocation") {
       setJobLocation(currentFieldValue || "");
     } else if (fieldName === "jobTitle") {
@@ -133,6 +133,8 @@ function EditFieldScreen() {
       newFieldValue = selectedOrientations;
     } else if (fieldName === "datePreferences") {
       newFieldValue = selectedDatePreferences;
+    } else if (fieldName === "educationDegree") {
+      newFieldValue = selectedEducation;
     } else if (fieldName === "jobLocation") {
       newFieldValue = jobLocation;
     } else if (fieldName === "jobTitle") {
@@ -212,6 +214,17 @@ function EditFieldScreen() {
     const subtitle = typeof option === "string" ? null : option.subtitle;
     const input = typeof option === "string" ? false : option.input;
 
+    const isSelected =
+      fieldName === "gender"
+        ? selectedGender === title
+        : fieldName === "datePreferences"
+        ? selectedDatePreferences.includes(title)
+        : fieldName === "sexualOrientation"
+        ? selectedOrientations.includes(title)
+        : fieldName === "educationDegree"
+        ? selectedEducation === title
+        : false;
+
     return (
       <TouchableOpacity
         style={styles.optionContainer}
@@ -225,15 +238,15 @@ function EditFieldScreen() {
               setCustomInput("");
             }
           } else if (fieldName === "sexualOrientation") {
-            if (selectedOrientations.includes(title)) {
-              setSelectedOrientations((prev) =>
-                prev.filter((orientation) => orientation !== title)
-              );
-            } else {
-              setSelectedOrientations((prev) => [...prev, title]);
-            }
+            setSelectedOrientations((prev) =>
+              prev.includes(title)
+                ? prev.filter((orientation) => orientation !== title)
+                : [...prev, title]
+            );
           } else if (fieldName === "datePreferences") {
             handleDatePreferenceSelection(title);
+          } else if (fieldName === "educationDegree") {
+            setSelectedEducation(title);
           }
         }}
       >
@@ -249,18 +262,7 @@ function EditFieldScreen() {
             />
           )}
         </View>
-        <Checkbox
-          value={
-            fieldName === "gender"
-              ? selectedGender === title
-              : fieldName === "datePreferences"
-              ? selectedDatePreferences.includes(title)
-              : selectedOrientations.includes(title)
-          }
-          onValueChange={() => {
-            // Handle checkbox state change here
-          }}
-        />
+        <Checkbox value={isSelected} />
       </TouchableOpacity>
     );
   };
@@ -346,7 +348,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   workInput: {
-    fontSize: 18,
+    fontSize: 38,
     borderBottomWidth: 1,
     borderBottomColor: "#000",
     paddingVertical: 8,
