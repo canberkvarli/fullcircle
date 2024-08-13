@@ -90,7 +90,7 @@ function EditFieldScreen() {
     sexualOrientation: "Sexuality",
     datePreferences: "Date Preference",
     childrenPreference: "Children Preference",
-    jobLocation: "Work Location",
+    jobLocation: "Work",
     jobTitle: "Job Title",
   };
 
@@ -282,7 +282,7 @@ function EditFieldScreen() {
       <ScrollView style={styles.scrollContainer}>
         {(fieldName === "jobLocation" || fieldName === "jobTitle") && (
           <TextInput
-            style={styles.input}
+            style={styles.workInput}
             placeholder={`Enter ${fieldTitleMap[fieldName as string]}`}
             value={fieldName === "jobLocation" ? jobLocation : jobTitle}
             onChangeText={
@@ -340,11 +340,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   input: {
-    borderWidth: 1,
     borderColor: "gray",
-    borderRadius: 8,
+    borderBottomWidth: 1,
     padding: 8,
     marginVertical: 8,
+  },
+  workInput: {
+    fontSize: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: "#000",
+    paddingVertical: 8,
   },
   optionContainer: {
     flexDirection: "row",
