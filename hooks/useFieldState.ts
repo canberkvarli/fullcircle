@@ -44,6 +44,18 @@ import { useState, useEffect } from "react";
           "Professional Certification",
         ],
       };
+  const [firstName, setFirstName] = useState<string>(
+      fieldName === "fullName" && currentFieldValue
+        ? currentFieldValue.split(" ")[0]
+        : currentFieldValue || ""
+  );
+  
+  const [lastName, setLastName] = useState<string>(
+      fieldName === "fullName" && currentFieldValue
+        ? currentFieldValue.split(" ")[1] || ""
+        : ""
+  );
+    
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
     []
@@ -56,8 +68,7 @@ import { useState, useEffect } from "react";
   );
   const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
   const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
-  const [firstName, setFirstName] = useState(currentFieldValue || "");
-  const [lastName, setLastName] = useState(currentFieldValue || "");
+  const [fullName, setFullName] = useState(currentFieldValue || "");
   const [customInput, setCustomInput] = useState("");
 
   useEffect(() => {
@@ -104,6 +115,7 @@ import { useState, useEffect } from "react";
           prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]
         );
       },
+      clearAll: () => setSelectedOrientations([]),
     },
     datePreferences: {
       title: "Date Preference",
@@ -116,6 +128,7 @@ import { useState, useEffect } from "react";
             : [...prev, title]
         );
       },
+      clearAll: () => setSelectedDatePreferences([]),
     },
     childrenPreference: {
       title: "Children Preference",
@@ -171,6 +184,10 @@ import { useState, useEffect } from "react";
     customInput, setCustomInput,
     firstName,
     setFirstName,
+    lastName,
+    setLastName,
+    fullName,
+    setFullName,
     fieldConfig, OPTIONS
   };
 }

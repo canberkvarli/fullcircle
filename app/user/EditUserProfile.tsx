@@ -34,7 +34,9 @@ export default function EditUserProfile() {
       jobLocation: !userData.hiddenFields?.jobLocation,
       jobTitle: !userData.hiddenFields?.jobTitle,
       educationDegree: !userData.hiddenFields?.educationDegree,
-      name: true,
+      firstName: true,
+      lastName: true,
+      fullName: true,
       age: true,
       height: !userData.hiddenFields?.height,
       location: true,
@@ -171,9 +173,9 @@ export default function EditUserProfile() {
   // Additional user info for sections
   const vitalFields = [
     {
-      fieldName: "name",
+      fieldName: "fullName",
       title: "Name",
-      value: `${userData.firstName} ${userData.lastName}`,
+      value: userData.fullName || userData.firstName, // Fall back to firstName if fullName is not available
     },
     {
       fieldName: "age",

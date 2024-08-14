@@ -63,8 +63,12 @@ function SSOButtons(): JSX.Element {
 
           await updateUserData(updatedUserData);
           if (existingUserData.onboardingCompleted) {
+            console.log("User onboarding completed, redirecting to main");
             router.replace("main/Connect" as any);
           } else {
+            console.log(
+              "User onboarding not completed, redirecting to onboarding"
+            );
             router.replace(
               `onboarding/${existingUserData.currentOnboardingScreen}` as any
             );

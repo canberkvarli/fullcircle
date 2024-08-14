@@ -19,6 +19,7 @@ type UserData = {
   marketingRequested?: boolean;
   firstName?: string;
   lastName?: string;
+  fullName?: string;
   birthdate?: string;
   birthmonth?: string;
   birthday?: string;
@@ -121,6 +122,7 @@ const initialUserData: UserData = {
   email: "",
   firstName: "",
   lastName: "",
+  fullName: "",
   GoogleSSOEnabled: false,
   marketingRequested: true,
   countryCode: "",

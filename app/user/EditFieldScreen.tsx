@@ -24,6 +24,7 @@ function EditFieldScreen() {
     (userData.hiddenFields as any)?.[fieldName as string] === false;
   const fieldState = useFieldState(fieldName as string, currentFieldValue);
   const {
+    OPTIONS,
     selectedGender,
     setSelectedGender,
     selectedOrientations,
@@ -39,7 +40,10 @@ function EditFieldScreen() {
     customInput,
     setCustomInput,
     fieldConfig,
-    OPTIONS,
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
   } = fieldState;
 
   const [isVisible, setIsVisible] = useState(isHidden);
@@ -52,16 +56,35 @@ function EditFieldScreen() {
     jobLocation: "Work",
     jobTitle: "Job Title",
     educationDegree: "Education Level",
+    firstName: "First Name",
+    lastName: "Last Name",
   };
 
   const handleSave = async () => {
     const config = fieldConfig[fieldName as string];
-    let newFieldValue =
-      fieldName === "gender" && config?.customInput
-        ? config.customInput
-        : config.selectedValue;
+    let newFieldValue;
+
+    if (fieldName === "fullName") {
+      // Ensure the first name is not empty
+      if (!firstName) {
+        alert("First name is required.");
+        return;
+      }
+      newFieldValue = lastName ? `${firstName} ${lastName}` : firstName;
+    } else if (fieldName === "gender") {
+      // Ensure gender is not empty or invalid
+      if (!selectedGender || (selectedGender === "Other" && !customInput)) {
+        alert("Please select a valid gender or provide a custom input.");
+        return;
+      }
+      newFieldValue = selectedGender === "Other" ? customInput : selectedGender;
+    } else {
+      newFieldValue = config?.selectedValue;
+    }
+
     const isModified =
       newFieldValue !== currentFieldValue || isVisible !== isHidden;
+
     if (isModified) {
       await updateUserData({
         [fieldName as string]: newFieldValue,
@@ -118,7 +141,6 @@ function EditFieldScreen() {
     const title = typeof option === "string" ? option : option.title;
     const subtitle = typeof option === "string" ? null : option.subtitle;
     const input = typeof option === "string" ? false : option.input;
-
     const isSelected =
       fieldName === "gender"
         ? selectedGender === title
@@ -129,7 +151,6 @@ function EditFieldScreen() {
         : fieldName === "educationDegree"
         ? selectedEducation === title
         : false;
-
     return (
       <TouchableOpacity
         style={styles.optionContainer}
@@ -187,6 +208,29 @@ function EditFieldScreen() {
       </Text>
 
       <ScrollView style={styles.scrollContainer}>
+        {fieldName === "fullName" && (
+          <>
+            <TextInput
+              style={styles.workInput}
+              placeholder="First Name"
+              value={firstName}
+              onChangeText={setFirstName}
+            />
+            <TextInput
+              style={styles.workInput}
+              placeholder="Last Name"
+              value={lastName}
+              onChangeText={setLastName}
+            />
+            <Text
+              style={styles.optionalText}
+              onPress={() => console.log("Why is clicked")}
+            >
+              Last name is optional, and only shared with matches. Why?
+            </Text>
+          </>
+        )}
+
         {(fieldName === "jobLocation" || fieldName === "jobTitle") && (
           <TextInput
             style={styles.workInput}
@@ -198,25 +242,27 @@ function EditFieldScreen() {
           />
         )}
 
-        {fieldName !== "jobLocation" && fieldName !== "jobTitle" && (
-          <FlatList
-            data={
-              OPTIONS[fieldName as keyof typeof OPTIONS] as Array<
-                string | { title: string; subtitle?: string; input?: boolean }
-              >
-            }
-            renderItem={({ item }) => renderOption(item)}
-            keyExtractor={(item) =>
-              typeof item === "string" ? item : item.title
-            }
-            scrollEnabled={false}
-          />
-        )}
+        {fieldName !== "jobLocation" &&
+          fieldName !== "jobTitle" &&
+          fieldName !== "firstName" && (
+            <FlatList
+              data={
+                OPTIONS[fieldName as keyof typeof OPTIONS] as Array<
+                  string | { title: string; subtitle?: string; input?: boolean }
+                >
+              }
+              renderItem={({ item }) => renderOption(item)}
+              keyExtractor={(item) =>
+                typeof item === "string" ? item : item.title
+              }
+              scrollEnabled={false}
+            />
+          )}
       </ScrollView>
 
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleText}>
-          {isVisible ? "Visible" : "Hidden"}
+      <View style={styles.visibilityContainer}>
+        <Text style={styles.visibilityText}>
+          {isVisible ? "Visible" : "Hidden"} on profile
         </Text>
         <TouchableOpacity onPress={() => setIsVisible((prev) => !prev)}>
           <Icon
@@ -258,6 +304,11 @@ const styles = StyleSheet.create({
     borderBottomColor: "#000",
     paddingVertical: 8,
   },
+  optionalText: {
+    fontSize: 14,
+    color: "#007BFF",
+    marginTop: 8,
+  },
   optionContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -273,15 +324,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
   },
-  toggleContainer: {
+  visibilityContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
+    paddingVertical: 16,
   },
-  toggleText: {
+  visibilityText: {
     fontSize: 16,
   },
 });

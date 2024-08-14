@@ -37,11 +37,18 @@ function NameScreen() {
       return;
     }
 
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const fullName = trimmedLastName
+      ? `${trimmedFirstName} ${trimmedLastName}`
+      : trimmedFirstName;
+
     try {
       await updateUserData({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-      }); // Wait for the user data update
+        fullName,
+      });
       navigateToNextScreen();
     } catch (error) {
       console.error("Error submitting name:", error);
