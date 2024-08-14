@@ -12,6 +12,7 @@ import Checkbox from "expo-checkbox";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { RulerPicker } from "react-native-ruler-picker";
 import useFieldState from "@/hooks/useFieldState";
 
 function EditFieldScreen() {
@@ -44,6 +45,10 @@ function EditFieldScreen() {
     setFirstName,
     lastName,
     setLastName,
+    selectedHeight,
+    setSelectedHeight,
+    unit,
+    setUnit,
   } = fieldState;
 
   const [isVisible, setIsVisible] = useState(isHidden);
@@ -58,6 +63,7 @@ function EditFieldScreen() {
     educationDegree: "Education Level",
     firstName: "First Name",
     lastName: "Last Name",
+    height: "Height",
   };
 
   const handleSave = async () => {
@@ -71,6 +77,8 @@ function EditFieldScreen() {
         return;
       }
       newFieldValue = lastName ? `${firstName} ${lastName}` : firstName;
+    } else if (fieldName === "height") {
+      newFieldValue = `${selectedHeight} ${unit}`;
     } else if (fieldName === "gender") {
       // Ensure gender is not empty or invalid
       if (!selectedGender || (selectedGender === "Other" && !customInput)) {
@@ -128,6 +136,34 @@ function EditFieldScreen() {
       }
     }
   };
+
+  const renderHeightPicker = () => (
+    <View style={styles.heightPickerContainer}>
+      <RulerPicker
+        min={unit === "cm" ? 130 : 4.3} // min height in cm or ft
+        max={unit === "cm" ? 240 : 7.9} // max height in cm or ft
+        step={unit === "cm" ? 1 : 0.1} // step size in cm or ft
+        unit={unit} // cm or ft
+        fractionDigits={unit === "cm" ? 0 : 1} // decimal places
+        initialValue={selectedHeight}
+        onValueChange={(value) => setSelectedHeight(Number(value))}
+      />
+      <View style={styles.unitToggleContainer}>
+        <TouchableOpacity
+          style={unit === "cm" ? styles.activeUnit : styles.inactiveUnit}
+          onPress={() => setUnit("cm")}
+        >
+          <Text style={styles.unitText}>cm</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={unit === "ft" ? styles.activeUnit : styles.inactiveUnit}
+          onPress={() => setUnit("ft")}
+        >
+          <Text style={styles.unitText}>ft</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   const renderAgeSection = () => {
     const { age, birthdate } = userData;
@@ -273,6 +309,7 @@ function EditFieldScreen() {
             />
           )}
         {fieldName === "age" && renderAgeSection()}
+        {fieldName === "height" && renderHeightPicker()}
       </ScrollView>
 
       <View style={styles.visibilityContainer}>
@@ -363,6 +400,30 @@ const styles = StyleSheet.create({
   noticeText: {
     fontSize: 14,
     marginTop: 12,
+  },
+  heightPickerContainer: {
+    marginBottom: 24,
+  },
+  unitToggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  activeUnit: {
+    padding: 10,
+    borderRadius: 4,
+    backgroundColor: "#6200ea",
+    marginHorizontal: 8,
+  },
+  inactiveUnit: {
+    padding: 10,
+    borderRadius: 4,
+    backgroundColor: "#e0e0e0",
+    marginHorizontal: 8,
+  },
+  unitText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
 

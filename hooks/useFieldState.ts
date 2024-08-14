@@ -70,6 +70,22 @@ import { useState, useEffect } from "react";
   const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
   const [fullName, setFullName] = useState(currentFieldValue || "");
   const [customInput, setCustomInput] = useState("");
+  const [selectedHeight, setSelectedHeight] = useState<number>(
+    parseInt(currentFieldValue?.replace(/\D/g, "") ?? "130")
+  );
+  const [unit, setUnit] = useState<"cm" | "ft">(
+    currentFieldValue?.includes("ft") ? "ft" : "cm"
+  );
+
+  useEffect(() => {
+    if (fieldName === "height") {
+      if (unit === "cm" && selectedHeight > 240) {
+        setSelectedHeight(240);
+      } else if (unit === "ft" && selectedHeight > 8) {
+        setSelectedHeight(8);
+      }
+    }
+  }, [unit]);
 
   useEffect(() => {
     if (fieldName === "gender") {
@@ -172,6 +188,13 @@ import { useState, useEffect } from "react";
       selectedValue: lastName,
       onSelect: setLastName,
     },
+    height: {
+      title: "Height",
+      selectedHeight,
+      unit,
+      setUnit,
+      setSelectedHeight,
+    },
   };
 
   return {
@@ -188,7 +211,11 @@ import { useState, useEffect } from "react";
     setLastName,
     fullName,
     setFullName,
-    fieldConfig, OPTIONS
+    fieldConfig, OPTIONS,
+    selectedHeight,
+    setSelectedHeight,
+    unit,
+    setUnit,
   };
 }
 
