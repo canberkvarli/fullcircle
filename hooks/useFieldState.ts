@@ -76,6 +76,7 @@ import { useState, useEffect } from "react";
   const [unit, setUnit] = useState<"cm" | "ft">(
     currentFieldValue?.includes("ft") ? "ft" : "cm"
   );
+  const [location, setLocation] = useState(currentFieldValue || "");
 
   useEffect(() => {
     if (fieldName === "height") {
@@ -110,6 +111,8 @@ import { useState, useEffect } from "react";
       setFirstName(currentFieldValue || "");
     } else if (fieldName === "lastName") {
       setLastName(currentFieldValue || "");
+    } else if (fieldName === "location") {
+      setLocation(currentFieldValue || "");
     }
   }, [fieldName, currentFieldValue]);
 
@@ -195,6 +198,11 @@ import { useState, useEffect } from "react";
       setUnit,
       setSelectedHeight,
     },
+    location: {
+      title: "Location",
+      selectedValue: location,
+      onSelect: setLocation,
+    },
   };
 
   return {
@@ -216,6 +224,8 @@ import { useState, useEffect } from "react";
     setSelectedHeight,
     unit,
     setUnit,
+    location,
+    setLocation,
   };
 }
 

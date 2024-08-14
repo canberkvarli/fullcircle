@@ -49,6 +49,8 @@ function EditFieldScreen() {
     setSelectedHeight,
     unit,
     setUnit,
+    location,
+    setLocation,
   } = fieldState;
 
   const [isVisible, setIsVisible] = useState(isHidden);
@@ -64,6 +66,7 @@ function EditFieldScreen() {
     firstName: "First Name",
     lastName: "Last Name",
     height: "Height",
+    location: "Location",
   };
 
   const handleSave = async () => {
