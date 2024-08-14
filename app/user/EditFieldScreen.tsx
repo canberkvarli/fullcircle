@@ -129,6 +129,20 @@ function EditFieldScreen() {
     }
   };
 
+  const renderAgeSection = () => {
+    const { age, birthdate } = userData;
+    return (
+      <View style={styles.ageContainer}>
+        <Text style={styles.ageText}>{age}</Text>
+        <Text style={styles.birthdateText}>{birthdate}</Text>
+        <Text style={styles.noticeText}>
+          Please contact the Circle team at [your-email@example.com] to change
+          your age. This requires you to upload your ID.
+        </Text>
+      </View>
+    );
+  };
+
   const renderOption = (
     option:
       | {
@@ -258,6 +272,7 @@ function EditFieldScreen() {
               scrollEnabled={false}
             />
           )}
+        {fieldName === "age" && renderAgeSection()}
       </ScrollView>
 
       <View style={styles.visibilityContainer}>
@@ -332,6 +347,22 @@ const styles = StyleSheet.create({
   },
   visibilityText: {
     fontSize: 16,
+  },
+  ageContainer: {
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  ageText: {
+    fontSize: 36,
+    fontWeight: "bold",
+  },
+  birthdateText: {
+    fontSize: 18,
+    marginVertical: 8,
+  },
+  noticeText: {
+    fontSize: 14,
+    marginTop: 12,
   },
 });
 
