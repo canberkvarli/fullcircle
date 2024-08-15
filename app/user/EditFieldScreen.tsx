@@ -47,10 +47,12 @@ function EditFieldScreen() {
     setLastName,
     selectedHeight,
     setSelectedHeight,
+    selectedChildrenPreferences,
+    setSelectedChildrenPreferences,
+    selectedEthnicities,
+    setSelectedEthnicities,
     unit,
     setUnit,
-    location,
-    setLocation,
   } = fieldState;
 
   const [isVisible, setIsVisible] = useState(isHidden);
@@ -59,7 +61,7 @@ function EditFieldScreen() {
     gender: "Gender",
     sexualOrientation: "Sexuality",
     datePreferences: "Date Preference",
-    childrenPreference: "Children Preference",
+    childrenPreference: "Family Vision",
     jobLocation: "Work",
     jobTitle: "Job Title",
     educationDegree: "Education Level",
@@ -67,6 +69,7 @@ function EditFieldScreen() {
     lastName: "Last Name",
     height: "Height",
     location: "Location",
+    ethnicities: "Ethnic Root",
   };
 
   const handleSave = async () => {
@@ -107,6 +110,13 @@ function EditFieldScreen() {
     }
 
     router.back();
+  };
+
+  const handleEthnicitySelection = (title: string) => {
+    const newEthnicities = selectedEthnicities.includes(title)
+      ? selectedEthnicities.filter((ethnicity) => ethnicity !== title)
+      : [...selectedEthnicities, title];
+    setSelectedEthnicities(newEthnicities);
   };
 
   const handleDatePreferenceSelection = (title: string) => {
@@ -203,6 +213,10 @@ function EditFieldScreen() {
         ? selectedOrientations.includes(title)
         : fieldName === "educationDegree"
         ? selectedEducation === title
+        : fieldName === "ethnicities"
+        ? selectedEthnicities.includes(title)
+        : fieldName === "childrenPreference"
+        ? fieldState.selectedChildrenPreferences?.includes(title)
         : false;
     return (
       <TouchableOpacity
@@ -226,6 +240,10 @@ function EditFieldScreen() {
             handleDatePreferenceSelection(title);
           } else if (fieldName === "educationDegree") {
             setSelectedEducation(title);
+          } else if (fieldName === "ethnicities") {
+            handleEthnicitySelection(title);
+          } else if (fieldName === "childrenPreference") {
+            setSelectedChildrenPreferences(title);
           }
         }}
       >

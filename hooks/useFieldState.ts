@@ -27,12 +27,6 @@ import { useState, useEffect } from "react";
           "Questioning",
         ],
         datePreferences: ["Men", "Women", "Everyone"],
-        childrenPreference: [
-          "Don’t have children",
-          "Have children",
-          "Open to children",
-          "Want Children",
-        ],
         educationDegree: [
           "High School",
           "Undergrad",
@@ -42,6 +36,22 @@ import { useState, useEffect } from "react";
           "Master's Degree",
           "Doctorate",
           "Professional Certification",
+        ],
+        childrenPreference: [
+          "Don’t have children",
+          "Have children",
+          "Open to children",
+          "Want Children",
+        ],
+        ethnicities: [
+          "American Indian",
+          "East Asian",
+          "Black/African Descent",
+          "Middle Eastern",
+          "Hispanic Latino",
+          "South Asian",
+          "Pacific Islander",
+          "White/Caucasian",
         ],
       };
   const [firstName, setFirstName] = useState<string>(
@@ -57,21 +67,17 @@ import { useState, useEffect } from "react";
   );
     
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
-  const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
-    []
-  );
-  const [selectedDatePreferences, setSelectedDatePreferences] = useState<
-    string[]
-  >([]);
-  const [selectedEducation, setSelectedEducation] = useState<string | null>(
-    null
-  );
+  const [selectedOrientations, setSelectedOrientations] = useState<string[]>([]);
+  const [selectedDatePreferences, setSelectedDatePreferences] = useState<string[]>([]);
+  const [selectedEducation, setSelectedEducation] = useState<string | null>(null);
   const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
   const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
+  const [selectedChildrenPreferences, setSelectedChildrenPreferences] = useState<string | null>(null);
+  const [selectedEthnicities, setSelectedEthnicities] = useState<string[]>([]);
   const [fullName, setFullName] = useState(currentFieldValue || "");
   const [customInput, setCustomInput] = useState("");
   const [selectedHeight, setSelectedHeight] = useState<number>(
-    parseInt(currentFieldValue?.replace(/\D/g, "") ?? "130")
+    typeof currentFieldValue === 'string' ? parseInt(currentFieldValue.replace(/\D/g, "") || "130") : 130
   );
   const [unit, setUnit] = useState<"cm" | "ft">(
     currentFieldValue?.includes("ft") ? "ft" : "cm"
@@ -103,6 +109,10 @@ import { useState, useEffect } from "react";
       setSelectedDatePreferences(Array.isArray(currentFieldValue) ? currentFieldValue : []);
     } else if (fieldName === "educationDegree") {
       setSelectedEducation(currentFieldValue || null);
+    } else if (fieldName === "ethnicities") {
+      setSelectedEthnicities(Array.isArray(currentFieldValue) ? currentFieldValue : []);
+    } else if (fieldName === "childrenPreference") {
+      setSelectedChildrenPreferences(currentFieldValue || null);
     } else if (fieldName === "jobLocation") {
       setJobLocation(currentFieldValue || "");
     } else if (fieldName === "jobTitle") {
@@ -152,14 +162,8 @@ import { useState, useEffect } from "react";
     childrenPreference: {
       title: "Children Preference",
       options: OPTIONS.childrenPreference,
-      selectedValue: selectedDatePreferences,
-      onSelect: (title: any) => {
-        setSelectedDatePreferences((prev) =>
-          prev.includes(title)
-            ? prev.filter((item) => item !== title)
-            : [...prev, title]
-        );
-      },
+      selectedValue: selectedChildrenPreferences,
+      onSelect: setSelectedChildrenPreferences,
     },
     educationDegree: {
       title: "Education",
@@ -203,6 +207,17 @@ import { useState, useEffect } from "react";
       selectedValue: location,
       onSelect: setLocation,
     },
+    ethnicities: {
+      title: "Ethnicities",
+      options: OPTIONS.ethnicities,
+      selectedValue: selectedEthnicities,
+      onSelect: (title: any) => {
+        setSelectedEthnicities((prev) =>
+          prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]
+        );
+      },
+      clearAll: () => setSelectedEthnicities([]),
+    },
   };
 
   return {
@@ -210,6 +225,7 @@ import { useState, useEffect } from "react";
     selectedOrientations, setSelectedOrientations,
     selectedDatePreferences, setSelectedDatePreferences,
     selectedEducation, setSelectedEducation,
+    selectedEthnicities, setSelectedEthnicities,
     jobLocation, setJobLocation,
     jobTitle, setJobTitle,
     customInput, setCustomInput,
@@ -226,6 +242,7 @@ import { useState, useEffect } from "react";
     setUnit,
     location,
     setLocation,
+    selectedChildrenPreferences, setSelectedChildrenPreferences,
   };
 }
 
