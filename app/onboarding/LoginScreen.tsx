@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Button, Text, TextInput, StyleSheet, Alert } from "react-native";
+import { Button, Text, TextInput, Alert } from "react-native";
+import styles from "@/styles/Onboarding/LoginScreenStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RouteProp } from "@react-navigation/native";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "expo-router";
@@ -44,30 +44,10 @@ function LoginScreen(): JSX.Element {
       <Button title="Login" onPress={signIn} />
       <Button
         title="Go back"
-        onPress={() => router.navigate("onboarding/LoginSignupScreen")}
+        onPress={() => router.navigate("onboarding/LoginSignupScreen" as any)}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-});
 
 export default LoginScreen;

@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
 function WelcomeTitle(): JSX.Element {
   return (
@@ -21,32 +21,32 @@ function WelcomeTitle(): JSX.Element {
 const styles = StyleSheet.create({
   titleContainer: {
     flex: 2,
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingTop: 20,
   },
   textContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   subTitle: {
     fontSize: 16,
-    color: 'gray',
+    color: "gray",
     marginBottom: 20,
   },
   permissionsContainer: {
     flexGrow: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
     paddingBottom: 50,
   },
   permissions: {
     fontSize: 12,
-    color: 'gray',
-    textAlign: 'center',
+    color: "gray",
+    textAlign: "center",
   },
 });
 

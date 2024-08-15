@@ -1,7 +1,7 @@
-// app/LandingPageScreen.tsx
 import React from "react";
 import LottieView from "lottie-react-native";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
+import styles from "@/styles/LandingPageStyles";
 import { useRouter } from "expo-router";
 
 function LandingPageScreen(): JSX.Element {
@@ -24,17 +24,5 @@ function LandingPageScreen(): JSX.Element {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  animation: {
-    width: "100%",
-    height: "100%",
-  },
-});
 
 export default LandingPageScreen;

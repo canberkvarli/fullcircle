@@ -3,12 +3,12 @@ import {
   SafeAreaView,
   Text,
   View,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Alert,
   ActivityIndicator,
 } from "react-native";
+import styles from "@/styles/Onboarding/PhotosScreenStyles";
 import Icon from "react-native-vector-icons/FontAwesome";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -167,70 +167,5 @@ function PhotosScreen() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    marginTop: 25,
-  },
-  backButton: {
-    bottom: 20,
-  },
-  title: {
-    fontSize: 45,
-    textAlign: "left",
-    marginTop: 40,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  subtitle: {
-    fontSize: 18,
-    textAlign: "left",
-    paddingHorizontal: 16,
-  },
-  photosContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginVertical: 20,
-  },
-  photoContainer: {
-    position: "relative",
-  },
-  photo: {
-    width: 130,
-    height: 130,
-    margin: 5,
-    borderRadius: 8,
-    backgroundColor: "lightblue",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  photoImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 8,
-  },
-  //   deleteButton: {
-  //     position: "absolute",
-  //     top: 5,
-  //     right: 5,
-  //     left: 6,
-  //   },
-  nextButton: {
-    position: "absolute",
-    bottom: 30,
-    right: 30,
-    zIndex: 1,
-  },
-  loader: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    marginLeft: -12,
-    marginTop: -12,
-  },
-});
 
 export default PhotosScreen;
