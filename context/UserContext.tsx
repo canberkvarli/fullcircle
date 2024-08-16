@@ -6,7 +6,7 @@ import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import potentialMatchesData from "@/data/potentialMatches";
 
-type UserData = {
+export type UserDataType = {
   userId: string;
   currentOnboardingScreen: string;
   phoneNumber: string;
@@ -64,15 +64,15 @@ type UserContextType = {
   setcurrentOnboardingScreen: React.Dispatch<React.SetStateAction<string>>;
   screens: string[];
   setScreens: React.Dispatch<React.SetStateAction<string[]>>;
-  userData: UserData;
-  setUserData: React.Dispatch<React.SetStateAction<UserData>>;
+  userData: UserDataType;
+  setUserData: React.Dispatch<React.SetStateAction<UserDataType>>;
   googleCredential: FirebaseAuthTypes.AuthCredential | null;
   setGoogleCredential: React.Dispatch<
     React.SetStateAction<FirebaseAuthTypes.AuthCredential | null>
   >;
-  googleUserData: UserData;
-  setGoogleUserData: React.Dispatch<React.SetStateAction<UserData>>;
-  updateUserData: (data: Partial<UserData>) => void;
+  googleUserData: UserDataType;
+  setGoogleUserData: React.Dispatch<React.SetStateAction<UserDataType>>;
+  updateUserData: (data: Partial<UserDataType>) => void;
   navigateToNextScreen: () => void;
   navigateToPreviousScreen: () => void;
   navigateToScreen: (screen: string) => void;
@@ -116,7 +116,7 @@ const initialScreens = [
   "PhotosScreen",
 ];
 
-const initialUserData: UserData = {
+const initialUserData: UserDataType = {
   userId: "",
   phoneNumber: "",
   email: "",
@@ -148,9 +148,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentOnboardingScreen, setcurrentOnboardingScreen] =
     useState<string>(initialScreens[0]);
   const [screens, setScreens] = useState<string[]>(initialScreens);
-  const [userData, setUserData] = useState<UserData>(initialUserData);
+  const [userData, setUserData] = useState<UserDataType>(initialUserData);
   const [googleUserData, setGoogleUserData] =
-    useState<UserData>(initialUserData);
+    useState<UserDataType>(initialUserData);
   const [googleCredential, setGoogleCredential] =
     useState<FirebaseAuthTypes.AuthCredential | null>(null);
   const [currentUser, setCurrentUser] = useState<FirebaseAuthTypes.User | null>(
@@ -159,9 +159,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentPotentialMatchIndex, setCurrentPotentialMatchIndex] =
     useState(0);
   const [currentPotentialMatch, setCurrentPotentialMatch] =
-    useState<UserData | null>(null);
+    useState<UserDataType | null>(null);
   const [potentialMatches, setPotentialMatches] =
-    useState<UserData[]>(potentialMatchesData);
+    useState<UserDataType[]>(potentialMatchesData);
   const [initializing, setInitializing] = useState(true);
   const router = useRouter();
 
@@ -173,7 +173,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       const docRef = doc(FIRESTORE, "users", userId);
       const docSnap = await getDoc(docRef);
-      const userDataFromFirestore = docSnap.data() as UserData;
+      const userDataFromFirestore = docSnap.data() as UserDataType;
       const userCurrentOnboardingScreen =
         userDataFromFirestore?.currentOnboardingScreen || "PhoneNumberScreen";
       if (docSnap.exists()) {
@@ -248,7 +248,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const updateUserData = async (data: Partial<UserData>) => {
+  const updateUserData = async (data: Partial<UserDataType>) => {
     try {
       const userIdToUpdate = data.userId || userData.userId;
       if (!userIdToUpdate) {
