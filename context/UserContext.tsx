@@ -134,6 +134,7 @@ const initialUserData: UserDataType = {
   currentOnboardingScreen: initialScreens[0],
   hiddenFields: {},
   fullCircleSubscription: false,
+  likesReceived: potentialMatchesData.slice(0, 10).map((user) => user.userId),
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
