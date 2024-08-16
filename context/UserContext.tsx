@@ -57,6 +57,9 @@ export type UserDataType = {
   onboardingCompleted?: boolean;
   likedMatches?: string[];
   dislikedMatches?: string[];
+  likesReceived?: string[]; // Users who liked the current user
+  matches?: string[]; // Mutual likes
+  fullCircleSubscription: boolean;
 };
 
 type UserContextType = {
@@ -130,6 +133,7 @@ const initialUserData: UserDataType = {
   number: "",
   currentOnboardingScreen: initialScreens[0],
   hiddenFields: {},
+  fullCircleSubscription: false,
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
