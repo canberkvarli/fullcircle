@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, Image, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+} from "react-native";
 import { useUserContext } from "@/context/UserContext";
-import { doc, getDoc } from "firebase/firestore";
-import { FIRESTORE } from "@/services/FirebaseConfig";
+import potentialMatches, { PotentialMatchType } from "@/data/potentialMatches"; // Adjust path as necessary
 
-const KindredSpirits = () => {
+const KindredSpirits: React.FC = () => {
   const { userData } = useUserContext();
-  const [likedByUsers, setLikedByUsers] = useState([]);
+  const [likedByUsers, setLikedByUsers] = useState<PotentialMatchType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchLikedByUsers = async () => {
       if (userData.userId) {
         try {
-          const userDocRef = doc(FIRESTORE, "users", userData.userId);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userDataFromFirestore = userDocSnap.data();
-            setLikedByUsers(userDataFromFirestore.likedBy || []);
-          }
+          // Simulate fetching the user data from Firestore
+          const likesReceived = Array.isArray(userData.likesReceived)
+            ? userData.likesReceived
+            : [];
+          console.log("Likes received:", likesReceived);
+          // Find potential matches that match the likedByUsers
+          const likedUsers = potentialMatches.filter((user) =>
+            likesReceived.includes(user.userId)
+          );
+          setLikedByUsers(likedUsers);
+          console.log("Liked by users:", likedUsers);
         } catch (error) {
           console.error("Failed to fetch likedBy users:", error);
         } finally {
@@ -26,9 +37,8 @@ const KindredSpirits = () => {
         }
       }
     };
-
     fetchLikedByUsers();
-  }, [userData.userId]);
+  }, [userData]);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -54,13 +64,22 @@ const KindredSpirits = () => {
   return (
     <View>
       <Text>Likes you</Text>
-      {likedByUsers.slice(0, 1).map((userId) => (
+      {likedByUsers.map((user, index) => (
         <TouchableOpacity
-          key={userId}
-          onPress={() => console.log(`View ${userId}'s profile`)}
+          key={user.userId}
+          onPress={() => console.log(`View ${user.userId}'s profile`)}
+          style={{
+            opacity: index === 0 || userData.fullCircleSubscription ? 1 : 0.5,
+          }}
         >
-          <Text>{userId}</Text>
-          {/* Replace with actual profile card */}
+          <View style={styles.profileContainer}>
+            <Text style={styles.userName}>
+              {user.firstName} {user.lastName}
+            </Text>
+            {user.photos.map((photo, i) => (
+              <Image key={i} source={{ uri: photo }} style={styles.photo} />
+            ))}
+          </View>
         </TouchableOpacity>
       ))}
       {userData.fullCircleSubscription === false && likedByUsers.length > 1 && (
@@ -72,5 +91,22 @@ const KindredSpirits = () => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  profileContainer: {
+    marginBottom: 20,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  photo: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+});
 
 export default KindredSpirits;

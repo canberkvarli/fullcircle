@@ -57,8 +57,8 @@ export type UserDataType = {
   onboardingCompleted?: boolean;
   likedMatches?: string[];
   dislikedMatches?: string[];
-  likesReceived?: string[]; // Users who liked the current user
-  matches?: string[]; // Mutual likes
+  likesReceived?: string[];
+  matches?: string[];
   fullCircleSubscription: boolean;
 };
 

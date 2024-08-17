@@ -5,13 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { faker } from '@faker-js/faker';
 
 // Interface for location details
-interface Location {
+export interface LocationType {
   city: string;
   country: string;
 }
 
 // Interface for potential match details
-interface PotentialMatch {
+export interface PotentialMatchType {
   userId: string;
   firstName: string;
   lastName: string;
@@ -26,7 +26,7 @@ interface PotentialMatch {
   sexualOrientation: string[];
   datePreferences: string[];
   childrenPreference: string;
-  location: Location;
+  location: LocationType;
   educationDegree: string;
   currentOnboardingScreen: string;
   phoneNumber: string;
@@ -37,14 +37,14 @@ interface PotentialMatch {
   fullCircleSubscription?: boolean;
 }
 
-function randomlyLikeCurrentUser(matches: PotentialMatch[], likeProbability = 0.5): PotentialMatch[] {
+function randomlyLikeCurrentUser(matches: PotentialMatchType[], likeProbability = 0.5): PotentialMatchType[] {
   return matches.map((match) => {
     match.likedCurrentUser = Math.random() < likeProbability;
     return match;
   });
 }
 
-const generateRandomLocation = (): Location => ({
+const generateRandomLocation = (): LocationType => ({
   city: faker.location.city(),
   country: faker.location.country(),
 });
@@ -73,7 +73,7 @@ const fetchUnsplashImages = async (query: string, count: number, page: number): 
 };
 
 // Function to generate a single potential match
-const generatePotentialMatch = async (page: number): Promise<PotentialMatch> => {
+const generatePotentialMatch = async (page: number): Promise<PotentialMatchType> => {
   const { day, month, year } = generateRandomDateOfBirth();
   
   // Fetch images using a random page number to vary results
@@ -107,8 +107,8 @@ const generatePotentialMatch = async (page: number): Promise<PotentialMatch> => 
 };
 
 // Function to generate multiple potential matches
-const generatePotentialMatches = async (num: number): Promise<PotentialMatch[]> => {
-  const potentialMatches: PotentialMatch[] = [];
+const generatePotentialMatches = async (num: number): Promise<PotentialMatchType[]> => {
+  const potentialMatches: PotentialMatchType[] = [];
   for (let i = 0; i < num; i++) {
     const page = Math.floor(Math.random() * 10) + 1; // Generate a random page number between 1 and 10
     const match = await generatePotentialMatch(page);
@@ -131,12 +131,12 @@ generatePotentialMatches(50)
     const likedMatches = randomlyLikeCurrentUser(potentialMatches); // Apply the liking logic
 
     const content = `// data/potentialMatches.ts
-interface Location {
+interface LocationType {
   city: string;
   country: string;
 }
 
-interface PotentialMatch {
+interface PotentialMatchType {
   userId: string;
   firstName: string;
   lastName: string;
@@ -151,7 +151,7 @@ interface PotentialMatch {
   sexualOrientation: string[];
   datePreferences: string[];
   childrenPreference: string;
-  location: Location;
+  location: LocationType;
   educationDegree: string;
   currentOnboardingScreen: string;
   phoneNumber: string;
@@ -162,7 +162,7 @@ interface PotentialMatch {
   fullCircleSubscription: boolean
 }
 
-const potentialMatches: PotentialMatch[] = ${JSON.stringify(likedMatches, null, 2)};
+const potentialMatches: PotentialMatchType[] = ${JSON.stringify(likedMatches, null, 2)};
 
 export default potentialMatches;
 `;
