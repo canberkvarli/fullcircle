@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import potentialMatches, { PotentialMatchType } from "@/data/potentialMatches"; // Adjust path as necessary
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const KindredSpirits: React.FC = () => {
   const { userData } = useUserContext();
@@ -62,37 +64,45 @@ const KindredSpirits: React.FC = () => {
   }
 
   return (
-    <View>
-      <Text>Likes you</Text>
-      {likedByUsers.map((user, index) => (
-        <TouchableOpacity
-          key={user.userId}
-          onPress={() => console.log(`View ${user.userId}'s profile`)}
-          style={{
-            opacity: index === 0 || userData.fullCircleSubscription ? 1 : 0.5,
-          }}
-        >
-          <View style={styles.profileContainer}>
-            <Text style={styles.userName}>
-              {user.firstName} {user.lastName}
-            </Text>
-            {user.photos.map((photo, i) => (
-              <Image key={i} source={{ uri: photo }} style={styles.photo} />
-            ))}
-          </View>
-        </TouchableOpacity>
-      ))}
-      {userData.fullCircleSubscription === false && likedByUsers.length > 1 && (
-        <View>
-          <Text>More users liked you...</Text>
-          {/* Display blurred out profiles here */}
-        </View>
-      )}
-    </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
+        <Text>Likes you</Text>
+        {likedByUsers.map((user, index) => (
+          <TouchableOpacity
+            key={user.userId}
+            onPress={() => console.log(`View ${user.userId}'s profile`)}
+            style={{
+              opacity: index === 0 || userData.fullCircleSubscription ? 1 : 0.5,
+            }}
+          >
+            <View style={styles.profileContainer}>
+              <Text style={styles.userName}>
+                {user.firstName} {user.lastName}
+              </Text>
+              {user.photos.map((photo, i) => (
+                <Image key={i} source={{ uri: photo }} style={styles.photo} />
+              ))}
+            </View>
+          </TouchableOpacity>
+        ))}
+        {userData.fullCircleSubscription === false &&
+          likedByUsers.length > 1 && (
+            <View>
+              <Text>More users liked you...</Text>
+              {/* Display blurred out profiles here */}
+            </View>
+          )}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    marginTop: 25,
+  },
   profileContainer: {
     marginBottom: 20,
   },
