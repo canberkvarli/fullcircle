@@ -1,15 +1,22 @@
 import React from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
 
+// TODO: Fix the firstname blur
 const UserCard = ({ user, isBlurred }: { user: any; isBlurred: boolean }) => {
   return (
-    <View style={[styles.card, isBlurred && styles.blurred]}>
+    <View style={styles.card}>
       <View style={styles.imageContainer}>
         <Image source={{ uri: user.photos[0] }} style={styles.photo} />
         {isBlurred && (
-          <View style={styles.blurOverlay}>
-            <Text style={styles.userName}>Name Hidden</Text>
-          </View>
+          <BlurView
+            intensity={20}
+            tint="default"
+            style={styles.blurOverlay}
+            experimentalBlurMethod="dimezisBlurView"
+          >
+            <Text style={styles.userNameBlurred}>{user.firstName}</Text>
+          </BlurView>
         )}
       </View>
       {!isBlurred && <Text style={styles.userName}>{user.firstName}</Text>}
@@ -21,20 +28,19 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 10,
-    padding: 10,
-    margin: 5,
+    padding: 15,
     borderWidth: 1,
+    margin: 5,
     borderColor: "#ddd",
-    elevation: 2,
+    elevation: 3,
     alignItems: "center",
-    width: 150,
-    height: 200,
+    width: 170,
+    height: 240,
   },
   imageContainer: {
     width: "100%",
-    height: 150,
+    height: 180,
     borderRadius: 10,
-    overflow: "hidden",
     position: "relative",
   },
   photo: {
@@ -48,19 +54,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.7)", // White overlay with opacity
-    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    padding: 10,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#000",
+    marginTop: 10,
   },
-  blurred: {
-    overflow: "hidden",
+  userNameBlurred: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#000",
+    top: 112,
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    opacity: 0.5, // Lower opacity for the blurred effect
   },
 });
 
