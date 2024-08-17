@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import potentialMatches from "@/data/potentialMatches";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 const KindredSpirits: React.FC = () => {
   const { userData } = useUserContext();
@@ -51,11 +53,20 @@ const KindredSpirits: React.FC = () => {
       <Text style={styles.likesText}>Likes you</Text>
       <View style={styles.gridContainer}>
         {likedByUsers.map((user, index) => (
-          <UserCard
+          <View
             key={user.userId}
-            user={user}
-            isBlurred={index > 0 && !userData.fullCircleSubscription}
-          />
+            style={[
+              styles.userCardContainer,
+              {
+                width: likedByUsers.length === 1 ? screenWidth - 32 : undefined,
+              },
+            ]}
+          >
+            <UserCard
+              user={user}
+              isBlurred={index > 0 && !!userData.fullCircleSubscription}
+            />
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -91,6 +102,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+  },
+  userCardContainer: {
+    flexBasis: "48%",
   },
 });
 
