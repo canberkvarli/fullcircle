@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  Modal,
+  TouchableOpacity,
+} from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import potentialMatches from "@/data/potentialMatches";
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -11,6 +19,9 @@ const KindredSpirits: React.FC = () => {
   const { userData } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalVisible, setIsModalVisible] = useState(false); // Track modal visibility
+  const [selectedUser, setSelectedUser] = useState<any | null>(null); // Track selected user for modal
+  const router = useRouter();
 
   useEffect(() => {
     const fetchLikedByUsers = async () => {
@@ -49,34 +60,69 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
+  const handleCardPress = (user: any, isFirstCard: boolean) => {
+    if (!userData.fullCircleSubscription || isFirstCard) {
+      router.push({
+        pathname: `/user/${user.userId}` as any,
+        params: { userId: user.userId },
+      });
+    } else {
+      setSelectedUser(user);
+      setIsModalVisible(true);
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.likesText}>Likes you</Text>
       <View style={styles.gridContainer}>
-        {likedByUsers.map((user, index) => (
-          <View
-            key={user.userId}
-            style={[
-              styles.userCardContainer,
-              {
-                width: likedByUsers.length === 1 ? screenWidth - 32 : undefined,
-              },
-            ]}
-          >
-            <Link
-              href={{
-                pathname: `/user/${user.userId}` as any,
-                params: { userId: user.userId },
-              }}
+        {likedByUsers.map((user, index) => {
+          const isFirstCard = index === 0;
+
+          return (
+            <View
+              key={user.userId}
+              style={[
+                styles.userCardContainer,
+                {
+                  width:
+                    likedByUsers.length === 1 ? screenWidth - 32 : undefined,
+                },
+              ]}
             >
-              <UserCard
-                user={user}
-                isBlurred={index > 0 && !userData.fullCircleSubscription}
-              />
-            </Link>
-          </View>
-        ))}
+              <TouchableOpacity
+                onPress={() => handleCardPress(user, isFirstCard)}
+              >
+                <UserCard
+                  user={user}
+                  isBlurred={index > 0 && !!userData.fullCircleSubscription}
+                />
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </View>
+
+      {/* Modal for users without fullCircleSubscription */}
+      {isModalVisible && selectedUser && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isModalVisible}
+          onRequestClose={() => setIsModalVisible(false)} // Close modal on background press
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>
+                Please upgrade to view {selectedUser.firstName}'s profile.
+              </Text>
+              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                <Text style={styles.modalButton}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
     </ScrollView>
   );
 };
@@ -113,6 +159,28 @@ const styles = StyleSheet.create({
   },
   userCardContainer: {
     flexBasis: "48%",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    width: 300,
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButton: {
+    fontSize: 16,
+    color: "#007bff",
   },
 });
 

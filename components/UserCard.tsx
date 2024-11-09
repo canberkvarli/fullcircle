@@ -2,24 +2,19 @@ import React from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 
-// TODO: Fix the firstname blur
 const UserCard = ({ user, isBlurred }: { user: any; isBlurred: boolean }) => {
   return (
     <View style={styles.card}>
       <View style={styles.imageContainer}>
         <Image source={{ uri: user.photos[0] }} style={styles.photo} />
-        {isBlurred && (
-          <BlurView
-            intensity={20}
-            tint="default"
-            style={styles.blurOverlay}
-            experimentalBlurMethod="dimezisBlurView"
-          >
+        {isBlurred ? (
+          <BlurView intensity={50} tint="light" style={styles.blurOverlay}>
             <Text style={styles.userNameBlurred}>{user.firstName}</Text>
           </BlurView>
+        ) : (
+          <Text style={styles.userName}>{user.firstName}</Text>
         )}
       </View>
-      {!isBlurred && <Text style={styles.userName}>{user.firstName}</Text>}
     </View>
   );
 };
@@ -71,7 +66,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: "center",
-    opacity: 0.5, // Lower opacity for the blurred effect
+    opacity: 0.6,
   },
 });
 
