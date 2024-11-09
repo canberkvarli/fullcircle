@@ -8,7 +8,7 @@ const UserCard = ({ user, isBlurred }: { user: any; isBlurred: boolean }) => {
       <View style={styles.imageContainer}>
         <Image source={{ uri: user.photos[0] }} style={styles.photo} />
         {isBlurred ? (
-          <BlurView intensity={100} tint="dark" style={styles.blurOverlay}>
+          <BlurView intensity={150} tint="default" style={styles.blurOverlay}>
             <Text style={styles.userNameBlurred}>{user.firstName}</Text>
           </BlurView>
         ) : (
