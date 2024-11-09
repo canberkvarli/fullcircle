@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import potentialMatches from "@/data/potentialMatches";
+import { Link } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -62,10 +63,17 @@ const KindredSpirits: React.FC = () => {
               },
             ]}
           >
-            <UserCard
-              user={user}
-              isBlurred={index > 0 && !!userData.fullCircleSubscription}
-            />
+            <Link
+              href={{
+                pathname: `/user/${user.userId}` as any,
+                params: { userId: user.userId },
+              }}
+            >
+              <UserCard
+                user={user}
+                isBlurred={index > 0 && !userData.fullCircleSubscription}
+              />
+            </Link>
           </View>
         ))}
       </View>

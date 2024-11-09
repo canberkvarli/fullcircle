@@ -211,7 +211,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user) {
       await fetchUserData(user.uid);
     } else {
-      setUserData(initialUserData); // Reset user data if user is null
+      setUserData(initialUserData);
     }
   };
 
