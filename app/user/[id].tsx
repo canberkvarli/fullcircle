@@ -11,11 +11,13 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { PotentialMatchType } from "@/data/potentialMatches";
 import potentialMatches from "@/data/potentialMatches";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useUserContext } from "@/context/UserContext";
 
 const UserShow: React.FC = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { userId } = (route.params || {}) as { userId: string };
+  const { likeMatch } = useUserContext(); // Using likeMatch from context
 
   if (!userId) {
     console.log("No userId found in route params");
@@ -64,6 +66,11 @@ const UserShow: React.FC = () => {
     { title: "Education Degree", content: userData.educationDegree || "N/A" },
   ];
 
+  const handleHeartPress = () => {
+    // Use likeMatch from context to handle the like functionality
+    likeMatch(userData.userId);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity
@@ -89,12 +96,20 @@ const UserShow: React.FC = () => {
               {/* Photo */}
               <View style={styles.photoCard}>
                 <Image source={{ uri: photo }} style={styles.photo} />
+                {/* Heart Icon on Each Photo */}
+                <TouchableOpacity
+                  style={styles.heartIcon}
+                  onPress={handleHeartPress}
+                >
+                  <Icon name="heart" size={40} color="red" />
+                </TouchableOpacity>
               </View>
               {/* Information (only if it exists) */}
               {details[index] && (
                 <DetailCard
                   title={details[index].title}
                   content={details[index].content}
+                  handleHeartPress={handleHeartPress}
                 />
               )}
             </React.Fragment>
@@ -108,14 +123,18 @@ const UserShow: React.FC = () => {
 };
 
 // Card component to display title and content in a bordered container
-const DetailCard: React.FC<{ title: string; content: string }> = ({
-  title,
-  content,
-}) => {
+const DetailCard: React.FC<{
+  title: string;
+  content: string;
+  handleHeartPress: () => void;
+}> = ({ title, content, handleHeartPress }) => {
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>{title}:</Text>
       <Text style={styles.cardContent}>{content}</Text>
+      <TouchableOpacity style={styles.heartIcon} onPress={handleHeartPress}>
+        <Icon name="heart" size={30} color="red" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -148,6 +167,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
   },
   photo: {
     width: 400,
@@ -170,6 +190,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 15,
     backgroundColor: "#f9f9f9",
+    position: "relative",
   },
   cardTitle: {
     fontSize: 18,
@@ -179,6 +200,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "gray",
     marginTop: 5,
+  },
+  heartIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
   },
 });
 
