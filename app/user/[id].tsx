@@ -150,8 +150,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   photo: {
-    width: 350,
-    height: 350,
+    width: 400,
+    height: 400,
     borderRadius: 10,
   },
   noPhotosText: {
