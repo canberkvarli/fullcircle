@@ -17,7 +17,7 @@ const UserShow: React.FC = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { userId } = (route.params || {}) as { userId: string };
-  const { likeMatch } = useUserContext(); // Using likeMatch from context
+  const { likeMatch } = useUserContext();
 
   if (!userId) {
     console.log("No userId found in route params");

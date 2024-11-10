@@ -93,6 +93,10 @@ type UserContextType = {
   currentPotentialMatch: any;
   setCurrentPotentialMatch: React.Dispatch<React.SetStateAction<any>>;
   loadNextPotentialMatch: () => void;
+  createOrFetchChat: (
+    userId: string,
+    otherUserId: string
+  ) => Promise<string | null>;
 };
 // TODO-TESTING: Uncomment later.
 const initialScreens = [
@@ -409,6 +413,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const createOrFetchChat = async (
+    userId: string,
+    otherUserId: string
+  ): Promise<string | null> => {
+    console.log("Creating or fetching chat for:", userId, otherUserId);
+    try {
+      const chatRef = doc(FIRESTORE, `users/${userId}/chats/${otherUserId}`);
+
+      const chatDoc = await getDoc(chatRef);
+
+      if (chatDoc.exists()) {
+        console.log("Chat exists, returning chatId:", chatDoc.id);
+        return chatDoc.id;
+      } else {
+        const newChatRef = doc(
+          FIRESTORE,
+          `users/${userId}/chats/${otherUserId}`
+        );
+
+        await setDoc(newChatRef, {
+          participants: [userId, otherUserId],
+          messages: [],
+        });
+
+        console.log("New chat created, returning chatId:", newChatRef.id);
+        return newChatRef.id;
+      }
+    } catch (error) {
+      console.error("Error creating or fetching chat:", error);
+      return null;
+    }
+  };
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -436,6 +473,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     currentPotentialMatch,
     setCurrentPotentialMatch,
     loadNextPotentialMatch,
+    createOrFetchChat,
   };
 
   if (initializing) {

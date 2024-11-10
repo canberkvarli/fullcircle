@@ -4,18 +4,18 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Image,
+  TouchableOpacity,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import potentialMatches from "@/data/potentialMatches";
-
-const { width: screenWidth } = Dimensions.get("window");
+import { useRouter } from "expo-router";
 
 const SoulChats: React.FC = () => {
-  const { userData } = useUserContext();
+  const { userData, createOrFetchChat } = useUserContext();
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -54,25 +54,37 @@ const SoulChats: React.FC = () => {
     );
   }
 
+  const navigateToChat = async (userId: string, match: any) => {
+    const chatId = await createOrFetchChat(userData.userId, userId);
+    if (chatId) {
+      console.log(`Navigating to /user/${userId}/chat/${chatId}`);
+      router.push(`user/${userId}/chat/${chatId}` as any);
+    } else {
+      console.log("Failed to create or fetch chat ID.");
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Matches</Text>
 
       {matches.map((match) => (
-        <View key={match.userId} style={styles.matchRow}>
-          <View style={styles.avatarContainer}>
-            <Image source={{ uri: match.photos[0] }} style={styles.photo} />
+        <TouchableOpacity
+          key={match.userId}
+          onPress={() => navigateToChat(match.userId, match)}
+        >
+          <View style={styles.matchRow}>
+            <View style={styles.avatarContainer}>
+              <Image source={{ uri: match.photos[0] }} style={styles.photo} />
+            </View>
+            <View style={styles.matchInfo}>
+              <Text style={styles.matchName}>{match.firstName}</Text>
+              <Text style={styles.conversationText}>
+                {match.lastMessage || `Start the match with ${match.firstName}`}
+              </Text>
+            </View>
           </View>
-          <View style={styles.matchInfo}>
-            <Text style={styles.matchName}>{match.firstName}</Text>
-            {/* Conditionally render conversation text or prompt */}
-            <Text style={styles.conversationText}>
-              {match.lastMessage
-                ? match.lastMessage
-                : `Start the match with ${match.firstName}`}
-            </Text>
-          </View>
-        </View>
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );

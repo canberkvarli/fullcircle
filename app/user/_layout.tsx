@@ -8,6 +8,10 @@ const UserLayout = () => {
       <Stack.Screen name="EditUserProfile" options={{ headerShown: false }} />
       <Stack.Screen name="UserSettings" options={{ headerShown: false }} />
       <Stack.Screen name="EditFieldScreen" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="[id]/chat/[chatId]"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 };
