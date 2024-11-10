@@ -31,21 +31,22 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   title: {
-    fontSize: 48,
+    fontSize: 35,
     fontWeight: "bold",
     color: "whitesmoke",
     letterSpacing: 2,
-    marginBottom: 8,
+    bottom: 50,
   },
   subTitle: {
     fontSize: 18,
     color: "#7D7D7D",
     fontStyle: "italic",
+    bottom: 40,
   },
   permissionsContainer: {
     flexGrow: 1,
     justifyContent: "flex-end",
-    paddingBottom: 50,
+    paddingBottom: 150,
   },
   permissions: {
     fontSize: 12,
