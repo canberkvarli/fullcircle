@@ -23,8 +23,9 @@ const styles = StyleSheet.create({
       transform: [{ translateX: -25 }, { translateY: -25 }],
     },
     logo: {
-      width: 100,
-      height: 100,
+      width: 150,
+      height: 150,
+      tintColor: '#FFFFFF',
       marginBottom: 20,
     },
     affirmation: {
@@ -44,23 +45,27 @@ const styles = StyleSheet.create({
       textDecorationLine: "underline",
     },
     button: {
-      width: "80%",
-      paddingVertical: 15,
-      marginVertical: 10,
-      borderRadius: 5,
-      alignItems: "center",
+      borderRadius: 30, // Rounded corners
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      alignItems: 'center',
+      marginTop: 10,
+      elevation: 5, // Shadow effect for Android
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
     },
     primaryButton: {
-      backgroundColor: "#4caf50",
-      width: 150,
+      backgroundColor: '#8A2BE2', // Deep violet color for a modern look
     },
     secondaryButton: {
-      backgroundColor: "#8a2be2",
-      width: 150,
+      backgroundColor: '#6A5ACD', // Slightly lighter tone for contrast
     },
     buttonText: {
-      color: "#fff",
-      fontSize: 16,
+      color: '#FFFFFF', // White text
+      fontSize: 18,
+      fontWeight: 'bold',
     },
   });
   

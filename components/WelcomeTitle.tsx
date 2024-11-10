@@ -10,8 +10,9 @@ function WelcomeTitle(): JSX.Element {
       </View>
       <View style={styles.permissionsContainer}>
         <Text style={styles.permissions}>
-          By tapping “create account” or “Sign in” you agree to our Terms. Learn
-          how we process your data in our Privacy Policy and Cookies Policy.
+          By tapping “Create Account” or “Sign In,” you agree to our Terms.
+          Learn how we process your data in our Privacy Policy and Cookies
+          Policy.
         </Text>
       </View>
     </View>
@@ -21,22 +22,25 @@ function WelcomeTitle(): JSX.Element {
 const styles = StyleSheet.create({
   titleContainer: {
     flex: 2,
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
-    paddingTop: 20,
+    paddingTop: 40, // Slightly above center
   },
   textContainer: {
     alignItems: "center",
+    marginBottom: 30,
   },
   title: {
-    fontSize: 24,
+    fontSize: 48,
     fontWeight: "bold",
-    marginBottom: 10,
+    color: "whitesmoke",
+    letterSpacing: 2,
+    marginBottom: 8,
   },
   subTitle: {
-    fontSize: 16,
-    color: "gray",
-    marginBottom: 20,
+    fontSize: 18,
+    color: "#7D7D7D",
+    fontStyle: "italic",
   },
   permissionsContainer: {
     flexGrow: 1,
