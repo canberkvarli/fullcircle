@@ -17,6 +17,7 @@ import {
   updateDoc,
   arrayUnion,
   onSnapshot,
+  setDoc,
 } from "firebase/firestore";
 import Icon from "react-native-vector-icons/FontAwesome";
 import potentialMatches from "@/data/potentialMatches"; // Import mock data
@@ -31,17 +32,14 @@ const Chat: React.FC = () => {
   const [otherUserData, setOtherUserData] = useState<any | null>(null);
 
   useEffect(() => {
-    // Use mock data or fetch from Firebase
+    // Fetch other user data or mock if Firebase is not available
     const fetchOtherUserData = async () => {
-      // Fallback to mock data if Firebase is not used
       const mockUser = potentialMatches.find(
         (user) => user.userId === otherUserId
       );
-
       if (mockUser) {
         setOtherUserData(mockUser);
       } else {
-        // Fetch from Firebase if available
         const userRef = doc(FIRESTORE, `users/${otherUserId}`);
         const userSnapshot = await getDoc(userRef);
         if (userSnapshot.exists()) {
@@ -50,10 +48,13 @@ const Chat: React.FC = () => {
       }
     };
 
-    // Fetch chat data using the unique chatId
+    // Fetch or create a chat under the users' documents
     const fetchChatMessages = async () => {
       const chatId = [userData.userId, otherUserId].sort().join("-");
-      const chatRef = doc(FIRESTORE, `chats/${chatId}`);
+      const chatRef = doc(
+        FIRESTORE,
+        `users/${userData.userId}/chats/${chatId}`
+      );
 
       const unsubscribe = onSnapshot(chatRef, (docSnapshot) => {
         const chatData = docSnapshot.data();
@@ -62,7 +63,6 @@ const Chat: React.FC = () => {
         }
       });
 
-      // Cleanup listener on component unmount
       return () => unsubscribe();
     };
 
@@ -70,25 +70,54 @@ const Chat: React.FC = () => {
     fetchChatMessages();
   }, [otherUserId, userData.userId]);
 
-  const handleSendMessage = async (message: string) => {
-    if (message.trim() === "") return; // Prevent sending empty messages
-
-    const chatRef = doc(
-      FIRESTORE,
-      `users/${userData.userId}/chats/${otherUserId}`
-    );
+  const createOrFetchChat = async (
+    userId: string,
+    otherUserId: string
+  ): Promise<string | null> => {
+    const chatId = [userId, otherUserId].sort().join("-");
     try {
-      await updateDoc(chatRef, {
-        messages: arrayUnion({
-          sender: userData.userId,
-          text: message,
-          timestamp: new Date().toISOString(),
-        }),
-      });
+      const chatRef = doc(FIRESTORE, `users/${userId}/chats/${chatId}`);
+      const chatDoc = await getDoc(chatRef);
 
-      setNewMessage(""); // Clear the input after sending
+      if (chatDoc.exists()) {
+        console.log("Chat exists, returning chatId:", chatId);
+        return chatId;
+      } else {
+        // Create a new chat under the user's chats subcollection
+        await setDoc(chatRef, {
+          participants: [userId, otherUserId],
+          messages: [],
+        });
+        console.log("New chat created, returning chatId:", chatId);
+        return chatId;
+      }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error creating or fetching chat:", error);
+      return null;
+    }
+  };
+
+  const handleSendMessage = async (message: string) => {
+    if (message.trim() === "") return;
+
+    const chatId = await createOrFetchChat(userData.userId, otherUserId);
+    if (chatId) {
+      const chatRef = doc(
+        FIRESTORE,
+        `users/${userData.userId}/chats/${chatId}`
+      );
+      try {
+        await updateDoc(chatRef, {
+          messages: arrayUnion({
+            sender: userData.userId,
+            text: message,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+        setNewMessage(""); // Clear input after sending
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
     }
   };
 

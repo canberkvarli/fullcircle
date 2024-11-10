@@ -421,16 +421,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const chatId = [userId, otherUserId].sort().join("-");
 
     try {
-      const chatRef = doc(FIRESTORE, `chats/${chatId}`);
+      // Now the chat is stored inside each user's subcollection of 'chats'
+      const userChatRef = doc(FIRESTORE, `users/${userId}/chats/${chatId}`);
 
-      const chatDoc = await getDoc(chatRef);
+      const chatDoc = await getDoc(userChatRef);
 
       if (chatDoc.exists()) {
         console.log("Chat exists, returning chatId:", chatId);
         return chatId;
       } else {
-        // Create a new chat document
-        await setDoc(chatRef, {
+        // Create a new chat document inside the user's subcollection
+        await setDoc(userChatRef, {
           participants: [userId, otherUserId],
           messages: [],
         });

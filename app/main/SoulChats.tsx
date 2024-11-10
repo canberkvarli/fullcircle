@@ -65,7 +65,7 @@ const SoulChats: React.FC = () => {
     if (chatId) {
       console.log(`Navigating to /user/${otherUserId}/chat/${chatId}`);
       router.push(
-        `/user/${userData.userId}/chat/${chatId}?otherUserId=${otherUserId}`
+        `/user/${userData.userId}/chats/${chatId}?otherUserId=${otherUserId}`
       );
     } else {
       console.log("Failed to create or fetch chat ID.");

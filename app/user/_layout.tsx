@@ -9,7 +9,7 @@ const UserLayout = () => {
       <Stack.Screen name="UserSettings" options={{ headerShown: false }} />
       <Stack.Screen name="EditFieldScreen" options={{ headerShown: false }} />
       <Stack.Screen
-        name="[id]/chat/[chatId]"
+        name="[id]/chats/[chatId]"
         options={{ headerShown: false }}
       />
     </Stack>
