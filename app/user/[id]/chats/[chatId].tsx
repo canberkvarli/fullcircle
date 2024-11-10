@@ -17,7 +17,6 @@ import {
   updateDoc,
   arrayUnion,
   onSnapshot,
-  setDoc,
 } from "firebase/firestore";
 import Icon from "react-native-vector-icons/FontAwesome";
 import potentialMatches from "@/data/potentialMatches"; // Import mock data
@@ -26,90 +25,64 @@ const Chat: React.FC = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { otherUserId } = route.params as { otherUserId: string };
-  const { userData } = useUserContext();
+  const { userData, createOrFetchChat } = useUserContext();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
-  const [otherUserData, setOtherUserData] = useState<any | null>(null);
+  const [otherUserData, setOtherUserData] = useState<any>(null);
 
   useEffect(() => {
-    // Fetch other user data or mock if Firebase is not available
+    // Fetch other user's data from Firestore or fallback to mock data
     const fetchOtherUserData = async () => {
-      const mockUser = potentialMatches.find(
-        (user) => user.userId === otherUserId
-      );
-      if (mockUser) {
-        setOtherUserData(mockUser);
+      const userRef = doc(FIRESTORE, `users/${otherUserId}`);
+      const userSnapshot = await getDoc(userRef);
+
+      if (userSnapshot.exists()) {
+        setOtherUserData(userSnapshot.data());
       } else {
-        const userRef = doc(FIRESTORE, `users/${otherUserId}`);
-        const userSnapshot = await getDoc(userRef);
-        if (userSnapshot.exists()) {
-          setOtherUserData(userSnapshot.data());
-        }
+        // Fallback to mock data if user not found in Firestore
+        const mockUser = potentialMatches.find(
+          (user) => user.userId === otherUserId
+        );
+        setOtherUserData(mockUser || { firstName: "Unknown User" });
       }
-    };
-
-    // Fetch or create a chat under the users' documents
-    const fetchChatMessages = async () => {
-      const chatId = [userData.userId, otherUserId].sort().join("-");
-      const chatRef = doc(
-        FIRESTORE,
-        `users/${userData.userId}/chats/${chatId}`
-      );
-
-      const unsubscribe = onSnapshot(chatRef, (docSnapshot) => {
-        const chatData = docSnapshot.data();
-        if (chatData && chatData.messages) {
-          setMessages(chatData.messages);
-        }
-      });
-
-      return () => unsubscribe();
     };
 
     fetchOtherUserData();
+  }, [otherUserId]);
+
+  useEffect(() => {
+    const fetchChatMessages = async () => {
+      const chatId = await createOrFetchChat(userData.userId, otherUserId);
+      if (chatId) {
+        const chatRef = doc(FIRESTORE, `chats/${chatId}`);
+
+        const unsubscribe = onSnapshot(chatRef, (docSnapshot) => {
+          const chatData = docSnapshot.data();
+          if (chatData && chatData.messages) {
+            setMessages(chatData.messages);
+          }
+        });
+
+        return () => unsubscribe();
+      }
+    };
+
     fetchChatMessages();
   }, [otherUserId, userData.userId]);
-
-  const createOrFetchChat = async (
-    userId: string,
-    otherUserId: string
-  ): Promise<string | null> => {
-    const chatId = [userId, otherUserId].sort().join("-");
-    try {
-      const chatRef = doc(FIRESTORE, `users/${userId}/chats/${chatId}`);
-      const chatDoc = await getDoc(chatRef);
-
-      if (chatDoc.exists()) {
-        console.log("Chat exists, returning chatId:", chatId);
-        return chatId;
-      } else {
-        // Create a new chat under the user's chats subcollection
-        await setDoc(chatRef, {
-          participants: [userId, otherUserId],
-          messages: [],
-        });
-        console.log("New chat created, returning chatId:", chatId);
-        return chatId;
-      }
-    } catch (error) {
-      console.error("Error creating or fetching chat:", error);
-      return null;
-    }
-  };
 
   const handleSendMessage = async (message: string) => {
     if (message.trim() === "") return;
 
     const chatId = await createOrFetchChat(userData.userId, otherUserId);
     if (chatId) {
-      const chatRef = doc(
-        FIRESTORE,
-        `users/${userData.userId}/chats/${chatId}`
-      );
+      const chatRef = doc(FIRESTORE, `chats/${chatId}`);
       try {
         await updateDoc(chatRef, {
           messages: arrayUnion({
-            sender: userData.userId,
+            senderId: userData.userId,
+            senderFullname: userData.fullName,
+            receiverId: otherUserId,
+            receiverFullname: otherUserData?.firstName,
             text: message,
             timestamp: new Date().toISOString(),
           }),
@@ -130,28 +103,22 @@ const Chat: React.FC = () => {
         <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
 
-      <Text style={styles.chatTitle}>
-        Chat with {otherUserData ? otherUserData.firstName : "Loading..."}
-      </Text>
+      <Text style={styles.chatTitle}>{otherUserData?.firstName}</Text>
 
       <ScrollView style={styles.messageContainer}>
-        {messages.length === 0 ? (
-          <Text style={styles.noMessagesText}>No messages yet!</Text>
-        ) : (
-          messages.map((message, index) => (
-            <View
-              key={index}
-              style={[
-                styles.messageBubble,
-                message.sender === userData.userId
-                  ? styles.sentMessage
-                  : styles.receivedMessage,
-              ]}
-            >
-              <Text style={styles.messageText}>{message.text}</Text>
-            </View>
-          ))
-        )}
+        {messages.map((message, index) => (
+          <View
+            key={index}
+            style={[
+              styles.messageBubble,
+              message.senderId === userData.userId // Corrected here
+                ? styles.sentMessage
+                : styles.receivedMessage,
+            ]}
+          >
+            <Text style={styles.messageText}>{message.text}</Text>
+          </View>
+        ))}
       </ScrollView>
 
       <View style={styles.inputContainer}>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, runTransaction } from "firebase/firestore";
 import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
@@ -417,28 +417,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     userId: string,
     otherUserId: string
   ): Promise<string | null> => {
-    // Create a chatId by sorting userId and otherUserId
-    const chatId = [userId, otherUserId].sort().join("-");
+    // Generate a consistent chat ID by sorting user IDs alphabetically
+    const chatId = [userId, otherUserId].sort().join("_");
 
     try {
-      // Now the chat is stored inside each user's subcollection of 'chats'
-      const userChatRef = doc(FIRESTORE, `users/${userId}/chats/${chatId}`);
+      const chatRef = doc(FIRESTORE, `chats/${chatId}`);
 
-      const chatDoc = await getDoc(userChatRef);
+      // Use a transaction to handle potential concurrency issues
+      await runTransaction(FIRESTORE, async (transaction) => {
+        const chatDoc = await transaction.get(chatRef);
+        if (!chatDoc.exists()) {
+          // Create a new chat document if it doesn't exist
+          transaction.set(chatRef, {
+            participants: [userId, otherUserId],
+            messages: [],
+            createdAt: new Date().toISOString(),
+          });
+          console.log("New chat created, returning chatId:", chatId);
+        } else {
+          console.log("Chat already exists, returning chatId:", chatId);
+        }
+      });
 
-      if (chatDoc.exists()) {
-        console.log("Chat exists, returning chatId:", chatId);
-        return chatId;
-      } else {
-        // Create a new chat document inside the user's subcollection
-        await setDoc(userChatRef, {
-          participants: [userId, otherUserId],
-          messages: [],
-        });
-
-        console.log("New chat created, returning chatId:", chatId);
-        return chatId;
-      }
+      return chatId;
     } catch (error) {
       console.error("Error creating or fetching chat:", error);
       return null;

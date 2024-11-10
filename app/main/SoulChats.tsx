@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import potentialMatches from "@/data/potentialMatches";
+import { FIRESTORE } from "@/services/FirebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 
 const SoulChats: React.FC = () => {
@@ -20,16 +22,32 @@ const SoulChats: React.FC = () => {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        // Get the current user's matches from userData
-        const userMatches = userData.matches || [];
-        console.log("User matches:", userMatches);
+        const userDocRef = doc(FIRESTORE, `users/${userData.userId}`);
+        const userDoc = await getDoc(userDocRef);
 
-        // Fetch match details by filtering potentialMatches based on userMatches IDs
-        const matchDetails = potentialMatches.filter((user) =>
-          userMatches.includes(user.userId)
+        let userMatches = [];
+        if (userDoc.exists() && userDoc.data().matches) {
+          userMatches = userDoc.data().matches;
+          console.log("Matches from Firestore:", userMatches);
+        } else {
+          //  Fallback to potentialMatches if matches not found in Firestore
+          userMatches = userData.matches || [];
+          console.log("Matches from potentialMatches:", userMatches);
+        }
+
+        // Fetch detailed data for each matched user
+        const matchDetails = await Promise.all(
+          userMatches.map(async (matchId: string) => {
+            const matchDocRef = doc(FIRESTORE, `users/${matchId}`);
+            const matchDoc = await getDoc(matchDocRef);
+            return matchDoc.exists()
+              ? { userId: matchId, ...matchDoc.data() }
+              : null;
+          })
         );
 
-        setMatches(matchDetails); // Set the filtered matches in state
+        // Filter out any null responses if some users no longer exist
+        setMatches(matchDetails.filter((match) => match !== null));
       } catch (error) {
         console.error("Failed to fetch matches:", error);
       } finally {
@@ -57,13 +75,8 @@ const SoulChats: React.FC = () => {
   }
 
   const navigateToChat = async (otherUserId: string) => {
-    if (!otherUserId) {
-      console.error("No user ID passed to chat navigation.");
-      return;
-    }
     const chatId = await createOrFetchChat(userData.userId, otherUserId);
     if (chatId) {
-      console.log(`Navigating to /user/${otherUserId}/chat/${chatId}`);
       router.push(
         `/user/${userData.userId}/chats/${chatId}?otherUserId=${otherUserId}`
       );
