@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useUserContext } from "@/context/UserContext";
@@ -29,22 +30,25 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
   const [otherUserData, setOtherUserData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch other user's data from Firestore or fallback to mock data
     const fetchOtherUserData = async () => {
+      setIsLoading(true);
+
       const userRef = doc(FIRESTORE, `users/${otherUserId}`);
       const userSnapshot = await getDoc(userRef);
 
       if (userSnapshot.exists()) {
         setOtherUserData(userSnapshot.data());
       } else {
-        // Fallback to mock data if user not found in Firestore
         const mockUser = potentialMatches.find(
           (user) => user.userId === otherUserId
         );
         setOtherUserData(mockUser || { firstName: "Unknown User" });
       }
+
+      setIsLoading(false);
     };
 
     fetchOtherUserData();
@@ -106,39 +110,50 @@ const Chat: React.FC = () => {
         <Icon name="chevron-left" size={24} color="black" />
       </TouchableOpacity>
 
-      <Text style={styles.chatTitle}>{otherUserData?.firstName}</Text>
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      ) : (
+        <>
+          <Text style={styles.chatTitle}>{otherUserData?.firstName}</Text>
 
-      <ScrollView style={styles.messageContainer}>
-        {messages.length === 0 ? (
-          <Text style={styles.noMessagesText}>
-            No messages yet. Start chatting!
-          </Text>
-        ) : (
-          messages.map((message, index) => (
-            <View
-              key={index}
-              style={[
-                styles.messageBubble,
-                message.senderId === userData.userId
-                  ? styles.sentMessage
-                  : styles.receivedMessage,
-              ]}
-            >
-              <Text style={styles.messageText}>{message.text}</Text>
-            </View>
-          ))
-        )}
-      </ScrollView>
+          <ScrollView style={styles.messageContainer}>
+            {messages.length === 0 ? (
+              <Text style={styles.noMessagesText}>
+                No messages yet. Start chatting!
+              </Text>
+            ) : (
+              messages.map((message, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.messageBubble,
+                    message.senderId === userData.userId
+                      ? styles.sentMessage
+                      : styles.receivedMessage,
+                  ]}
+                >
+                  <Text style={styles.messageText}>{message.text}</Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message..."
-          value={newMessage}
-          onChangeText={setNewMessage}
-        />
-        <Button title="Send" onPress={() => handleSendMessage(newMessage)} />
-      </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              value={newMessage}
+              onChangeText={setNewMessage}
+            />
+            <Button
+              title="Send"
+              onPress={() => handleSendMessage(newMessage)}
+            />
+          </View>
+        </>
+      )}
     </View>
   );
 };
@@ -195,6 +210,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderColor: "#ccc",
     marginRight: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
