@@ -85,14 +85,12 @@ const Chat: React.FC = () => {
         await updateDoc(chatRef, {
           messages: arrayUnion({
             senderId: userData.userId,
-            senderFullname: userData.fullName,
             receiverId: otherUserId,
-            receiverFullname: otherUserData?.firstName,
             text: message,
             timestamp: new Date().toISOString(),
           }),
         });
-        setNewMessage(""); // Clear input after sending
+        setNewMessage("");
       } catch (error) {
         console.error("Error sending message:", error);
       }
