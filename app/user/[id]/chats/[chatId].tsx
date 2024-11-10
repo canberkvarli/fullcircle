@@ -59,7 +59,12 @@ const Chat: React.FC = () => {
         const unsubscribe = onSnapshot(chatRef, (docSnapshot) => {
           const chatData = docSnapshot.data();
           if (chatData && chatData.messages) {
-            setMessages(chatData.messages);
+            const sortedMessages = chatData.messages.sort(
+              (a: any, b: any) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+            );
+            setMessages(sortedMessages);
           }
         });
 
@@ -106,19 +111,25 @@ const Chat: React.FC = () => {
       <Text style={styles.chatTitle}>{otherUserData?.firstName}</Text>
 
       <ScrollView style={styles.messageContainer}>
-        {messages.map((message, index) => (
-          <View
-            key={index}
-            style={[
-              styles.messageBubble,
-              message.senderId === userData.userId // Corrected here
-                ? styles.sentMessage
-                : styles.receivedMessage,
-            ]}
-          >
-            <Text style={styles.messageText}>{message.text}</Text>
-          </View>
-        ))}
+        {messages.length === 0 ? (
+          <Text style={styles.noMessagesText}>
+            No messages yet. Start chatting!
+          </Text>
+        ) : (
+          messages.map((message, index) => (
+            <View
+              key={index}
+              style={[
+                styles.messageBubble,
+                message.senderId === userData.userId
+                  ? styles.sentMessage
+                  : styles.receivedMessage,
+              ]}
+            >
+              <Text style={styles.messageText}>{message.text}</Text>
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <View style={styles.inputContainer}>
