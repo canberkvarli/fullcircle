@@ -141,13 +141,13 @@ const Chat: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 10,
-    paddingHorizontal: 20,
+    padding: 16,
+    marginTop: 25,
     backgroundColor: "#fff",
   },
   backButton: {
-    marginTop: 10,
     marginBottom: 20,
+    marginLeft: 10,
   },
   chatTitle: {
     fontSize: 24,
