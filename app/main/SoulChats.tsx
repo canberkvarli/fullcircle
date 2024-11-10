@@ -20,20 +20,23 @@ const SoulChats: React.FC = () => {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        // Simulate fetching matches from userData or a data source
+        // Get the current user's matches from userData
         const userMatches = userData.matches || [];
         console.log("User matches:", userMatches);
-        // Fetch match details based on IDs
+
+        // Fetch match details by filtering potentialMatches based on userMatches IDs
         const matchDetails = potentialMatches.filter((user) =>
           userMatches.includes(user.userId)
         );
-        setMatches(matchDetails);
+
+        setMatches(matchDetails); // Set the filtered matches in state
       } catch (error) {
         console.error("Failed to fetch matches:", error);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchMatches();
   }, [userData]);
 
@@ -49,16 +52,21 @@ const SoulChats: React.FC = () => {
           Discover more profiles and connect with people who share your
           interests.
         </Text>
-        {/* Add suggestions or actions for discovering more profiles */}
       </View>
     );
   }
 
-  const navigateToChat = async (userId: string, match: any) => {
-    const chatId = await createOrFetchChat(userData.userId, userId);
+  const navigateToChat = async (otherUserId: string) => {
+    if (!otherUserId) {
+      console.error("No user ID passed to chat navigation.");
+      return;
+    }
+    const chatId = await createOrFetchChat(userData.userId, otherUserId);
     if (chatId) {
-      console.log(`Navigating to /user/${userId}/chat/${chatId}`);
-      router.push(`user/${userId}/chat/${chatId}` as any);
+      console.log(`Navigating to /user/${otherUserId}/chat/${chatId}`);
+      router.push(
+        `/user/${userData.userId}/chat/${chatId}?otherUserId=${otherUserId}`
+      );
     } else {
       console.log("Failed to create or fetch chat ID.");
     }
@@ -71,7 +79,7 @@ const SoulChats: React.FC = () => {
       {matches.map((match) => (
         <TouchableOpacity
           key={match.userId}
-          onPress={() => navigateToChat(match.userId, match)}
+          onPress={() => navigateToChat(match.userId)}
         >
           <View style={styles.matchRow}>
             <View style={styles.avatarContainer}>
@@ -130,7 +138,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
-    overflow: "hidden", // Ensure the image does not overflow the container
+    overflow: "hidden",
   },
   photo: {
     width: "100%",

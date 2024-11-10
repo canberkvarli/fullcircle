@@ -417,28 +417,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     userId: string,
     otherUserId: string
   ): Promise<string | null> => {
-    console.log("Creating or fetching chat for:", userId, otherUserId);
+    // Create a chatId by sorting userId and otherUserId
+    const chatId = [userId, otherUserId].sort().join("-");
+
     try {
-      const chatRef = doc(FIRESTORE, `users/${userId}/chats/${otherUserId}`);
+      const chatRef = doc(FIRESTORE, `chats/${chatId}`);
 
       const chatDoc = await getDoc(chatRef);
 
       if (chatDoc.exists()) {
-        console.log("Chat exists, returning chatId:", chatDoc.id);
-        return chatDoc.id;
+        console.log("Chat exists, returning chatId:", chatId);
+        return chatId;
       } else {
-        const newChatRef = doc(
-          FIRESTORE,
-          `users/${userId}/chats/${otherUserId}`
-        );
-
-        await setDoc(newChatRef, {
+        // Create a new chat document
+        await setDoc(chatRef, {
           participants: [userId, otherUserId],
           messages: [],
         });
 
-        console.log("New chat created, returning chatId:", newChatRef.id);
-        return newChatRef.id;
+        console.log("New chat created, returning chatId:", chatId);
+        return chatId;
       }
     } catch (error) {
       console.error("Error creating or fetching chat:", error);
