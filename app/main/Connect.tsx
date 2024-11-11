@@ -37,7 +37,11 @@ export default function Connect() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator
+          style={styles.loadingIndicator}
+          size="large"
+          color="#0000ff"
+        />
       </View>
     );
   }

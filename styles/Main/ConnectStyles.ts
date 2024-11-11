@@ -11,6 +11,11 @@ const styles = StyleSheet.create({
       alignItems: "center",
       marginBottom: 16,
     },
+    loadingIndicator: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+    },
     ageText: {
       fontSize: 18,
       marginHorizontal: 8,
