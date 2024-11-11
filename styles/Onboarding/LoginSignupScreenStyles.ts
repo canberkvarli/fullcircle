@@ -14,13 +14,20 @@ const styles = StyleSheet.create({
       justifyContent: "center",
       alignItems: "center",
       padding: 20,
-      backgroundColor: "rgba(0, 0, 0, 0.6)", // Dark overlay to make text more readable
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
     },
     loadingIndicator: {
       position: "absolute",
       top: "50%",
       left: "50%",
       transform: [{ translateX: -25 }, { translateY: -25 }],
+    },
+    headerContainer: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 20,
+      position: 'relative',
     },
     logo: {
       width: 150,
@@ -45,28 +52,34 @@ const styles = StyleSheet.create({
       textDecorationLine: "underline",
     },
     button: {
-      borderRadius: 30, // Rounded corners
+      borderRadius: 30,
       paddingVertical: 12,
       paddingHorizontal: 24,
       alignItems: 'center',
       marginTop: 10,
-      elevation: 5, // Shadow effect for Android
+      elevation: 5,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
     },
     primaryButton: {
-      backgroundColor: '#8A2BE2', // Deep violet color for a modern look
+      backgroundColor: '#8A2BE2',
     },
     secondaryButton: {
-      backgroundColor: '#6A5ACD', // Slightly lighter tone for contrast
+      backgroundColor: '#6A5ACD',
     },
     buttonText: {
-      color: '#FFFFFF', // White text
+      color: '#FFFFFF',
       fontSize: 18,
       fontWeight: 'bold',
     },
-  });
-  
+    backIcon: {
+      width: 30,
+      height: 30,
+      top: 30,
+      marginRight: 'auto',
+    },
+});
+
 export default styles;

@@ -15,7 +15,6 @@ import { useUserContext } from "@/context/UserContext";
 import auth from "@react-native-firebase/auth";
 import { setDoc, doc, getDoc } from "firebase/firestore";
 import { FIRESTORE } from "@/services/FirebaseConfig";
-import NavigationIcon from "react-native-vector-icons/FontAwesome";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
@@ -107,15 +106,8 @@ function SSOButtons(): JSX.Element {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.navigationIcon}
-        onPress={() => router.back()}
-      >
-        <NavigationIcon name="chevron-left" size={24} color="black" />
-      </TouchableOpacity>
       {isInProgress && <ActivityIndicator size="large" color="#3A3A3A" />}
       <GoogleSigninButton
-        style={styles.googleButton}
         size={GoogleSigninButton.Size.Wide}
         color={GoogleSigninButton.Color.Dark}
         onPress={handleSignInWithGoogle}
@@ -135,9 +127,9 @@ function SSOButtons(): JSX.Element {
       >
         <Text style={styles.buttonText}>Sign in with Phone Number</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+      {/* <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
         <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }
@@ -147,24 +139,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  navigationIcon: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-  },
-  googleButton: {
-    width: "90%",
-    height: 50,
-    marginBottom: 10, // Reduced spacing between buttons
   },
   ssoButton: {
-    width: "90%",
-    paddingVertical: 15,
-    marginVertical: 8, // Adjusted spacing between SSO buttons
-    borderRadius: 8,
+    marginBottom: 5,
+    paddingVertical: 12,
+    width: 300,
     backgroundColor: "#3A3A3A",
     alignItems: "center",
     justifyContent: "center",
@@ -174,20 +153,21 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "600",
   },
-  logoutButton: {
-    marginTop: 30,
-    width: "60%",
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "red",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoutText: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
+  // logoutButton: {
+  //   marginBottom: 50,
+  //   width: 100,
+  //   height: 50,
+  //   paddingVertical: 10,
+  //   borderRadius: 8,
+  //   backgroundColor: "red",
+  //   alignItems: "center",
+  //   justifyContent: "center",
+  // },
+  // logoutText: {
+  //   fontSize: 16,
+  //   color: "#FFFFFF",
+  //   fontWeight: "600",
+  // },
 });
 
 export default SSOButtons;

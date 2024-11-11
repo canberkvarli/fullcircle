@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  Button,
   ActivityIndicator,
 } from "react-native";
 import styles from "@/styles/Onboarding/LoginSignupScreenStyles";
@@ -12,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Video, ResizeMode } from "expo-av";
 import WelcomeTitle from "../../components/WelcomeTitle";
 import SSOButtons from "../../components/SSOButtons";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
 
 const videoSource = require("../../assets/videos/ecstatic.mp4");
 
@@ -62,6 +62,11 @@ function LoginSignupScreen(): JSX.Element {
       )}
       {videoLoaded && (
         <View style={styles.overlay}>
+          {showSSOButtons && (
+            <TouchableOpacity style={styles.backIcon} onPress={handleGoBack}>
+              <FontAwesome name="chevron-left" size={24} color="white" />
+            </TouchableOpacity>
+          )}
           <Image
             source={require("../../assets/circle.svg")}
             style={styles.logo}
@@ -88,10 +93,7 @@ function LoginSignupScreen(): JSX.Element {
             .
           </Text>
           {showSSOButtons ? (
-            <>
-              <SSOButtons />
-              <Button title="Back" onPress={handleGoBack} />
-            </>
+            <SSOButtons />
           ) : (
             <View>
               <TouchableOpacity
