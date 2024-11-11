@@ -22,6 +22,9 @@ const styles = StyleSheet.create({
     iconSpacing: {
       marginLeft: 16,
     },
+    preferencesIcon: {
+      marginRight: 16,
+    },
     profileSection: {
       alignItems: "center",
       marginVertical: 20,
