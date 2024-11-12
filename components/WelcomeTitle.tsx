@@ -24,16 +24,17 @@ const styles = StyleSheet.create({
     flex: 2,
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 40, // Slightly above center
+    paddingTop: 40,
   },
   textContainer: {
     alignItems: "center",
     marginBottom: 30,
   },
   title: {
-    fontSize: 35,
+    fontSize: 30,
+    //font family?
     fontWeight: "bold",
-    color: "whitesmoke",
+    color: "#FFFFDF",
     letterSpacing: 2,
     bottom: 50,
   },

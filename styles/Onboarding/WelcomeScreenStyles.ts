@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
     },
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)", // Adding a dark overlay for better text visibility
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
       justifyContent: "center",
       alignItems: "center",
       width: "100%",

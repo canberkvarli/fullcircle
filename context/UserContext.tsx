@@ -315,7 +315,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         })
         .then(() => console.log("User signed out! currentUser:", currentUser));
 
-      // router.replace("/onboarding/LoginSignupScreen");
+      router.replace("/onboarding/LoginSignupScreen");
     } catch (error) {
       console.error("Error signing out:", error);
     }

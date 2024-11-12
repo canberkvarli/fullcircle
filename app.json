@@ -54,6 +54,12 @@
         {
           "photosPermission": "Allow Circle to share your photos."
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/Poppins-Regular.ttf"]
+        }
       ]
     ],
     "experiments": {
