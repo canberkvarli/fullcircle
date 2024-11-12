@@ -16,6 +16,7 @@ import { RulerPicker } from "react-native-ruler-picker";
 import useFieldState from "@/hooks/useFieldState";
 
 function EditFieldScreen() {
+  // TODO: Possibly think about moving every field into a separate component
   const router = useRouter();
   const { updateUserData, userData } = useUserContext();
   const { fieldName } = useLocalSearchParams();

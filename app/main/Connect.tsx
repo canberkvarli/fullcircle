@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
-  Modal,
   ActivityIndicator,
+  Modal,
+  Text,
   ScrollView,
-  Button,
 } from "react-native";
-import styles from "@/styles/Main/ConnectStyles";
-import Slider from "@react-native-community/slider";
-import Checkbox from "expo-checkbox";
+import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
+import styles from "@/styles/Main/ConnectStyles"; // Assuming custom styles are here
 
-export default function Connect() {
+const ConnectScreen = () => {
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [ageRange, setAgeRange] = useState([22, 30]);
-  const [dealbreaker, setDealbreaker] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const { dislikeMatch, currentPotentialMatch, loadNextPotentialMatch } =
     useUserContext();
 
@@ -30,9 +27,11 @@ export default function Connect() {
         setLoading(false);
       }, 2000);
     };
-
     loadData();
   }, []);
+
+  const openPreferencesModal = () => setIsModalVisible(true);
+  const closePreferencesModal = () => setIsModalVisible(false);
 
   if (loading) {
     return (
@@ -48,18 +47,54 @@ export default function Connect() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => console.log("Preferences clicked")}>
-          <Icon name="sliders" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.ageText}>Age</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Icon name="caret-down" size={24} />
-        </TouchableOpacity>
-      </View>
-
+      {/* Scrollable Tabs Section */}
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsContainer} // Apply the layout styles here
+      >
+        <TouchableOpacity onPress={openPreferencesModal}>
+          <Icon name="sliders" size={24} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, styles.activeTab]}>
+          <Text>Age</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab}>
+          <Text>Height</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab}>
+          <Text>Dating Intentions</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab}>
+          <Text>Active Today</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab}>
+          <Text>New Here</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tab}>
+          <Text>More</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Preferences Modal */}
+      <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              onPress={closePreferencesModal}
+              style={styles.closeButton}
+            >
+              <Text>X</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Dating Preferences</Text>
+            <Text>Here you can update your dating preferences.</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Main Content: Potential Match */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer} // Move alignment here
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.matchContainer}>
@@ -77,52 +112,8 @@ export default function Connect() {
       >
         <Icon name="times" style={styles.dislikeIcon} />
       </TouchableOpacity>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Age</Text>
-            <Text style={styles.modalSubtitle}>
-              Select the range you're open to meeting
-            </Text>
-
-            <Slider
-              style={styles.slider}
-              minimumValue={18}
-              maximumValue={85}
-              step={1}
-              value={ageRange[0]}
-              onValueChange={(value) => setAgeRange([value, ageRange[1]])}
-              minimumTrackTintColor="#1fb28a"
-              maximumTrackTintColor="#d3d3d3"
-            />
-            <Slider
-              style={styles.slider}
-              minimumValue={18}
-              maximumValue={85}
-              step={1}
-              value={ageRange[1]}
-              onValueChange={(value) => setAgeRange([ageRange[0], value])}
-              minimumTrackTintColor="#1fb28a"
-              maximumTrackTintColor="#d3d3d3"
-            />
-            <Text>
-              Age Range: {ageRange[0]} - {ageRange[1]}
-            </Text>
-
-            <Checkbox value={dealbreaker} onValueChange={setDealbreaker} />
-            <Text>This is a dealbreaker</Text>
-
-            <Button title="Apply Filter" onPress={() => {}} />
-            <Button title="Close" onPress={() => setModalVisible(false)} />
-          </View>
-        </View>
-      </Modal>
     </View>
   );
-}
+};
+
+export default ConnectScreen;
