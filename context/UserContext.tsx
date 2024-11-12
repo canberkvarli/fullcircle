@@ -54,6 +54,11 @@ export type UserDataType = {
     // timezone?: string; // Optionally include timezone if needed
     // Add other optional fields as needed
   };
+  preferredDistance?: number;
+  preferredAgeRange?: {
+    min: number;
+    max: number;
+  };
   onboardingCompleted?: boolean;
   likedMatches?: string[];
   dislikedMatches?: string[];
