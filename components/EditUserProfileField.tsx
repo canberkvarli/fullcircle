@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome"; // Adjust icon as per the library you're using
+import Icon from "react-native-vector-icons/FontAwesome";
 
 interface EditUserProfileFieldProps {
   title: string;
