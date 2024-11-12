@@ -60,11 +60,7 @@ const SexualOrientationScreen = () => {
     if (selectedOptions.includes(option)) {
       setSelectedOptions(selectedOptions.filter((item) => item !== option));
     } else {
-      if (selectedOptions.length < 3) {
-        setSelectedOptions([...selectedOptions, option]);
-      } else {
-        Alert.alert("Error", "You can only select up to 3 options");
-      }
+      setSelectedOptions([...selectedOptions, option]);
     }
   };
 
