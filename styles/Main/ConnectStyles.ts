@@ -55,10 +55,9 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 40,
     justifyContent: "flex-start",
-    marginRight: 10,
     marginBottom: 30,
   },
-  
+
   tabsContainer: {
     flexDirection: "row",
     marginBottom: 16,
@@ -81,6 +80,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "gray",
+    paddingHorizontal: 10,
   },
   tabText: {
     fontSize: 16,

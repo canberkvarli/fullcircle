@@ -3,20 +3,17 @@ import {
   View,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
   Text,
   ScrollView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
-import styles from "@/styles/Main/ConnectStyles"; // Assuming custom styles are here
+import styles from "@/styles/Main/ConnectStyles";
+import { Link } from "expo-router";
 
-const ConnectScreen = () => {
-  const navigation = useNavigation();
-  const [loading, setLoading] = useState(true);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+const ConnectScreen: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(true);
   const { dislikeMatch, currentPotentialMatch, loadNextPotentialMatch } =
     useUserContext();
 
@@ -28,10 +25,7 @@ const ConnectScreen = () => {
       }, 2000);
     };
     loadData();
-  }, []);
-
-  const openPreferencesModal = () => setIsModalVisible(true);
-  const closePreferencesModal = () => setIsModalVisible(false);
+  }, [loadNextPotentialMatch]);
 
   if (loading) {
     return (
@@ -47,15 +41,15 @@ const ConnectScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Scrollable Tabs Section */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer} // Apply the layout styles here
+        contentContainerStyle={styles.tabsContainer}
       >
-        <TouchableOpacity onPress={openPreferencesModal}>
+        <Link href={"/user/DatingPreferences" as any}>
           <Icon name="sliders" size={24} color="black" />
-        </TouchableOpacity>
+        </Link>
+
         <TouchableOpacity style={[styles.tab, styles.activeTab]}>
           <Text>Age</Text>
         </TouchableOpacity>
@@ -75,22 +69,6 @@ const ConnectScreen = () => {
           <Text>More</Text>
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Preferences Modal */}
-      <Modal visible={isModalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity
-              onPress={closePreferencesModal}
-              style={styles.closeButton}
-            >
-              <Text>X</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Dating Preferences</Text>
-            <Text>Here you can update your dating preferences.</Text>
-          </View>
-        </View>
-      </Modal>
 
       {/* Main Content: Potential Match */}
       <ScrollView
