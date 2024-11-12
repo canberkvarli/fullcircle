@@ -16,13 +16,13 @@ import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useUserContext } from "@/context/UserContext";
 
-const RESEND_INTERVAL = 60; // seconds
+// const RESEND_INTERVAL = 60; // seconds
 
 const PhoneVerificationScreen = () => {
   const [verificationCode, setVerificationCode] = useState<string[]>(
     new Array(6).fill("")
   );
-  const [countdown, setCountdown] = useState(RESEND_INTERVAL);
+  // const [countdown, setCountdown] = useState(RESEND_INTERVAL);
   const [loading, setLoading] = useState(false);
   const {
     updateUserData,
@@ -43,12 +43,12 @@ const PhoneVerificationScreen = () => {
     }
   }, [verificationCode]);
 
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
-      return () => clearInterval(timer);
-    }
-  }, [countdown]);
+  // useEffect(() => {
+  //   if (countdown > 0) {
+  //     const timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
+  //     return () => clearInterval(timer);
+  //   }
+  // }, [countdown]);
 
   const destructurePhoneNumber = (phoneNumber: string) => {
     const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
@@ -148,12 +148,12 @@ const PhoneVerificationScreen = () => {
     }
   };
 
-  const handleResendCode = () => {
-    if (countdown > 0) return; // Prevent resending if timer hasn't expired
-    Alert.alert("Resend Code", "Code has been resent to your phone number.");
-    setCountdown(RESEND_INTERVAL);
-    // Implement the actual resend code logic here using Firebase
-  };
+  // const handleResendCode = () => {
+  //   if (countdown > 0) return; // Prevent resending if timer hasn't expired
+  //   Alert.alert("Resend Code", "Code has been resent to your phone number.");
+  //   setCountdown(RESEND_INTERVAL);
+  //   // Implement the actual resend code logic here using Firebase
+  // };
 
   const focusNextEmptyInput = () => {
     const emptyIndex = verificationCode.findIndex((code) => code === "");
@@ -203,7 +203,7 @@ const PhoneVerificationScreen = () => {
       <Text style={styles.title}>Verify your connection</Text>
       <View style={styles.subtitleContainer}>
         <Text style={styles.subtitle}>Sent to {phoneNumber} </Text>
-        <TouchableOpacity onPress={handleResendCode} disabled={countdown > 0}>
+        {/* <TouchableOpacity onPress={handleResendCode} disabled={countdown > 0}>
           <Text
             style={
               countdown > 0 ? styles.resendTextDisabled : styles.resendText
@@ -211,7 +211,7 @@ const PhoneVerificationScreen = () => {
           >
             {countdown > 0 ? `Resend in ${countdown}s` : "Resend"}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       <View style={styles.codeContainer}>
         {verificationCode.map((_, index) => (
