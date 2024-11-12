@@ -52,6 +52,46 @@ const styles = StyleSheet.create({
       justifyContent: "center",
       alignItems: "center",
     },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContainer: {
+      width: "80%",
+      padding: 20,
+      backgroundColor: "white",
+      borderRadius: 12,
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 5,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 10,
+      textAlign: "center",
+    },
+    modalText: {
+      fontSize: 15,
+      textAlign: "center",
+      color: "#555",
+    },
+    modalCloseButton: {
+      marginTop: 20,
+      padding: 10,
+      backgroundColor: "#8e44ad",
+      borderRadius: 8,
+    },
+    modalCloseText: {
+      color: "white",
+      fontWeight: "bold",
+      fontSize: 16,
+    },
+    
   });
   
 export default styles;

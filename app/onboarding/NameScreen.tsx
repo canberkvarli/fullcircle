@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   Text,
   TextInput,
   TouchableOpacity,
   Alert,
+  Modal,
+  View,
 } from "react-native";
 import styles from "@/styles/Onboarding/NameScreenStyles";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -19,6 +21,7 @@ function NameScreen() {
   const router = useRouter();
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleInputChange = (text: string, type: string) => {
     if (/^[a-zA-Z\s]*$/.test(text)) {
@@ -45,8 +48,8 @@ function NameScreen() {
 
     try {
       await updateUserData({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
         fullName,
       });
       navigateToNextScreen();
@@ -74,7 +77,7 @@ function NameScreen() {
         placeholderTextColor="gray"
         value={firstName}
         onChangeText={(text) => handleInputChange(text, "firstName")}
-        autoFocus={true}
+        autoFocus
       />
       <TextInput
         style={styles.input}
@@ -83,7 +86,7 @@ function NameScreen() {
         value={lastName}
         onChangeText={(text) => handleInputChange(text, "lastName")}
       />
-      <TouchableOpacity onPress={() => console.log("Why? clicked")}>
+      <TouchableOpacity onPress={() => setIsModalVisible(true)}>
         <Text style={styles.optionalText}>
           Last name is optional and only shared with matches.{" "}
           <Text style={styles.linkText}>Why?</Text>
@@ -98,6 +101,31 @@ function NameScreen() {
         size={24}
         onPress={handleNameSubmit}
       />
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Why We Ask for Your Name</Text>
+            <Text style={styles.modalText}>
+              Sharing your name creates a warm and authentic connection. Your
+              last name is optional and will only be shared with people you
+              match with, ensuring your privacy while allowing for a more
+              personal connection.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setIsModalVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
