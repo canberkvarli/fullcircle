@@ -16,11 +16,14 @@ import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useUserContext } from "@/context/UserContext";
 
-// TODO: CLEANUP
+const RESEND_INTERVAL = 60; // seconds
+
 const PhoneVerificationScreen = () => {
   const [verificationCode, setVerificationCode] = useState<string[]>(
     new Array(6).fill("")
   );
+  const [countdown, setCountdown] = useState(RESEND_INTERVAL);
+  const [loading, setLoading] = useState(false);
   const {
     updateUserData,
     googleCredential,
@@ -28,7 +31,6 @@ const PhoneVerificationScreen = () => {
     fetchUserData,
     currentUser,
   } = useUserContext();
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verificationId, phoneNumber } = params;
@@ -41,14 +43,17 @@ const PhoneVerificationScreen = () => {
     }
   }, [verificationCode]);
 
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [countdown]);
+
   const destructurePhoneNumber = (phoneNumber: string) => {
     const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
     const match = phoneRegex.exec(phoneNumber);
-
-    if (!match) {
-      throw new Error("Invalid phone number format");
-    }
-
+    if (!match) throw new Error("Invalid phone number format");
     const [, countryCode, areaCode, number] = match;
     return { countryCode, areaCode, number };
   };
@@ -101,7 +106,7 @@ const PhoneVerificationScreen = () => {
           "google credential not found, continuing with phonenubmer sso"
         );
         if (docSnap.exists()) {
-          console.log("user exist in the firestore");
+          console.log("User exist in the firestore");
           await fetchUserData(userId);
           const userDataFromFirestore = docSnap.data();
           const userCurrentOnboardingScreen =
@@ -144,9 +149,10 @@ const PhoneVerificationScreen = () => {
   };
 
   const handleResendCode = () => {
-    // Implement resend code functionality here
+    if (countdown > 0) return; // Prevent resending if timer hasn't expired
     Alert.alert("Resend Code", "Code has been resent to your phone number.");
-    // You may want to implement actual resend logic using Firebase
+    setCountdown(RESEND_INTERVAL);
+    // Implement the actual resend code logic here using Firebase
   };
 
   const focusNextEmptyInput = () => {
@@ -197,8 +203,14 @@ const PhoneVerificationScreen = () => {
       <Text style={styles.title}>Verify your connection</Text>
       <View style={styles.subtitleContainer}>
         <Text style={styles.subtitle}>Sent to {phoneNumber} </Text>
-        <TouchableOpacity onPress={handleResendCode}>
-          <Text style={styles.resendText}>Resend</Text>
+        <TouchableOpacity onPress={handleResendCode} disabled={countdown > 0}>
+          <Text
+            style={
+              countdown > 0 ? styles.resendTextDisabled : styles.resendText
+            }
+          >
+            {countdown > 0 ? `Resend in ${countdown}s` : "Resend"}
+          </Text>
         </TouchableOpacity>
       </View>
       <View style={styles.codeContainer}>

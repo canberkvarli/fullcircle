@@ -56,6 +56,10 @@ const styles = StyleSheet.create({
       fontStyle: "italic",
       color: "gray",
     },
+    resendTextDisabled: {
+      color: "gray",
+      marginLeft: 10,
+    },
   });
 
 export default styles;
