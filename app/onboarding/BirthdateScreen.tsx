@@ -139,7 +139,7 @@ function BirthdayScreen() {
         renderItem={({ item, index }) => {
           const isCurrent = index === validIndex;
           const isNearby = index >= validIndex - 2 && index <= validIndex + 2;
-          const color = isCurrent ? "black" : "gray";
+          const color = isCurrent ? "#007AFF" : isNearby ? "gray" : "lightgray"; // Use blue for current, gray for nearby
           const opacityValue = isNearby ? 1 : 0.3;
 
           return (
