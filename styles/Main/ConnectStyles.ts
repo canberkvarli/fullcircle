@@ -62,8 +62,7 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    height: 55,
-    justifyContent: "space-around",
+    height: 50,
     alignItems: "center",
     gap: 6,
   },
@@ -77,13 +76,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   tab: {
-    padding: 10,
-    paddingBottom: 15,
+    padding: 5,
+    paddingBottom: 8,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "gray",
-    margin: 3.5,
-    alignItems: "center",
   },
   tabText: {
     fontSize: 16,
