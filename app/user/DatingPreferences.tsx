@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 export default function DatingPreferences() {
   const navigation = useNavigation();
   const { userData } = useUserContext();
+  const { fullCircleSubscription } = userData;
 
   const handlePreferenceField = (fieldName: string) => {
     // navigation.navigate("EditField", { fieldName });
@@ -25,6 +26,8 @@ export default function DatingPreferences() {
   const renderPreferenceItem = (
     label: string,
     value: any,
+    fullCircleSubscription: boolean,
+    isSubscriberField: boolean,
     onPress: () => void
   ) => (
     <TouchableOpacity style={styles.fieldContainer} onPress={onPress}>
@@ -33,12 +36,15 @@ export default function DatingPreferences() {
           <Text style={styles.fieldLabel}>{label}</Text>
           <Text style={styles.fieldValue}>{value || "Not specified"}</Text>
         </View>
-        <Icon
-          name="chevron-right"
-          size={18}
-          color="gray"
-          style={styles.chevronIcon}
-        />
+        {isSubscriberField ? (
+          String(fullCircleSubscription) === "true" ? (
+            <Icon name="chevron-right" size={18} color="black" />
+          ) : (
+            <Icon name="lock" size={18} color="black" />
+          )
+        ) : (
+          <Icon name="chevron-right" size={18} color="black" />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -59,14 +65,22 @@ export default function DatingPreferences() {
         {renderPreferenceItem(
           "I'm Interested In",
           userData.sexualOrientation,
+          userData.fullCircleSubscription,
+          false,
           () => handlePreferenceField("gender")
         )}
-        {renderPreferenceItem("My Neighborhood", userData.location?.city, () =>
-          handlePreferenceField("location")
+        {renderPreferenceItem(
+          "My Neighborhood",
+          userData.location?.city,
+          userData.fullCircleSubscription,
+          false,
+          () => handlePreferenceField("location")
         )}
         {renderPreferenceItem(
           "Maximum Distance",
           userData.preferredDistance,
+          userData.fullCircleSubscription,
+          false,
           () => handlePreferenceField("maxDistance")
         )}
         {renderPreferenceItem(
@@ -74,22 +88,89 @@ export default function DatingPreferences() {
           `${userData.preferredAgeRange?.min || "18"} - ${
             userData.preferredAgeRange?.max || "30"
           }`,
+          userData.fullCircleSubscription,
+          false,
           () => handlePreferenceField("ageRange")
+        )}
+        {renderPreferenceItem(
+          "Ethnicity",
+          userData.ethnicities,
+          userData.fullCircleSubscription,
+          false,
+          () => handlePreferenceField("ethnicity")
+        )}
+        {renderPreferenceItem(
+          "Relationship Type",
+          userData.datePreferences,
+          userData.fullCircleSubscription,
+          false,
+          () => handlePreferenceField("relationshipType")
         )}
 
         <Text style={styles.mainTitle}>Subscriber Preferences</Text>
         <View style={styles.separator} />
 
-        <TouchableOpacity style={styles.subscribeButton}>
-          <Text style={styles.subscribeText}>
-            Upgrade to fine-tune your preferences
-          </Text>
-        </TouchableOpacity>
+        {String(fullCircleSubscription) === "false" && (
+          <View style={styles.subscribeContainer}>
+            <TouchableOpacity style={styles.subscribeButton}>
+              <Text style={styles.subscribeText}>Upgrade</Text>
+            </TouchableOpacity>
+            <Text style={styles.subscribeDescription}>
+              Fine-tune your preferences in a more spiritual way with a
+              subscription.
+            </Text>
+          </View>
+        )}
+
+        {/* Subscriber Fields */}
+        {renderPreferenceItem(
+          "I'm Interested In",
+          userData.sexualOrientation,
+          fullCircleSubscription,
+          true,
+          () => handlePreferenceField("gender")
+        )}
+        {renderPreferenceItem(
+          "My Neighborhood",
+          userData.location?.city,
+          fullCircleSubscription,
+          true,
+          () => handlePreferenceField("location")
+        )}
+        {renderPreferenceItem(
+          "Maximum Distance",
+          userData.preferredDistance,
+          fullCircleSubscription,
+          true,
+          () => handlePreferenceField("maxDistance")
+        )}
+        {renderPreferenceItem(
+          "Age Range",
+          `${userData.preferredAgeRange?.min || "18"} - ${
+            userData.preferredAgeRange?.max || "30"
+          }`,
+          fullCircleSubscription,
+          true,
+          () => handlePreferenceField("ageRange")
+        )}
+        {renderPreferenceItem(
+          "Ethnicity",
+          userData.ethnicities,
+          fullCircleSubscription,
+          true,
+          () => handlePreferenceField("ethnicity")
+        )}
+        {renderPreferenceItem(
+          "Relationship Type",
+          userData.datePreferences,
+          fullCircleSubscription,
+          true,
+          () => handlePreferenceField("relationshipType")
+        )}
       </ScrollView>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -152,16 +233,31 @@ const styles = StyleSheet.create({
   chevronIcon: {
     marginLeft: "auto",
   },
-  subscribeButton: {
-    paddingVertical: 15,
-    backgroundColor: "#4CAF50",
+  subscribeContainer: {
+    backgroundColor: "#F9E3F8",
     borderRadius: 8,
-    marginBottom: 20,
+    padding: 15,
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 15,
+  },
+  subscribeButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: "white",
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "purple",
+    marginRight: 10,
   },
   subscribeText: {
-    color: "white",
+    color: "purple",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  subscribeDescription: {
+    color: "black",
+    fontSize: 14,
+    maxWidth: "70%",
   },
 });
