@@ -182,7 +182,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchUserData = async (userId: string) => {
     console.log("Fetching user data for:", userId);
     try {
-      if (userId === "") {
+      if (!userId) {
+        // If no userId is present, navigate to LandingPage
+        router.replace({
+          pathname: `onboarding/LandingPageScreen` as any,
+        });
         return;
       }
       const docRef = doc(FIRESTORE, "users", userId);
@@ -198,20 +202,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             "onboardingCompleted:",
             userDataFromFirestore.onboardingCompleted
           );
-          updateUserData({
-            currentOnboardingScreen: "Connect",
-          });
           router.replace({
             pathname: `/main/Connect` as any,
           });
           setPotentialMatches(potentialMatches); //load potential matches from faker
-          return;
         } else {
           router.replace({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
           });
         }
       } else {
+        // If user opens up the app for the first time, they MIGHT be taken to NameScreen instead of the landingpage.
+        // Probably there is a currentUser with an id but not in the firestore. Weird.
         router.replace({
           pathname: `onboarding/NameScreen` as any,
         });
@@ -225,11 +227,40 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentUser(user);
     console.log("currentUser:", user);
     if (initializing) setInitializing(false);
+
     if (user) {
-      await fetchUserData(user.uid);
-      console.log("OnAuthStateChanged: User is signed in");
+      const userId = user.uid;
+
+      try {
+        const docRef = doc(FIRESTORE, "users", userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          // User data exists in Firestore, continue as usual
+          const userDataFromFirestore = docSnap.data() as UserDataType;
+          setUserData(userDataFromFirestore);
+
+          if (userDataFromFirestore.onboardingCompleted) {
+            router.replace({ pathname: `/main/Connect` });
+          } else {
+            router.replace({
+              pathname: `onboarding/${
+                userDataFromFirestore.currentOnboardingScreen ||
+                "PhoneNumberScreen"
+              }` as any,
+            });
+          }
+        } else {
+          // User does not exist in Firestore, send them to LandingPageScreen
+          router.replace({ pathname: `onboarding/LandingPageScreen` as any });
+        }
+      } catch (error) {
+        console.error("Error checking user existence in Firestore:", error);
+        // You might want to handle this error (e.g., show a message to the user)
+      }
     } else {
-      setUserData(initialUserData);
+      // No user is signed in, navigate to LandingPage
+      router.replace({ pathname: `onboarding/LandingPageScreen` as any });
     }
   };
 

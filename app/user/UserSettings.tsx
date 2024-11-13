@@ -9,7 +9,7 @@ export default function UserSettings() {
 
   const handleSignOut = () => {
     signOut();
-    navigateToScreen("/LandingPage" as any);
+    navigateToScreen("onboarding/LandingPageScreen" as any);
   };
   return (
     <SafeAreaView>
