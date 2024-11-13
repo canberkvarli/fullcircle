@@ -59,6 +59,7 @@ export type UserDataType = {
     min: number;
     max: number;
   };
+  preferredEthnicities: string[];
   onboardingCompleted?: boolean;
   likedMatches?: string[];
   dislikedMatches?: string[];
@@ -144,6 +145,7 @@ const initialUserData: UserDataType = {
   hiddenFields: {},
   fullCircleSubscription: false,
   likesReceived: potentialMatchesData.slice(0, 10).map((user) => user.userId),
+  preferredEthnicities: [],
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);

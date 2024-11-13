@@ -1,8 +1,8 @@
 #!/usr/bin/env ts-node
-import fs from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { faker } from '@faker-js/faker';
+import fs from "fs";
+import path from "path";
+import { v4 as uuidv4 } from "uuid";
+import { faker } from "@faker-js/faker";
 
 // Interface for location details
 export interface LocationType {
@@ -26,6 +26,7 @@ export interface PotentialMatchType {
   sexualOrientation: string[];
   datePreferences: string[];
   childrenPreference: string;
+  preferredEthnicities: string[];
   location: LocationType;
   educationDegree: string;
   currentOnboardingScreen: string;
@@ -37,7 +38,10 @@ export interface PotentialMatchType {
   fullCircleSubscription?: boolean;
 }
 
-function randomlyLikeCurrentUser(matches: PotentialMatchType[], likeProbability = 0.5): PotentialMatchType[] {
+function randomlyLikeCurrentUser(
+  matches: PotentialMatchType[],
+  likeProbability = 0.5
+): PotentialMatchType[] {
   return matches.map((match) => {
     match.likedCurrentUser = Math.random() < likeProbability;
     return match;
@@ -52,7 +56,9 @@ const generateRandomLocation = (): LocationType => ({
 const generateRandomDateOfBirth = () => {
   const start = new Date(1970, 0, 1); // January 1, 1970
   const end = new Date(2000, 11, 31); // December 31, 2000
-  const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+  const date = new Date(
+    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+  );
   return {
     day: String(date.getDate()),
     month: faker.date.month(),
@@ -60,12 +66,18 @@ const generateRandomDateOfBirth = () => {
   };
 };
 
-const fetchUnsplashImages = async (query: string, count: number, page: number): Promise<string[]> => {
+const fetchUnsplashImages = async (
+  query: string,
+  count: number,
+  page: number
+): Promise<string[]> => {
   const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY; // Ensure you have this environment variable set
-  const response = await fetch(`https://api.unsplash.com/search/photos?page=${page}&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`);
-  
+  const response = await fetch(
+    `https://api.unsplash.com/search/photos?page=${page}&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
+  );
+
   if (!response.ok) {
-    throw new Error('Failed to fetch Unsplash images');
+    throw new Error("Failed to fetch Unsplash images");
   }
 
   const data = await response.json();
@@ -73,30 +85,60 @@ const fetchUnsplashImages = async (query: string, count: number, page: number): 
 };
 
 // Function to generate a single potential match
-const generatePotentialMatch = async (page: number): Promise<PotentialMatchType> => {
+const generatePotentialMatch = async (
+  page: number
+): Promise<PotentialMatchType> => {
   const { day, month, year } = generateRandomDateOfBirth();
-  
+
   // Fetch images using a random page number to vary results
-  const photos = await fetchUnsplashImages('beautiful person', 6, page);
+  const photos = await fetchUnsplashImages("beautiful person", 6, page);
 
   return {
     userId: uuidv4(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    gender: Math.random() > 0.5 ? 'Woman' : 'Man',
+    gender: Math.random() > 0.5 ? "Woman" : "Man",
     email: faker.internet.email(),
     photos: photos,
     birthday: day,
     birthmonth: month,
     birthyear: year,
     height: `${Math.floor(Math.random() * 30) + 150} cm`, // Random height between 150 cm and 180 cm
-    ethnicities: faker.helpers.arrayElements(['Caucasian', 'Hispanic', 'African', 'Asian', 'Other'], 2), // Select 2 random ethnicities
-    sexualOrientation: faker.helpers.arrayElements(['Bisexual', 'Straight', 'Gay', 'Queer'], 1),
-    datePreferences: faker.helpers.arrayElements(['Everyone', 'Men', 'Women'], 1),
-    childrenPreference: Math.random() > 0.5 ? 'Open to Children' : 'Don’t want Children',
+    ethnicities: faker.helpers.arrayElements(
+      ["Caucasian", "Hispanic", "African", "Asian", "Other"],
+      2
+    ), // Select 2 random ethnicities
+    sexualOrientation: faker.helpers.arrayElements(
+      ["Bisexual", "Straight", "Gay", "Queer"],
+      1
+    ),
+    datePreferences: faker.helpers.arrayElements(
+      ["Everyone", "Men", "Women"],
+      1
+    ),
+    childrenPreference:
+      Math.random() > 0.5 ? "Open to Children" : "Don’t want Children",
     location: generateRandomLocation(),
-    educationDegree: faker.helpers.arrayElement(['High School', 'Bachelor', 'Master', 'Doctorate']),
-    currentOnboardingScreen: '',
+    educationDegree: faker.helpers.arrayElement([
+      "High School",
+      "Bachelor",
+      "Master",
+      "Doctorate",
+    ]),
+    preferredEthnicities: faker.helpers.arrayElements(
+      [
+        "American Indian",
+        "East Asian",
+        "Black/African Descent",
+        "Middle Eastern",
+        "Hispanic Latino",
+        "South Asian",
+        "Pacific Islander",
+        "White/Caucasian",
+      ],
+      3
+    ),
+    currentOnboardingScreen: "",
     phoneNumber: faker.phone.number(),
     countryCode: faker.number.int({ min: 1, max: 100 }).toString(),
     areaCode: faker.number.int({ min: 1, max: 100 }).toString(),
@@ -107,7 +149,9 @@ const generatePotentialMatch = async (page: number): Promise<PotentialMatchType>
 };
 
 // Function to generate multiple potential matches
-const generatePotentialMatches = async (num: number): Promise<PotentialMatchType[]> => {
+const generatePotentialMatches = async (
+  num: number
+): Promise<PotentialMatchType[]> => {
   const potentialMatches: PotentialMatchType[] = [];
   for (let i = 0; i < num; i++) {
     const page = Math.floor(Math.random() * 10) + 1; // Generate a random page number between 1 and 10
@@ -118,7 +162,7 @@ const generatePotentialMatches = async (num: number): Promise<PotentialMatchType
 };
 
 // File path for saving the generated data
-const filePath = path.join(__dirname, '../data/potentialMatches.ts');
+const filePath = path.join(__dirname, "../data/potentialMatches.ts");
 
 // Delete existing file if it exists
 if (fs.existsSync(filePath)) {
@@ -154,6 +198,7 @@ interface PotentialMatchType {
   location: LocationType;
   educationDegree: string;
   currentOnboardingScreen: string;
+  preferredEthnicities: string[];
   phoneNumber: string;
   countryCode: string;
   areaCode: string;
@@ -162,15 +207,21 @@ interface PotentialMatchType {
   fullCircleSubscription: boolean
 }
 
-const potentialMatches: PotentialMatchType[] = ${JSON.stringify(likedMatches, null, 2)};
+const potentialMatches: PotentialMatchType[] = ${JSON.stringify(
+      likedMatches,
+      null,
+      2
+    )};
 
 export default potentialMatches;
 `;
 
     // Save to potentialMatches.ts file
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log(`Generated ${likedMatches.length} potential matches and saved to ${filePath}`);
+    fs.writeFileSync(filePath, content, "utf8");
+    console.log(
+      `Generated ${likedMatches.length} potential matches and saved to ${filePath}`
+    );
   })
   .catch((err) => {
-    console.error('Error generating potential matches:', err);
+    console.error("Error generating potential matches:", err);
   });
