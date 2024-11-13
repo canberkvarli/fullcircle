@@ -28,8 +28,18 @@ export default function DatingPreferences() {
     onPress: () => void
   ) => (
     <TouchableOpacity style={styles.fieldContainer} onPress={onPress}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <Text style={styles.fieldValue}>{value || "Not specified"}</Text>
+      <View style={styles.fieldContent}>
+        <View>
+          <Text style={styles.fieldLabel}>{label}</Text>
+          <Text style={styles.fieldValue}>{value || "Not specified"}</Text>
+        </View>
+        <Icon
+          name="chevron-right"
+          size={18}
+          color="gray"
+          style={styles.chevronIcon}
+        />
+      </View>
     </TouchableOpacity>
   );
 
@@ -38,7 +48,7 @@ export default function DatingPreferences() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dating Preferences</Text>
         <TouchableOpacity onPress={handleClose}>
-          <Icon name="close" size={24} color="black" />
+          <Icon name="close" size={22} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -85,7 +95,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     marginTop: 25,
-    backgroundColor: "white",
   },
   header: {
     flexDirection: "row",
@@ -105,7 +114,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "gray",
+    color: "black",
     marginVertical: 12,
   },
   separator: {
@@ -120,16 +129,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "lightgray",
     marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  fieldContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
   },
   fieldLabel: {
     fontSize: 14,
-    color: "gray",
+    fontWeight: "bold",
+    color: "black",
   },
   fieldValue: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "black",
+    color: "#4A4A4A",
     marginTop: 4,
+  },
+  chevronIcon: {
+    marginLeft: "auto",
   },
   subscribeButton: {
     paddingVertical: 15,
