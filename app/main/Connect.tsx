@@ -46,18 +46,36 @@ const ConnectScreen: React.FC = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabsContainer}
       >
-        <Link href={"/user/DatingPreferences" as any}>
+        <Link href={"/user/DatingPreferences" as any} style={styles.slider}>
           <Icon name="sliders" size={24} color="black" />
         </Link>
 
         <TouchableOpacity style={[styles.tab, styles.activeTab]}>
           <Text>Age</Text>
+          <Icon
+            name="chevron-down"
+            size={12}
+            color="black"
+            style={styles.caretIcon}
+          />
         </TouchableOpacity>
         <TouchableOpacity style={styles.tab}>
           <Text>Height</Text>
+          <Icon
+            name="chevron-down"
+            size={12}
+            color="black"
+            style={styles.caretIcon}
+          />
         </TouchableOpacity>
         <TouchableOpacity style={styles.tab}>
           <Text>Dating Intentions</Text>
+          <Icon
+            name="chevron-down"
+            size={12}
+            color="black"
+            style={styles.caretIcon}
+          />
         </TouchableOpacity>
         <TouchableOpacity style={styles.tab}>
           <Text>Active Today</Text>
@@ -65,7 +83,7 @@ const ConnectScreen: React.FC = () => {
         <TouchableOpacity style={styles.tab}>
           <Text>New Here</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
+        <TouchableOpacity style={[styles.tab, styles.moreTab]}>
           <Text>More</Text>
         </TouchableOpacity>
       </ScrollView>

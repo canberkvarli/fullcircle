@@ -52,12 +52,8 @@ const styles = StyleSheet.create({
     color: "white",
   },
   slider: {
-    width: "100%",
-    height: 40,
-    justifyContent: "flex-start",
-    marginBottom: 30,
+    marginRight: 5,
   },
-
   tabsContainer: {
     flexDirection: "row",
     marginBottom: 16,
@@ -77,19 +73,27 @@ const styles = StyleSheet.create({
   tab: {
     padding: 5,
     paddingBottom: 8,
-    borderRadius: 15,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: "gray",
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
   },
   tabText: {
     fontSize: 16,
     color: "black",
     fontWeight: "500",
   },
+  caretIcon: {
+    marginLeft: 5,
+  },
   activeTab: {
     borderWidth: 2,
     borderColor: "black",
+  },
+  moreTab: {
+    borderWidth: 0, // Removes the border for the "More" tab
   },
   modalOverlay: {
     flex: 1,
