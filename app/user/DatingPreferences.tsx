@@ -34,7 +34,13 @@ export default function DatingPreferences() {
       <View style={styles.fieldContent}>
         <View>
           <Text style={styles.fieldLabel}>{label}</Text>
-          <Text style={styles.fieldValue}>{value || "Not specified"}</Text>
+          <Text style={styles.fieldValue}>
+            {Array.isArray(value)
+              ? value.join(", ").length > 40
+                ? `${value.join(", ").slice(0, 40)}...`
+                : value.join(", ")
+              : value || "Not specified"}
+          </Text>
         </View>
         {isSubscriberField ? (
           String(fullCircleSubscription) === "true" ? (
@@ -101,7 +107,7 @@ export default function DatingPreferences() {
         )}
         {renderPreferenceItem(
           "Relationship Type",
-          userData.datePreferences,
+          userData.datePreferences?.join(", "),
           userData.fullCircleSubscription,
           false,
           () => handlePreferenceField("relationshipType")
@@ -122,7 +128,6 @@ export default function DatingPreferences() {
           </View>
         )}
 
-        {/* Subscriber Fields */}
         {renderPreferenceItem(
           "I'm Interested In",
           userData.sexualOrientation,
@@ -162,7 +167,7 @@ export default function DatingPreferences() {
         )}
         {renderPreferenceItem(
           "Relationship Type",
-          userData.datePreferences,
+          userData.datePreferences?.join(", "),
           fullCircleSubscription,
           true,
           () => handlePreferenceField("relationshipType")
@@ -171,6 +176,7 @@ export default function DatingPreferences() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
