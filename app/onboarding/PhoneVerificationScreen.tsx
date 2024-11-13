@@ -107,8 +107,15 @@ const PhoneVerificationScreen = () => {
         );
         if (docSnap.exists()) {
           console.log("User exist in the firestore");
-          await fetchUserData(userId);
           const userDataFromFirestore = docSnap.data();
+          if (userDataFromFirestore.onboardingCompleted) {
+            console.log("User has completed onboarding");
+            router.replace({
+              pathname: "/main/Connect" as any,
+            });
+            return;
+          }
+          await fetchUserData(userId);
           const userCurrentOnboardingScreen =
             userDataFromFirestore.currentOnboardingScreen ||
             "PhoneNumberScreen";

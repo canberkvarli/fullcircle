@@ -194,10 +194,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("userDataFromFirestore:", userDataFromFirestore);
         setUserData(userDataFromFirestore);
         if (userDataFromFirestore.onboardingCompleted) {
+          console.log(
+            "onboardingCompleted:",
+            userDataFromFirestore.onboardingCompleted
+          );
+          updateUserData({
+            currentOnboardingScreen: "Connect",
+          });
           router.replace({
             pathname: `/main/Connect` as any,
           });
           setPotentialMatches(potentialMatches); //load potential matches from faker
+          return;
         } else {
           router.replace({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
@@ -219,6 +227,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (initializing) setInitializing(false);
     if (user) {
       await fetchUserData(user.uid);
+      console.log("OnAuthStateChanged: User is signed in");
     } else {
       setUserData(initialUserData);
     }
