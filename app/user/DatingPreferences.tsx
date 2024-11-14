@@ -163,7 +163,7 @@ export default function DatingPreferences() {
           "Maximum Distance",
           `${maximumDistance} miles`,
           userData.fullCircleSubscription,
-          false,
+          true,
           () => handlePreferenceField("maxDistance")
         )}
         {renderPreferenceItem(
