@@ -231,27 +231,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (initializing) setInitializing(false);
 
     if (user) {
-      const userId = user.uid;
-
-      const docRef = doc(FIRESTORE, "users", userId);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        // User data exists in Firestore, continue as usual
-        const userDataFromFirestore = docSnap.data() as UserDataType;
-        setUserData(userDataFromFirestore);
-
-        if (userDataFromFirestore.onboardingCompleted) {
-          router.replace({ pathname: `/main/Connect` });
-        } else {
-          router.replace({
-            pathname: `onboarding/${
-              userDataFromFirestore.currentOnboardingScreen ||
-              "PhoneNumberScreen"
-            }` as any,
-          });
-        }
-      }
+      await fetchUserData(user.uid);
+      console.log("OnAuthStateChanged: User is signed in");
+    } else {
+      setUserData(initialUserData);
     }
   };
 
