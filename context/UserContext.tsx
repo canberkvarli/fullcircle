@@ -233,36 +233,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user) {
       const userId = user.uid;
 
-      try {
-        const docRef = doc(FIRESTORE, "users", userId);
-        const docSnap = await getDoc(docRef);
+      const docRef = doc(FIRESTORE, "users", userId);
+      const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          // User data exists in Firestore, continue as usual
-          const userDataFromFirestore = docSnap.data() as UserDataType;
-          setUserData(userDataFromFirestore);
+      if (docSnap.exists()) {
+        // User data exists in Firestore, continue as usual
+        const userDataFromFirestore = docSnap.data() as UserDataType;
+        setUserData(userDataFromFirestore);
 
-          if (userDataFromFirestore.onboardingCompleted) {
-            router.replace({ pathname: `/main/Connect` });
-          } else {
-            router.replace({
-              pathname: `onboarding/${
-                userDataFromFirestore.currentOnboardingScreen ||
-                "PhoneNumberScreen"
-              }` as any,
-            });
-          }
+        if (userDataFromFirestore.onboardingCompleted) {
+          router.replace({ pathname: `/main/Connect` });
         } else {
-          // User does not exist in Firestore, send them to LandingPageScreen
-          router.replace({ pathname: `onboarding/LandingPageScreen` as any });
+          router.replace({
+            pathname: `onboarding/${
+              userDataFromFirestore.currentOnboardingScreen ||
+              "PhoneNumberScreen"
+            }` as any,
+          });
         }
-      } catch (error) {
-        console.error("Error checking user existence in Firestore:", error);
-        // You might want to handle this error (e.g., show a message to the user)
       }
-    } else {
-      // No user is signed in, navigate to LandingPage
-      router.replace({ pathname: `onboarding/LandingPageScreen` as any });
     }
   };
 
