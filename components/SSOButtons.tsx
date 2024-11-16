@@ -76,6 +76,7 @@ function SSOButtons(): JSX.Element {
             areaCode: "",
             number: "",
             phoneNumber: "",
+            preferredEthnicities: [],
             currentOnboardingScreen: "",
             hiddenFields: {},
             onboardingCompleted: false,
