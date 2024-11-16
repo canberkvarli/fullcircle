@@ -29,15 +29,25 @@ const SoulChats: React.FC = () => {
         if (userDoc.exists() && userDoc.data().matches) {
           userMatches = userDoc.data().matches;
           console.log("Matches from Firestore:", userMatches);
-        } else {
-          //  Fallback to potentialMatches if matches not found in Firestore
-          userMatches = userData.matches || [];
-          console.log("Matches from potentialMatches:", userMatches);
+        } else if (userData.matches) {
+          // Fallback to userData matches
+          userMatches = userData.matches;
+          console.log("Matches from userData:", userMatches);
+        }
+
+        if (!userMatches || userMatches.length === 0) {
+          console.log("No matches found.");
+          setMatches([]);
+          return;
         }
 
         // Fetch detailed data for each matched user
         const matchDetails = await Promise.all(
           userMatches.map(async (matchId: string) => {
+            if (!matchId) {
+              console.warn("Invalid matchId encountered:", matchId);
+              return null;
+            }
             const matchDocRef = doc(FIRESTORE, `users/${matchId}`);
             const matchDoc = await getDoc(matchDocRef);
             return matchDoc.exists()
@@ -75,6 +85,7 @@ const SoulChats: React.FC = () => {
   }
 
   const navigateToChat = async (otherUserId: string) => {
+    console.log("Navigating to chat with:", otherUserId);
     const chatId = await createOrFetchChat(userData.userId, otherUserId);
     if (chatId) {
       router.push(
