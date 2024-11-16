@@ -78,10 +78,10 @@ function PhotosScreen() {
   };
 
   const handleSubmit = async () => {
-    if (selectedPhotos.filter(Boolean).length < 3) {
-      Alert.alert("Upload Photos", "Please upload at least 3 photos.");
-      return;
-    }
+    // if (selectedPhotos.filter(Boolean).length < 3) {
+    //   Alert.alert("Upload Photos", "Please upload at least 3 photos.");
+    //   return;
+    // }
 
     setLoading(true); // Start loading
     try {

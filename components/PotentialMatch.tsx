@@ -10,6 +10,8 @@ const PotentialMatch = ({
   currentPotentialMatch: any;
 }) => {
   const { likeMatch, loadNextPotentialMatch } = useUserContext();
+
+  // Consolidate info for spreading evenly across photos
   const infoSections = [
     {
       title: "Children Preference",
@@ -19,7 +21,25 @@ const PotentialMatch = ({
       title: "Education Level",
       content: currentPotentialMatch.educationDegree,
     },
+    {
+      title: "Ethnicities",
+      content: currentPotentialMatch.ethnicities.join(", "),
+    },
+    { title: "Height", content: currentPotentialMatch.height },
+    {
+      title: "Location",
+      content: `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`,
+    },
+    {
+      title: "Sexual Orientation",
+      content: currentPotentialMatch.sexualOrientation.join(", "),
+    },
   ];
+
+  // Calculate the step to evenly distribute info sections
+  const infoStep = Math.ceil(
+    infoSections.length / currentPotentialMatch.photos.length
+  );
 
   return (
     <View style={styles.container}>
@@ -37,13 +57,17 @@ const PotentialMatch = ({
           >
             <Icon name="heart" size={40} color="black" />
           </TouchableOpacity>
-          {index < infoSections.length && (
-            <InfoCard
-              title={infoSections[index].title}
-              content={infoSections[index].content}
-              currentPotentialMatch={currentPotentialMatch}
-            />
-          )}
+          {/* Spread info evenly across photos */}
+          {infoSections
+            .slice(index * infoStep, (index + 1) * infoStep)
+            .map((info, i) => (
+              <InfoCard
+                key={i}
+                title={info.title}
+                content={info.content}
+                currentPotentialMatch={currentPotentialMatch}
+              />
+            ))}
         </View>
       ))}
     </View>
@@ -65,6 +89,7 @@ const styles = StyleSheet.create({
   },
   photoContainer: {
     position: "relative",
+    marginBottom: 20,
   },
   photo: {
     width: 400,
@@ -73,9 +98,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   heartIcon: {
-    alignItems: "flex-end",
-    bottom: 70,
-    right: 35,
+    position: "absolute",
+    bottom: 180,
+    right: 50,
+    zIndex: 10,
   },
 });
 
