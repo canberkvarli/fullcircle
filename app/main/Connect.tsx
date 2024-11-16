@@ -19,13 +19,12 @@ const ConnectScreen: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       loadNextPotentialMatch();
-      setTimeout(() => {
-        setLoading(false);
-      }, 2000);
+      setTimeout(() => setLoading(false), 2000);
     };
     loadData();
-  }, [loadNextPotentialMatch]);
+  }, []);
 
   if (loading) {
     return (

@@ -395,7 +395,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const loadNextPotentialMatch = () => {
-    if (potentialMatches.length === 0) return;
+    if (!potentialMatches || potentialMatches.length === 0) {
+      console.log("No potential matches available.");
+      return;
+    }
 
     const nextIndex = currentPotentialMatchIndex + 1;
 
@@ -403,8 +406,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentPotentialMatch(potentialMatches[nextIndex]);
       setCurrentPotentialMatchIndex(nextIndex);
     } else {
-      // Optionally handle what happens when there are no more potential matches
-      console.log("No more matches available.");
+      console.log("End of potential matches.");
+      setCurrentPotentialMatch(null);
     }
   };
 
