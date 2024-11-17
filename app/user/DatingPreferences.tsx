@@ -8,36 +8,31 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 
 export default function DatingPreferences() {
-  const navigation = useNavigation();
-  const { userData, updateUserData } = useUserContext();
-  const { fullCircleSubscription } = userData;
+  const router = useRouter();
+  const { userData } = useUserContext();
 
-  // Ethnicities options
-  const ethnicities = [
-    "American Indian",
-    "East Asian",
-    "Black/African Descent",
-    "Middle Eastern",
-    "Hispanic Latino",
-    "South Asian",
-    "Pacific Islander",
-    "White/Caucasian",
-  ];
+  const ethnicities = userData.ethnicities || [];
+  const datePreferences = userData.datePreferences || [];
+  const preferredAgeRange = userData.preferredAgeRange;
+  const preferredDistance = userData.preferredDistance || 100;
+  const fullCircleSubscription = userData.fullCircleSubscription || false;
 
   // Handle navigation to edit a specific field
-  const handlePreferenceField = (fieldName: string) => {
-    // navigation.navigate("EditField", { fieldName });
+  const handleEditField = (fieldName: string, currentValue: any) => {
+    router.push({
+      pathname: "/user/edit/EditPreferenceField",
+      params: { fieldName, currentValue },
+    });
   };
 
   // Handle closing the current screen
   const handleClose = () => {
-    navigation.goBack();
+    router.back();
   };
 
-  // Render individual preference items with default value handling
   const renderPreferenceItem = (
     label: string,
     value: any,
@@ -72,13 +67,6 @@ export default function DatingPreferences() {
     </TouchableOpacity>
   );
 
-  const maximumDistance = userData.preferredDistance || 100;
-  const ageRange = userData.preferredAgeRange
-    ? `${userData.preferredAgeRange.min || "18"} - ${
-        userData.preferredAgeRange.max || "30"
-      }`
-    : "18 - 30";
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -92,87 +80,79 @@ export default function DatingPreferences() {
         <Text style={styles.mainTitle}>Member Preferences</Text>
         <View style={styles.separator} />
 
+        {/* Basic fields */}
         {renderPreferenceItem(
           "I'm Interested In",
-          userData.datePreferences,
-          userData.fullCircleSubscription,
+          datePreferences,
+          fullCircleSubscription,
           false,
-          () => handlePreferenceField("gender")
-        )}
-        {renderPreferenceItem(
-          "My Neighborhood",
-          userData.location?.city,
-          userData.fullCircleSubscription,
-          false,
-          () => handlePreferenceField("location")
-        )}
-        {renderPreferenceItem(
-          "Maximum Distance",
-          `${maximumDistance} miles`,
-          userData.fullCircleSubscription,
-          false,
-          () => handlePreferenceField("maxDistance")
-        )}
-        {renderPreferenceItem(
-          "Age Range",
-          ageRange,
-          userData.fullCircleSubscription,
-          false,
-          () => handlePreferenceField("ageRange")
-        )}
-        {renderPreferenceItem(
-          "Preferred Ethnicity",
-          userData.preferredEthnicities?.length === 0
-            ? "Open to All"
-            : userData.preferredEthnicities?.join(", "),
-          userData.fullCircleSubscription,
-          false,
-          () => handlePreferenceField("preferredEthnicities")
+          () => handleEditField("datePreferences", datePreferences)
         )}
 
+        {renderPreferenceItem(
+          "Preferred Ethnicities",
+          ethnicities,
+          fullCircleSubscription,
+          false,
+          () => handleEditField("ethnicities", ethnicities)
+        )}
+
+        {renderPreferenceItem(
+          "Preferred Age Range",
+          preferredAgeRange
+            ? `${preferredAgeRange.min || "18"} - ${
+                preferredAgeRange.max || "30"
+              }`
+            : "18 - 30",
+          fullCircleSubscription,
+          false,
+          () => handleEditField("preferredAgeRange", preferredAgeRange)
+        )}
+
+        {renderPreferenceItem(
+          "Preferred Distance (mil)",
+          preferredDistance,
+          fullCircleSubscription,
+          false,
+          () => handleEditField("preferredDistance", preferredDistance)
+        )}
         <Text style={styles.mainTitle}>Subscriber Preferences</Text>
         <View style={styles.separator} />
 
+        {/* Upgrade prompt if not a FullCircle subscriber */}
         {String(fullCircleSubscription) === "false" && (
           <View style={styles.subscribeContainer}>
-            <TouchableOpacity style={styles.subscribeButton}>
+            <TouchableOpacity
+              style={styles.subscribeButton}
+              onPress={() => console.log("Upgrade button pressed")}
+            >
               <Text style={styles.subscribeText}>Upgrade</Text>
             </TouchableOpacity>
             <Text style={styles.subscribeDescription}>
-              Fine-tune your preferences in a more spiritual way with a
-              subscription.
+              Fine-tune your preferences.
             </Text>
           </View>
         )}
 
-        {renderPreferenceItem(
-          "I'm Interested In",
-          userData.datePreferences,
-          fullCircleSubscription,
-          true,
-          () => handlePreferenceField("gender")
-        )}
-        {renderPreferenceItem(
-          "My Neighborhood",
-          userData.location?.city,
-          fullCircleSubscription,
-          true,
-          () => handlePreferenceField("location")
-        )}
+        {/* Premium fields (visible to FullCircle users) */}
         {renderPreferenceItem(
           "Maximum Distance",
-          `${maximumDistance} miles`,
-          userData.fullCircleSubscription,
-          true,
-          () => handlePreferenceField("maxDistance")
-        )}
-        {renderPreferenceItem(
-          "Age Range",
-          ageRange,
+          `${userData.preferredDistance} miles`,
           fullCircleSubscription,
           true,
-          () => handlePreferenceField("ageRange")
+          () => handleEditField("maxDistance", userData.preferredDistance)
         )}
+
+        {renderPreferenceItem(
+          "Age Range",
+          `${userData.preferredAgeRange?.min || "18"} - ${
+            userData.preferredAgeRange?.max || "30"
+          }`,
+          fullCircleSubscription,
+          true,
+          () => handleEditField("ageRange", userData.preferredAgeRange)
+        )}
+
         {renderPreferenceItem(
           "Preferred Ethnicity",
           userData.preferredEthnicities?.length === 0
@@ -180,7 +160,11 @@ export default function DatingPreferences() {
             : userData.preferredEthnicities?.join(", "),
           fullCircleSubscription,
           true,
-          () => handlePreferenceField("preferredEthnicities")
+          () =>
+            handleEditField(
+              "preferredEthnicities",
+              userData.preferredEthnicities
+            )
         )}
       </ScrollView>
     </View>
@@ -211,6 +195,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 10,
     color: "black",
     marginVertical: 12,
   },
@@ -245,9 +230,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#4A4A4A",
     marginTop: 4,
-  },
-  chevronIcon: {
-    marginLeft: "auto",
   },
   subscribeContainer: {
     backgroundColor: "#F9E3F8",
