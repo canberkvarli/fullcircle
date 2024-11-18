@@ -14,7 +14,7 @@ export default function DatingPreferences() {
   const router = useRouter();
   const { userData } = useUserContext();
 
-  const ethnicities = userData.ethnicities || [];
+  const preferredEthnicities = userData.preferredEthnicities || [];
   const datePreferences = userData.datePreferences || [];
   const preferredAgeRange = userData.preferredAgeRange;
   const preferredDistance = userData.preferredDistance || 100;
@@ -91,10 +91,10 @@ export default function DatingPreferences() {
 
         {renderPreferenceItem(
           "Preferred Ethnicities",
-          ethnicities,
+          preferredEthnicities,
           fullCircleSubscription,
           false,
-          () => handleEditField("ethnicities", ethnicities)
+          () => handleEditField("preferredEthnicities", preferredEthnicities)
         )}
 
         {renderPreferenceItem(

@@ -26,12 +26,33 @@ export default function EditPreferenceField() {
   }, [currentValue, fieldName]);
 
   const handleGoBack = async () => {
-    if (fieldName && value !== currentValue) {
-      const updatedData = { [fieldName]: value };
+    let updatedValue = value;
+
+    if (
+      fieldName === "datePreferences" ||
+      fieldName === "preferredEthnicities"
+    ) {
+      if (!value || value.length === 0) {
+        updatedValue = ["Open to All"];
+      }
+    }
+
+    if (
+      fieldName === "preferredAgeRange" ||
+      fieldName === "preferredDistance"
+    ) {
+      if (!value || (value.min === undefined && value.max === undefined)) {
+        updatedValue = { min: "Open to All", max: "Open to All" };
+      }
+    }
+
+    if (fieldName && updatedValue !== currentValue) {
+      const updatedData = { [fieldName]: updatedValue };
 
       try {
+        console.log("Saving data:", updatedData); // Debugging line
         await updateUserData(updatedData);
-        console.log("Updated field:", fieldName, value);
+        console.log("Updated field:", fieldName, updatedValue);
       } catch (error) {
         console.error("Error updating preference:", error);
       }
@@ -53,11 +74,12 @@ export default function EditPreferenceField() {
                   value?.includes(option) && styles.checkboxSelected,
                 ]}
                 onPress={() =>
-                  setValue((prev: any) =>
-                    prev?.includes(option)
-                      ? prev.filter((item: any) => item !== option)
-                      : [...(prev || []), option]
-                  )
+                  setValue((prev: string[] | undefined) => {
+                    const safePrev = Array.isArray(prev) ? prev : []; // Ensure `prev` is an array
+                    return safePrev.includes(option)
+                      ? safePrev.filter((item) => item !== option)
+                      : [...safePrev, option];
+                  })
                 }
               >
                 <Text style={styles.checkboxText}>{option}</Text>
@@ -66,12 +88,17 @@ export default function EditPreferenceField() {
           </View>
         );
 
-      case "ethnicities":
+      case "preferredEthnicities":
         const ethnicities = [
           "American Indian",
           "East Asian",
           "Black/African Descent",
           "Hispanic Latino",
+          "Middle Eastern",
+          "Native Hawaiian",
+          "Pacific Islander",
+          "South Asian",
+          "White/Caucasian",
         ];
         return (
           <View style={styles.checkboxContainer}>
@@ -82,13 +109,14 @@ export default function EditPreferenceField() {
                   styles.checkbox,
                   value?.includes(ethnicity) && styles.checkboxSelected,
                 ]}
-                onPress={() =>
-                  setValue((prev: any) =>
-                    prev?.includes(ethnicity)
-                      ? prev.filter((item: any) => item !== ethnicity)
-                      : [...(prev || []), ethnicity]
-                  )
-                }
+                onPress={() => {
+                  setValue((prev: string[]) => {
+                    if (!Array.isArray(prev)) prev = []; // Ensure prev is an array
+                    return prev.includes(ethnicity)
+                      ? prev.filter((item) => item !== ethnicity) // Remove item
+                      : [...prev, ethnicity]; // Add item
+                  });
+                }}
               >
                 <Text style={styles.checkboxText}>{ethnicity}</Text>
               </TouchableOpacity>
@@ -120,7 +148,7 @@ export default function EditPreferenceField() {
         return (
           <TextInput
             style={styles.input}
-            value={String(value)}
+            value={String(value || "")}
             placeholder="Preferred Distance (km)"
             keyboardType="numeric"
             onChangeText={(text) => setValue(Number(text))}
