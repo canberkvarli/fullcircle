@@ -18,7 +18,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
 import styles from "@/styles/Main/ConnectStyles";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 
 const ConnectScreen: React.FC = () => {
@@ -154,9 +154,12 @@ const ConnectScreen: React.FC = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabsContainer}
       >
-        <Link href={"/user/DatingPreferences" as any} style={styles.slider}>
+        <TouchableOpacity
+          onPress={() => router.push("/user/DatingPreferences")}
+          style={styles.slider}
+        >
           <Icon name="sliders" size={24} color="black" />
-        </Link>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, styles.activeTab]}
           onPress={() => setShowFilterModal(true)}
@@ -196,12 +199,12 @@ const ConnectScreen: React.FC = () => {
         <TouchableOpacity style={styles.tab}>
           <Text>New Here</Text>
         </TouchableOpacity>
-        <Link
-          href={"/user/DatingPreferences" as any}
+        <TouchableOpacity
+          onPress={() => router.push("/user/DatingPreferences")}
           style={[styles.tab, styles.moreTab]}
         >
           <Text>More</Text>
-        </Link>
+        </TouchableOpacity>
       </ScrollView>
 
       <ScrollView
