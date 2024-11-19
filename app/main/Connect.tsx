@@ -18,12 +18,13 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
 import styles from "@/styles/Main/ConnectStyles";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 
 const ConnectScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
+  const [showHeightModal, setShowHeightModal] = useState<boolean>(false);
   const {
     dislikeMatch,
     currentPotentialMatch,
@@ -43,6 +44,11 @@ const ConnectScreen: React.FC = () => {
       []
   );
 
+  const [heightRange, setHeightRange] = useState([3, 7]); // Height range in feet (3'0" = 3, 7'0" = 7)
+  const [originalHeightRange, setOriginalHeightRange] = useState([3, 7]);
+  const router = useRouter();
+  const fullCircleSubscription = userData.fullCircleSubscription || false;
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -53,28 +59,36 @@ const ConnectScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Prepopulate filter options when the modal opens
-    if (userData) {
+    if (userData && userData.filterOptions) {
       setAgeRange([
-        userData.filterOptions?.preferredAgeRange.min || 18,
-        userData.filterOptions?.preferredAgeRange.max || 50,
+        userData.filterOptions.preferredAgeRange?.min || 18,
+        userData.filterOptions.preferredAgeRange?.max || 35,
       ]);
-
       setOriginalAgeRange([
-        userData.filterOptions?.preferredAgeRange.min || 18,
-        userData.filterOptions?.preferredAgeRange.max || 50,
+        userData.filterOptions.preferredAgeRange?.min || 18,
+        userData.filterOptions.preferredAgeRange?.max || 35,
       ]);
-
-      setDatePreferences(userData.filterOptions?.datePreferences || []);
+      setDatePreferences(userData.filterOptions.datePreferences || []);
       setPreferredEthnicities(
-        userData.filterOptions?.preferredEthnicities ||
+        userData.filterOptions.preferredEthnicities ||
           preferredEthnicities ||
           []
       );
+      setHeightRange([
+        Math.floor(userData.filterOptions.preferredHeightRange?.min ?? 36) /
+          12 || 3,
+        Math.floor(userData.filterOptions.preferredHeightRange?.max ?? 84) /
+          12 || 7,
+      ]);
+      setOriginalHeightRange([
+        Math.floor(userData.filterOptions.preferredHeightRange?.min ?? 36) /
+          12 || 3,
+        Math.floor(userData.filterOptions.preferredHeightRange?.max ?? 84) /
+          12 || 7,
+      ]);
     }
   }, [userData]);
-
-  const handleApplyFilter = async () => {
+  const handleApplyAgeFilter = async () => {
     if (!userData || !userData.userId) {
       console.error("User ID is missing. Cannot apply filter.");
       return;
@@ -96,6 +110,10 @@ const ConnectScreen: React.FC = () => {
           userData.preferredEthnicities ||
           [],
         desiredRelationship: userData.filterOptions?.desiredRelationship || "",
+        preferredHeightRange: {
+          min: heightRange[0] * 12,
+          max: heightRange[1] * 12,
+        }, // Save height range in inches
       },
     };
 
@@ -103,13 +121,19 @@ const ConnectScreen: React.FC = () => {
       await updateUserData(updatedData);
       console.log("Filter applied:", updatedData);
       setShowFilterModal(false);
+      setShowHeightModal(false); // Close both modals after applying
     } catch (error) {
       console.error("Error applying filter:", error);
     }
   };
 
   const isApplyButtonDisabled =
-    ageRange[0] === originalAgeRange[0] && ageRange[1] === originalAgeRange[1];
+    ageRange[0] === originalAgeRange[0] &&
+    ageRange[1] === originalAgeRange[1] &&
+    heightRange[0] === originalHeightRange[0] &&
+    heightRange[1] === originalHeightRange[1];
+
+  const isSubscriber = String(fullCircleSubscription) === "true";
 
   if (loading) {
     return (
@@ -145,7 +169,10 @@ const ConnectScreen: React.FC = () => {
             style={styles.caretIcon}
           />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
+        <TouchableOpacity
+          style={styles.tab}
+          onPress={() => setShowHeightModal(true)} // Open Height Modal
+        >
           <Text>Height</Text>
           <Icon
             name="chevron-down"
@@ -171,13 +198,12 @@ const ConnectScreen: React.FC = () => {
         </TouchableOpacity>
         <Link
           href={"/user/DatingPreferences" as any}
-          style={(styles.tab, styles.moreTab)}
+          style={[styles.tab, styles.moreTab]}
         >
           <Text>More</Text>
         </Link>
       </ScrollView>
 
-      {/* Main Content: Potential Match */}
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -198,7 +224,7 @@ const ConnectScreen: React.FC = () => {
         <Icon name="times" style={styles.dislikeIcon} />
       </TouchableOpacity>
 
-      {/* Modal for filtering */}
+      {/* Age Filter Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -215,8 +241,6 @@ const ConnectScreen: React.FC = () => {
             <Text style={styles.subheaderText}>
               Select the range you're open to meeting
             </Text>
-
-            {/* MultiSlider for Age */}
             <MultiSlider
               values={ageRange}
               sliderLength={280}
@@ -230,10 +254,8 @@ const ConnectScreen: React.FC = () => {
               Age Range: {ageRange[0]} - {ageRange[1]}
             </Text>
 
-            {/* Add other filters here (datePreferences, preferredEthnicities) */}
-
             <TouchableOpacity
-              onPress={handleApplyFilter}
+              onPress={handleApplyAgeFilter}
               style={[
                 styles.applyButton,
                 isApplyButtonDisabled && styles.applyButtonDisabled,
@@ -242,6 +264,63 @@ const ConnectScreen: React.FC = () => {
             >
               <Text style={styles.applyButtonText}>Apply Filter</Text>
             </TouchableOpacity>
+          </View>
+        </GestureHandlerRootView>
+      </Modal>
+
+      {/* Height Filter Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showHeightModal}
+        onRequestClose={() => setShowHeightModal(false)}
+      >
+        <GestureHandlerRootView style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowHeightModal(false)}>
+            <View style={styles.modalOverlay} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Height</Text>
+            {!isSubscriber ? (
+              <View style={styles.overlayMessage}>
+                <Text style={styles.overlayText}>
+                  You need FullCircle subscription to use the height filter.
+                </Text>
+                <TouchableOpacity
+                  style={styles.subscribeButton}
+                  onPress={() => router.push("/user/FullCircleSubscription")}
+                >
+                  <Text style={styles.subscribeText}>Upgrade to filter</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <MultiSlider
+                values={heightRange}
+                sliderLength={280}
+                min={3}
+                max={7}
+                onValuesChange={setHeightRange}
+                selectedStyle={{ backgroundColor: "#4CAF50" }}
+                unselectedStyle={{ backgroundColor: "gray" }}
+              />
+            )}
+            {/* <Text style={styles.heightText}>
+              Height Range: {heightRange[0]}ft - {heightRange[1]}ft
+            </Text> */}
+
+            {isSubscriber && (
+              <TouchableOpacity
+                onPress={handleApplyAgeFilter}
+                style={[
+                  styles.applyButton,
+                  isApplyButtonDisabled && styles.applyButtonDisabled,
+                ]}
+                disabled={isApplyButtonDisabled}
+              >
+                <Text style={styles.applyButtonText}>Apply Filter</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </GestureHandlerRootView>
       </Modal>

@@ -59,6 +59,10 @@ export type UserDataType = {
     min: number;
     max: number;
   };
+  preferredHeightRange?: {
+    min: number;
+    max: number;
+  };
   preferredEthnicities: string[];
   filterOptions?: {
     datePreferences: string[];
@@ -69,6 +73,10 @@ export type UserDataType = {
     };
     preferredDistance: number;
     preferredEthnicities: string[];
+    preferredHeightRange: {
+      min: number;
+      max: number;
+    };
     desiredRelationship: string;
   };
   onboardingCompleted?: boolean;
@@ -157,12 +165,20 @@ const initialUserData: UserDataType = {
   fullCircleSubscription: false,
   likesReceived: potentialMatchesData.slice(0, 10).map((user) => user.userId),
   preferredEthnicities: [],
+  preferredHeightRange: {
+    min: 5,
+    max: 7,
+  },
   filterOptions: {
     datePreferences: [],
     location: "",
     preferredAgeRange: {
       min: 18,
       max: 35,
+    },
+    preferredHeightRange: {
+      min: 5,
+      max: 7,
     },
     preferredDistance: 10,
     preferredEthnicities: [],
