@@ -57,12 +57,12 @@ const ConnectScreen: React.FC = () => {
     if (userData) {
       setAgeRange([
         userData.filterOptions?.preferredAgeRange.min || 18,
-        userData.filterOptions?.preferredAgeRange.max || 50,
+        userData.filterOptions?.preferredAgeRange.max || 35,
       ]);
 
       setOriginalAgeRange([
         userData.filterOptions?.preferredAgeRange.min || 18,
-        userData.filterOptions?.preferredAgeRange.max || 50,
+        userData.filterOptions?.preferredAgeRange.max || 35,
       ]);
 
       setDatePreferences(userData.filterOptions?.datePreferences || []);

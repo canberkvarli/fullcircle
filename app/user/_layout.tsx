@@ -18,6 +18,10 @@ const UserLayout = () => {
         name="[id]/chats/[chatId]"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="FullCircleSubscription"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 };

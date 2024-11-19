@@ -39,33 +39,62 @@ export default function DatingPreferences() {
     fullCircleSubscription: boolean,
     isSubscriberField: boolean,
     onPress: () => void
-  ) => (
-    <TouchableOpacity style={styles.fieldContainer} onPress={onPress}>
-      <View style={styles.fieldContent}>
-        <View>
-          <Text style={styles.fieldLabel}>{label}</Text>
-          <Text style={styles.fieldValue}>
-            {Array.isArray(value)
-              ? value.length === 0
-                ? "Open to All"
-                : value.join(", ").length > 40
-                ? `${value.join(", ").slice(0, 40)}...`
-                : value.join(", ")
-              : value || "Open to All"}
-          </Text>
-        </View>
-        {isSubscriberField ? (
-          String(fullCircleSubscription) === "true" ? (
-            <Icon name="chevron-right" size={18} color="black" />
-          ) : (
+  ) => {
+    // If it's a premium field and the user is not a FullCircle subscriber
+    if (isSubscriberField && String(fullCircleSubscription) === "false") {
+      return (
+        <TouchableOpacity
+          style={styles.fieldContainer}
+          onPress={() => router.push("/user/FullCircleSubscription")}
+        >
+          <View style={styles.fieldContent}>
+            <View>
+              <Text style={styles.fieldLabel}>{label}</Text>
+              <Text style={styles.fieldValue}>
+                {Array.isArray(value)
+                  ? value.length === 0
+                    ? "Open to All"
+                    : value.join(", ").length > 40
+                    ? `${value.join(", ").slice(0, 40)}...`
+                    : value.join(", ")
+                  : value || "Open to All"}
+              </Text>
+            </View>
             <Icon name="lock" size={18} color="black" />
-          )
-        ) : (
-          <Icon name="chevron-right" size={18} color="black" />
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    // For non-premium or subscribed users
+    return (
+      <TouchableOpacity style={styles.fieldContainer} onPress={onPress}>
+        <View style={styles.fieldContent}>
+          <View>
+            <Text style={styles.fieldLabel}>{label}</Text>
+            <Text style={styles.fieldValue}>
+              {Array.isArray(value)
+                ? value.length === 0
+                  ? "Open to All"
+                  : value.join(", ").length > 40
+                  ? `${value.join(", ").slice(0, 40)}...`
+                  : value.join(", ")
+                : value || "Open to All"}
+            </Text>
+          </View>
+          {isSubscriberField ? (
+            String(fullCircleSubscription) === "true" ? (
+              <Icon name="chevron-right" size={18} color="black" />
+            ) : (
+              <Icon name="lock" size={18} color="black" />
+            )
+          ) : (
+            <Icon name="chevron-right" size={18} color="black" />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -124,12 +153,12 @@ export default function DatingPreferences() {
           <View style={styles.subscribeContainer}>
             <TouchableOpacity
               style={styles.subscribeButton}
-              onPress={() => console.log("Upgrade button pressed")}
+              onPress={() => router.push("/user/FullCircleSubscription")}
             >
               <Text style={styles.subscribeText}>Upgrade</Text>
             </TouchableOpacity>
             <Text style={styles.subscribeDescription}>
-              Fine-tune your preferences.
+              Fine-tune your preferences with FullCircle.
             </Text>
           </View>
         )}
