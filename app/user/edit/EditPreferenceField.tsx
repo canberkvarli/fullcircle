@@ -168,12 +168,12 @@ export default function EditPreferenceField() {
         return (
           <View style={styles.sliderContainer}>
             <Text style={styles.sliderLabel}>
-              Max Distance: {value || 50} km
+              Max Distance: {value || 100} mil
             </Text>
             <MultiSlider
-              values={[value || 50]}
+              values={[value || 100]}
               min={1}
-              max={500}
+              max={100}
               step={1}
               onValuesChange={(val) => setValue(val[0])}
               trackStyle={styles.sliderTrack}

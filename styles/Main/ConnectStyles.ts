@@ -95,10 +95,11 @@ const styles = StyleSheet.create({
   moreTab: {
     borderWidth: 0, // Removes the border for the "More" tab
   },
+  // Modal styles
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dimmed background
   },
   modalContent: {
     backgroundColor: "white",
@@ -106,14 +107,21 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
-  closeButton: {
-    alignSelf: "flex-end",
-    padding: 10,
-  },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 20,
+  },
+  applyButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    marginTop: 20,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  applyButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 

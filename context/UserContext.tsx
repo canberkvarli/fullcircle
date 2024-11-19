@@ -60,6 +60,17 @@ export type UserDataType = {
     max: number;
   };
   preferredEthnicities: string[];
+  filterOptions?: {
+    datePreferences: string[];
+    location: string;
+    preferredAgeRange: {
+      min: number;
+      max: number;
+    };
+    preferredDistance: number;
+    preferredEthnicities: string[];
+    desiredRelationship: string;
+  };
   onboardingCompleted?: boolean;
   likedMatches?: string[];
   dislikedMatches?: string[];
@@ -146,6 +157,17 @@ const initialUserData: UserDataType = {
   fullCircleSubscription: false,
   likesReceived: potentialMatchesData.slice(0, 10).map((user) => user.userId),
   preferredEthnicities: [],
+  filterOptions: {
+    datePreferences: [],
+    location: "",
+    preferredAgeRange: {
+      min: 18,
+      max: 35,
+    },
+    preferredDistance: 10,
+    preferredEthnicities: [],
+    desiredRelationship: "",
+  },
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);

@@ -27,6 +27,17 @@ export interface PotentialMatchType {
   datePreferences: string[];
   childrenPreference: string;
   preferredEthnicities: string[];
+  filterOptions: {
+    datePreferences: string[];
+    location: string;
+    preferredAgeRange: {
+      min: number;
+      max: number;
+    };
+    preferredDistance: number;
+    preferredEthnicities: string[];
+    desiredRelationship: string;
+  };
   location: LocationType;
   educationDegree: string;
   currentOnboardingScreen: string;
@@ -60,8 +71,8 @@ const generateRandomDateOfBirth = () => {
     start.getTime() + Math.random() * (end.getTime() - start.getTime())
   );
   return {
-    day: String(date.getDate()),
-    month: faker.date.month(),
+    day: String(date.getDate()).padStart(2, "0"), // Ensure day is two digits
+    month: String(date.getMonth() + 1).padStart(2, "0"), // Month as two digits
     year: String(date.getFullYear()),
   };
 };
@@ -138,6 +149,38 @@ const generatePotentialMatch = async (
       ],
       3
     ),
+    filterOptions: {
+      datePreferences: faker.helpers.arrayElements(
+        ["Everyone", "Men", "Women"],
+        1
+      ),
+      location: faker.location.city(),
+      preferredAgeRange: {
+        min: Math.floor(Math.random() * 20) + 18,
+        max: Math.floor(Math.random() * 20) + 30,
+      },
+      preferredDistance: Math.floor(Math.random() * 100) + 1,
+      preferredEthnicities: faker.helpers.arrayElements(
+        [
+          "American Indian",
+          "East Asian",
+          "Black/African Descent",
+          "Middle Eastern",
+          "Hispanic Latino",
+          "South Asian",
+          "Pacific Islander",
+          "White/Caucasian",
+        ],
+        3
+      ),
+      desiredRelationship: faker.helpers.arrayElement([
+        "Long-term Relationship",
+        "Short-term Relationship",
+        "Friendship",
+        "Networking",
+        "Casual Dating",
+      ]),
+    },
     currentOnboardingScreen: "",
     phoneNumber: faker.phone.number(),
     countryCode: faker.number.int({ min: 1, max: 100 }).toString(),
@@ -199,6 +242,13 @@ interface PotentialMatchType {
   educationDegree: string;
   currentOnboardingScreen: string;
   preferredEthnicities: string[];
+  filterOption: {
+    ethnicity: string[];
+    sexualOrientation: string[];
+    datePreferences: string[];
+    childrenPreference: string[];
+    preferredEthnicities: string[];
+  };
   phoneNumber: string;
   countryCode: string;
   areaCode: string;
