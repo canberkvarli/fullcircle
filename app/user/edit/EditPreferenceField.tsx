@@ -132,7 +132,7 @@ export default function EditPreferenceField() {
   const renderField = () => {
     switch (fieldName) {
       case "datePreferences":
-        const dateOptions = ["Men", "Women", "Non-Binary", "Other", "Everyone"];
+        const dateOptions = ["Men", "Women", "Non-Binary", "Everyone"];
         return (
           <CheckboxList
             options={dateOptions}
