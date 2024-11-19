@@ -82,9 +82,12 @@ const ConnectScreen: React.FC = () => {
         <TouchableOpacity style={styles.tab}>
           <Text>New Here</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, styles.moreTab]}>
+        <Link
+          href={"/user/DatingPreferences" as any}
+          style={(styles.tab, styles.moreTab)}
+        >
           <Text>More</Text>
-        </TouchableOpacity>
+        </Link>
       </ScrollView>
 
       {/* Main Content: Potential Match */}

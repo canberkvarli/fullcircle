@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -10,6 +9,16 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
+import MultiSlider from "@ptomasroos/react-native-multi-slider"; // Make sure you're using the MultiSlider package
+
+const FIELD_TITLES: Record<string, string> = {
+  datePreferences: "I'm interested in",
+  location: "My neighborhood",
+  preferredAgeRange: "Age Range",
+  preferredDistance: "Maximum distance",
+  preferredEthnicities: "Ethnicity",
+  desiredRelationship: "Relationship Type",
+};
 
 export default function EditPreferenceField() {
   const { fieldName, currentValue } = useLocalSearchParams<{
@@ -19,77 +28,166 @@ export default function EditPreferenceField() {
   const router = useRouter();
   const { updateUserData, userData } = useUserContext();
 
-  const [value, setValue] = useState<any>(currentValue);
+  const [value, setValue] = useState<any>(currentValue || null);
+  const [isVisible, setIsVisible] = useState<boolean>(
+    userData?.hiddenFields?.[fieldName] === false || false
+  );
 
   useEffect(() => {
-    setValue(currentValue);
-  }, [currentValue, fieldName]);
+    setValue(currentValue || null);
+    setIsVisible(userData?.hiddenFields?.[fieldName] === false);
+  }, [currentValue, userData, fieldName]);
 
-  const handleGoBack = async () => {
-    let updatedValue = value;
+  const handleSave = async () => {
+    const isModified =
+      value !== currentValue ||
+      (userData?.hiddenFields?.[fieldName] !== undefined &&
+        isVisible !== (userData?.hiddenFields?.[fieldName] === false));
 
-    if (
-      fieldName === "datePreferences" ||
-      fieldName === "preferredEthnicities"
-    ) {
-      if (!value || value.length === 0) {
-        updatedValue = ["Open to All"];
-      }
-    }
-
-    if (
-      fieldName === "preferredAgeRange" ||
-      fieldName === "preferredDistance"
-    ) {
-      if (!value || (value.min === undefined && value.max === undefined)) {
-        updatedValue = { min: "Open to All", max: "Open to All" };
-      }
-    }
-
-    if (fieldName && updatedValue !== currentValue) {
-      const updatedData = { [fieldName]: updatedValue };
-
+    if (isModified) {
       try {
-        console.log("Saving data:", updatedData); // Debugging line
+        const updatedData = {
+          [fieldName]: value,
+          hiddenFields: {
+            ...userData.hiddenFields,
+            [fieldName]: !isVisible,
+          },
+        };
+
         await updateUserData(updatedData);
-        console.log("Updated field:", fieldName, updatedValue);
+        console.log("Preference updated successfully:", updatedData);
       } catch (error) {
-        console.error("Error updating preference:", error);
+        console.error("Error updating preferences:", error);
       }
     }
+
     router.back();
   };
+
+  const handleCheckboxToggle = (
+    option: string,
+    options: string[],
+    allOption: string
+  ) => {
+    setValue((prev: string[] = []) => {
+      if (!Array.isArray(prev)) prev = [];
+      const isAllOption = option === allOption;
+
+      if (isAllOption) {
+        return [allOption];
+      }
+
+      const updated = prev.includes(option)
+        ? prev.filter((item) => item !== option)
+        : [...prev, option];
+
+      if (
+        options
+          .filter((opt) => opt !== allOption)
+          .every((opt) => updated.includes(opt))
+      ) {
+        return [allOption];
+      }
+
+      if (updated.includes(allOption)) {
+        return updated.filter((item) => item !== allOption);
+      }
+
+      return updated;
+    });
+  };
+
+  const CheckboxList = ({
+    options,
+    selected,
+    onToggle,
+  }: {
+    options: string[];
+    selected: string[];
+    onToggle: (option: string) => void;
+  }) => (
+    <View style={styles.checkboxContainer}>
+      {options.map((option) => (
+        <TouchableOpacity
+          key={option}
+          style={[
+            styles.checkbox,
+            selected.includes(option) && styles.checkboxSelected,
+          ]}
+          onPress={() => onToggle(option)}
+        >
+          <Text
+            style={[
+              styles.checkboxText,
+              selected.includes(option) && styles.checkboxTextSelected,
+            ]}
+          >
+            {option}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
   const renderField = () => {
     switch (fieldName) {
       case "datePreferences":
-        const options = ["Men", "Women", "Everyone"];
+        const dateOptions = ["Men", "Women", "Non-Binary", "Other", "Everyone"];
         return (
-          <View style={styles.checkboxContainer}>
-            {options.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.checkbox,
-                  value?.includes(option) && styles.checkboxSelected,
-                ]}
-                onPress={() =>
-                  setValue((prev: string[] | undefined) => {
-                    const safePrev = Array.isArray(prev) ? prev : []; // Ensure `prev` is an array
-                    return safePrev.includes(option)
-                      ? safePrev.filter((item) => item !== option)
-                      : [...safePrev, option];
-                  })
-                }
-              >
-                <Text style={styles.checkboxText}>{option}</Text>
-              </TouchableOpacity>
-            ))}
+          <CheckboxList
+            options={dateOptions}
+            selected={value || []}
+            onToggle={(option) =>
+              handleCheckboxToggle(option, dateOptions, "Everyone")
+            }
+          />
+        );
+
+      case "preferredAgeRange":
+        return (
+          <View style={styles.sliderContainer}>
+            <Text style={styles.sliderLabel}>Min Age: {value?.min || 18}</Text>
+            <MultiSlider
+              values={[value?.min || 18, value?.max || 100]}
+              min={18}
+              max={100}
+              step={1}
+              onValuesChange={(val) => setValue({ min: val[0], max: val[1] })}
+              trackStyle={styles.sliderTrack}
+              selectedStyle={styles.sliderSelectedTrack}
+              markerStyle={styles.sliderMarker}
+              pressedMarkerStyle={styles.sliderMarkerPressed}
+              containerStyle={styles.sliderWrapper}
+              allowOverlap
+            />
+            <Text style={styles.sliderLabel}>Max Age: {value?.max || 100}</Text>
+          </View>
+        );
+
+      case "preferredDistance":
+        return (
+          <View style={styles.sliderContainer}>
+            <Text style={styles.sliderLabel}>
+              Max Distance: {value || 50} km
+            </Text>
+            <MultiSlider
+              values={[value || 50]}
+              min={1}
+              max={500}
+              step={1}
+              onValuesChange={(val) => setValue(val[0])}
+              trackStyle={styles.sliderTrack}
+              selectedStyle={styles.sliderSelectedTrack}
+              markerStyle={styles.sliderMarker}
+              pressedMarkerStyle={styles.sliderMarkerPressed}
+              containerStyle={styles.sliderWrapper}
+              allowOverlap
+            />
           </View>
         );
 
       case "preferredEthnicities":
-        const ethnicities = [
+        const ethnicityOptions = [
           "American Indian",
           "East Asian",
           "Black/African Descent",
@@ -99,85 +197,46 @@ export default function EditPreferenceField() {
           "Pacific Islander",
           "South Asian",
           "White/Caucasian",
+          "Open to All",
         ];
         return (
-          <View style={styles.checkboxContainer}>
-            {ethnicities.map((ethnicity) => (
-              <TouchableOpacity
-                key={ethnicity}
-                style={[
-                  styles.checkbox,
-                  value?.includes(ethnicity) && styles.checkboxSelected,
-                ]}
-                onPress={() => {
-                  setValue((prev: string[]) => {
-                    if (!Array.isArray(prev)) prev = []; // Ensure prev is an array
-                    return prev.includes(ethnicity)
-                      ? prev.filter((item) => item !== ethnicity) // Remove item
-                      : [...prev, ethnicity]; // Add item
-                  });
-                }}
-              >
-                <Text style={styles.checkboxText}>{ethnicity}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <CheckboxList
+            options={ethnicityOptions}
+            selected={value || []}
+            onToggle={(option) =>
+              handleCheckboxToggle(option, ethnicityOptions, "Open to All")
+            }
+          />
         );
 
-      case "preferredAgeRange":
+      case "desiredRelationship":
+        const relationshipOptions = ["Monogamy", "Non-Monogamy", "Open to All"];
         return (
-          <View style={styles.row}>
-            <TextInput
-              style={styles.input}
-              value={value?.min ? `${value.min}` : ""}
-              placeholder="Min Age"
-              keyboardType="numeric"
-              onChangeText={(text) => setValue({ ...value, min: Number(text) })}
-            />
-            <TextInput
-              style={styles.input}
-              value={value?.max ? `${value.max}` : ""}
-              placeholder="Max Age"
-              keyboardType="numeric"
-              onChangeText={(text) => setValue({ ...value, max: Number(text) })}
-            />
-          </View>
-        );
-
-      case "preferredDistance":
-        return (
-          <TextInput
-            style={styles.input}
-            value={String(value || "")}
-            placeholder="Preferred Distance (km)"
-            keyboardType="numeric"
-            onChangeText={(text) => setValue(Number(text))}
+          <CheckboxList
+            options={relationshipOptions}
+            selected={value || []}
+            onToggle={(option) =>
+              handleCheckboxToggle(option, relationshipOptions, "Open to All")
+            }
           />
         );
 
       default:
-        return (
-          <TextInput
-            style={styles.input}
-            value={String(value || "")}
-            placeholder={`Enter ${fieldName}`}
-            onChangeText={(text) => setValue(text)}
-          />
-        );
+        return <Text>No field configured for this selection</Text>;
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header with Chevron */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoBack}>
+        <TouchableOpacity onPress={handleSave}>
           <Icon name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit {fieldName}</Text>
+        <Text style={styles.headerTitle}>
+          {FIELD_TITLES[fieldName] || `Edit ${fieldName}`}
+        </Text>
       </View>
 
-      {/* Main Content */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {renderField()}
       </ScrollView>
@@ -188,38 +247,27 @@ export default function EditPreferenceField() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    marginTop: 25,
     padding: 16,
+    backgroundColor: "#F9FAFB",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
   headerTitle: {
-    fontSize: 20,
+    flex: 1,
+    fontSize: 24,
     fontWeight: "bold",
-    marginLeft: 12,
+    textAlign: "center",
     color: "#111827",
   },
   scrollContainer: {
     flexGrow: 1,
     marginVertical: 20,
-  },
-  input: {
-    borderBottomWidth: 1,
-    borderColor: "#D1D5DB",
-    paddingVertical: 10,
-    marginVertical: 12,
-    fontSize: 16,
-    color: "#1F2937",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
   },
   checkboxContainer: {
     flexDirection: "row",
@@ -242,15 +290,40 @@ const styles = StyleSheet.create({
     color: "#111827",
     fontSize: 14,
   },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
+  checkboxTextSelected: {
     color: "#FFFFFF",
+  },
+  sliderContainer: {
+    marginVertical: 20,
+    paddingHorizontal: 10,
+  },
+  sliderLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 15,
+    marginBottom: 10,
+  },
+  sliderWrapper: {
+    marginLeft: 15,
+    marginVertical: 10,
+  },
+  sliderTrack: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#D1D5DB",
+  },
+  sliderSelectedTrack: {
+    backgroundColor: "#4CAF50",
+  },
+  sliderMarker: {
+    width: 25,
+    height: 25,
+    borderRadius: 25 / 2,
+    backgroundColor: "#000000",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  sliderMarkerPressed: {
+    backgroundColor: "#FF5722",
   },
 });
