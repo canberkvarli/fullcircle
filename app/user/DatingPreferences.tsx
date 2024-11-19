@@ -110,8 +110,8 @@ export default function DatingPreferences() {
         )}
 
         {renderPreferenceItem(
-          "Preferred Distance (mil)",
-          preferredDistance,
+          "Maximum Distance",
+          `${userData.preferredDistance} miles`,
           fullCircleSubscription,
           false,
           () => handleEditField("preferredDistance", preferredDistance)
@@ -135,14 +135,6 @@ export default function DatingPreferences() {
         )}
 
         {/* Premium fields (visible to FullCircle users) */}
-        {renderPreferenceItem(
-          "Maximum Distance",
-          `${userData.preferredDistance} miles`,
-          fullCircleSubscription,
-          true,
-          () => handleEditField("maxDistance", userData.preferredDistance)
-        )}
-
         {renderPreferenceItem(
           "Age Range",
           `${userData.preferredAgeRange?.min || "18"} - ${

@@ -93,13 +93,12 @@ const styles = StyleSheet.create({
     borderColor: "black",
   },
   moreTab: {
-    borderWidth: 0, // Removes the border for the "More" tab
+    borderWidth: 0,
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dimmed background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     backgroundColor: "white",
@@ -113,7 +112,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   applyButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "purple",
     padding: 15,
     marginTop: 20,
     alignItems: "center",
