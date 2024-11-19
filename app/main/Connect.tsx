@@ -6,6 +6,7 @@ import {
   Text,
   ScrollView,
   Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -31,7 +32,8 @@ const ConnectScreen: React.FC = () => {
     userData,
   } = useUserContext();
 
-  const [ageRange, setAgeRange] = useState([18, 50]); // Default age range
+  const [ageRange, setAgeRange] = useState([18, 50]);
+  const [originalAgeRange, setOriginalAgeRange] = useState([18, 50]);
   const [datePreferences, setDatePreferences] = useState<string[]>(
     userData?.filterOptions?.datePreferences || userData?.datePreferences || []
   );
@@ -57,9 +59,17 @@ const ConnectScreen: React.FC = () => {
         userData.filterOptions?.preferredAgeRange.min || 18,
         userData.filterOptions?.preferredAgeRange.max || 50,
       ]);
+
+      setOriginalAgeRange([
+        userData.filterOptions?.preferredAgeRange.min || 18,
+        userData.filterOptions?.preferredAgeRange.max || 50,
+      ]);
+
       setDatePreferences(userData.filterOptions?.datePreferences || []);
       setPreferredEthnicities(
-        userData.filterOptions?.preferredEthnicities || []
+        userData.filterOptions?.preferredEthnicities ||
+          preferredEthnicities ||
+          []
       );
     }
   }, [userData]);
@@ -73,10 +83,7 @@ const ConnectScreen: React.FC = () => {
     const updatedData = {
       userId: userData.userId,
       filterOptions: {
-        preferredAgeRange: {
-          min: ageRange[0],
-          max: ageRange[1],
-        },
+        preferredAgeRange: { min: ageRange[0], max: ageRange[1] },
         datePreferences: datePreferences,
         location:
           userData.filterOptions?.location || userData.location?.city || "",
@@ -101,9 +108,8 @@ const ConnectScreen: React.FC = () => {
     }
   };
 
-  const handleCloseModal = () => {
-    setShowFilterModal(false); // Close the modal
-  };
+  const isApplyButtonDisabled =
+    ageRange[0] === originalAgeRange[0] && ageRange[1] === originalAgeRange[1];
 
   if (loading) {
     return (
@@ -197,11 +203,18 @@ const ConnectScreen: React.FC = () => {
         animationType="slide"
         transparent={true}
         visible={showFilterModal}
-        onRequestClose={handleCloseModal}
+        onRequestClose={() => setShowFilterModal(false)}
       >
         <GestureHandlerRootView style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowFilterModal(false)}>
+            <View style={styles.modalOverlay} />
+          </TouchableWithoutFeedback>
+
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filter Preferences</Text>
+            <Text style={styles.modalTitle}>Age</Text>
+            <Text style={styles.subheaderText}>
+              Select the range you're open to meeting
+            </Text>
 
             {/* MultiSlider for Age */}
             <MultiSlider
@@ -221,31 +234,15 @@ const ConnectScreen: React.FC = () => {
 
             <TouchableOpacity
               onPress={handleApplyFilter}
-              style={styles.applyButton}
+              style={[
+                styles.applyButton,
+                isApplyButtonDisabled && styles.applyButtonDisabled,
+              ]}
+              disabled={isApplyButtonDisabled}
             >
               <Text style={styles.applyButtonText}>Apply Filter</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Swipe down gesture to close */}
-          <TapGestureHandler
-            onHandlerStateChange={(e: GestureHandlerStateChangeEvent) => {
-              if (e.nativeEvent.state === 4) {
-                // Gesture finished (swipe down)
-                handleCloseModal();
-              }
-            }}
-          >
-            <View
-              style={{
-                width: "100%",
-                height: 30,
-                backgroundColor: "gray",
-                borderRadius: 5,
-                marginTop: 10,
-              }}
-            />
-          </TapGestureHandler>
         </GestureHandlerRootView>
       </Modal>
     </View>

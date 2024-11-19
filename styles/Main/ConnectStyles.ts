@@ -109,10 +109,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subheaderText: {
+    fontSize: 14,
+    color: "gray",
+    textAlign: "center",
     marginBottom: 20,
   },
   applyButton: {
-    backgroundColor: "purple",
+    backgroundColor: "black",
     padding: 15,
     marginTop: 20,
     alignItems: "center",
@@ -121,6 +128,9 @@ const styles = StyleSheet.create({
   applyButtonText: {
     color: "white",
     fontWeight: "bold",
+  },
+  applyButtonDisabled: {
+    backgroundColor: "gray",
   },
 });
 
