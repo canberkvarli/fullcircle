@@ -10,12 +10,48 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+// Fetch Unsplash Images based on query
+const fetchUnsplashImages = async (
+  query: string,
+  count: number,
+  page: number
+): Promise<string[]> => {
+  const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY; // Ensure you have this environment variable set
+  const response = await fetch(
+    `https://api.unsplash.com/search/photos?page=${page}&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Unsplash images");
+  }
+
+  const data = await response.json();
+  return data.results.map((img: any) => img.urls.small);
+};
+
+// Function to get gender-specific photos
+const getGenderSpecificPhotos = async (
+  gender: string,
+  count: number,
+  page: number
+): Promise<string[]> => {
+  const query = gender === "Man" ? "handsome man" : "beautiful woman";
+  return await fetchUnsplashImages(query, count, page);
+};
+
 const seedFirestore = async (numUsers: number) => {
   const usersCollection = db.collection("users");
 
   for (let i = 0; i < numUsers; i++) {
     const userId = faker.string.uuid();
     const birthDate = faker.date.birthdate({ min: 18, max: 70, mode: "age" });
+
+    const gender = faker.helpers.arrayElement(["Man", "Woman", "Non-binary"]);
+    const photos = await getGenderSpecificPhotos(
+      gender,
+      6,
+      Math.floor(Math.random() * 10) + 1
+    );
 
     const userData = {
       isSeedUser: true,
@@ -80,7 +116,7 @@ const seedFirestore = async (numUsers: number) => {
       firstName: faker.person.firstName(),
       fullCircleSubscription: faker.datatype.boolean(),
       fullName: faker.person.fullName(),
-      gender: faker.helpers.arrayElement(["Man", "Woman", "Non-binary"]),
+      gender: gender,
       height: `${faker.number.int({ min: 4, max: 6 })}.${faker.number.int({
         min: 0,
         max: 11,
@@ -109,6 +145,7 @@ const seedFirestore = async (numUsers: number) => {
       latitude: faker.location.latitude(),
       longitude: faker.location.longitude(),
       likedMatches: Array.from({ length: 5 }, () => faker.string.uuid()),
+      photos: photos, // Add photos to the user data
     };
 
     try {
