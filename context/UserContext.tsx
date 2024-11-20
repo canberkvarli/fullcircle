@@ -51,40 +51,41 @@ export type UserDataType = {
     street?: string;
     streetNumber?: string;
     subregion?: string;
-    // timezone?: string; // Optionally include timezone if needed
-    // Add other optional fields as needed
   };
-  preferredDistance?: number;
-  preferredAgeRange?: {
-    min: number;
-    max: number;
-  };
-  preferredHeightRange?: {
-    min: number;
-    max: number;
-  };
-  preferredEthnicities: string[];
-  filterOptions?: {
-    datePreferences: string[];
-    location: string;
-    preferredAgeRange: {
-      min: number;
-      max: number;
-    };
-    preferredDistance: number;
-    preferredEthnicities: string[];
-    preferredHeightRange: {
-      min: number;
-      max: number;
-    };
-    desiredRelationship: string;
-  };
-  onboardingCompleted?: boolean;
+  fullCircleSubscription: boolean;
   likedMatches?: string[];
   dislikedMatches?: string[];
   likesReceived?: string[];
   matches?: string[];
-  fullCircleSubscription: boolean;
+  onboardingCompleted?: boolean;
+
+  // Consolidated match preferences
+  matchPreferences?: {
+    preferredAgeRange?: {
+      min: number;
+      max: number;
+    };
+    preferredHeightRange?: {
+      min: number;
+      max: number;
+    };
+    preferredEthnicities: string[];
+    preferredDistance: number;
+    datePreferences: string[];
+    preferredLocation?: {
+      city?: string;
+      country?: string;
+      formattedAddress?: string;
+      isoCountryCode?: string;
+      name?: string;
+      postalCode?: string;
+      region?: string;
+      street?: string;
+      streetNumber?: string;
+      subregion?: string;
+    };
+    desiredRelationship: string;
+  };
 };
 
 type UserContextType = {
@@ -123,17 +124,16 @@ type UserContextType = {
     otherUserId: string
   ) => Promise<string | null>;
 };
-// TODO-TESTING: Uncomment later.
+
+// Initial screens and initial user data
 const initialScreens = [
   "LandingPageScreen",
   "LoginSignupScreen",
   "PhoneNumberScreen",
   "PhoneVerificationScreen",
-  // "WelcomeScreen",
   "NameScreen",
   "EmailScreen",
   "BirthdateScreen",
-  // "AddBasicInfoScreen",
   "LocationScreen",
   "GenderScreen",
   "SexualOrientationScreen",
@@ -164,14 +164,7 @@ const initialUserData: UserDataType = {
   hiddenFields: {},
   fullCircleSubscription: false,
   likesReceived: potentialMatchesData.slice(0, 10).map((user) => user.userId),
-  preferredEthnicities: [],
-  preferredHeightRange: {
-    min: 5,
-    max: 7,
-  },
-  filterOptions: {
-    datePreferences: [],
-    location: "",
+  matchPreferences: {
     preferredAgeRange: {
       min: 18,
       max: 35,
@@ -180,8 +173,10 @@ const initialUserData: UserDataType = {
       min: 5,
       max: 7,
     },
-    preferredDistance: 10,
     preferredEthnicities: [],
+    preferredDistance: 10,
+    datePreferences: [],
+    preferredLocation: {},
     desiredRelationship: "",
   },
 };

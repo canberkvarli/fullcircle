@@ -8,10 +8,18 @@ import { faker } from "@faker-js/faker";
 export interface LocationType {
   city: string;
   country: string;
+  formattedAddress: string;
+  isoCountryCode: string;
+  name: string;
+  postalCode: string;
+  region: string;
+  street: string;
+  streetNumber: string;
+  subregion: string;
 }
 
 // Interface for potential match details
-export interface PotentialMatchType {
+interface PotentialMatchType {
   userId: string;
   firstName: string;
   lastName: string;
@@ -24,18 +32,16 @@ export interface PotentialMatchType {
   height: string;
   ethnicities: string[];
   sexualOrientation: string[];
-  datePreferences: string[];
-  childrenPreference: string;
-  preferredEthnicities: string[];
-  filterOptions: {
+  matchPreferences: {
     datePreferences: string[];
-    location: string;
+    childrenPreference: string;
+    preferredEthnicities: string[];
+    preferredLocation: LocationType;
     preferredAgeRange: {
       min: number;
       max: number;
     };
     preferredDistance: number;
-    preferredEthnicities: string[];
     desiredRelationship: string;
   };
   location: LocationType;
@@ -62,6 +68,14 @@ function randomlyLikeCurrentUser(
 const generateRandomLocation = (): LocationType => ({
   city: faker.location.city(),
   country: faker.location.country(),
+  formattedAddress: `${faker.location.streetAddress()} ${faker.location.city()}, ${faker.location.country()}`,
+  isoCountryCode: faker.location.countryCode(),
+  name: faker.location.city(),
+  postalCode: faker.location.zipCode(),
+  region: faker.location.state(),
+  street: faker.location.street(),
+  streetNumber: faker.location.buildingNumber(),
+  subregion: faker.location.county(),
 });
 
 const generateRandomDateOfBirth = () => {
@@ -101,7 +115,6 @@ const generatePotentialMatch = async (
 ): Promise<PotentialMatchType> => {
   const { day, month, year } = generateRandomDateOfBirth();
 
-  // Fetch images using a random page number to vary results
   const photos = await fetchUnsplashImages("beautiful person", 6, page);
 
   return {
@@ -114,52 +127,22 @@ const generatePotentialMatch = async (
     birthday: day,
     birthmonth: month,
     birthyear: year,
-    height: `${Math.floor(Math.random() * 30) + 150} cm`, // Random height between 150 cm and 180 cm
+    height: `${Math.floor(Math.random() * 30) + 150} cm`,
     ethnicities: faker.helpers.arrayElements(
       ["Caucasian", "Hispanic", "African", "Asian", "Other"],
       2
-    ), // Select 2 random ethnicities
+    ),
     sexualOrientation: faker.helpers.arrayElements(
       ["Bisexual", "Straight", "Gay", "Queer"],
       1
     ),
-    datePreferences: faker.helpers.arrayElements(
-      ["Everyone", "Men", "Women"],
-      1
-    ),
-    childrenPreference:
-      Math.random() > 0.5 ? "Open to Children" : "Don’t want Children",
-    location: generateRandomLocation(),
-    educationDegree: faker.helpers.arrayElement([
-      "High School",
-      "Bachelor",
-      "Master",
-      "Doctorate",
-    ]),
-    preferredEthnicities: faker.helpers.arrayElements(
-      [
-        "American Indian",
-        "East Asian",
-        "Black/African Descent",
-        "Middle Eastern",
-        "Hispanic Latino",
-        "South Asian",
-        "Pacific Islander",
-        "White/Caucasian",
-      ],
-      3
-    ),
-    filterOptions: {
+    matchPreferences: {
       datePreferences: faker.helpers.arrayElements(
         ["Everyone", "Men", "Women"],
         1
       ),
-      location: faker.location.city(),
-      preferredAgeRange: {
-        min: Math.floor(Math.random() * 20) + 18,
-        max: Math.floor(Math.random() * 20) + 30,
-      },
-      preferredDistance: Math.floor(Math.random() * 100) + 1,
+      childrenPreference:
+        Math.random() > 0.5 ? "Open to Children" : "Don’t want Children",
       preferredEthnicities: faker.helpers.arrayElements(
         [
           "American Indian",
@@ -173,6 +156,12 @@ const generatePotentialMatch = async (
         ],
         3
       ),
+      preferredLocation: generateRandomLocation(), // Ensure it adheres to LocationType
+      preferredAgeRange: {
+        min: Math.floor(Math.random() * 20) + 18,
+        max: Math.floor(Math.random() * 20) + 30,
+      },
+      preferredDistance: Math.floor(Math.random() * 100) + 1,
       desiredRelationship: faker.helpers.arrayElement([
         "Long-term Relationship",
         "Short-term Relationship",
@@ -181,6 +170,13 @@ const generatePotentialMatch = async (
         "Casual Dating",
       ]),
     },
+    location: generateRandomLocation(),
+    educationDegree: faker.helpers.arrayElement([
+      "High School",
+      "Bachelor",
+      "Master",
+      "Doctorate",
+    ]),
     currentOnboardingScreen: "",
     phoneNumber: faker.phone.number(),
     countryCode: faker.number.int({ min: 1, max: 100 }).toString(),
@@ -221,6 +217,14 @@ generatePotentialMatches(50)
 interface LocationType {
   city: string;
   country: string;
+  formattedAddress: string;
+  isoCountryCode: string;
+  name: string;
+  postalCode: string;
+  region: string;
+  street: string;
+  streetNumber: string;
+  subregion: string;
 }
 
 interface PotentialMatchType {
@@ -236,19 +240,21 @@ interface PotentialMatchType {
   height: string;
   ethnicities: string[];
   sexualOrientation: string[];
-  datePreferences: string[];
-  childrenPreference: string;
+  matchPreferences: {
+    datePreferences: string[];
+    childrenPreference: string;
+    preferredEthnicities: string[];
+    preferredLocation: LocationType;
+    preferredAgeRange: {
+      min: number;
+      max: number;
+    };
+    preferredDistance: number;
+    desiredRelationship: string;
+  };
   location: LocationType;
   educationDegree: string;
   currentOnboardingScreen: string;
-  preferredEthnicities: string[];
-  filterOption: {
-    ethnicity: string[];
-    sexualOrientation: string[];
-    datePreferences: string[];
-    childrenPreference: string[];
-    preferredEthnicities: string[];
-  };
   phoneNumber: string;
   countryCode: string;
   areaCode: string;

@@ -46,7 +46,7 @@ const seedFirestore = async (numUsers: number) => {
         "Doctorate",
       ]),
       email: faker.internet.email(),
-      filterOptions: {
+      matchPreferences: {
         datePreferences: [],
         desiredRelationship: faker.helpers.arrayElement([
           "Serious",

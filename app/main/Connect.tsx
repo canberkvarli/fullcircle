@@ -36,12 +36,12 @@ const ConnectScreen: React.FC = () => {
   const [ageRange, setAgeRange] = useState([18, 50]);
   const [originalAgeRange, setOriginalAgeRange] = useState([18, 50]);
   const [datePreferences, setDatePreferences] = useState<string[]>(
-    userData?.filterOptions?.datePreferences || userData?.datePreferences || []
+    userData?.matchPreferences?.datePreferences ||
+      userData?.datePreferences ||
+      []
   );
   const [preferredEthnicities, setPreferredEthnicities] = useState<string[]>(
-    userData?.filterOptions?.preferredEthnicities ||
-      userData.preferredEthnicities ||
-      []
+    userData?.matchPreferences?.preferredEthnicities || []
   );
 
   const [heightRange, setHeightRange] = useState([3, 7]); // Height range in feet (3'0" = 3, 7'0" = 7)
@@ -59,31 +59,27 @@ const ConnectScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (userData && userData.filterOptions) {
+    if (userData && userData.matchPreferences) {
       setAgeRange([
-        userData.filterOptions.preferredAgeRange?.min || 18,
-        userData.filterOptions.preferredAgeRange?.max || 35,
+        userData.matchPreferences.preferredAgeRange?.min || 18,
+        userData.matchPreferences.preferredAgeRange?.max || 35,
       ]);
       setOriginalAgeRange([
-        userData.filterOptions.preferredAgeRange?.min || 18,
-        userData.filterOptions.preferredAgeRange?.max || 35,
+        userData.matchPreferences.preferredAgeRange?.min || 18,
+        userData.matchPreferences.preferredAgeRange?.max || 35,
       ]);
-      setDatePreferences(userData.filterOptions.datePreferences || []);
-      setPreferredEthnicities(
-        userData.filterOptions.preferredEthnicities ||
-          preferredEthnicities ||
-          []
-      );
+      setDatePreferences(userData.matchPreferences.datePreferences || []);
+      setPreferredEthnicities(preferredEthnicities || []);
       setHeightRange([
-        Math.floor(userData.filterOptions.preferredHeightRange?.min ?? 36) /
+        Math.floor(userData.matchPreferences.preferredHeightRange?.min ?? 36) /
           12 || 3,
-        Math.floor(userData.filterOptions.preferredHeightRange?.max ?? 84) /
+        Math.floor(userData.matchPreferences.preferredHeightRange?.max ?? 84) /
           12 || 7,
       ]);
       setOriginalHeightRange([
-        Math.floor(userData.filterOptions.preferredHeightRange?.min ?? 36) /
+        Math.floor(userData.matchPreferences.preferredHeightRange?.min ?? 36) /
           12 || 3,
-        Math.floor(userData.filterOptions.preferredHeightRange?.max ?? 84) /
+        Math.floor(userData.matchPreferences.preferredHeightRange?.max ?? 84) /
           12 || 7,
       ]);
     }
@@ -96,20 +92,22 @@ const ConnectScreen: React.FC = () => {
 
     const updatedData = {
       userId: userData.userId,
-      filterOptions: {
+      matchPreferences: {
         preferredAgeRange: { min: ageRange[0], max: ageRange[1] },
         datePreferences: datePreferences,
-        location:
-          userData.filterOptions?.location || userData.location?.city || "",
-        preferredDistance:
-          userData.filterOptions?.preferredDistance ||
-          userData.preferredDistance ||
-          100,
+        preferredLocation:
+          userData.matchPreferences?.preferredLocation ||
+          (userData.location
+            ? {
+                city: userData.location.city,
+                country: userData.location.country,
+              }
+            : {}),
+        preferredDistance: userData.matchPreferences?.preferredDistance || 100,
         preferredEthnicities:
-          userData.filterOptions?.preferredEthnicities ||
-          userData.preferredEthnicities ||
-          [],
-        desiredRelationship: userData.filterOptions?.desiredRelationship || "",
+          userData.matchPreferences?.preferredEthnicities || [],
+        desiredRelationship:
+          userData.matchPreferences?.desiredRelationship || "",
         preferredHeightRange: {
           min: heightRange[0] * 12,
           max: heightRange[1] * 12,
@@ -118,7 +116,7 @@ const ConnectScreen: React.FC = () => {
     };
 
     try {
-      await updateUserData(updatedData);
+      updateUserData(updatedData);
       console.log("Filter applied:", updatedData);
       setShowFilterModal(false);
       setShowHeightModal(false); // Close both modals after applying
