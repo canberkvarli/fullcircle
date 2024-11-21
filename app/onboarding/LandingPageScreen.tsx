@@ -15,7 +15,7 @@ function LandingPageScreen(): JSX.Element {
   return (
     <View style={styles.container}>
       <LottieView
-        source={require("../../assets/animations/circle.json")}
+        source={require("../../assets/animations/black-circle.json")}
         style={styles.animation}
         autoPlay
         loop={false}
