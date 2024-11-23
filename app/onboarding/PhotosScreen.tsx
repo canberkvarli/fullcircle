@@ -68,6 +68,8 @@ function PhotosScreen() {
   };
 
   const handlePhotoUpload = async (photoUri: string) => {
+    if (!photoUri) return null;
+
     const response = await fetch(photoUri);
     const blob = await response.blob();
     const storageRef = ref(STORAGE, `photos/${Date.now()}.jpg`);
@@ -78,13 +80,17 @@ function PhotosScreen() {
   };
 
   const handleSubmit = async () => {
-    // if (selectedPhotos.filter(Boolean).length < 3) {
-    //   Alert.alert("Upload Photos", "Please upload at least 3 photos.");
-    //   return;
-    // }
-
     setLoading(true); // Start loading
     try {
+      const filteredPhotos = selectedPhotos.filter(
+        (photo) => photo !== undefined && photo !== null
+      );
+
+      if (filteredPhotos.length < 3) {
+        Alert.alert("Upload Photos", "Please upload at least 3 photos.");
+        return;
+      }
+
       const uploadedPhotos = await Promise.all(
         selectedPhotos.map((photoUri) =>
           photoUri ? handlePhotoUpload(photoUri) : Promise.resolve(null)
@@ -93,7 +99,7 @@ function PhotosScreen() {
 
       await updateUserData({
         photos: uploadedPhotos.filter(
-          (photo): photo is string => photo !== null
+          (photo) => photo !== null && photo !== undefined
         ),
       });
 
