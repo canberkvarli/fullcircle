@@ -54,15 +54,16 @@
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Allow FullCircle to use your location.</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow FullCircle to access your location</string>
+    <string>Allow FullCircle to use your location</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>We need your location to connect you with nearby souls.</string>
+    <string>Allow FullCircle to use your location</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow FullCircle to access your microphone</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow FullCircle to access your photos</string>
+    <string>Allow Circle to share your photos.</string>
     <key>NSUserActivityTypes</key>
     <array>
+      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
@@ -79,13 +80,8 @@
       <string>MaterialIcons.ttf</string>
       <string>FontAwesome6_Solid.ttf</string>
       <string>Octicons.ttf</string>
+      <string>Poppins-Regular.ttf</string>
     </array>
-  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-  <string>Allow FullCircle to use your location</string>
-  <key>NSLocationAlwaysUsageDescription</key>
-  <string>Allow FullCircle to use your location</string>
-  <key>NSLocationWhenInUseUsageDescription</key>
-  <string>Allow FullCircle to use your location</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

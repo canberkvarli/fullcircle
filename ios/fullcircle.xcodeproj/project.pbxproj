@@ -37,6 +37,7 @@
 		F4A5E3272C463C9A00015E63 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4A5E3132C463C9A00015E63 /* SimpleLineIcons.ttf */; };
 		F4A5E3282C463C9A00015E63 /* Zocial.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F4A5E3142C463C9A00015E63 /* Zocial.ttf */; };
 		F4A5E3292C463DA400015E63 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB61A68108700A75B9A /* Info.plist */; };
+		549AA8B260A14E80BE2A6017 /* Poppins-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 90627E110B464256B57169BA /* Poppins-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -76,6 +77,7 @@
 		F4A5E3132C463C9A00015E63 /* SimpleLineIcons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = SimpleLineIcons.ttf; sourceTree = "<group>"; };
 		F4A5E3142C463C9A00015E63 /* Zocial.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Zocial.ttf; sourceTree = "<group>"; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-fullcircle/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		90627E110B464256B57169BA /* Poppins-Regular.ttf */ = {isa = PBXFileReference; name = "Poppins-Regular.ttf"; path = "../assets/fonts/poppins/Poppins-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -134,6 +136,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				D65327D7A22EEC0BE12398D9 /* Pods */,
 				D7E4C46ADA2E9064B798F356 /* ExpoModulesProviders */,
+				BFE6267DD50B4A388824A3FC /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -208,6 +211,15 @@
 			name = Fonts;
 			path = "../node_modules/react-native-vector-icons/Fonts";
 			sourceTree = "<group>";
+		};
+		BFE6267DD50B4A388824A3FC /* Resources */ = {
+			isa = "PBXGroup";
+			children = (
+				90627E110B464256B57169BA /* Poppins-Regular.ttf */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+			path = "";
 		};
 /* End PBXGroup section */
 
@@ -295,6 +307,7 @@
 				F4A5E3282C463C9A00015E63 /* Zocial.ttf in Resources */,
 				F4A5E31B2C463C9A00015E63 /* FontAwesome5_Brands.ttf in Resources */,
 				BFAF9FD9B4EC4DE9B8CE8160 /* GoogleService-Info.plist in Resources */,
+				549AA8B260A14E80BE2A6017 /* Poppins-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -512,7 +525,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.fullcircle.app;
-				PRODUCT_NAME = fullcircle;
+				PRODUCT_NAME = "fullcircle";
 				SWIFT_OBJC_BRIDGING_HEADER = "fullcircle/fullcircle-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -543,7 +556,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.fullcircle.app;
-				PRODUCT_NAME = fullcircle;
+				PRODUCT_NAME = "fullcircle";
 				SWIFT_OBJC_BRIDGING_HEADER = "fullcircle/fullcircle-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

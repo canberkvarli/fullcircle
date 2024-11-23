@@ -58,7 +58,7 @@
       [
         "expo-font",
         {
-          "fonts": ["./assets/fonts/Poppins-Regular.ttf"]
+          "fonts": ["./assets/fonts/poppins/Poppins-Regular.ttf"]
         }
       ]
     ],
