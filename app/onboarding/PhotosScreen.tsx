@@ -112,11 +112,11 @@ function PhotosScreen() {
     }
   };
 
-  // const handleDeletePhoto = (index: number) => {
-  //   const newPhotos = [...selectedPhotos];
-  //   newPhotos[index] = ""; // Clear the selected photo
-  //   setSelectedPhotos(newPhotos);
-  // };
+  const handleDeletePhoto = (index: number) => {
+    const newPhotos = [...selectedPhotos];
+    newPhotos[index] = "";
+    setSelectedPhotos(newPhotos);
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -146,14 +146,14 @@ function PhotosScreen() {
                   <Icon name="plus" size={30} color="white" />
                 )}
               </TouchableOpacity>
-              {/* {selectedPhotos[index] && (
+              {selectedPhotos[index] && (
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleDeletePhoto(index)}
                 >
-                  <Icon name="trash" size={20} />
+                  <Icon name="times" size={20} color="white" />
                 </TouchableOpacity>
-              )} */}
+              )}
             </View>
           ))}
         </View>
@@ -166,7 +166,7 @@ function PhotosScreen() {
           />
         ) : (
           <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
-            <Icon name="chevron-right" size={24} />
+            <Icon name="chevron-right" size={24} color={"#D3C6BA"} />
           </TouchableOpacity>
         )}
       </SafeAreaView>
