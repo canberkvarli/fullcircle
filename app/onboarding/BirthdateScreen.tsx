@@ -28,9 +28,9 @@ const months = [
   "Dec",
 ];
 const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
-const years = Array.from(
-  { length: new Date().getFullYear() - 1930 + 1 },
-  (_, i) => (1930 + i).toString()
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1930 + 1 }, (_, i) =>
+  (1930 + i).toString()
 );
 
 function BirthdayScreen() {
@@ -63,6 +63,11 @@ function BirthdayScreen() {
         +birthdate.day
       );
 
+      if (birthDate > today) {
+        setAge(0);
+        return;
+      }
+
       let calculatedAge = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
 
@@ -82,7 +87,8 @@ function BirthdayScreen() {
   // Function to handle birthdate submission
   const handleBirthdateSubmit = async () => {
     const { month, day, year } = birthdate;
-    if (!month || !day || !year) {
+
+    if (!month || !day || !year || age <= 0) {
       Alert.alert("Error", "Please enter a valid birthdate");
       return;
     }
@@ -107,65 +113,63 @@ function BirthdayScreen() {
     }
   };
 
-  // Function to handle swipe changes
-  const handleSwipeChange = (type: keyof typeof birthdate, index: string) => {
-    setBirthdate((prev) => ({ ...prev, [type]: index }));
+  const handleSwipeChange = (type: keyof typeof birthdate, value: string) => {
+    if (type === "month" && !months.includes(value)) return;
+    if (type === "day" && !days.includes(value)) return;
+    if (type === "year" && !years.includes(value)) return;
+
+    setBirthdate((prev) => ({ ...prev, [type]: value }));
   };
 
   const renderDatePicker = (type: keyof typeof birthdate, data: string[]) => {
-    const opacity = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-      Animated.timing(opacity, {
-        toValue: 0.5,
-        duration: 200, // Increase the duration for smoother transition
-        useNativeDriver: true,
-      }).start(() => {
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 200, // Increase the duration for smoother transition
-          useNativeDriver: true,
-        }).start();
-      });
-    }, [birthdate[type]]);
-
-    const currentIndex = data.indexOf(birthdate[type]);
-    const validIndex = currentIndex !== -1 ? currentIndex : 0; // Ensure a valid index
+    const currentIndex = Math.max(
+      0,
+      Math.min(data.indexOf(birthdate[type]), data.length - 1)
+    );
 
     return (
       <Animated.FlatList
         data={data}
         keyExtractor={(item) => item}
         renderItem={({ item, index }) => {
-          const isCurrent = index === validIndex;
-          const isNearby = index >= validIndex - 2 && index <= validIndex + 2;
-          const color = isCurrent ? "#007AFF" : isNearby ? "gray" : "lightgray"; // Use blue for current, gray for nearby
-          const opacityValue = isNearby ? 1 : 0.3;
+          const isCurrent = index === currentIndex;
+          const isNearby = Math.abs(index - currentIndex) <= 1;
+          const color = isCurrent
+            ? "#007AFF"
+            : isNearby
+            ? "#7E7972"
+            : "#D3C6BA";
+          const fontSize = isCurrent ? 24 : isNearby ? 20 : 16;
 
           return (
-            <Animated.View style={{ opacity }}>
+            <View>
               <Text
-                style={[styles.dateValue, { color, opacity: opacityValue }]}
+                style={[
+                  styles.dateValue,
+                  { color, fontSize, fontWeight: isCurrent ? "600" : "400" },
+                ]}
               >
                 {item}
               </Text>
-            </Animated.View>
+            </View>
           );
         }}
         getItemLayout={(data, index) => ({
-          length: 40,
-          offset: 40 * index,
+          length: 50,
+          offset: 50 * index,
           index,
         })}
-        initialScrollIndex={validIndex}
+        initialScrollIndex={currentIndex}
         onMomentumScrollEnd={(event) => {
-          const index = Math.floor(event.nativeEvent.contentOffset.y / 40);
-          handleSwipeChange(type, data[index]);
+          const index = Math.round(event.nativeEvent.contentOffset.y / 50);
+          const boundedIndex = Math.max(0, Math.min(index, data.length - 1));
+          handleSwipeChange(type, data[boundedIndex]);
         }}
         showsVerticalScrollIndicator={false}
-        snapToInterval={40}
+        snapToInterval={50}
         decelerationRate="fast"
-        style={{ height: 200, paddingVertical: 80 }} // Ensure FlatList height fits the desired number of items and adds padding
+        contentContainerStyle={{ paddingVertical: 100 }}
+        style={{ height: 200 }}
       />
     );
   };
