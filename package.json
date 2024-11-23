@@ -8,7 +8,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "postinstall": "patch-package"
   },
   "jest": {
     "preset": "jest-expo"
@@ -44,6 +45,7 @@
     "firebase-admin": "^13.0.0",
     "lottie-react-native": "6.7.0",
     "native-base": "^3.4.28",
+    "patch-package": "^8.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
