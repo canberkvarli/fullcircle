@@ -62,8 +62,7 @@
             "./assets/fonts/poppins/Poppins-Regular.ttf"
           ]
         }
-      ],
-        "expo-video"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
