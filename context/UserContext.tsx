@@ -174,7 +174,7 @@ const initialUserData: UserDataType = {
       max: 7,
     },
     preferredEthnicities: [],
-    preferredDistance: 10,
+    preferredDistance: 100,
     datePreferences: [],
     preferredLocation: {},
     desiredRelationship: "",

@@ -14,10 +14,11 @@ export default function DatingPreferences() {
   const router = useRouter();
   const { userData } = useUserContext();
 
-  const preferredEthnicities = userData.preferredEthnicities || [];
-  const datePreferences = userData.datePreferences || [];
-  const preferredAgeRange = userData.preferredAgeRange;
-  const preferredDistance = userData.preferredDistance || 100;
+  const preferredEthnicities =
+    userData.matchPreferences?.preferredEthnicities || [];
+  const datePreferences = userData.matchPreferences?.datePreferences || [];
+  const preferredAgeRange = userData.matchPreferences?.preferredAgeRange;
+  const preferredDistance = userData.matchPreferences?.preferredDistance || 100;
   const fullCircleSubscription = userData.fullCircleSubscription || false;
 
   // Handle navigation to edit a specific field
@@ -40,56 +41,23 @@ export default function DatingPreferences() {
     isSubscriberField: boolean,
     onPress: () => void
   ) => {
-    // If it's a premium field and the user is not a FullCircle subscriber
-    if (isSubscriberField && String(fullCircleSubscription) === "false") {
-      return (
-        <TouchableOpacity
-          style={styles.fieldContainer}
-          onPress={() => router.push("/user/FullCircleSubscription")}
-        >
-          <View style={styles.fieldContent}>
-            <View>
-              <Text style={styles.fieldLabel}>{label}</Text>
-              <Text style={styles.fieldValue}>
-                {Array.isArray(value)
-                  ? value.length === 0
-                    ? "Open to All"
-                    : value.join(", ").length > 40
-                    ? `${value.join(", ").slice(0, 40)}...`
-                    : value.join(", ")
-                  : value || "Open to All"}
-              </Text>
-            </View>
-            <Icon name="lock" size={18} color="black" />
-          </View>
-        </TouchableOpacity>
-      );
-    }
+    const displayValue = Array.isArray(value)
+      ? value.length === 0
+        ? "Open to All"
+        : value.join(", ").length > 40
+        ? `${value.join(", ").slice(0, 40)}...`
+        : value.join(", ")
+      : value || "Open to All";
 
-    // For non-premium or subscribed users
     return (
       <TouchableOpacity style={styles.fieldContainer} onPress={onPress}>
         <View style={styles.fieldContent}>
           <View>
             <Text style={styles.fieldLabel}>{label}</Text>
-            <Text style={styles.fieldValue}>
-              {Array.isArray(value)
-                ? value.length === 0
-                  ? "Open to All"
-                  : value.join(", ").length > 40
-                  ? `${value.join(", ").slice(0, 40)}...`
-                  : value.join(", ")
-                : value || "Open to All"}
-            </Text>
+            <Text style={styles.fieldValue}>{displayValue}</Text>
           </View>
-          {isSubscriberField ? (
-            String(fullCircleSubscription) === "true" ? (
-              <Icon name="chevron-right" size={18} color="black" />
-            ) : (
-              <Icon name="lock" size={18} color="black" />
-            )
-          ) : (
-            <Icon name="chevron-right" size={18} color="black" />
+          {isSubscriberField && !fullCircleSubscription && (
+            <Icon name="lock" size={18} color="black" />
           )}
         </View>
       </TouchableOpacity>
@@ -140,7 +108,7 @@ export default function DatingPreferences() {
 
         {renderPreferenceItem(
           "Maximum Distance",
-          `${userData.preferredDistance} miles`,
+          `${userData.matchPreferences?.preferredDistance} miles`,
           fullCircleSubscription,
           false,
           () => handleEditField("preferredDistance", preferredDistance)
@@ -166,25 +134,29 @@ export default function DatingPreferences() {
         {/* Premium fields (visible to FullCircle users) */}
         {renderPreferenceItem(
           "Age Range",
-          `${userData.preferredAgeRange?.min || "18"} - ${
-            userData.preferredAgeRange?.max || "30"
+          `${userData.matchPreferences?.preferredAgeRange?.min || "18"} - ${
+            userData.matchPreferences?.preferredAgeRange?.max || "30"
           }`,
           fullCircleSubscription,
           true,
-          () => handleEditField("ageRange", userData.preferredAgeRange)
+          () =>
+            handleEditField(
+              "ageRange",
+              userData.matchPreferences?.preferredAgeRange
+            )
         )}
 
         {renderPreferenceItem(
           "Preferred Ethnicity",
-          userData.preferredEthnicities?.length === 0
+          userData.matchPreferences?.preferredEthnicities?.length === 0
             ? "Open to All"
-            : userData.preferredEthnicities?.join(", "),
+            : userData.matchPreferences?.preferredEthnicities?.join(", "),
           fullCircleSubscription,
           true,
           () =>
             handleEditField(
               "preferredEthnicities",
-              userData.preferredEthnicities
+              userData.matchPreferences?.preferredEthnicities
             )
         )}
       </ScrollView>

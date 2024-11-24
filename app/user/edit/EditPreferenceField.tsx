@@ -46,8 +46,11 @@ export default function EditPreferenceField() {
 
     if (isModified) {
       try {
-        const updatedData = {
-          [fieldName]: value,
+        const updatedData: any = {
+          matchPreferences: {
+            ...userData.matchPreferences,
+            [fieldName]: value || [],
+          },
           hiddenFields: {
             ...userData.hiddenFields,
             [fieldName]: !isVisible,
