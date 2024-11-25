@@ -16,7 +16,7 @@ const fetchUnsplashImages = async (
   count: number,
   page: number
 ): Promise<string[]> => {
-  const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY; // Ensure you have this environment variable set
+  const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
   const response = await fetch(
     `https://api.unsplash.com/search/photos?page=${page}&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
   );
@@ -29,7 +29,7 @@ const fetchUnsplashImages = async (
   return data.results.map((img: any) => img.urls.small);
 };
 
-// Function to get gender-specific photos
+// Get gender-specific photos
 const getGenderSpecificPhotos = async (
   gender: string,
   count: number,
@@ -39,13 +39,18 @@ const getGenderSpecificPhotos = async (
   return await fetchUnsplashImages(query, count, page);
 };
 
+// Seed Firestore with 50 mutually liking users
 const seedFirestore = async (numUsers: number) => {
   const usersCollection = db.collection("users");
 
+  const userIds: string[] = [];
+  const userDataList: { [key: string]: any } = {};
+
   for (let i = 0; i < numUsers; i++) {
     const userId = faker.string.uuid();
-    const birthDate = faker.date.birthdate({ min: 18, max: 70, mode: "age" });
+    userIds.push(userId);
 
+    const birthDate = faker.date.birthdate({ min: 18, max: 70, mode: "age" });
     const gender = faker.helpers.arrayElement(["Man", "Woman", "Non-binary"]);
     const photos = await getGenderSpecificPhotos(
       gender,
@@ -53,7 +58,7 @@ const seedFirestore = async (numUsers: number) => {
       Math.floor(Math.random() * 10) + 1
     );
 
-    const userData = {
+    userDataList[userId] = {
       isSeedUser: true,
       GoogleSSOEnabled: faker.datatype.boolean(),
       age: new Date().getFullYear() - birthDate.getFullYear(),
@@ -74,7 +79,7 @@ const seedFirestore = async (numUsers: number) => {
         ["Men", "Women", "Everyone"],
         1
       ),
-      dislikedMatches: Array.from({ length: 5 }, () => faker.string.uuid()),
+      dislikedMatches: [],
       educationDegree: faker.helpers.arrayElement([
         "High School",
         "Bachelor",
@@ -109,8 +114,8 @@ const seedFirestore = async (numUsers: number) => {
           3
         ),
         preferredHeightRange: {
-          min: faker.number.int({ min: 48, max: 58 }),
-          max: faker.number.int({ min: 59, max: 78 }),
+          min: faker.number.int({ min: 4, max: 5 }),
+          max: faker.number.int({ min: 5, max: 9 }),
         },
       },
       firstName: faker.person.firstName(),
@@ -144,19 +149,29 @@ const seedFirestore = async (numUsers: number) => {
       lastSignInTime: faker.date.recent().toISOString(),
       latitude: faker.location.latitude(),
       longitude: faker.location.longitude(),
-      likedMatches: Array.from({ length: 5 }, () => faker.string.uuid()),
-      photos: photos, // Add photos to the user data
+      likedMatches: [],
+      likesReceived: [],
+      photos: photos,
     };
+  }
 
+  // Ensure mutual likes between all users
+  userIds.forEach((userId) => {
+    userDataList[userId].likedMatches = userIds.filter((id) => id !== userId);
+    userDataList[userId].likesReceived = userIds.filter((id) => id !== userId);
+  });
+
+  // Add users to Firestore
+  for (const [userId, userData] of Object.entries(userDataList)) {
     try {
       await usersCollection.doc(userId).set(userData);
-      console.log(`Added user ${i + 1}: ${userId}`);
+      console.log(`Added user: ${userId}`);
     } catch (error) {
-      console.error(`Error adding user ${i + 1}:`, error);
+      console.error(`Error adding user ${userId}:`, error);
     }
   }
 
-  console.log(`Finished adding ${numUsers} users.`);
+  console.log(`Finished adding ${numUsers} users with mutual likes.`);
 };
 
 seedFirestore(50).catch(console.error);

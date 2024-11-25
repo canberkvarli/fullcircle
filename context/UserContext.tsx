@@ -4,6 +4,15 @@ import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  query,
+  collection,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+
 import potentialMatchesData from "@/data/potentialMatches";
 
 export type UserDataType = {
@@ -72,18 +81,6 @@ export type UserDataType = {
     preferredEthnicities: string[];
     preferredDistance: number;
     datePreferences: string[];
-    preferredLocation?: {
-      city?: string;
-      country?: string;
-      formattedAddress?: string;
-      isoCountryCode?: string;
-      name?: string;
-      postalCode?: string;
-      region?: string;
-      street?: string;
-      streetNumber?: string;
-      subregion?: string;
-    };
     desiredRelationship: string;
   };
 };
@@ -123,6 +120,7 @@ type UserContextType = {
     userId: string,
     otherUserId: string
   ) => Promise<string | null>;
+  fetchRadiantSouls: () => Promise<any[]>;
 };
 
 // Initial screens and initial user data
@@ -171,12 +169,11 @@ const initialUserData: UserDataType = {
     },
     preferredHeightRange: {
       min: 5,
-      max: 7,
+      max: 8,
     },
     preferredEthnicities: [],
     preferredDistance: 100,
     datePreferences: [],
-    preferredLocation: {},
     desiredRelationship: "",
   },
 };
@@ -348,6 +345,111 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       console.error("Failed to update user data: ", error);
     }
+  };
+
+  const milesToKm = (miles: number) => miles * 1.60934;
+
+  const fetchRadiantSouls = async () => {
+    try {
+      const userId = userData.userId;
+      if (!userId) {
+        console.error("No userId found in userData.");
+        return [];
+      }
+
+      const userLatitude = userData.latitude;
+      const userLongitude = userData.longitude;
+      const {
+        preferredAgeRange,
+        preferredHeightRange,
+        preferredEthnicities,
+        preferredDistance = 100,
+      } = userData.matchPreferences || {};
+
+      const preferredDistanceKm = milesToKm(preferredDistance);
+
+      console.log("User Preferences:", userData.matchPreferences);
+
+      // Base query: Exclude current user
+      let userQuery = query(
+        collection(FIRESTORE, "users"),
+        // orderBy("likesReceived", "desc"),
+        limit(50)
+      );
+
+      // Add optional filters
+      // if (preferredAgeRange?.min && preferredAgeRange?.max) {
+      //   userQuery = query(
+      //     userQuery,
+      //     where("age", ">=", preferredAgeRange.min),
+      //     where("age", "<=", preferredAgeRange.max)
+      //   );
+      // }
+
+      // if (preferredHeightRange?.min && preferredHeightRange?.max) {
+      //   userQuery = query(
+      //     userQuery,
+      //     where("height", ">=", preferredHeightRange.min),
+      //     where("height", "<=", preferredHeightRange.max)
+      //   );
+      // }
+
+      // if (preferredEthnicities && preferredEthnicities.length > 0) {
+      //   userQuery = query(
+      //     userQuery,
+      //     where("ethnicities", "array-contains-any", preferredEthnicities)
+      //   );
+      // }
+
+      // Execute query
+      const querySnapshot = await getDocs(userQuery);
+      let radiantSouls = querySnapshot.docs.map((doc) => doc.data());
+
+      // Filter by distance
+      // if (userLatitude !== undefined && userLongitude !== undefined) {
+      //   radiantSouls = radiantSouls.filter((soul) => {
+      //     const { latitude, longitude } = soul;
+      //     if (!latitude || !longitude) return false;
+
+      //     const distance = calculateHaversineDistance(
+      //       userLatitude,
+      //       userLongitude,
+      //       latitude,
+      //       longitude
+      //     );
+      //     return distance <= preferredDistanceKm;
+      //   });
+      // }
+
+      console.log("Filtered Radiant Souls:", radiantSouls);
+      return radiantSouls.slice(0, 10); // Limit to 10 for UI display
+    } catch (error) {
+      console.error("Error fetching Radiant Souls:", error);
+      return [];
+    }
+  };
+
+  // Haversine formula for distance calculation
+  const calculateHaversineDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const R = 6371; // Earth's radius in kilometers
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in kilometers
   };
 
   const signOut = async () => {
@@ -529,6 +631,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentPotentialMatch,
     loadNextPotentialMatch,
     createOrFetchChat,
+    fetchRadiantSouls,
   };
 
   if (initializing) {

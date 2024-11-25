@@ -36,7 +36,6 @@ interface PotentialMatchType {
     datePreferences: string[];
     childrenPreference: string;
     preferredEthnicities: string[];
-    preferredLocation: LocationType;
     preferredAgeRange: {
       min: number;
       max: number;
@@ -156,7 +155,6 @@ const generatePotentialMatch = async (
         ],
         3
       ),
-      preferredLocation: generateRandomLocation(), // Ensure it adheres to LocationType
       preferredAgeRange: {
         min: Math.floor(Math.random() * 20) + 18,
         max: Math.floor(Math.random() * 20) + 30,
@@ -244,7 +242,6 @@ interface PotentialMatchType {
     datePreferences: string[];
     childrenPreference: string;
     preferredEthnicities: string[];
-    preferredLocation: LocationType;
     preferredAgeRange: {
       min: number;
       max: number;

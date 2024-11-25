@@ -95,14 +95,6 @@ const ConnectScreen: React.FC = () => {
       matchPreferences: {
         preferredAgeRange: { min: ageRange[0], max: ageRange[1] },
         datePreferences: datePreferences,
-        preferredLocation:
-          userData.matchPreferences?.preferredLocation ||
-          (userData.location
-            ? {
-                city: userData.location.city,
-                country: userData.location.country,
-              }
-            : {}),
         preferredDistance: userData.matchPreferences?.preferredDistance || 100,
         preferredEthnicities:
           userData.matchPreferences?.preferredEthnicities || [],
