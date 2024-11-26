@@ -1,10 +1,16 @@
 import { StyleSheet } from "react-native";
 
+export const primaryColor = "#EDE9E3";
+const secondaryColor = "#B8C1B2";
+const highlightColor = "#D8BFAA";
+const darkNeutral = "#7E7972";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
     marginTop: 25,
+    backgroundColor: primaryColor,
   },
   topBar: {
     flexDirection: "row",
@@ -20,6 +26,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginHorizontal: 8,
     textAlign: "center",
+    color: darkNeutral,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -36,21 +43,22 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginTop: 10,
+    color: darkNeutral,
   },
   dislikeButton: {
     position: "absolute",
     bottom: 16,
     left: 16,
-    backgroundColor: "black",
+    backgroundColor: darkNeutral,
     borderRadius: 50,
     padding: 10,
-    borderColor: "white",
+    borderColor: primaryColor,
     borderWidth: 2,
     zIndex: 100,
   },
   dislikeIcon: {
     fontSize: 50,
-    color: "white",
+    color: primaryColor,
   },
   slider: {
     marginRight: 5,
@@ -62,28 +70,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    padding: 10,
-  },
-  tabs: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   tab: {
     padding: 5,
     paddingBottom: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "gray",
+    borderColor: secondaryColor,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
   },
   tabText: {
     fontSize: 16,
-    color: "black",
+    color: darkNeutral,
     fontWeight: "500",
   },
   caretIcon: {
@@ -91,7 +90,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderWidth: 2,
-    borderColor: "black",
+    borderColor: highlightColor,
   },
   moreTab: {
     borderWidth: 0,
@@ -112,15 +111,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 8,
+    color: darkNeutral,
   },
   subheaderText: {
     fontSize: 14,
-    color: "gray",
+    color: secondaryColor,
     textAlign: "center",
     marginBottom: 20,
   },
   applyButton: {
-    backgroundColor: "black",
+    backgroundColor: highlightColor,
     padding: 15,
     marginTop: 20,
     alignItems: "center",
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   heightRangeText: {
     fontSize: 16,
-    color: "black",
+    color: darkNeutral,
     marginBottom: 10,
   },
   heightRange: {
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   subscriberMessage: {
     fontSize: 16,
-    color: "gray",
+    color: secondaryColor,
     marginTop: 10,
     textAlign: "center",
   },
@@ -174,11 +174,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 10,
-    borderColor: "gray",
+    borderColor: secondaryColor,
     borderWidth: 1,
   },
   disabledSliderText: {
-    color: "gray",
+    color: secondaryColor,
     fontSize: 14,
     textAlign: "center",
   },
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   overlayText: {
-    color: "black",
+    color: darkNeutral,
     fontSize: 16,
     textAlign: "center",
   },
@@ -202,17 +202,17 @@ const styles = StyleSheet.create({
   },
   heightText: {
     fontSize: 16,
-    color: "black",
+    color: darkNeutral,
     marginTop: 10,
     textAlign: "center",
   },
   subscribeButton: {
     paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: "purple",
+    backgroundColor: "#6A4C93",
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: "purple",
+    borderColor: "#6A4C93",
     marginRight: 10,
     marginTop: 15,
   },

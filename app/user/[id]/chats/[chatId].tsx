@@ -316,6 +316,11 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 10,
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   otherUserName: {
     fontSize: 20,
     fontWeight: "bold",
@@ -356,6 +361,12 @@ const styles = StyleSheet.create({
   noMessagesText: {
     fontSize: 18,
     color: "#7E7972",
+  },
+  noMessagesDate: {
+    fontSize: 14,
+    color: "#B8C1B2",
+    marginBottom: 5,
+    fontStyle: "italic",
   },
   inputContainer: {
     flexDirection: "row",

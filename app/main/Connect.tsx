@@ -148,7 +148,7 @@ const ConnectScreen: React.FC = () => {
           onPress={() => router.push("/user/DatingPreferences")}
           style={styles.slider}
         >
-          <Icon name="sliders" size={24} color={styles.primaryColor} />
+          <Icon name="sliders" size={24} color={"black"} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, styles.activeTab]}
@@ -158,7 +158,7 @@ const ConnectScreen: React.FC = () => {
           <Icon
             name="chevron-down"
             size={12}
-            color={styles.primaryColor}
+            color={"#7E7972"}
             style={styles.caretIcon}
           />
         </TouchableOpacity>
@@ -170,7 +170,7 @@ const ConnectScreen: React.FC = () => {
           <Icon
             name="chevron-down"
             size={12}
-            color={styles.primaryColor}
+            color={"#7E7972"}
             style={styles.caretIcon}
           />
         </TouchableOpacity>
@@ -234,8 +234,6 @@ const ConnectScreen: React.FC = () => {
               min={18}
               max={100}
               onValuesChange={setAgeRange}
-              selectedStyle={{ backgroundColor: styles.primaryColor }}
-              unselectedStyle={{ backgroundColor: styles.secondaryColor }}
             />
             <Text style={styles.ageText}>
               Age Range: {ageRange[0]} - {ageRange[1]}
@@ -277,8 +275,6 @@ const ConnectScreen: React.FC = () => {
               max={7}
               step={0.1}
               onValuesChange={setHeightRange}
-              selectedStyle={{ backgroundColor: styles.primaryColor }}
-              unselectedStyle={{ backgroundColor: styles.secondaryColor }}
             />
             <Text style={styles.heightText}>
               Height Range: {heightRange[0]}'
