@@ -12,10 +12,12 @@ export default function MainStackLayout() {
       screenOptions={{
         tabBarStyle: {
           height: 80,
-          backgroundColor: "black",
+          backgroundColor: "#EDE9E3",
           paddingBottom: 20,
           paddingTop: 10,
         },
+        tabBarActiveTintColor: "#7E7972",
+        tabBarInactiveTintColor: "#D3C6BA",
       }}
     >
       <Tabs.Screen
@@ -72,7 +74,7 @@ export default function MainStackLayout() {
                   borderRadius: size / 2,
                   overflow: "hidden",
                   borderWidth: focused ? 2 : 0,
-                  borderColor: focused ? "white" : "transparent",
+                  borderColor: focused ? "#D8BFAA" : "transparent",
                 }}
               >
                 <Image
