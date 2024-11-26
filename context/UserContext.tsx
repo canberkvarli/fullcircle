@@ -585,8 +585,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // Use a transaction to handle potential concurrency issues
       await runTransaction(FIRESTORE, async (transaction) => {
         const chatDoc = await transaction.get(chatRef);
+
+        // If chat does not exist, create it
         if (!chatDoc.exists()) {
-          // Create a new chat document if it doesn't exist
+          console.log("Chat not found. Creating a new chat...");
           transaction.set(chatRef, {
             participants: [userId, otherUserId],
             messages: [],

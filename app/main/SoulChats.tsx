@@ -8,9 +8,16 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
-import potentialMatches from "@/data/potentialMatches";
 import { FIRESTORE } from "@/services/FirebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+} from "firebase/firestore";
 import { useRouter } from "expo-router";
 
 const SoulChats: React.FC = () => {
@@ -18,6 +25,25 @@ const SoulChats: React.FC = () => {
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
+  const fetchLastMessage = async (chatId: string) => {
+    try {
+      const chatDocRef = doc(FIRESTORE, `chats/${chatId}`);
+      const chatDoc = await getDoc(chatDocRef);
+
+      if (chatDoc.exists()) {
+        const chatData = chatDoc.data();
+        const messages = chatData.messages || []; // Default to empty array if no messages
+        if (messages.length > 0) {
+          const lastMessage = messages[messages.length - 1]; // Get the last message
+          return lastMessage.text || ""; // Assuming `text` field exists
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch last message for chat ${chatId}:`, error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -28,35 +54,31 @@ const SoulChats: React.FC = () => {
         let userMatches = [];
         if (userDoc.exists() && userDoc.data().matches) {
           userMatches = userDoc.data().matches;
-          console.log("Matches from Firestore:", userMatches);
         } else if (userData.matches) {
-          // Fallback to userData matches
           userMatches = userData.matches;
-          console.log("Matches from userData:", userMatches);
         }
 
         if (!userMatches || userMatches.length === 0) {
-          console.log("No matches found.");
           setMatches([]);
           return;
         }
 
-        // Fetch detailed data for each matched user
         const matchDetails = await Promise.all(
           userMatches.map(async (matchId: string) => {
-            if (!matchId) {
-              console.warn("Invalid matchId encountered:", matchId);
-              return null;
-            }
             const matchDocRef = doc(FIRESTORE, `users/${matchId}`);
             const matchDoc = await getDoc(matchDocRef);
-            return matchDoc.exists()
-              ? { userId: matchId, ...matchDoc.data() }
-              : null;
+            if (!matchDoc.exists()) return null;
+
+            const matchData = { userId: matchId, ...matchDoc.data() };
+
+            // Fetch the last message for the chat
+            const chatId = [userData.userId, matchId].sort().join("_"); // Chat ID convention
+            matchData.lastMessage = await fetchLastMessage(chatId);
+
+            return matchData;
           })
         );
 
-        // Filter out any null responses if some users no longer exist
         setMatches(matchDetails.filter((match) => match !== null));
       } catch (error) {
         console.error("Failed to fetch matches:", error);
@@ -66,7 +88,7 @@ const SoulChats: React.FC = () => {
     };
 
     fetchMatches();
-  }, [userData]);
+  }, []);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -85,7 +107,6 @@ const SoulChats: React.FC = () => {
   }
 
   const navigateToChat = async (otherUserId: string) => {
-    console.log("Navigating to chat with:", otherUserId);
     const chatId = await createOrFetchChat(userData.userId, otherUserId);
     if (chatId) {
       router.push(
@@ -112,7 +133,11 @@ const SoulChats: React.FC = () => {
             <View style={styles.matchInfo}>
               <Text style={styles.matchName}>{match.firstName}</Text>
               <Text style={styles.conversationText}>
-                {match.lastMessage || `Start the match with ${match.firstName}`}
+                {match.lastMessage
+                  ? match.lastMessage.length > 40
+                    ? `${match.lastMessage.slice(0, 40)}...`
+                    : match.lastMessage
+                  : `Start the match with ${match.firstName}`}
               </Text>
             </View>
           </View>
