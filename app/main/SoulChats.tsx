@@ -9,15 +9,7 @@ import {
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { FIRESTORE } from "@/services/FirebaseConfig";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 
 const SoulChats: React.FC = () => {
@@ -152,32 +144,34 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 16,
     marginTop: 25,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#EDE9E3",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "left",
+    color: "#7E7972",
   },
   noMatchesContainer: {
     flex: 1,
     padding: 16,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#EDE9E3",
   },
   noMatchesText: {
     fontSize: 18,
     textAlign: "center",
     marginTop: 20,
+    color: "#7E7972",
   },
   matchRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "#D3C6BA",
   },
   avatarContainer: {
     width: 80,
@@ -200,6 +194,7 @@ const styles = StyleSheet.create({
   matchName: {
     fontSize: 20,
     fontWeight: "bold",
+    color: "#7E7972",
   },
   conversationText: {
     fontSize: 15,
