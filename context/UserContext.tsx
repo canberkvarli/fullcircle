@@ -17,6 +17,7 @@ import potentialMatchesData from "@/data/potentialMatches";
 
 export type UserDataType = {
   userId: string;
+  isSeedUser: boolean;
   currentOnboardingScreen: string;
   phoneNumber: string;
   verificationId?: string | null;
@@ -148,6 +149,7 @@ const initialScreens = [
 
 const initialUserData: UserDataType = {
   userId: "",
+  isSeedUser: false,
   phoneNumber: "",
   email: "",
   firstName: "",

@@ -21,6 +21,7 @@ export interface LocationType {
 // Interface for potential match details
 interface PotentialMatchType {
   userId: string;
+  isSeedUser: boolean;
   firstName: string;
   lastName: string;
   gender: string;
@@ -118,6 +119,7 @@ const generatePotentialMatch = async (
 
   return {
     userId: uuidv4(),
+    isSeedUser: true,
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
     gender: Math.random() > 0.5 ? "Woman" : "Man",
@@ -181,7 +183,7 @@ const generatePotentialMatch = async (
     areaCode: faker.number.int({ min: 1, max: 100 }).toString(),
     number: faker.number.int({ min: 1000000, max: 9999999 }).toString(),
     likedCurrentUser: false,
-    fullCircleSubscription: Math.random() > 0.5,
+    fullCircleSubscription: faker.datatype.boolean(),
   };
 };
 
@@ -227,6 +229,7 @@ interface LocationType {
 
 interface PotentialMatchType {
   userId: string;
+  isSeedUser: boolean;
   firstName: string;
   lastName: string;
   gender: string;

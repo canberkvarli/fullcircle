@@ -67,6 +67,7 @@ function SSOButtons(): JSX.Element {
         } else {
           const googleUserData = {
             userId,
+            isSeedUser: false,
             email: userEmail,
             firstName: user.displayName?.split(" ")[0] || "",
             lastName: user.displayName?.split(" ")[1] || "",
