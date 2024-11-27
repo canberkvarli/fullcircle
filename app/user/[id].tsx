@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,42 +7,44 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { PotentialMatchType } from "@/data/potentialMatches";
-import potentialMatches from "@/data/potentialMatches";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
+import { ActivityIndicator } from "react-native";
 
 const UserShow: React.FC = () => {
-  const route = useRoute();
-  const navigation = useNavigation();
-  const { userId } = (route.params || {}) as { userId: string };
-  const { likeMatch } = useUserContext();
+  const { user, source } = useLocalSearchParams();
+  const router = useRouter();
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true); // Add loading state
+  const { likeMatch, getImageUrl } = useUserContext();
 
-  if (!userId) {
-    console.log("No userId found in route params");
-    return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text>User ID not found</Text>
-      </ScrollView>
-    );
-  }
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      const userData = JSON.parse(user as string);
 
-  console.log("Received userId:", userId);
+      if (userData.photos && userData.photos.length > 0) {
+        const urls = await Promise.all(
+          userData.photos.map(async (photoPath: string) => {
+            return await getImageUrl(photoPath);
+          })
+        );
+        setPhotoUrls(urls.filter((url) => url !== null));
+      }
+      setLoading(false);
+    };
 
-  const userData: PotentialMatchType | undefined = potentialMatches.find(
-    (match) => match.userId === userId
-  );
+    fetchPhotos();
+  }, [user]);
 
-  if (!userData) {
-    return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text>User not found</Text>
-      </ScrollView>
-    );
-  }
+  const userData = JSON.parse(user as string);
 
-  console.log("User data found:", userData);
+  const shouldShowHeart = source === "KindredSpirits";
+  const shouldShowRose = source === "RadiantSouls";
+
+  const handleHeartPress = () => {
+    likeMatch(userData.userId);
+  };
 
   const details = [
     { title: "Gender", content: userData.gender || "N/A" },
@@ -66,131 +68,116 @@ const UserShow: React.FC = () => {
     { title: "Education Degree", content: userData.educationDegree || "N/A" },
   ];
 
-  const handleHeartPress = () => {
-    // Use likeMatch from context to handle the like functionality
-    likeMatch(userData.userId);
-  };
-
   return (
     <ScrollView style={styles.container}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}
-      >
-        <Icon name="chevron-left" size={24} color="black" />
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Icon name="chevron-left" size={24} color="#7E7972" />
       </TouchableOpacity>
 
-      <Text style={styles.nameText}>
-        {userData.firstName} {userData.lastName}
-      </Text>
+      <Text style={styles.nameText}>{userData.firstName || "Unknown"}</Text>
       <Text style={styles.locationText}>
-        {userData.location?.city || "Unknown city"},{" "}
+        {userData.location?.city || "Unknown city"},
         {userData.location?.country || "Unknown country"}
       </Text>
 
-      {/* Alternating Photos and Information */}
       <View style={styles.contentContainer}>
-        {userData.photos && userData.photos.length > 0 ? (
-          userData.photos.map((photo, index) => (
-            <React.Fragment key={index}>
-              {/* Photo */}
-              <View style={styles.photoCard}>
-                <Image source={{ uri: photo }} style={styles.photo} />
-                {/* Heart Icon on Each Photo */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#D8BFAA" />
+        ) : photoUrls.length > 0 ? (
+          photoUrls.map((photo, index) => (
+            <View key={index} style={styles.cardWrapper}>
+              <View>
+                <Image
+                  source={{ uri: photo }}
+                  style={styles.photo}
+                  onError={(e) => {
+                    console.error(
+                      "Image failed to load:",
+                      photo,
+                      e.nativeEvent.error
+                    );
+                    console.error("Full error response:", e.nativeEvent);
+                  }}
+                />
                 <TouchableOpacity
-                  style={styles.heartIcon}
+                  style={styles.iconWrapper}
                   onPress={handleHeartPress}
                 >
-                  <Icon name="heart" size={40} color="red" />
+                  {shouldShowHeart && (
+                    <Icon name="heart" size={30} color="red" />
+                  )}
+                  {shouldShowRose && (
+                    <Icon name="pagelines" size={30} color="#D8BFAA" />
+                  )}
                 </TouchableOpacity>
               </View>
-              {/* Information (only if it exists) */}
-              {details[index] && (
-                <DetailCard
-                  title={details[index].title}
-                  content={details[index].content}
-                  handleHeartPress={handleHeartPress}
-                />
+
+              {/* Information */}
+              {index < details.length && (
+                <View style={styles.detailsContainer}>
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>
+                      {details[index].title}:
+                    </Text>
+                    <Text style={styles.cardContent}>
+                      {details[index].content}
+                    </Text>
+                  </View>
+                </View>
               )}
-            </React.Fragment>
+            </View>
           ))
         ) : (
-          <Text style={styles.noPhotosText}>No photos available</Text>
+          <Text style={styles.errorText}>No photos available</Text>
         )}
       </View>
     </ScrollView>
   );
 };
 
-// Card component to display title and content in a bordered container
-const DetailCard: React.FC<{
-  title: string;
-  content: string;
-  handleHeartPress: () => void;
-}> = ({ title, content, handleHeartPress }) => {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}:</Text>
-      <Text style={styles.cardContent}>{content}</Text>
-      <TouchableOpacity style={styles.heartIcon} onPress={handleHeartPress}>
-        <Icon name="heart" size={30} color="red" />
-      </TouchableOpacity>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
     marginTop: 25,
-    backgroundColor: "white",
+    padding: 16,
+    backgroundColor: "#EDE9E3",
   },
   backButton: {
-    marginBottom: 20,
+    marginBottom: 16,
     marginLeft: 10,
   },
   nameText: {
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
+    color: "#7E7972",
   },
   locationText: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: "center",
-    color: "gray",
-    marginBottom: 20,
+    color: "#7E7972",
+    marginBottom: 16,
   },
   contentContainer: {
+    marginTop: 20,
+  },
+  cardWrapper: {
     marginBottom: 20,
   },
-  photoCard: {
-    marginBottom: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
   photo: {
-    width: 400,
+    width: "100%",
     height: 400,
-    borderRadius: 10,
-  },
-  noPhotosText: {
-    fontSize: 16,
-    color: "gray",
-    marginTop: 10,
-    textAlign: "center",
+    resizeMode: "cover",
+    borderRadius: 20,
   },
   detailsContainer: {
-    marginTop: 20,
+    marginTop: 10,
   },
   card: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
-    marginBottom: 15,
     backgroundColor: "#f9f9f9",
-    position: "relative",
   },
   cardTitle: {
     fontSize: 18,
@@ -201,10 +188,18 @@ const styles = StyleSheet.create({
     color: "gray",
     marginTop: 5,
   },
-  heartIcon: {
+  iconWrapper: {
     position: "absolute",
-    top: 10,
+    bottom: 10,
     right: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 20,
+    padding: 5,
+  },
+  errorText: {
+    textAlign: "center",
+    fontSize: 16,
+    color: "#D8BFAA",
   },
 });
 

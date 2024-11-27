@@ -10,39 +10,26 @@ import {
 } from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
-import potentialMatches from "@/data/potentialMatches";
 import { useRouter } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 const KindredSpirits: React.FC = () => {
-  const { userData } = useUserContext();
+  const { userData, fetchDetailedLikes } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalVisible, setIsModalVisible] = useState(false); // Track modal visibility
-  const [selectedUser, setSelectedUser] = useState<any | null>(null); // Track selected user for modal
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchLikedByUsers = async () => {
-      if (userData.userId) {
-        try {
-          const likesReceived = Array.isArray(userData.likesReceived)
-            ? userData.likesReceived
-            : [];
-          const likedUsers = potentialMatches.filter((user) =>
-            likesReceived.includes(user.userId)
-          );
-          setLikedByUsers(likedUsers);
-        } catch (error) {
-          console.error("Failed to fetch likedBy users:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    fetchLikedByUsers();
-  }, [userData]);
+    if (!userData?.detailedLikesReceived) {
+      setIsLoading(true);
+    } else {
+      setLikedByUsers(userData.detailedLikesReceived);
+      setIsLoading(false);
+    }
+  }, [userData.detailedLikesReceived]);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -55,7 +42,6 @@ const KindredSpirits: React.FC = () => {
         <Text style={styles.noLikesText}>
           We can get you seen by more daters, sooner.
         </Text>
-        {/* Add buttons for boosting profile or upgrading */}
       </View>
     );
   }
@@ -63,8 +49,8 @@ const KindredSpirits: React.FC = () => {
   const handleCardPress = (user: any, isFirstCard: boolean) => {
     if (!userData.fullCircleSubscription || isFirstCard) {
       router.push({
-        pathname: `/user/${user.userId}` as any,
-        params: { userId: user.userId },
+        pathname: "/user/UserShow" as any,
+        params: { user: JSON.stringify(user), source: "KindredSpirits" },
       });
     } else {
       setSelectedUser(user);
@@ -96,6 +82,7 @@ const KindredSpirits: React.FC = () => {
                 <UserCard
                   user={user}
                   isBlurred={index > 0 && !!userData.fullCircleSubscription}
+                  style={styles.smallCard}
                 />
               </TouchableOpacity>
             </View>
@@ -134,18 +121,18 @@ const styles = StyleSheet.create({
     marginTop: 25,
     backgroundColor: "#f9f9f9",
   },
+  likesText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "left",
+  },
   noLikesContainer: {
     flex: 1,
     padding: 16,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f9f9f9",
-  },
-  likesText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "left",
   },
   noLikesText: {
     fontSize: 18,
@@ -159,6 +146,10 @@ const styles = StyleSheet.create({
   },
   userCardContainer: {
     flexBasis: "48%",
+  },
+  smallCard: {
+    width: 150,
+    height: 220,
   },
   modalOverlay: {
     flex: 1,

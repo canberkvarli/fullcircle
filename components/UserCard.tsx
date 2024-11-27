@@ -1,14 +1,25 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { BlurView } from "expo-blur";
+import Icon from "react-native-vector-icons/FontAwesome";
 
-const { width, height } = Dimensions.get("window"); // Get screen dimensions
+const { width, height } = Dimensions.get("window");
 
 interface UserCardProps {
   user: any;
   isBlurred?: boolean;
   style?: object;
   variant?: "default" | "radiant";
+  onPress?: () => void;
+  showDetails?: boolean;
+  onHeartPress?: () => void;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -16,32 +27,81 @@ const UserCard: React.FC<UserCardProps> = ({
   isBlurred = false,
   style,
   variant = "default",
+  onPress,
+  showDetails = false,
+  onHeartPress,
 }) => {
   const firstPhoto = user.photos?.[0];
 
+  // Helper function to render user details
+  const renderDetails = () => {
+    const details = [
+      { title: "Gender", content: user.gender || "N/A" },
+      { title: "Height", content: user.height || "N/A" },
+      {
+        title: "Ethnicities",
+        content: user.ethnicities?.join(", ") || "N/A",
+      },
+      {
+        title: "Sexual Orientation",
+        content: user.sexualOrientation?.join(", ") || "N/A",
+      },
+      {
+        title: "Date Preferences",
+        content: user.datePreferences?.join(", ") || "N/A",
+      },
+      {
+        title: "Children Preference",
+        content: user.childrenPreference || "N/A",
+      },
+      { title: "Education Degree", content: user.educationDegree || "N/A" },
+    ];
+
+    return details.map((detail, index) => (
+      <View key={index} style={styles.detailRow}>
+        <Text style={styles.detailTitle}>{detail.title}:</Text>
+        <Text style={styles.detailContent}>{detail.content}</Text>
+      </View>
+    ));
+  };
+
   return (
-    <View
-      style={[styles.card, variant === "radiant" && styles.radiantCard, style]}
-    >
-      <View style={styles.imageContainer}>
-        {firstPhoto ? (
-          <Image source={{ uri: firstPhoto }} style={styles.photo} />
-        ) : (
-          <View style={styles.photoFallback}>
-            <Text>No Photo Available</Text>
-          </View>
-        )}
-        {isBlurred ? (
-          <BlurView intensity={150} tint="default" style={styles.blurOverlay}>
-            <Text style={styles.userNameBlurred}>
-              {user.firstName || "Unknown"}
-            </Text>
-          </BlurView>
-        ) : (
-          <Text style={styles.userName}>{user.firstName || "Unknown"}</Text>
+    <TouchableOpacity onPress={onPress} disabled={!onPress}>
+      <View
+        style={[
+          styles.card,
+          variant === "radiant" && styles.radiantCard,
+          style,
+        ]}
+      >
+        <View style={styles.imageContainer}>
+          {firstPhoto ? (
+            <Image source={{ uri: firstPhoto }} style={styles.photo} />
+          ) : (
+            <View style={styles.photoFallback}>
+              <Text>No Photo Available</Text>
+            </View>
+          )}
+          {isBlurred ? (
+            <BlurView intensity={150} tint="default" style={styles.blurOverlay}>
+              <Text style={styles.userNameBlurred}>
+                {user.firstName || "Unknown"}
+              </Text>
+            </BlurView>
+          ) : (
+            <Text style={styles.userName}>{user.firstName || "Unknown"}</Text>
+          )}
+          {onHeartPress && (
+            <TouchableOpacity style={styles.heartIcon} onPress={onHeartPress}>
+              <Icon name="heart" size={30} color="red" />
+            </TouchableOpacity>
+          )}
+        </View>
+        {showDetails && (
+          <View style={styles.detailsContainer}>{renderDetails()}</View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -109,6 +169,29 @@ const styles = StyleSheet.create({
     right: 0,
     textAlign: "center",
     opacity: 0.3,
+  },
+  detailsContainer: {
+    marginTop: 10,
+    width: "100%",
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  detailTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#555",
+  },
+  detailContent: {
+    fontSize: 14,
+    color: "#777",
+  },
+  heartIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
   },
 });
 

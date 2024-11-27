@@ -31,6 +31,7 @@ const ConnectScreen: React.FC = () => {
     loadNextPotentialMatch,
     updateUserData,
     userData,
+    fetchDetailedLikes,
   } = useUserContext();
 
   const [ageRange, setAgeRange] = useState([18, 50]);
@@ -55,6 +56,9 @@ const ConnectScreen: React.FC = () => {
       loadNextPotentialMatch();
       setTimeout(() => setLoading(false), 2000);
     };
+    if (!userData.detailedLikesReceived) {
+      fetchDetailedLikes();
+    }
     loadData();
   }, []);
 

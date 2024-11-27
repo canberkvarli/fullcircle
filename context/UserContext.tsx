@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc, runTransaction } from "firebase/firestore";
-import { FIREBASE_AUTH, FIRESTORE } from "@/services/FirebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 
 import potentialMatchesData from "@/data/potentialMatches";
+import { getDownloadURL, ref } from "firebase/storage";
 
 export type UserDataType = {
   userId: string;
@@ -66,6 +67,7 @@ export type UserDataType = {
   likedMatches?: string[];
   dislikedMatches?: string[];
   likesReceived?: string[];
+  detailedLikesReceived?: any[];
   matches?: string[];
   onboardingCompleted?: boolean;
 
@@ -122,6 +124,8 @@ type UserContextType = {
     otherUserId: string
   ) => Promise<string | null>;
   fetchRadiantSouls: () => Promise<any[]>;
+  fetchDetailedLikes: () => void;
+  getImageUrl: (imagePath: string) => Promise<string | null>;
 };
 
 // Initial screens and initial user data
@@ -213,6 +217,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [initializing, setInitializing] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
+    const subscriber = FIREBASE_AUTH.onAuthStateChanged((user) => {
+      onAuthStateChanged(user as FirebaseAuthTypes.User | null);
+    });
+    return subscriber; // unsubscribe on unmount
+  }, []);
+
+  useEffect(() => {
+    if (userData?.likesReceived) {
+      fetchDetailedLikes();
+    }
+  }, [userData.likesReceived]);
+
   const fetchUserData = async (userId: string) => {
     console.log("Fetching user data for:", userId);
     try {
@@ -257,6 +274,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const fetchDetailedLikes = async () => {
+    if (!userData?.likesReceived) return;
+
+    try {
+      const detailedUsers = await Promise.all(
+        userData.likesReceived.map(async (userId) => {
+          const userDoc = await getDoc(doc(FIRESTORE, "users", userId));
+          return userDoc.exists() ? { userId, ...userDoc.data() } : null;
+        })
+      );
+      setUserData((prev) => ({
+        ...prev,
+        detailedLikesReceived: detailedUsers.filter(Boolean),
+      }));
+    } catch (error) {
+      console.error("Failed to fetch detailed likes:", error);
+    }
+  };
+
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     setCurrentUser(user);
     console.log("currentUser:", user);
@@ -269,13 +305,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setUserData(initialUserData);
     }
   };
-
-  useEffect(() => {
-    const subscriber = FIREBASE_AUTH.onAuthStateChanged((user) => {
-      onAuthStateChanged(user as FirebaseAuthTypes.User | null);
-    });
-    return subscriber; // unsubscribe on unmount
-  }, []);
 
   const getIdToken = async () => {
     try {
@@ -531,6 +560,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const getImageUrl = async (imagePath: string) => {
+    const storageRef = ref(STORAGE, imagePath);
+    try {
+      const url = await getDownloadURL(storageRef);
+      console.log("Fetched image URL:", url);
+      return url;
+    } catch (error) {
+      console.error("Error fetching image URL:", error);
+      return null;
+    }
+  };
+
   const loadNextPotentialMatch = () => {
     if (!potentialMatches || potentialMatches.length === 0) {
       console.log("No potential matches available.");
@@ -636,6 +677,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     loadNextPotentialMatch,
     createOrFetchChat,
     fetchRadiantSouls,
+    fetchDetailedLikes,
+    getImageUrl,
   };
 
   if (initializing) {

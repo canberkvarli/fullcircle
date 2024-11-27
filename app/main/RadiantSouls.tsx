@@ -6,12 +6,14 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import UserCard from "@/components/UserCard";
 
 const RadiantSouls = () => {
   const { userData, fetchRadiantSouls } = useUserContext();
   const [radiantSouls, setRadiantSouls] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     const loadRadiantSouls = async () => {
@@ -21,6 +23,14 @@ const RadiantSouls = () => {
 
     loadRadiantSouls();
   }, [userData.matchPreferences]);
+
+  const navigateToProfile = (user: any) => {
+    console.log(`Navigating to profile for user: ${user.firstName}`);
+    router.push({
+      pathname: `/user/UserShow` as any,
+      params: { user: JSON.stringify(user), isFromRadiantSouls: "true" },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -36,13 +46,15 @@ const RadiantSouls = () => {
       <Text style={styles.subtitle}>Discover the most admired profiles.</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {radiantSouls.length > 0 ? (
-          radiantSouls.map((soul: any, index: number) => (
-            <UserCard
-              key={soul.id || index}
-              user={soul}
-              variant="radiant"
-              style={styles.userCard}
-            />
+          radiantSouls.map((user: any, index: number) => (
+            <TouchableOpacity key={user.userId || index}>
+              <UserCard
+                user={user}
+                variant="radiant"
+                style={styles.userCard}
+                onPress={() => navigateToProfile(user)}
+              />
+            </TouchableOpacity>
           ))
         ) : (
           <Text style={styles.emptyMessage}>No radiant souls found.</Text>

@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import { faker } from "@faker-js/faker";
+import { v4 as uuidv4 } from "uuid";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -59,6 +60,7 @@ const seedFirestore = async (numUsers: number) => {
     );
 
     userDataList[userId] = {
+      userId: uuidv4(),
       isSeedUser: true,
       GoogleSSOEnabled: faker.datatype.boolean(),
       age: new Date().getFullYear() - birthDate.getFullYear(),
