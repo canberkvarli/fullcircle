@@ -23,7 +23,7 @@ export default function DatingPreferences() {
 
   // Handle navigation to edit a specific field
   const handleEditField = (fieldName: string, currentValue: any) => {
-    router.push({
+    router.navigate({
       pathname: "/user/edit/EditPreferenceField",
       params: { fieldName, currentValue },
     });
