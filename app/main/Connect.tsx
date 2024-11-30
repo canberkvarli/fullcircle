@@ -277,12 +277,18 @@ const ConnectScreen: React.FC = () => {
               min={3}
               max={7}
               step={0.1}
-              onValuesChange={setHeightRange}
+              onValuesChange={(values) => {
+                const roundedValues = values.map((val) =>
+                  parseFloat(val.toFixed(1))
+                );
+                setHeightRange(roundedValues);
+              }}
             />
             <Text style={styles.heightText}>
-              Height Range: {heightRange[0]}'
-              {Math.round((heightRange[0] % 1) * 12)}" - {heightRange[1]}'
-              {Math.round((heightRange[1] % 1) * 12)}"
+              Height Range: {Math.floor(heightRange[0])}'
+              {Math.round((heightRange[0] % 1) * 10)}" -{" "}
+              {Math.floor(heightRange[1])}'
+              {Math.round((heightRange[1] % 1) * 10)}"
             </Text>
 
             <TouchableOpacity
