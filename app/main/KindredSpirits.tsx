@@ -11,6 +11,7 @@ import {
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
+import { Link } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -48,10 +49,7 @@ const KindredSpirits: React.FC = () => {
 
   const handleCardPress = (user: any, isFirstCard: boolean) => {
     if (!userData.fullCircleSubscription || isFirstCard) {
-      router.push({
-        pathname: "/user/UserShow" as any,
-        params: { user: JSON.stringify(user), source: "KindredSpirits" },
-      });
+      console.log("Full Circle Subscription not purchased or first card.");
     } else {
       setSelectedUser(user);
       setIsModalVisible(true);
@@ -76,7 +74,15 @@ const KindredSpirits: React.FC = () => {
                 },
               ]}
             >
-              <TouchableOpacity
+              <Link
+                href={{
+                  pathname: "/user/UserShow" as any,
+                  params: {
+                    user: JSON.stringify(user),
+                    source: "KindredSpirits",
+                  },
+                }}
+                style={{ width: "100%", height: "100%" }}
                 onPress={() => handleCardPress(user, isFirstCard)}
               >
                 <UserCard
@@ -84,7 +90,7 @@ const KindredSpirits: React.FC = () => {
                   isBlurred={index > 0 && !!userData.fullCircleSubscription}
                   style={styles.smallCard}
                 />
-              </TouchableOpacity>
+              </Link>
             </View>
           );
         })}
