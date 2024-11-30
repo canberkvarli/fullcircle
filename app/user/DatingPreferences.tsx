@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
-import { useRouter } from "expo-router";
+import { useRouter, Link } from "expo-router";
 
 export default function DatingPreferences() {
   const router = useRouter();
@@ -119,12 +119,12 @@ export default function DatingPreferences() {
         {/* Upgrade prompt if not a FullCircle subscriber */}
         {String(fullCircleSubscription) === "false" && (
           <View style={styles.subscribeContainer}>
-            <TouchableOpacity
+            <Link
               style={styles.subscribeButton}
-              onPress={() => router.push("/user/FullCircleSubscription")}
+              href={{ pathname: "/user/FullCircleSubscription" }}
             >
               <Text style={styles.subscribeText}>Upgrade</Text>
-            </TouchableOpacity>
+            </Link>
             <Text style={styles.subscribeDescription}>
               Fine-tune your preferences with FullCircle.
             </Text>
