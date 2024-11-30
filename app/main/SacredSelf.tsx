@@ -44,14 +44,18 @@ export default function SacredSelf() {
       <View style={styles.header}>
         <Text style={styles.title}>Circle</Text>
         <View style={styles.icons}>
-          <TouchableOpacity onPress={() => console.log("Preferences clicked")}>
+          <Link
+            href={{ pathname: "/user/DatingPreferences" as any }}
+            onPress={() => console.log("Preferences clicked")}
+            style={styles.sliderIcon}
+          >
             <Icon
               name="sliders"
               size={24}
               color="black"
               style={styles.preferencesIcon}
             />
-          </TouchableOpacity>
+          </Link>
           <Link href={"/user/UserSettings" as any}>
             <Icon
               name="cog"
