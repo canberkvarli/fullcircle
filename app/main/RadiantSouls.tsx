@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import UserCard from "@/components/UserCard";
 
@@ -15,7 +15,6 @@ const RadiantSouls = () => {
   const { userData, fetchRadiantSouls } = useUserContext();
   const [radiantSouls, setRadiantSouls] = useState([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     const loadRadiantSouls = async () => {
@@ -28,24 +27,13 @@ const RadiantSouls = () => {
     loadRadiantSouls();
   }, [userData.matchPreferences]);
 
-  const navigateToProfile = (user: any) => {
-    console.log(`Navigating to profile for user: ${user.firstName}`);
-    router.push({
-      pathname: `/user/UserShow` as any,
-      params: { user: JSON.stringify(user), isFromRadiantSouls: "true" },
-    });
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Radiant Souls</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => console.log("Request Roses button clicked!")}
-        >
-          <Text style={styles.buttonText}>Request Roses</Text>
-        </TouchableOpacity>
+        <Link href="/user/FullCircleSubscription" style={styles.button}>
+          <Text style={styles.buttonText}>Request Orbs</Text>
+        </Link>
       </View>
       <Text style={styles.subtitle}>Discover the most admired profiles.</Text>
 
@@ -55,14 +43,22 @@ const RadiantSouls = () => {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {radiantSouls.length > 0 ? (
             radiantSouls.map((user: any, index: number) => (
-              <TouchableOpacity key={user.userId || index}>
+              <Link
+                key={user.userId || index}
+                href={{
+                  pathname: "/user/UserShow" as any,
+                  params: {
+                    user: JSON.stringify(user),
+                    isFromRadiantSouls: "true",
+                  },
+                }}
+              >
                 <UserCard
                   user={user}
                   variant="radiant"
                   style={styles.userCard}
-                  onPress={() => navigateToProfile(user)}
                 />
-              </TouchableOpacity>
+              </Link>
             ))
           ) : (
             <Text style={styles.emptyMessage}>No radiant souls found.</Text>
