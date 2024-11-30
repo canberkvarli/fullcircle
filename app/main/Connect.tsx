@@ -18,7 +18,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
 import styles from "@/styles/Main/ConnectStyles";
-import { useRouter } from "expo-router";
+import { Link } from "expo-router";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
 
 const ConnectScreen: React.FC = () => {
@@ -47,7 +47,6 @@ const ConnectScreen: React.FC = () => {
 
   const [heightRange, setHeightRange] = useState([3, 7]);
   const [originalHeightRange, setOriginalHeightRange] = useState([3, 7]);
-  const router = useRouter();
   const fullCircleSubscription = userData.fullCircleSubscription || false;
 
   useEffect(() => {
@@ -148,12 +147,12 @@ const ConnectScreen: React.FC = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabsContainer}
       >
-        <TouchableOpacity
-          onPress={() => router.push("/user/DatingPreferences")}
+        <Link
+          href={{ pathname: "/user/DatingPreferences" }}
           style={styles.slider}
         >
           <Icon name="sliders" size={24} color={"black"} />
-        </TouchableOpacity>
+        </Link>
         <TouchableOpacity
           style={[styles.tab, styles.activeTab]}
           onPress={() => setShowFilterModal(true)}
@@ -187,12 +186,12 @@ const ConnectScreen: React.FC = () => {
         <TouchableOpacity style={styles.tab}>
           <Text style={styles.tabText}>New Here</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => router.push("/user/DatingPreferences")}
+        <Link
+          href={{ pathname: "/user/DatingPreferences" }}
           style={[styles.tab, styles.moreTab]}
         >
           <Text style={styles.tabText}>More</Text>
-        </TouchableOpacity>
+        </Link>
       </ScrollView>
 
       <ScrollView
