@@ -1,41 +1,69 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
-import { ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
+
+const photoCache: Record<string, string[]> = {}; //Gloval cache for photo URLs
 
 const UserShow: React.FC = () => {
   const { user, source } = useLocalSearchParams();
   const router = useRouter();
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // Add loading state
+  const [loading, setLoading] = useState<boolean>(true);
   const { likeMatch, getImageUrl } = useUserContext();
 
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      const userData = JSON.parse(user as string);
+  const fetchPhotos = useCallback(async () => {
+    const userData = JSON.parse(user as string);
+    const userId = userData.userId;
 
+    if (photoCache[userId]) {
+      console.log(
+        `Fetched photo URLs from cache for user ${userId}:`,
+        photoCache[userId]
+      );
+      setPhotoUrls(photoCache[userId]);
+      setLoading(false);
+      return;
+    }
+
+    console.log(`Fetching photo URLs from server for user ${userId}...`);
+    setLoading(true);
+
+    try {
       if (userData.photos && userData.photos.length > 0) {
         const urls = await Promise.all(
-          userData.photos.map(async (photoPath: string) => {
-            return await getImageUrl(photoPath);
-          })
+          userData.photos.map((photoPath: string) => getImageUrl(photoPath))
         );
-        setPhotoUrls(urls.filter((url) => url !== null));
-      }
-      setLoading(false);
-    };
 
+        const filteredUrls = urls.filter((url) => url !== null);
+        photoCache[userId] = filteredUrls; // Store in cache
+        console.log(
+          `Fetched and cached photo URLs for user ${userId}:`,
+          filteredUrls
+        );
+        setPhotoUrls(filteredUrls);
+      } else {
+        console.log(`No photos available for user ${userId}.`);
+      }
+    } catch (error) {
+      console.error("Error fetching photos:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, getImageUrl]);
+
+  useEffect(() => {
     fetchPhotos();
-  }, [user]);
+  }, [fetchPhotos]);
 
   const userData = JSON.parse(user as string);
 
@@ -90,14 +118,8 @@ const UserShow: React.FC = () => {
                 <Image
                   source={{ uri: photo }}
                   style={styles.photo}
-                  onError={(e) => {
-                    console.error(
-                      "Image failed to load:",
-                      photo,
-                      e.nativeEvent.error
-                    );
-                    console.error("Full error response:", e.nativeEvent);
-                  }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
                 />
                 <TouchableOpacity
                   style={styles.iconWrapper}
@@ -166,7 +188,6 @@ const styles = StyleSheet.create({
   photo: {
     width: "100%",
     height: 400,
-    resizeMode: "cover",
     borderRadius: 20,
   },
   detailsContainer: {

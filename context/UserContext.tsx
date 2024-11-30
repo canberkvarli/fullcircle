@@ -216,6 +216,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<UserDataType[]>(potentialMatchesData);
   const [initializing, setInitializing] = useState(true);
   const router = useRouter();
+  const imageCache: Record<string, string> = {};
 
   useEffect(() => {
     const subscriber = FIREBASE_AUTH.onAuthStateChanged((user) => {
@@ -561,10 +562,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getImageUrl = async (imagePath: string) => {
+    if (imageCache[imagePath]) {
+      return imageCache[imagePath];
+    }
+
     const storageRef = ref(STORAGE, imagePath);
     try {
       const url = await getDownloadURL(storageRef);
-      console.log("Fetched image URL:", url);
+      imageCache[imagePath] = url;
       return url;
     } catch (error) {
       console.error("Error fetching image URL:", error);
