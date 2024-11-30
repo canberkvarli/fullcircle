@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
@@ -13,12 +14,15 @@ import UserCard from "@/components/UserCard";
 const RadiantSouls = () => {
   const { userData, fetchRadiantSouls } = useUserContext();
   const [radiantSouls, setRadiantSouls] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const loadRadiantSouls = async () => {
+      setLoading(true);
       const souls = await fetchRadiantSouls();
       setRadiantSouls(souls as React.SetStateAction<never[]>);
+      setLoading(false);
     };
 
     loadRadiantSouls();
@@ -44,22 +48,27 @@ const RadiantSouls = () => {
         </TouchableOpacity>
       </View>
       <Text style={styles.subtitle}>Discover the most admired profiles.</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {radiantSouls.length > 0 ? (
-          radiantSouls.map((user: any, index: number) => (
-            <TouchableOpacity key={user.userId || index}>
-              <UserCard
-                user={user}
-                variant="radiant"
-                style={styles.userCard}
-                onPress={() => navigateToProfile(user)}
-              />
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.emptyMessage}>No radiant souls found.</Text>
-        )}
-      </ScrollView>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#7E7972" />
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {radiantSouls.length > 0 ? (
+            radiantSouls.map((user: any, index: number) => (
+              <TouchableOpacity key={user.userId || index}>
+                <UserCard
+                  user={user}
+                  variant="radiant"
+                  style={styles.userCard}
+                  onPress={() => navigateToProfile(user)}
+                />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.emptyMessage}>No radiant souls found.</Text>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 };
