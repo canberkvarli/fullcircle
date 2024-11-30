@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { FIRESTORE } from "@/services/FirebaseConfig";
@@ -86,7 +87,11 @@ const SoulChats: React.FC = () => {
   }, []);
 
   if (isLoading) {
-    return <Text>Loading...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#7E7972" />
+      </View>
+    );
   }
 
   if (matches.length === 0) {
@@ -202,6 +207,12 @@ const styles = StyleSheet.create({
   conversationText: {
     fontSize: 15,
     color: "#666",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#EDE9E3",
   },
 });
 
