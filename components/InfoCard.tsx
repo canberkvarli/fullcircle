@@ -7,10 +7,12 @@ const InfoCard = ({
   title,
   content,
   currentPotentialMatch,
+  isMatched = false,
 }: {
   title: string;
   content: string;
   currentPotentialMatch: any;
+  isMatched?: boolean;
 }) => {
   const { likeMatch, loadNextPotentialMatch } = useUserContext();
   return (
@@ -18,15 +20,17 @@ const InfoCard = ({
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoContent}>{content}</Text>
       <View style={styles.iconContainer}>
-        <TouchableOpacity
-          onPress={() => {
-            likeMatch(currentPotentialMatch.userId).then(() =>
-              loadNextPotentialMatch()
-            );
-          }}
-        >
-          <Icon name="heart" size={30} color="grey" style={styles.icon} />
-        </TouchableOpacity>
+        {!isMatched && (
+          <TouchableOpacity
+            onPress={() => {
+              likeMatch(currentPotentialMatch.userId).then(() =>
+                loadNextPotentialMatch()
+              );
+            }}
+          >
+            <Icon name="heart" size={30} color="grey" style={styles.icon} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

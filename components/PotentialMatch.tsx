@@ -6,8 +6,10 @@ import Icon from "react-native-vector-icons/FontAwesome";
 
 const PotentialMatch = ({
   currentPotentialMatch,
+  isMatched = false,
 }: {
   currentPotentialMatch: any;
+  isMatched?: boolean;
 }) => {
   const { likeMatch, loadNextPotentialMatch } = useUserContext();
 
@@ -47,16 +49,18 @@ const PotentialMatch = ({
       {currentPotentialMatch.photos.map((photo: any, index: number) => (
         <View key={index} style={styles.photoContainer}>
           <Image source={{ uri: photo }} style={styles.photo} />
-          <TouchableOpacity
-            style={styles.heartIcon}
-            onPress={() => {
-              likeMatch(currentPotentialMatch.userId).then(() => {
-                loadNextPotentialMatch();
-              });
-            }}
-          >
-            <Icon name="heart" size={40} color="black" />
-          </TouchableOpacity>
+          {!isMatched && (
+            <TouchableOpacity
+              style={styles.heartIcon}
+              onPress={() => {
+                likeMatch(currentPotentialMatch.userId).then(() => {
+                  loadNextPotentialMatch();
+                });
+              }}
+            >
+              <Icon name="heart" size={40} color="black" />
+            </TouchableOpacity>
+          )}
           {/* Spread info evenly across photos */}
           {infoSections
             .slice(index * infoStep, (index + 1) * infoStep)
@@ -66,6 +70,7 @@ const PotentialMatch = ({
                 title={info.title}
                 content={info.content}
                 currentPotentialMatch={currentPotentialMatch}
+                isMatched={isMatched}
               />
             ))}
         </View>

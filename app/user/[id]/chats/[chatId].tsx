@@ -20,6 +20,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import Icon from "react-native-vector-icons/FontAwesome";
+import PotentialMatch from "@/components/PotentialMatch";
 import Modal from "react-native-modal";
 
 const Chat: React.FC = () => {
@@ -250,7 +251,10 @@ const Chat: React.FC = () => {
               </>
             ) : (
               <View style={styles.profileSection}>
-                <Text>Profile content goes here...</Text>
+                <PotentialMatch
+                  currentPotentialMatch={otherUserData}
+                  isMatched={true}
+                />
               </View>
             )}
           </ScrollView>

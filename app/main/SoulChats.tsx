@@ -61,7 +61,10 @@ const SoulChats: React.FC = () => {
             const matchDoc = await getDoc(matchDocRef);
             if (!matchDoc.exists()) return null;
 
-            const matchData = { userId: matchId, ...matchDoc.data() };
+            const matchData: { userId: string; lastMessage?: string | null } = {
+              userId: matchId,
+              ...(matchDoc.data() as Record<string, unknown>),
+            };
 
             // Fetch the last message for the chat
             const chatId = [userData.userId, matchId].sort().join("_"); // Chat ID convention
