@@ -5,19 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { FIRESTORE } from "@/services/FirebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
-import { useRouter } from "expo-router";
+import { Link } from "expo-router";
 
 const SoulChats: React.FC = () => {
   const { userData, createOrFetchChat } = useUserContext();
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   const fetchLastMessage = async (chatId: string) => {
     try {
@@ -106,43 +104,39 @@ const SoulChats: React.FC = () => {
     );
   }
 
-  const navigateToChat = async (otherUserId: string) => {
-    const chatId = await createOrFetchChat(userData.userId, otherUserId);
-    if (chatId) {
-      router.push(
-        `/user/${userData.userId}/chats/${chatId}?otherUserId=${otherUserId}`
-      );
-    } else {
-      console.log("Failed to create or fetch chat ID.");
-    }
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Matches</Text>
 
-      {matches.map((match) => (
-        <TouchableOpacity
-          key={match.userId}
-          onPress={() => navigateToChat(match.userId)}
-        >
-          <View style={styles.matchRow}>
-            <View style={styles.avatarContainer}>
-              <Image source={{ uri: match.photos[0] }} style={styles.photo} />
+      {matches.map((match) => {
+        const chatId = [userData.userId, match.userId].sort().join("_"); // Create chat ID convention
+
+        return (
+          <Link
+            key={match.userId}
+            href={`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}`}
+            onPress={async () => {
+              await createOrFetchChat(userData.userId, match.userId);
+            }}
+          >
+            <View style={styles.matchRow}>
+              <View style={styles.avatarContainer}>
+                <Image source={{ uri: match.photos[0] }} style={styles.photo} />
+              </View>
+              <View style={styles.matchInfo}>
+                <Text style={styles.matchName}>{match.firstName}</Text>
+                <Text style={styles.conversationText}>
+                  {match.lastMessage
+                    ? match.lastMessage.length > 40
+                      ? `${match.lastMessage.slice(0, 40)}...`
+                      : match.lastMessage
+                    : `Start the match with ${match.firstName}`}
+                </Text>
+              </View>
             </View>
-            <View style={styles.matchInfo}>
-              <Text style={styles.matchName}>{match.firstName}</Text>
-              <Text style={styles.conversationText}>
-                {match.lastMessage
-                  ? match.lastMessage.length > 40
-                    ? `${match.lastMessage.slice(0, 40)}...`
-                    : match.lastMessage
-                  : `Start the match with ${match.firstName}`}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
+          </Link>
+        );
+      })}
     </ScrollView>
   );
 };
