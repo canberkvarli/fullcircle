@@ -40,7 +40,7 @@ const getGenderSpecificPhotos = async (
   return await fetchUnsplashImages(query, count, page);
 };
 
-// Seed Firestore with 50 mutually liking users
+// Seed Firestore with users
 const seedFirestore = async (numUsers: number) => {
   const usersCollection = db.collection("users");
 
@@ -48,7 +48,7 @@ const seedFirestore = async (numUsers: number) => {
   const userDataList: { [key: string]: any } = {};
 
   for (let i = 0; i < numUsers; i++) {
-    const userId = faker.string.uuid();
+    const userId = uuidv4();
     userIds.push(userId);
 
     const birthDate = faker.date.birthdate({ min: 18, max: 70, mode: "age" });
@@ -157,10 +157,29 @@ const seedFirestore = async (numUsers: number) => {
     };
   }
 
-  // Ensure mutual likes between all users
+  // Generate mutual likes and matches
   userIds.forEach((userId) => {
-    userDataList[userId].likedMatches = userIds.filter((id) => id !== userId);
-    userDataList[userId].likesReceived = userIds.filter((id) => id !== userId);
+    const likedUsers = faker.helpers.arrayElements(
+      userIds.filter((id) => id !== userId),
+      10
+    );
+    userDataList[userId].likedMatches = likedUsers;
+
+    likedUsers.forEach((likedUserId) => {
+      if (!userDataList[likedUserId]) return;
+      if (!userDataList[likedUserId].likedMatches.includes(userId)) {
+        userDataList[likedUserId].likesReceived.push(userId);
+      } else {
+        userDataList[userId].matches = [
+          ...(userDataList[userId].matches || []),
+          likedUserId,
+        ];
+        userDataList[likedUserId].matches = [
+          ...(userDataList[likedUserId].matches || []),
+          userId,
+        ];
+      }
+    });
   });
 
   // Add users to Firestore

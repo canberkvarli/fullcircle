@@ -7,6 +7,7 @@ import {
   Dimensions,
   Modal,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
@@ -33,7 +34,11 @@ const KindredSpirits: React.FC = () => {
   }, [userData.detailedLikesReceived]);
 
   if (isLoading) {
-    return <Text>Loading...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#7E7972" />
+      </View>
+    );
   }
 
   if (likedByUsers.length === 0) {
@@ -48,7 +53,7 @@ const KindredSpirits: React.FC = () => {
   }
 
   const handleCardPress = (user: any, isFirstCard: boolean) => {
-    if (!userData.fullCircleSubscription || isFirstCard) {
+    if (!userData.fullCircleSubscription || !isFirstCard) {
       console.log("Full Circle Subscription not purchased or first card.");
     } else {
       setSelectedUser(user);
@@ -87,7 +92,7 @@ const KindredSpirits: React.FC = () => {
               >
                 <UserCard
                   user={user}
-                  isBlurred={index > 0 && !!userData.fullCircleSubscription}
+                  isBlurred={index > 0 && !userData.fullCircleSubscription}
                   style={styles.smallCard}
                 />
               </Link>
@@ -178,6 +183,12 @@ const styles = StyleSheet.create({
   modalButton: {
     fontSize: 16,
     color: "#007bff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
   },
 });
 
