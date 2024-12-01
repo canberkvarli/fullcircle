@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  Modal,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
@@ -19,8 +18,6 @@ const KindredSpirits: React.FC = () => {
   const { userData, fetchDetailedLikes } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,8 +55,9 @@ const KindredSpirits: React.FC = () => {
         params: { user: JSON.stringify(user), source: "KindredSpirits" },
       });
     } else {
-      setSelectedUser(user);
-      setIsModalVisible(true);
+      router.navigate({
+        pathname: "/user/FullCircleSubscription" as any,
+      });
     }
   };
 
@@ -94,26 +92,6 @@ const KindredSpirits: React.FC = () => {
           );
         })}
       </View>
-
-      {isModalVisible && selectedUser && (
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={isModalVisible}
-          onRequestClose={() => setIsModalVisible(false)} // Close modal on background press
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalText}>
-                Please upgrade to view {selectedUser.firstName}'s profile.
-              </Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Text style={styles.modalButton}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
     </ScrollView>
   );
 };
@@ -154,28 +132,6 @@ const styles = StyleSheet.create({
   smallCard: {
     width: 150,
     height: 220,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 300,
-  },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  modalButton: {
-    fontSize: 16,
-    color: "#007bff",
   },
   loadingContainer: {
     flex: 1,
