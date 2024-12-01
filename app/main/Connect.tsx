@@ -53,14 +53,16 @@ const ConnectScreen: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      loadNextPotentialMatch();
-      setTimeout(() => setLoading(false), 2000);
+      await loadNextPotentialMatch();
+      setLoading(false);
     };
+
     if (!userData.detailedLikesReceived) {
       fetchDetailedLikes();
+    } else {
+      loadData();
     }
-    loadData();
-  }, []);
+  }, [userData]);
 
   useEffect(() => {
     if (userData && userData.matchPreferences) {
@@ -88,6 +90,7 @@ const ConnectScreen: React.FC = () => {
       ]);
     }
   }, [userData]);
+
   const handleApplyAgeFilter = async () => {
     if (!userData || !userData.userId) {
       console.error("User ID is missing. Cannot apply filter.");
@@ -203,6 +206,8 @@ const ConnectScreen: React.FC = () => {
         <View style={styles.matchContainer}>
           {currentPotentialMatch ? (
             <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
+          ) : loading ? (
+            <ActivityIndicator size="large" color="#EDE9E3" />
           ) : (
             <Text style={styles.nameText}>No more matches available</Text>
           )}

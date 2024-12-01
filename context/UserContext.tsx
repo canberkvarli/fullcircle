@@ -281,6 +281,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         dislikedMatches = [],
         matches = [],
       } = userData;
+
       const excludedUserIds = [
         ...likedMatches,
         ...dislikedMatches,
@@ -288,20 +289,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         userData.userId,
       ];
 
-      const usersQuery = query(
-        collection(FIRESTORE, "users"),
-        where("userId", "not-in", excludedUserIds),
-        limit(10) // Fetch a batch of 10 matches
-      );
+      const chunkedExcludedUserIds = [];
+      while (excludedUserIds.length > 0) {
+        chunkedExcludedUserIds.push(excludedUserIds.splice(0, 10));
+      }
 
-      const querySnapshot = await getDocs(usersQuery);
-      const potentialMatchesFromFirestore = querySnapshot.docs.map(
-        (doc) => doc.data() as UserDataType
-      );
+      let allMatches: UserDataType[] = [];
 
-      setPotentialMatches(potentialMatchesFromFirestore);
-      if (potentialMatchesFromFirestore.length > 0) {
-        setCurrentPotentialMatch(potentialMatchesFromFirestore[0]);
+      // Fetch matches for each chunk
+      for (const chunk of chunkedExcludedUserIds) {
+        const usersQuery = query(
+          collection(FIRESTORE, "users"),
+          where("userId", "not-in", chunk),
+          limit(10) // Fetch a batch of 10 matches
+        );
+
+        const querySnapshot = await getDocs(usersQuery);
+        const potentialMatchesFromFirestore = querySnapshot.docs.map(
+          (doc) => doc.data() as UserDataType
+        );
+
+        allMatches = [...allMatches, ...potentialMatchesFromFirestore];
+      }
+
+      setPotentialMatches(allMatches);
+
+      if (allMatches.length > 0) {
+        setCurrentPotentialMatch(allMatches[0]);
         setCurrentPotentialMatchIndex(0);
       }
     } catch (error) {
@@ -610,7 +624,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const loadNextPotentialMatch = () => {
+  const loadNextPotentialMatch = async () => {
     if (!potentialMatches || potentialMatches.length === 0) {
       console.log("No potential matches available.");
       return;
@@ -625,8 +639,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         `Loaded next potential match: ${potentialMatches[nextIndex].userId}`
       );
     } else {
-      console.log("End of potential matches.");
-      setCurrentPotentialMatch(null);
+      // Load next batch of potential matches
+      console.log("End of current batch, loading next batch...");
+      await fetchPotentialMatches();
     }
   };
 
