@@ -501,7 +501,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       //   });
       // }
 
-      console.log("Filtered Radiant Souls:", radiantSouls);
       return radiantSouls.slice(0, 10); // Limit to 10 for UI display
     } catch (error) {
       console.error("Error fetching Radiant Souls:", error);

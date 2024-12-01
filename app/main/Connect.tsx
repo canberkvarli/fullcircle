@@ -32,7 +32,6 @@ const ConnectScreen: React.FC = () => {
     updateUserData,
     userData,
     fetchDetailedLikes,
-    fetchPotentialMatches,
   } = useUserContext();
 
   const [ageRange, setAgeRange] = useState([18, 50]);
