@@ -117,7 +117,6 @@ const ConnectScreen: React.FC = () => {
     try {
       updateUserData(updatedData);
       console.log("Filter applied:", updatedData);
-      fetchPotentialMatches();
       setShowFilterModal(false);
       setShowHeightModal(false);
     } catch (error) {
