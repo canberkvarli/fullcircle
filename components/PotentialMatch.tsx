@@ -25,16 +25,16 @@ const PotentialMatch = ({
     },
     {
       title: "Ethnicities",
-      content: currentPotentialMatch.ethnicities.join(", "),
+      content: currentPotentialMatch?.ethnicities?.join(", "),
     },
     { title: "Height", content: currentPotentialMatch.height },
     {
       title: "Location",
-      content: `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`,
+      content: `${currentPotentialMatch?.location?.city}, ${currentPotentialMatch?.location?.country}`,
     },
     {
       title: "Sexual Orientation",
-      content: currentPotentialMatch.sexualOrientation.join(", "),
+      content: currentPotentialMatch?.sexualOrientation?.join(", "),
     },
   ];
 

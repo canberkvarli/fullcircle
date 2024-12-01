@@ -32,6 +32,7 @@ const ConnectScreen: React.FC = () => {
     updateUserData,
     userData,
     fetchDetailedLikes,
+    fetchPotentialMatches,
   } = useUserContext();
 
   const [ageRange, setAgeRange] = useState([18, 50]);
@@ -113,6 +114,7 @@ const ConnectScreen: React.FC = () => {
     try {
       updateUserData(updatedData);
       console.log("Filter applied:", updatedData);
+      fetchPotentialMatches();
       setShowFilterModal(false);
       setShowHeightModal(false);
     } catch (error) {
@@ -199,7 +201,11 @@ const ConnectScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.matchContainer}>
-          <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
+          {currentPotentialMatch ? (
+            <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
+          ) : (
+            <Text style={styles.nameText}>No more matches available</Text>
+          )}
         </View>
       </ScrollView>
 

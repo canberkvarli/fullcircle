@@ -13,7 +13,6 @@ import {
   limit,
 } from "firebase/firestore";
 
-import potentialMatchesData from "@/data/potentialMatches";
 import { getDownloadURL, ref } from "firebase/storage";
 
 export type UserDataType = {
@@ -125,6 +124,7 @@ type UserContextType = {
   ) => Promise<string | null>;
   fetchRadiantSouls: () => Promise<any[]>;
   fetchDetailedLikes: () => void;
+  fetchPotentialMatches: () => void;
   getImageUrl: (imagePath: string) => Promise<string | null>;
 };
 
@@ -167,7 +167,7 @@ const initialUserData: UserDataType = {
   currentOnboardingScreen: initialScreens[0],
   hiddenFields: {},
   fullCircleSubscription: false,
-  likesReceived: potentialMatchesData.slice(0, 10).map((user) => user.userId),
+  likesReceived: [],
   matchPreferences: {
     preferredAgeRange: {
       min: 18,
@@ -212,8 +212,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState(0);
   const [currentPotentialMatch, setCurrentPotentialMatch] =
     useState<UserDataType | null>(null);
-  const [potentialMatches, setPotentialMatches] =
-    useState<UserDataType[]>(potentialMatchesData);
+  const [potentialMatches, setPotentialMatches] = useState<UserDataType[]>([]);
   const [initializing, setInitializing] = useState(true);
   const router = useRouter();
   const imageCache: Record<string, string> = {};
@@ -257,7 +256,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           router.replace({
             pathname: `/main/Connect` as any,
           });
-          setPotentialMatches(potentialMatches); //load potential matches from faker
+          fetchPotentialMatches();
         } else {
           router.replace({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
@@ -272,6 +271,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+    }
+  };
+
+  const fetchPotentialMatches = async () => {
+    try {
+      const {
+        likedMatches = [],
+        dislikedMatches = [],
+        matches = [],
+      } = userData;
+      const excludedUserIds = [
+        ...likedMatches,
+        ...dislikedMatches,
+        ...matches,
+        userData.userId,
+      ];
+
+      const usersQuery = query(
+        collection(FIRESTORE, "users"),
+        where("userId", "not-in", excludedUserIds),
+        limit(10) // Fetch a batch of 10 matches
+      );
+
+      const querySnapshot = await getDocs(usersQuery);
+      const potentialMatchesFromFirestore = querySnapshot.docs.map(
+        (doc) => doc.data() as UserDataType
+      );
+
+      setPotentialMatches(potentialMatchesFromFirestore);
+      if (potentialMatchesFromFirestore.length > 0) {
+        setCurrentPotentialMatch(potentialMatchesFromFirestore[0]);
+        setCurrentPotentialMatchIndex(0);
+      }
+    } catch (error) {
+      console.error("Error fetching potential matches:", error);
     }
   };
 
@@ -519,7 +553,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       router.replace(`onboarding/${nextScreen}` as any);
     } else {
       await updateUserData({ onboardingCompleted: true });
-      await setPotentialMatches(potentialMatches); //load potential matches from faker
       router.replace("/");
     }
   };
@@ -554,7 +587,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         onboardingCompleted: true,
         currentOnboardingScreen: "Connect",
       });
-      await setPotentialMatches(potentialMatches); //load potential matches from faker
+      await fetchPotentialMatches();
       router.replace("/main/Connect" as any);
     } catch (error) {
       console.error("Failed to complete onboarding: ", error);
@@ -588,6 +621,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (nextIndex < potentialMatches.length) {
       setCurrentPotentialMatch(potentialMatches[nextIndex]);
       setCurrentPotentialMatchIndex(nextIndex);
+      console.log(
+        `Loaded next potential match: ${potentialMatches[nextIndex].userId}`
+      );
     } else {
       console.log("End of potential matches.");
       setCurrentPotentialMatch(null);
@@ -683,6 +719,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     createOrFetchChat,
     fetchRadiantSouls,
     fetchDetailedLikes,
+    fetchPotentialMatches,
     getImageUrl,
   };
 

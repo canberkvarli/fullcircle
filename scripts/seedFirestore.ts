@@ -60,7 +60,7 @@ const seedFirestore = async (numUsers: number) => {
     );
 
     userDataList[userId] = {
-      userId: uuidv4(),
+      userId,
       isSeedUser: true,
       GoogleSSOEnabled: faker.datatype.boolean(),
       age: new Date().getFullYear() - birthDate.getFullYear(),
@@ -90,7 +90,6 @@ const seedFirestore = async (numUsers: number) => {
       ]),
       email: faker.internet.email(),
       matchPreferences: {
-        datePreferences: [],
         desiredRelationship: faker.helpers.arrayElement([
           "Serious",
           "Casual",
@@ -123,7 +122,7 @@ const seedFirestore = async (numUsers: number) => {
       firstName: faker.person.firstName(),
       fullCircleSubscription: faker.datatype.boolean(),
       fullName: faker.person.fullName(),
-      gender: gender,
+      gender,
       height: `${faker.number.int({ min: 4, max: 6 })}.${faker.number.int({
         min: 0,
         max: 11,
@@ -153,7 +152,8 @@ const seedFirestore = async (numUsers: number) => {
       longitude: faker.location.longitude(),
       likedMatches: [],
       likesReceived: [],
-      photos: photos,
+      photos,
+      matches: [],
     };
   }
 
@@ -170,14 +170,8 @@ const seedFirestore = async (numUsers: number) => {
       if (!userDataList[likedUserId].likedMatches.includes(userId)) {
         userDataList[likedUserId].likesReceived.push(userId);
       } else {
-        userDataList[userId].matches = [
-          ...(userDataList[userId].matches || []),
-          likedUserId,
-        ];
-        userDataList[likedUserId].matches = [
-          ...(userDataList[likedUserId].matches || []),
-          userId,
-        ];
+        userDataList[userId].matches.push(likedUserId);
+        userDataList[likedUserId].matches.push(userId);
       }
     });
   });
