@@ -118,6 +118,7 @@ type UserContextType = {
   currentPotentialMatch: any;
   setCurrentPotentialMatch: React.Dispatch<React.SetStateAction<any>>;
   loadNextPotentialMatch: () => void;
+  loadingNextBatch: boolean;
   createOrFetchChat: (
     userId: string,
     otherUserId: string
@@ -214,6 +215,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<UserDataType | null>(null);
   const [potentialMatches, setPotentialMatches] = useState<UserDataType[]>([]);
   const [initializing, setInitializing] = useState(true);
+  const [loadingNextBatch, setLoadingNextBatch] = useState(false);
   const router = useRouter();
   const imageCache: Record<string, string> = {};
 
@@ -640,7 +642,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       // Load next batch of potential matches
       console.log("End of current batch, loading next batch...");
+      setLoadingNextBatch(true);
       await fetchPotentialMatches();
+      setLoadingNextBatch(false);
     }
   };
 
@@ -730,6 +734,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     currentPotentialMatch,
     setCurrentPotentialMatch,
     loadNextPotentialMatch,
+    loadingNextBatch,
     createOrFetchChat,
     fetchRadiantSouls,
     fetchDetailedLikes,

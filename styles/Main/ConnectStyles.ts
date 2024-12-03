@@ -18,9 +18,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   loadingIndicator: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    marginBottom: 150,
+    alignSelf: "center",
   },
   ageText: {
     fontSize: 18,

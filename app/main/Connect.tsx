@@ -29,6 +29,7 @@ const ConnectScreen: React.FC = () => {
     dislikeMatch,
     currentPotentialMatch,
     loadNextPotentialMatch,
+    loadingNextBatch,
     updateUserData,
     userData,
     fetchDetailedLikes,
@@ -51,8 +52,6 @@ const ConnectScreen: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
-      await loadNextPotentialMatch();
       setLoading(false);
     };
 
@@ -202,26 +201,30 @@ const ConnectScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.matchContainer}>
-          {currentPotentialMatch ? (
-            <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
-          ) : loading ? (
-            <ActivityIndicator size="large" color="#EDE9E3" />
+          {loadingNextBatch || !currentPotentialMatch ? (
+            <ActivityIndicator
+              size="large"
+              color="black"
+              style={styles.loadingIndicator}
+            />
           ) : (
-            <Text style={styles.nameText}>No more matches available</Text>
+            <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
           )}
         </View>
       </ScrollView>
 
-      <TouchableOpacity
-        onPress={() => {
-          dislikeMatch(currentPotentialMatch.userId).then(() => {
-            loadNextPotentialMatch();
-          });
-        }}
-        style={styles.dislikeButton}
-      >
-        <Icon name="times" style={styles.dislikeIcon} />
-      </TouchableOpacity>
+      {!loadingNextBatch && (
+        <TouchableOpacity
+          onPress={() => {
+            dislikeMatch(currentPotentialMatch.userId).then(() => {
+              loadNextPotentialMatch();
+            });
+          }}
+          style={styles.dislikeButton}
+        >
+          <Icon name="times" style={styles.dislikeIcon} />
+        </TouchableOpacity>
+      )}
 
       {/* Age Filter Modal */}
       <Modal
