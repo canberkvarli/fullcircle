@@ -52,12 +52,38 @@ const seedFirestore = async (numUsers: number) => {
     userIds.push(userId);
 
     const birthDate = faker.date.birthdate({ min: 18, max: 70, mode: "age" });
-    const gender = faker.helpers.arrayElement(["Man", "Woman", "Non-binary"]);
+    const birthdateFormatted = birthDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+    const birthday = birthDate.getDate().toString();
+    const birthmonth = birthDate.toLocaleString("default", { month: "short" });
+    const birthyear = birthDate.getFullYear().toString();
+    const gender = faker.helpers.arrayElement(["Men", "Women", "Non-binary"]);
     const photos = await getGenderSpecificPhotos(
       gender,
       6,
       Math.floor(Math.random() * 10) + 1
     );
+
+    // Generate location data
+    const location = {
+      city: faker.location.city(),
+      country: faker.location.country(),
+      formattedAddress: faker.location.streetAddress(),
+      isoCountryCode: faker.location.countryCode(),
+      name: faker.location.street(),
+      postalCode: faker.location.zipCode(),
+      region: faker.location.state(),
+      street: faker.location.street(),
+      streetNumber: faker.helpers.arrayElement([
+        "Unknown",
+        faker.number.int({ min: 1, max: 5000 }).toString(),
+      ]),
+      subregion: faker.location.county(),
+    };
 
     userDataList[userId] = {
       userId,
@@ -65,10 +91,10 @@ const seedFirestore = async (numUsers: number) => {
       GoogleSSOEnabled: faker.datatype.boolean(),
       age: new Date().getFullYear() - birthDate.getFullYear(),
       areaCode: faker.location.zipCode(),
-      birthdate: birthDate.toISOString(),
-      birthday: birthDate.getDate().toString(),
-      birthmonth: birthDate.toLocaleString("default", { month: "short" }),
-      birthyear: birthDate.getFullYear().toString(),
+      birthdate: birthdateFormatted,
+      birthday,
+      birthmonth,
+      birthyear,
       childrenPreference: faker.helpers.arrayElement([
         "Don’t have children",
         "Have children",
@@ -84,17 +110,16 @@ const seedFirestore = async (numUsers: number) => {
       dislikedMatches: [],
       educationDegree: faker.helpers.arrayElement([
         "High School",
-        "Bachelor",
-        "Master",
+        "Undergrad",
+        "Postgrad",
+        "Associate Degree",
+        "Bachelor's Degree",
+        "Master's Degree",
         "Doctorate",
+        "Professional Certification",
       ]),
       email: faker.internet.email(),
       matchPreferences: {
-        desiredRelationship: faker.helpers.arrayElement([
-          "Serious",
-          "Casual",
-          "Friendship",
-        ]),
         location: faker.location.city(),
         preferredAgeRange: {
           min: faker.number.int({ min: 18, max: 25 }),
@@ -121,7 +146,6 @@ const seedFirestore = async (numUsers: number) => {
       },
       firstName: faker.person.firstName(),
       fullCircleSubscription: faker.datatype.boolean(),
-      fullName: faker.person.fullName(),
       gender,
       height: `${faker.number.int({ min: 4, max: 6 })}.${faker.number.int({
         min: 0,
@@ -150,6 +174,7 @@ const seedFirestore = async (numUsers: number) => {
       lastSignInTime: faker.date.recent().toISOString(),
       latitude: faker.location.latitude(),
       longitude: faker.location.longitude(),
+      location: location,
       likedMatches: [],
       likesReceived: [],
       photos,

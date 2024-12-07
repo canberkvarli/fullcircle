@@ -253,6 +253,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             "onboardingCompleted:",
             userDataFromFirestore.onboardingCompleted
           );
+          updateUserData({
+            ...userDataFromFirestore,
+            currentOnboardingScreen: "Connect",
+          });
           router.replace({
             pathname: `/main/Connect` as any,
           });
