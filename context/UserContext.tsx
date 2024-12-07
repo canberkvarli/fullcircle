@@ -69,8 +69,6 @@ export type UserDataType = {
   detailedLikesReceived?: any[];
   matches?: string[];
   onboardingCompleted?: boolean;
-
-  // Consolidated match preferences
   matchPreferences?: {
     preferredAgeRange?: {
       min: number;
