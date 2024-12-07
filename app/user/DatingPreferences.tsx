@@ -117,7 +117,7 @@ export default function DatingPreferences() {
         <View style={styles.separator} />
 
         {/* Upgrade prompt if not a FullCircle subscriber */}
-        {String(fullCircleSubscription) === "false" && (
+        {fullCircleSubscription === false && (
           <View style={styles.subscribeContainer}>
             <Link
               style={styles.subscribeButton}

@@ -11,6 +11,7 @@ import {
   getDocs,
   orderBy,
   limit,
+  startAfter,
 } from "firebase/firestore";
 
 import { getDownloadURL, ref } from "firebase/storage";
@@ -246,7 +247,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const userCurrentOnboardingScreen =
         userDataFromFirestore?.currentOnboardingScreen || "PhoneNumberScreen";
       if (docSnap.exists()) {
-        console.log("userDataFromFirestore:", userDataFromFirestore);
         setUserData(userDataFromFirestore);
         if (userDataFromFirestore.onboardingCompleted) {
           console.log(
@@ -256,7 +256,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           router.replace({
             pathname: `/main/Connect` as any,
           });
-          fetchPotentialMatches();
         } else {
           router.replace({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
@@ -280,42 +279,51 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         likedMatches = [],
         dislikedMatches = [],
         matches = [],
+        userId,
       } = userData;
 
-      const excludedUserIds = [
+      const excludedUserIds = new Set([
         ...likedMatches,
         ...dislikedMatches,
         ...matches,
-        userData.userId,
-      ];
+        userId,
+      ]);
 
-      const chunkedExcludedUserIds = [];
-      while (excludedUserIds.length > 0) {
-        chunkedExcludedUserIds.push(excludedUserIds.splice(0, 10));
-      }
+      console.log("excludedUserIds:", excludedUserIds);
 
-      let allMatches: UserDataType[] = [];
+      let fetchedMatches: UserDataType[] = [];
+      let lastVisible: any = null;
 
-      // Fetch matches for each chunk
-      for (const chunk of chunkedExcludedUserIds) {
+      while (fetchedMatches.length < 10) {
         const usersQuery = query(
           collection(FIRESTORE, "users"),
-          where("userId", "not-in", chunk),
-          limit(10) // Fetch a batch of 10 matches
+          orderBy("userId"),
+          startAfter(lastVisible || 0),
+          limit(10)
         );
 
         const querySnapshot = await getDocs(usersQuery);
-        const potentialMatchesFromFirestore = querySnapshot.docs.map(
-          (doc) => doc.data() as UserDataType
-        );
+        if (querySnapshot.empty) break;
 
-        allMatches = [...allMatches, ...potentialMatchesFromFirestore];
+        const newMatches = querySnapshot.docs
+          .map((doc) => doc.data() as UserDataType)
+          .filter((user) => !excludedUserIds.has(user.userId));
+
+        fetchedMatches = [...fetchedMatches, ...newMatches];
+        lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+        // If we’ve fetched enough matches, stop the loop
+        if (fetchedMatches.length >= 10) break;
       }
 
-      setPotentialMatches(allMatches);
+      // Truncate to exactly 10 matches in case extra were fetched
+      const limitedMatches = fetchedMatches.slice(0, 10);
 
-      if (allMatches.length > 0) {
-        setCurrentPotentialMatch(allMatches[0]);
+      // Update state
+      setPotentialMatches((prevMatches) => [...prevMatches, ...limitedMatches]);
+
+      if (limitedMatches.length > 0) {
+        setCurrentPotentialMatch(limitedMatches[0]);
         setCurrentPotentialMatchIndex(0);
       }
     } catch (error) {

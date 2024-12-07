@@ -135,6 +135,12 @@ const styles = StyleSheet.create({
   subheaderTextBold: {
     fontWeight: "bold",
   },
+  rangeText: {
+    fontSize: 16,
+    color: darkNeutral,
+    textAlign: "center",
+    marginTop: 10,
+  },
   heightRangeContainer: {
     marginTop: 20,
     alignItems: "center",

@@ -5,21 +5,13 @@ import {
   ActivityIndicator,
   Text,
   ScrollView,
-  Modal,
-  TouchableWithoutFeedback,
 } from "react-native";
-import {
-  GestureHandlerRootView,
-  GestureDetector,
-  TapGestureHandler,
-  GestureHandlerStateChangeEvent,
-} from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
 import styles from "@/styles/Main/ConnectStyles";
 import { Link } from "expo-router";
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import FilterModal from "@/components/modals/FiltersModal";
 
 const ConnectScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -33,6 +25,7 @@ const ConnectScreen: React.FC = () => {
     updateUserData,
     userData,
     fetchDetailedLikes,
+    fetchPotentialMatches,
   } = useUserContext();
 
   const [ageRange, setAgeRange] = useState([18, 50]);
@@ -51,6 +44,10 @@ const ConnectScreen: React.FC = () => {
   const fullCircleSubscription = userData.fullCircleSubscription || false;
 
   useEffect(() => {
+    fetchPotentialMatches();
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       setLoading(false);
     };
@@ -62,30 +59,35 @@ const ConnectScreen: React.FC = () => {
     }
   }, [userData]);
 
+  const updateMatchPreferences = (preferences: {
+    preferredAgeRange?: { min?: number; max?: number };
+    datePreferences?: string[];
+    preferredEthnicities?: string[];
+    preferredHeightRange?: { min?: number; max?: number };
+  }) => {
+    setAgeRange([
+      preferences?.preferredAgeRange?.min || 18,
+      preferences?.preferredAgeRange?.max || 35,
+    ]);
+    setOriginalAgeRange([
+      preferences?.preferredAgeRange?.min || 18,
+      preferences?.preferredAgeRange?.max || 35,
+    ]);
+    setDatePreferences(preferences?.datePreferences || []);
+    setPreferredEthnicities(preferences?.preferredEthnicities || []);
+    setHeightRange([
+      Math.floor(preferences?.preferredHeightRange?.min || 36) / 12 || 3,
+      Math.floor(preferences?.preferredHeightRange?.max || 84) / 12 || 7,
+    ]);
+    setOriginalHeightRange([
+      Math.floor(preferences?.preferredHeightRange?.min || 36) / 12 || 3,
+      Math.floor(preferences?.preferredHeightRange?.max || 84) / 12 || 7,
+    ]);
+  };
+
   useEffect(() => {
-    if (userData && userData.matchPreferences) {
-      setAgeRange([
-        userData.matchPreferences.preferredAgeRange?.min || 18,
-        userData.matchPreferences.preferredAgeRange?.max || 35,
-      ]);
-      setOriginalAgeRange([
-        userData.matchPreferences.preferredAgeRange?.min || 18,
-        userData.matchPreferences.preferredAgeRange?.max || 35,
-      ]);
-      setDatePreferences(userData.matchPreferences.datePreferences || []);
-      setPreferredEthnicities(preferredEthnicities || []);
-      setHeightRange([
-        Math.floor(userData.matchPreferences.preferredHeightRange?.min ?? 36) /
-          12 || 3,
-        Math.floor(userData.matchPreferences.preferredHeightRange?.max ?? 84) /
-          12 || 7,
-      ]);
-      setOriginalHeightRange([
-        Math.floor(userData.matchPreferences.preferredHeightRange?.min ?? 36) /
-          12 || 3,
-        Math.floor(userData.matchPreferences.preferredHeightRange?.max ?? 84) /
-          12 || 7,
-      ]);
+    if (userData?.matchPreferences) {
+      updateMatchPreferences(userData.matchPreferences);
     }
   }, [userData]);
 
@@ -127,8 +129,6 @@ const ConnectScreen: React.FC = () => {
     ageRange[1] === originalAgeRange[1] &&
     heightRange[0] === originalHeightRange[0] &&
     heightRange[1] === originalHeightRange[1];
-
-  const isSubscriber = String(fullCircleSubscription) === "true";
 
   if (loading) {
     return (
@@ -227,95 +227,43 @@ const ConnectScreen: React.FC = () => {
       )}
 
       {/* Age Filter Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <FilterModal
         visible={showFilterModal}
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <GestureHandlerRootView style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => setShowFilterModal(false)}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Age</Text>
-            <Text style={styles.subheaderText}>
-              Select the range you're open to meeting
-            </Text>
-            <MultiSlider
-              values={ageRange}
-              sliderLength={280}
-              min={18}
-              max={100}
-              onValuesChange={setAgeRange}
-            />
-            <Text style={styles.ageText}>
-              Age Range: {ageRange[0]} - {ageRange[1]}
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleApplyAgeFilter}
-              style={[
-                styles.applyButton,
-                isApplyButtonDisabled && styles.applyButtonDisabled,
-              ]}
-              disabled={isApplyButtonDisabled}
-            >
-              <Text style={styles.applyButtonText}>Apply Filter</Text>
-            </TouchableOpacity>
-          </View>
-        </GestureHandlerRootView>
-      </Modal>
+        title="Age"
+        description="Select the range you're open to meeting"
+        values={ageRange}
+        min={18}
+        max={100}
+        onValuesChange={setAgeRange}
+        formattedRange={`Age Range: ${ageRange[0]} - ${ageRange[1]}`}
+        onClose={() => setShowFilterModal(false)}
+        onApply={handleApplyAgeFilter}
+        isApplyDisabled={isApplyButtonDisabled}
+        styles={styles}
+      />
 
       {/* Height Filter Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <FilterModal
         visible={showHeightModal}
-        onRequestClose={() => setShowHeightModal(false)}
-      >
-        <GestureHandlerRootView style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={() => setShowHeightModal(false)}>
-            <View style={styles.modalOverlay} />
-          </TouchableWithoutFeedback>
-
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Height</Text>
-            <Text style={styles.subheaderText}>Select the height range</Text>
-            <MultiSlider
-              values={heightRange}
-              sliderLength={280}
-              min={3}
-              max={7}
-              step={0.1}
-              onValuesChange={(values) => {
-                const roundedValues = values.map((val) =>
-                  parseFloat(val.toFixed(1))
-                );
-                setHeightRange(roundedValues);
-              }}
-            />
-            <Text style={styles.heightText}>
-              Height Range: {Math.floor(heightRange[0])}'
-              {Math.round((heightRange[0] % 1) * 10)}" -{" "}
-              {Math.floor(heightRange[1])}'
-              {Math.round((heightRange[1] % 1) * 10)}"
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleApplyAgeFilter}
-              style={[
-                styles.applyButton,
-                isApplyButtonDisabled && styles.applyButtonDisabled,
-              ]}
-              disabled={isApplyButtonDisabled}
-            >
-              <Text style={styles.applyButtonText}>Apply Filter</Text>
-            </TouchableOpacity>
-          </View>
-        </GestureHandlerRootView>
-      </Modal>
+        title="Height"
+        description="Select the height range"
+        values={heightRange}
+        min={3}
+        max={7}
+        step={0.1}
+        onValuesChange={(values) =>
+          setHeightRange(values.map((val) => parseFloat(val.toFixed(1))))
+        }
+        formattedRange={`Height Range: ${Math.floor(
+          heightRange[0]
+        )}'${Math.round((heightRange[0] % 1) * 10)}" - ${Math.floor(
+          heightRange[1]
+        )}'${Math.round((heightRange[1] % 1) * 10)}"`}
+        onClose={() => setShowHeightModal(false)}
+        onApply={handleApplyAgeFilter}
+        isApplyDisabled={isApplyButtonDisabled}
+        styles={styles}
+      />
     </View>
   );
 };
