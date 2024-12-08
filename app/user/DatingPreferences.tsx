@@ -89,7 +89,11 @@ export default function DatingPreferences() {
   ) => (
     <TouchableOpacity
       style={styles.fieldContainer}
-      onPress={() => handleEditField(fieldName, value)}
+      onPress={() =>
+        isSubscriberField && !fullCircleSubscription
+          ? router.navigate("/user/FullCircleSubscription")
+          : handleEditField(fieldName, value)
+      }
     >
       <View style={styles.fieldContent}>
         <View>
