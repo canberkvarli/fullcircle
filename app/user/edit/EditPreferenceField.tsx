@@ -9,7 +9,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
-import MultiSlider from "@ptomasroos/react-native-multi-slider"; // Make sure you're using the MultiSlider package
+import MultiSlider from "@ptomasroos/react-native-multi-slider";
 
 const FIELD_TITLES: Record<string, string> = {
   datePreferences: "I'm interested in",
@@ -27,14 +27,19 @@ export default function EditPreferenceField() {
   }>();
   const router = useRouter();
   const { updateUserData, userData } = useUserContext();
-
   const [value, setValue] = useState<any>(currentValue || null);
   const [isVisible, setIsVisible] = useState<boolean>(
     userData?.hiddenFields?.[fieldName] === false || false
   );
 
   useEffect(() => {
-    setValue(currentValue || null);
+    if (currentValue) {
+      const parsedValue =
+        typeof currentValue === "string"
+          ? JSON.parse(currentValue)
+          : currentValue;
+      setValue(parsedValue);
+    }
     setIsVisible(userData?.hiddenFields?.[fieldName] === false);
   }, [currentValue, userData, fieldName]);
 
@@ -161,7 +166,6 @@ export default function EditPreferenceField() {
               markerStyle={styles.sliderMarker}
               pressedMarkerStyle={styles.sliderMarkerPressed}
               containerStyle={styles.sliderWrapper}
-              allowOverlap
             />
             <Text style={styles.sliderLabel}>Max Age: {value?.max || 100}</Text>
           </View>
