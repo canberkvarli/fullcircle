@@ -24,6 +24,15 @@ export default function DatingPreferences() {
         ? `${value.join(", ").slice(0, 40)}...`
         : value.join(", ");
     }
+
+    // Check if the value contains a number followed by a unit (e.g., "miles", "km")
+    if (typeof value === "string" && /[\d]+(\s*[\w]+)?/.test(value)) {
+      const match = value.match(/[\d]+/);
+      if (match) {
+        return `${match[0]} ${value.replace(match[0], "").trim()}`;
+      }
+    }
+
     return value || defaultValue;
   };
 
@@ -44,15 +53,15 @@ export default function DatingPreferences() {
       label: "Preferred Age Range",
       value: userData?.matchPreferences?.preferredAgeRange
         ? `${userData.matchPreferences.preferredAgeRange.min || 18} - ${
-            userData.matchPreferences.preferredAgeRange.max || 30
+            userData.matchPreferences.preferredAgeRange.max || 70
           }`
-        : "18 - 30",
+        : "18 - 70",
       isSubscriberField: false,
       fieldName: "preferredAgeRange",
     },
     {
       label: "Maximum Distance",
-      value: `${userData?.matchPreferences?.preferredDistance || 100} miles`,
+      value: `${userData?.matchPreferences?.preferredDistance || 100}`,
       isSubscriberField: false,
       fieldName: "preferredDistance",
     },
@@ -60,11 +69,11 @@ export default function DatingPreferences() {
       label: "Age Range",
       value: userData?.matchPreferences?.preferredAgeRange
         ? `${userData.matchPreferences.preferredAgeRange.min || 18} - ${
-            userData.matchPreferences.preferredAgeRange.max || 30
+            userData.matchPreferences.preferredAgeRange.max || 70
           }`
-        : "18 - 30",
+        : "18 - 70",
       isSubscriberField: true,
-      fieldName: "ageRange",
+      fieldName: "preferredAgeRange",
     },
     {
       label: "Preferred Ethnicity",
@@ -75,6 +84,19 @@ export default function DatingPreferences() {
   ];
 
   const handleEditField = (fieldName: string, currentValue: any) => {
+    if (fieldName === "preferredAgeRange" && typeof currentValue === "string") {
+      // Parse it into an object if it's a string
+      currentValue = {
+        min: parseInt(currentValue.split(" - ")[0], 10),
+        max: parseInt(currentValue.split(" - ")[1], 10),
+      };
+    } else if (
+      fieldName === "preferredDistance" &&
+      typeof currentValue === "string"
+    ) {
+      // Parse it into an object if it's a string
+      currentValue = parseInt(currentValue, 10);
+    }
     router.navigate({
       pathname: "/user/edit/EditPreferenceField",
       params: { fieldName, currentValue: JSON.stringify(currentValue) },

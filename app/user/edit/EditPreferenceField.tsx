@@ -38,7 +38,16 @@ export default function EditPreferenceField() {
         typeof currentValue === "string"
           ? JSON.parse(currentValue)
           : currentValue;
-      setValue(parsedValue);
+
+      if (
+        fieldName === "preferredAgeRange" &&
+        typeof parsedValue === "string"
+      ) {
+        const [min, max] = parsedValue.split(" - ");
+        setValue({ min: parseInt(min, 10), max: parseInt(max, 10) });
+      } else {
+        setValue(parsedValue);
+      }
     }
     setIsVisible(userData?.hiddenFields?.[fieldName] === false);
   }, [currentValue, userData, fieldName]);
@@ -156,9 +165,9 @@ export default function EditPreferenceField() {
           <View style={styles.sliderContainer}>
             <Text style={styles.sliderLabel}>Min Age: {value?.min || 18}</Text>
             <MultiSlider
-              values={[value?.min || 18, value?.max || 100]}
+              values={[value?.min || 18, value?.max || 70]}
               min={18}
-              max={100}
+              max={70}
               step={1}
               onValuesChange={(val) => setValue({ min: val[0], max: val[1] })}
               trackStyle={styles.sliderTrack}
@@ -167,7 +176,7 @@ export default function EditPreferenceField() {
               pressedMarkerStyle={styles.sliderMarkerPressed}
               containerStyle={styles.sliderWrapper}
             />
-            <Text style={styles.sliderLabel}>Max Age: {value?.max || 100}</Text>
+            <Text style={styles.sliderLabel}>Max Age: {value?.max || 70}</Text>
           </View>
         );
 
