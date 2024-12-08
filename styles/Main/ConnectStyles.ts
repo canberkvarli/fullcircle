@@ -226,6 +226,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  noMatchesContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: primaryColor,
+  },
+  noMatchesText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: darkNeutral,
+    marginBottom: 10,
+  },
+  noMatchesSubText: {
+    fontSize: 16,
+    textAlign: "center",
+    color: secondaryColor,
+    marginBottom: 20,
+  },
+  upgradeButton: {
+    backgroundColor: highlightColor,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginBottom: 10,
+  },
+  upgradeButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  filtersButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: secondaryColor,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+  },
+  filtersButtonText: {
+    color: darkNeutral,
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });
 
 export default styles;

@@ -26,6 +26,7 @@ const ConnectScreen: React.FC = () => {
     userData,
     fetchDetailedLikes,
     fetchPotentialMatches,
+    noMoreMatches,
   } = useUserContext();
 
   const [ageRange, setAgeRange] = useState([18, 50]);
@@ -144,76 +145,99 @@ const ConnectScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer}
-      >
-        <Link
-          href={{ pathname: "/user/DatingPreferences" }}
-          style={styles.slider}
-        >
-          <Icon name="sliders" size={24} color={"black"} />
-        </Link>
-        <TouchableOpacity
-          style={[styles.tab, styles.activeTab]}
-          onPress={() => setShowFilterModal(true)}
-        >
-          <Text style={styles.tabText}>Age</Text>
-          <Icon
-            name="chevron-down"
-            size={12}
-            color={"#7E7972"}
-            style={styles.caretIcon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => setShowHeightModal(true)}
-        >
-          <Text style={styles.tabText}>Height</Text>
-          <Icon
-            name="chevron-down"
-            size={12}
-            color={"#7E7972"}
-            style={styles.caretIcon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>Dating Intentions</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>Active Today</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.tab}>
-          <Text style={styles.tabText}>New Here</Text>
-        </TouchableOpacity>
-        <Link
-          href={{ pathname: "/user/DatingPreferences" }}
-          style={[styles.tab, styles.moreTab]}
-        >
-          <Text style={styles.tabText}>More</Text>
-        </Link>
-      </ScrollView>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.matchContainer}>
-          {loadingNextBatch || !currentPotentialMatch ? (
-            <ActivityIndicator
-              size="large"
-              color="black"
-              style={styles.loadingIndicator}
-            />
-          ) : (
-            <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
-          )}
+      {noMoreMatches ? (
+        <View style={styles.noMatchesContainer}>
+          <Text style={styles.noMatchesText}>No more matches available</Text>
+          <Text style={styles.noMatchesSubText}>
+            Upgrade your account for more matches or change your filters.
+          </Text>
+          <Link
+            href={{ pathname: "/user/FullCircleSubscription" }}
+            style={styles.upgradeButton}
+          >
+            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+          </Link>
+          <Link
+            href={{ pathname: "/user/DatingPreferences" }}
+            style={styles.filtersButton}
+          >
+            <Text style={styles.filtersButtonText}>Update Filters</Text>
+          </Link>
         </View>
-      </ScrollView>
+      ) : (
+        <View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsContainer}
+          >
+            <Link
+              href={{ pathname: "/user/DatingPreferences" }}
+              style={styles.slider}
+            >
+              <Icon name="sliders" size={24} color={"black"} />
+            </Link>
+            <TouchableOpacity
+              style={[styles.tab, styles.activeTab]}
+              onPress={() => setShowFilterModal(true)}
+            >
+              <Text style={styles.tabText}>Age</Text>
+              <Icon
+                name="chevron-down"
+                size={12}
+                color={"#7E7972"}
+                style={styles.caretIcon}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => setShowHeightModal(true)}
+            >
+              <Text style={styles.tabText}>Height</Text>
+              <Icon
+                name="chevron-down"
+                size={12}
+                color={"#7E7972"}
+                style={styles.caretIcon}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.tab}>
+              <Text style={styles.tabText}>Dating Intentions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.tab}>
+              <Text style={styles.tabText}>Active Today</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.tab}>
+              <Text style={styles.tabText}>New Here</Text>
+            </TouchableOpacity>
+            <Link
+              href={{ pathname: "/user/DatingPreferences" }}
+              style={[styles.tab, styles.moreTab]}
+            >
+              <Text style={styles.tabText}>More</Text>
+            </Link>
+          </ScrollView>
 
-      {!loadingNextBatch && (
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.matchContainer}>
+              {loadingNextBatch || !currentPotentialMatch ? (
+                <ActivityIndicator
+                  size="large"
+                  color="black"
+                  style={styles.loadingIndicator}
+                />
+              ) : (
+                <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
+              )}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {!loadingNextBatch && !noMoreMatches && (
         <TouchableOpacity
           onPress={() => {
             dislikeMatch(currentPotentialMatch.userId).then(() => {
