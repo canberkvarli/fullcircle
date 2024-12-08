@@ -158,12 +158,12 @@ export default function SacredSelf() {
                   <Text style={styles.subText}>
                     Get seen sooner and go on 3x as many dates
                   </Text>
-                  <TouchableOpacity
+                  <Link
                     style={styles.upgradeButton}
-                    onPress={() => console.log("Upgrade clicked")}
+                    href={{ pathname: "user/FullCircleSubscription" as any }}
                   >
                     <Text style={styles.upgradeButtonText}>Upgrade</Text>
-                  </TouchableOpacity>
+                  </Link>
                 </View>
               </View>
 
