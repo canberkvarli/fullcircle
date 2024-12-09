@@ -234,6 +234,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [userData.likesReceived]);
 
+  useEffect(() => {
+    fetchPotentialMatches(); // Initial fetch
+  }, []);
+
   const fetchUserData = async (userId: string) => {
     console.log("Fetching user data for:", userId);
     try {
@@ -282,18 +286,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchPotentialMatches = async () => {
     try {
-      if (noMoreMatches) {
-        console.log("No more matches to fetch.");
+      if (noMoreMatches || loadingNextBatch) {
+        console.log("No more matches to fetch or already loading.");
         return;
       }
 
+      setLoadingNextBatch(true);
       const excludedUserIds = new Set([
         userData?.userId,
-        ...(userData.likedMatches || []),
-        ...(userData.dislikedMatches || []),
-        ...(userData.matches || []),
+        ...(userData?.likedMatches || []),
+        ...(userData?.dislikedMatches || []),
+        ...(userData?.matches || []),
       ]);
-
       console.log("Excluded user IDs:", excludedUserIds);
 
       let fetchedMatches: UserDataType[] = [];
@@ -304,7 +308,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const usersQuery = query(
           collection(FIRESTORE, "users"),
           orderBy("userId"),
-          startAfter(lastVisibleMatch || 0),
+          lastVisibleMatch ? startAfter(lastVisibleMatch) : limit(10),
           limit(10)
         );
 
@@ -313,6 +317,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         if (querySnapshot.empty) {
           console.log("No more matches available.");
           hasMoreMatches = false;
+          setNoMoreMatches(true);
           break;
         }
 
@@ -321,21 +326,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           .filter((user) => !excludedUserIds.has(user.userId));
 
         if (newMatches.length > 0) {
-          fetchedMatches = [
-            ...fetchedMatches,
-            ...newMatches.filter(
-              (user) =>
-                !fetchedMatches.some(
-                  (existingUser) => existingUser.userId === user.userId
-                )
-            ),
-          ];
+          fetchedMatches = [...fetchedMatches, ...newMatches];
           setLastVisibleMatch(
             querySnapshot.docs[querySnapshot.docs.length - 1].data().userId
           );
         } else {
           console.log("No new matches found in this batch.");
           hasMoreMatches = false;
+          setNoMoreMatches(true);
+          break;
         }
       }
 
@@ -347,10 +346,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         ]);
       } else {
         console.log("No matches fetched.");
-        setNoMoreMatches(true);
       }
     } catch (error) {
       console.error("Error fetching potential matches:", error);
+    } finally {
+      setLoadingNextBatch(false); // Ensure loading state is reset here
     }
   };
 
@@ -655,22 +655,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const loadNextPotentialMatch = async () => {
-    if (!potentialMatches || potentialMatches.length === 0) {
-      console.log("No potential matches available.");
-      return;
-    }
-
-    const nextIndex = currentPotentialMatchIndex + 1;
-
-    if (nextIndex < potentialMatches.length) {
+    if (currentPotentialMatchIndex < potentialMatches.length - 1) {
+      const nextIndex = currentPotentialMatchIndex + 1;
       setCurrentPotentialMatch(potentialMatches[nextIndex]);
       setCurrentPotentialMatchIndex(nextIndex);
-    } else {
+    } else if (!noMoreMatches && !loadingNextBatch) {
       // Load next batch of potential matches
       console.log("End of current batch, loading next batch...");
-      setLoadingNextBatch(true);
       await fetchPotentialMatches();
-      setLoadingNextBatch(false);
+    } else {
+      console.log("No more matches to load.");
     }
   };
 

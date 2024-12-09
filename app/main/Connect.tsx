@@ -14,7 +14,6 @@ import { Link } from "expo-router";
 import FilterModal from "@/components/modals/FiltersModal";
 
 const ConnectScreen: React.FC = () => {
-  const [loading, setLoading] = useState<boolean>(true);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
   const [showHeightModal, setShowHeightModal] = useState<boolean>(false);
   const {
@@ -45,18 +44,14 @@ const ConnectScreen: React.FC = () => {
   const fullCircleSubscription = userData.fullCircleSubscription || false;
 
   useEffect(() => {
-    fetchPotentialMatches();
-  }, []);
+    if (!currentPotentialMatch) {
+      loadNextPotentialMatch(); // Load the first match
+    }
+  }, [currentPotentialMatch]);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(false);
-    };
-
     if (!userData.detailedLikesReceived) {
       fetchDetailedLikes();
-    } else {
-      loadData();
     }
   }, [userData]);
 
@@ -130,18 +125,6 @@ const ConnectScreen: React.FC = () => {
     ageRange[1] === originalAgeRange[1] &&
     heightRange[0] === originalHeightRange[0] &&
     heightRange[1] === originalHeightRange[1];
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator
-          style={styles.loadingIndicator}
-          size="large"
-          color="#EDE9E3"
-        />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
