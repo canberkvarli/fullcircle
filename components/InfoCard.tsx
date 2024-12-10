@@ -1,5 +1,11 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 
@@ -15,20 +21,33 @@ const InfoCard = ({
   isMatched?: boolean;
 }) => {
   const { likeMatch, loadNextPotentialMatch } = useUserContext();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLike = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await likeMatch(currentPotentialMatch.userId);
+      loadNextPotentialMatch();
+    } catch (error) {
+      console.error("Error liking match: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.infoCard}>
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoContent}>{content}</Text>
       <View style={styles.iconContainer}>
         {!isMatched && (
-          <TouchableOpacity
-            onPress={() => {
-              likeMatch(currentPotentialMatch.userId).then(() =>
-                loadNextPotentialMatch()
-              );
-            }}
-          >
-            <Icon name="heart" size={30} color="grey" style={styles.icon} />
+          <TouchableOpacity onPress={handleLike} disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="grey" />
+            ) : (
+              <Icon name="heart" size={30} color="grey" style={styles.icon} />
+            )}
           </TouchableOpacity>
         )}
       </View>

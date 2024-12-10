@@ -305,12 +305,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
       while (fetchedMatches.length < 10 && hasMoreMatches) {
         console.log("Fetching potential matches...");
-        const usersQuery = query(
-          collection(FIRESTORE, "users"),
-          orderBy("userId"),
-          lastVisibleMatch ? startAfter(lastVisibleMatch) : limit(10),
-          limit(10)
-        );
+        const usersQuery = lastVisibleMatch
+          ? query(
+              collection(FIRESTORE, "users"),
+              orderBy("userId"),
+              startAfter(lastVisibleMatch),
+              limit(10)
+            )
+          : query(collection(FIRESTORE, "users"), orderBy("userId"), limit(10));
 
         const querySnapshot = await getDocs(usersQuery);
 
@@ -671,21 +673,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const likeMatch = async (matchId: string) => {
     if (!currentUser) return;
     try {
-      updateUserData({
-        likedMatches: [...(userData.likedMatches || []), matchId],
+      const updatedLikedMatches = new Set([...(userData.likedMatches || []), matchId]);
+  
+      await updateUserData({
+        likedMatches: Array.from(updatedLikedMatches),
       });
+  
       console.log(`Liked match: ${matchId}`);
     } catch (error) {
       console.error("Failed to like match: ", error);
     }
   };
-
+  
   const dislikeMatch = async (matchId: string) => {
     if (!currentUser) return;
     try {
-      updateUserData({
-        dislikedMatches: [...(userData.likedMatches || []), matchId],
+      const updatedDislikedMatches = new Set([...(userData.dislikedMatches || []), matchId]);
+  
+      await updateUserData({
+        dislikedMatches: Array.from(updatedDislikedMatches),
       });
+  
       console.log(`Disliked match: ${matchId}`);
     } catch (error) {
       console.error("Failed to dislike match: ", error);

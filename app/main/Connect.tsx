@@ -41,11 +41,12 @@ const ConnectScreen: React.FC = () => {
 
   const [heightRange, setHeightRange] = useState([3, 7]);
   const [originalHeightRange, setOriginalHeightRange] = useState([3, 7]);
+  const [isDislikeLoading, setIsDislikeLoading] = useState(false);
   const fullCircleSubscription = userData.fullCircleSubscription || false;
 
   useEffect(() => {
     if (!currentPotentialMatch) {
-      loadNextPotentialMatch(); // Load the first match
+      loadNextPotentialMatch();
     }
   }, [currentPotentialMatch]);
 
@@ -223,13 +224,24 @@ const ConnectScreen: React.FC = () => {
       {!loadingNextBatch && !noMoreMatches && (
         <TouchableOpacity
           onPress={() => {
-            dislikeMatch(currentPotentialMatch.userId).then(() => {
-              loadNextPotentialMatch();
-            });
+            if (!isDislikeLoading) {
+              setIsDislikeLoading(true);
+              dislikeMatch(currentPotentialMatch.userId)
+                .then(() => {
+                  loadNextPotentialMatch();
+                })
+                .finally(() => {
+                  setIsDislikeLoading(false);
+                });
+            }
           }}
           style={styles.dislikeButton}
         >
-          <Icon name="times" style={styles.dislikeIcon} />
+          {isDislikeLoading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Icon name="times" style={styles.dislikeIcon} />
+          )}
         </TouchableOpacity>
       )}
 

@@ -1,5 +1,12 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import InfoCard from "@/components/InfoCard";
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -12,6 +19,7 @@ const PotentialMatch = ({
   isMatched?: boolean;
 }) => {
   const { likeMatch, loadNextPotentialMatch } = useUserContext();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Consolidate info for spreading evenly across photos
   const infoSections = [
@@ -43,6 +51,19 @@ const PotentialMatch = ({
     infoSections.length / currentPotentialMatch.photos.length
   );
 
+  const handleLike = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await likeMatch(currentPotentialMatch.userId);
+      loadNextPotentialMatch();
+    } catch (error) {
+      console.error("Error liking match: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.userName}>{currentPotentialMatch.firstName}</Text>
@@ -52,13 +73,14 @@ const PotentialMatch = ({
           {!isMatched && (
             <TouchableOpacity
               style={styles.heartIcon}
-              onPress={() => {
-                likeMatch(currentPotentialMatch.userId).then(() => {
-                  loadNextPotentialMatch();
-                });
-              }}
+              onPress={handleLike}
+              disabled={isLoading}
             >
-              <Icon name="heart" size={40} color="black" />
+              {isLoading ? (
+                <ActivityIndicator size="large" color="black" />
+              ) : (
+                <Icon name="heart" size={40} color="black" />
+              )}
             </TouchableOpacity>
           )}
           {/* Spread info evenly across photos */}
