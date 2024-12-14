@@ -40,6 +40,20 @@ const getGenderSpecificPhotos = async (
   return await fetchUnsplashImages(query, count, page);
 };
 
+const lastActiveDate = new Date();
+
+const formattedLastActive = lastActiveDate.toLocaleString("en-US", {
+  weekday: "short", // Optional: "Tue" or "Tuesday"
+  year: "numeric",
+  month: "short", // "Dec"
+  day: "numeric",
+  hour: "2-digit", // "6 PM"
+  minute: "2-digit", // "09"
+  second: "2-digit", // "13"
+  hour12: true, // AM/PM
+  timeZoneName: "short", // "UTC-8"
+});
+
 // Seed Firestore with users
 const seedFirestore = async (numUsers: number) => {
   const usersCollection = db.collection("users");
@@ -171,7 +185,7 @@ const seedFirestore = async (numUsers: number) => {
       jobLocation: faker.company.name(),
       jobTitle: faker.person.jobTitle(),
       lastName: faker.person.lastName(),
-      lastSignInTime: faker.date.recent().toISOString(),
+      lastActive: formattedLastActive,
       latitude: faker.location.latitude(),
       longitude: faker.location.longitude(),
       location: location,

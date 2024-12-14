@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { doc, getDoc, setDoc, runTransaction } from "firebase/firestore";
+import { AppState, AppStateStatus } from "react-native";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  runTransaction,
+  serverTimestamp,
+} from "firebase/firestore";
 import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
 import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
@@ -18,6 +25,7 @@ import { getDownloadURL, ref } from "firebase/storage";
 
 export type UserDataType = {
   userId: string;
+  lastActive?: any;
   isSeedUser: boolean;
   currentOnboardingScreen: string;
   phoneNumber: string;
@@ -154,6 +162,7 @@ const initialScreens = [
 
 const initialUserData: UserDataType = {
   userId: "",
+  lastActive: null, // Timestamp-compatible type
   isSeedUser: false,
   phoneNumber: "",
   email: "",
@@ -238,8 +247,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchPotentialMatches(); // Initial fetch
   }, []);
 
+  // Use AppState to track changes in the app state (background/foreground)
+  useEffect(() => {
+    const appStateListener = AppState.addEventListener(
+      "change",
+      (nextAppState) => {
+        if (nextAppState === "active") {
+          updateLastActive(); // Update when the app comes to the foreground
+        } else if (nextAppState === "background") {
+          updateLastActive(); // Optionally update when going to background
+        }
+      }
+    );
+
+    return () => {
+      appStateListener.remove(); // Clean up listener on unmount
+    };
+  }, [userData]);
+
   const fetchUserData = async (userId: string) => {
-    console.log("Fetching user data for:", userId);
+    console.log("FROM CONTEXT: Fetching user data for:", userId);
     try {
       if (!userId) {
         // If no userId is present, navigate to LandingPage
@@ -281,6 +308,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+    }
+  };
+
+  // Function to update the last active timestamp
+  const updateLastActive = async () => {
+    try {
+      const userId = userData.userId; // Assuming userData is available
+      if (!userId) return;
+      await updateUserData({ lastActive: serverTimestamp() });
+      console.log("Last active updated successfully");
+    } catch (error) {
+      console.error("Error updating last active:", error);
     }
   };
 
@@ -383,6 +422,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user) {
       await fetchUserData(user.uid);
       console.log("OnAuthStateChanged: User is signed in");
+      updateLastActive();
     } else {
       setUserData(initialUserData);
     }
@@ -577,11 +617,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       await FIREBASE_AUTH.signOut()
         .then(() => {
+          updateLastActive(); // Update last active before logout
           setCurrentUser(null);
         })
         .then(() => console.log("User signed out! currentUser:", currentUser));
 
       router.replace("/onboarding/LoginSignupScreen");
+      updateLastActive(); // Update last active before logout
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -673,27 +715,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const likeMatch = async (matchId: string) => {
     if (!currentUser) return;
     try {
-      const updatedLikedMatches = new Set([...(userData.likedMatches || []), matchId]);
-  
+      const updatedLikedMatches = new Set([
+        ...(userData.likedMatches || []),
+        matchId,
+      ]);
+
       await updateUserData({
         likedMatches: Array.from(updatedLikedMatches),
       });
-  
+
       console.log(`Liked match: ${matchId}`);
     } catch (error) {
       console.error("Failed to like match: ", error);
     }
   };
-  
+
   const dislikeMatch = async (matchId: string) => {
     if (!currentUser) return;
     try {
-      const updatedDislikedMatches = new Set([...(userData.dislikedMatches || []), matchId]);
-  
+      const updatedDislikedMatches = new Set([
+        ...(userData.dislikedMatches || []),
+        matchId,
+      ]);
+
       await updateUserData({
         dislikedMatches: Array.from(updatedDislikedMatches),
       });
-  
+
       console.log(`Disliked match: ${matchId}`);
     } catch (error) {
       console.error("Failed to dislike match: ", error);

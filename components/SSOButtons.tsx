@@ -56,7 +56,6 @@ function SSOButtons(): JSX.Element {
           const updatedUserData = {
             ...existingUserData,
             GoogleSSOEnabled: true,
-            lastSignInTime: new Date().toISOString(),
           };
           await updateUserData(updatedUserData);
           router.replace(
