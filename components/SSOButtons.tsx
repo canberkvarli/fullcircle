@@ -22,7 +22,6 @@ function SSOButtons(): JSX.Element {
     setGoogleCredential,
     setGoogleUserData,
     setCurrentUser,
-    signOut,
     fetchUserData,
     updateUserData,
   } = useUserContext();
