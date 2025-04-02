@@ -87,7 +87,7 @@ const UserShow: React.FC = () => {
     },
     {
       title: "Date Preferences",
-      content: userData.datePreferences?.join(", ") || "N/A",
+      content: userData.matchPreferences.datePreferences?.join(", ") || "N/A",
     },
     {
       title: "Children Preference",

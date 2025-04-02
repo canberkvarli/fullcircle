@@ -1,17 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import { AppState, AppStateStatus } from "react-native";
+import { useRouter } from "expo-router";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
+import auth from "@react-native-firebase/auth";
+
 import {
   doc,
   getDoc,
   setDoc,
   runTransaction,
   serverTimestamp,
-} from "firebase/firestore";
-import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
-import { useRouter } from "expo-router";
-import { FirebaseAuthTypes } from "@react-native-firebase/auth";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import {
   query,
   collection,
   where,
@@ -19,9 +25,9 @@ import {
   orderBy,
   limit,
   startAfter,
-} from "firebase/firestore";
+} from "@react-native-firebase/firestore";
 
-import { getDownloadURL, ref } from "firebase/storage";
+import { getDownloadURL, ref } from "@react-native-firebase/storage";
 
 export type UserDataType = {
   userId: string;
@@ -50,7 +56,6 @@ export type UserDataType = {
   latitude?: number;
   gender?: string;
   sexualOrientation?: string[];
-  datePreferences?: string[];
   ethnicities?: string[];
   childrenPreference?: string;
   jobLocation?: string;
@@ -107,6 +112,12 @@ type UserContextType = {
   >;
   googleUserData: UserDataType;
   setGoogleUserData: React.Dispatch<React.SetStateAction<UserDataType>>;
+  handleGoogleSignIn: () => Promise<void>;
+  verifyPhoneAndSetUser: (
+    verificationId: string,
+    code: string,
+    phoneNumber: string
+  ) => Promise<void>;
   updateUserData: (data: Partial<UserDataType>) => void;
   navigateToNextScreen: () => void;
   navigateToPreviousScreen: () => void;
@@ -133,6 +144,7 @@ type UserContextType = {
   fetchRadiantSouls: () => Promise<any[]>;
   fetchDetailedLikes: () => void;
   fetchPotentialMatches: () => void;
+  resetPotentialMatches: () => void;
   getImageUrl: (imagePath: string) => Promise<string | null>;
   noMoreMatches: boolean;
 };
@@ -162,7 +174,7 @@ const initialScreens = [
 
 const initialUserData: UserDataType = {
   userId: "",
-  lastActive: null, // Timestamp-compatible type
+  lastActive: null,
   isSeedUser: false,
   phoneNumber: "",
   email: "",
@@ -210,7 +222,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentOnboardingScreen, setcurrentOnboardingScreen] =
     useState<string>(initialScreens[0]);
   const [screens, setScreens] = useState<string[]>(initialScreens);
-  const [userData, setUserData] = useState<UserDataType>(initialUserData);
+  const [userData, setUserData] = useState<UserDataType>({} as UserDataType);
   const [googleUserData, setGoogleUserData] =
     useState<UserDataType>(initialUserData);
   const [googleCredential, setGoogleCredential] =
@@ -227,14 +239,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loadingNextBatch, setLoadingNextBatch] = useState(false);
   const [lastVisibleMatch, setLastVisibleMatch] = useState<"" | null>(null);
   const [noMoreMatches, setNoMoreMatches] = useState<boolean>(false);
+  const [isSSOLogin, setIsSSOLogin] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+  const userDataRef = useRef(userData);
   const router = useRouter();
   const imageCache: Record<string, string> = {};
+  const webClientId =
+    "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com";
+  GoogleSignin.configure({
+    webClientId,
+    offlineAccess: false,
+  });
 
   useEffect(() => {
-    const subscriber = FIREBASE_AUTH.onAuthStateChanged((user) => {
-      onAuthStateChanged(user as FirebaseAuthTypes.User | null);
-    });
-    return subscriber; // unsubscribe on unmount
+    const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
+    return subscriber;
   }, []);
 
   useEffect(() => {
@@ -243,50 +262,270 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [userData.likesReceived]);
 
-  useEffect(() => {
-    fetchPotentialMatches(); // Initial fetch
-  }, []);
-
   // Use AppState to track changes in the app state (background/foreground)
   useEffect(() => {
     const appStateListener = AppState.addEventListener(
       "change",
       (nextAppState) => {
         if (nextAppState === "active") {
-          updateLastActive(); // Update when the app comes to the foreground
+          updateLastActive();
         } else if (nextAppState === "background") {
-          updateLastActive(); // Optionally update when going to background
+          updateLastActive();
         }
       }
     );
-
+    // Store the userData in a ref to avoid stale closures
+    userDataRef.current = userData;
     return () => {
       appStateListener.remove(); // Clean up listener on unmount
     };
   }, [userData]);
 
+  const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
+    // Ignore auth state changes if linking is in progress
+    if (isLinking) {
+      console.log("Linking in progress, ignoring onAuthStateChanged update");
+      return;
+    }
+    setCurrentUser(user);
+
+    console.log("onAuthStateChanged() => currentUser:", user);
+    if (initializing) setInitializing(false);
+
+    if (user) {
+      const isGoogleLogin = user.providerData.some(
+        (provider) => provider.providerId === "google.com"
+      );
+
+      if (isGoogleLogin) {
+        console.log("onAuthStateChanged(): User signed in via Google");
+        setIsSSOLogin(true);
+        await fetchUserData(user.uid);
+      } else {
+        console.log("onAuthStateChanged(): User signed in via phone");
+        setIsSSOLogin(false);
+        // to persist with the signed in user's flow we need to fetch the user data
+        // and redirect to the appropriate onboarding screen or dashboard.
+        await fetchUserData(user.uid);
+      }
+
+      updateLastActive();
+    } else {
+      setUserData(initialUserData); // Reset if user signs out
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsSSOLogin(true);
+
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+
+      const { idToken } = await GoogleSignin.signIn();
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const { user } = await FIREBASE_AUTH.signInWithCredential(
+        googleCredential
+      );
+
+      setGoogleCredential(googleCredential);
+      setCurrentUser(user);
+
+      if (user) {
+        const userDocRef = doc(FIRESTORE, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        const userFirstName = user.displayName?.split(" ")[0] || "";
+        const userLastName = user.displayName?.split(" ")[1] || "";
+        const userFullName = user.displayName || "";
+
+        // Default data for a new SSO user
+        let userDataToUpdate: Partial<UserDataType> = {
+          ...initialUserData,
+          userId: user.uid,
+          email: user.email || "",
+          firstName: userFirstName,
+          lastName: userLastName,
+          fullName: userFullName,
+          GoogleSSOEnabled: true,
+          currentOnboardingScreen: "PhoneNumberScreen",
+        };
+
+        if (docSnap.exists) {
+          // User already exists; use their current onboarding screen if defined
+          const existingUser = docSnap.data() as UserDataType;
+          console.log(
+            "handleGoogleSignIn(): Existing user found",
+            existingUser
+          );
+          userDataToUpdate.currentOnboardingScreen =
+            existingUser.currentOnboardingScreen || "NameScreen";
+          await updateUserData(userDataToUpdate);
+        } else {
+          // New user: create user document with default onboarding screen
+          await setDoc(userDocRef, userDataToUpdate);
+        }
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+    } finally {
+      setIsSSOLogin(false);
+    }
+  };
+
+  const verifyPhoneAndSetUser = async (
+    verificationId: string,
+    code: string,
+    phoneNumber: string
+  ) => {
+    try {
+      const { countryCode, areaCode, number } =
+        destructurePhoneNumber(phoneNumber);
+      const phoneCredential = auth.PhoneAuthProvider.credential(
+        verificationId,
+        code
+      );
+
+      if (googleCredential && FIREBASE_AUTH.currentUser) {
+        // For Google SSO users, link the phone credential directly
+        setIsLinking(true);
+        try {
+          console.log(
+            "verifyPhoneAndSetUser(): Linking phone number to Google SSO user"
+          );
+          await FIREBASE_AUTH.currentUser.linkWithCredential(phoneCredential);
+        } catch (error) {
+          console.error(
+            "Error linking phone number to Google SSO user:",
+            error
+          );
+          setIsLinking(false);
+          // Optionally handle specific error codes here (e.g., already-linked)
+          return;
+        }
+
+        // After successful linking, update the user data
+        await updateUserData({
+          ...initialUserData,
+          userId: FIREBASE_AUTH.currentUser.uid,
+          GoogleSSOEnabled: true,
+          phoneNumber,
+          countryCode,
+          areaCode,
+          number,
+          currentOnboardingScreen: "NameScreen",
+        });
+        router.replace(`onboarding/NameScreen` as any);
+        setIsLinking(false);
+      } else {
+        console.log(
+          "verifyPhoneAndSetUser(): Signing in with phone credential"
+        );
+        // For phone-only sign in, sign in with the phone credential to create a new user session
+        const userCredential = await FIREBASE_AUTH.signInWithCredential(
+          phoneCredential
+        );
+        const { user } = userCredential;
+        const userDocRef = doc(FIRESTORE, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (!docSnap.exists) {
+          console.log("New user, creating new user document");
+          const newUser = {
+            ...initialUserData,
+            userId: user.uid,
+            phoneNumber,
+            countryCode,
+            areaCode,
+            number,
+            currentOnboardingScreen: "NameScreen",
+          };
+
+          await updateUserData(newUser);
+        } else {
+          console.log(
+            "verifyPhoneAndSetUser(): User already exists, fetching user data..."
+          );
+          const existingUser = docSnap.data() as UserDataType;
+          const nextScreen = existingUser.onboardingCompleted
+            ? "/main/Connect"
+            : `onboarding/${
+                existingUser.currentOnboardingScreen || "NameScreen"
+              }`;
+
+          // await fetchUserData(user.uid);
+          // router.replace(nextScreen as any);
+        }
+      }
+    } catch (error) {
+      console.error("Error verifying phone number:", error);
+    }
+  };
+
+  const updateUserData = async (data: Partial<UserDataType>) => {
+    console.log("updateUserData(): Updating user data");
+    try {
+      const userIdToUpdate = data.userId || userData.userId;
+      if (!userIdToUpdate) {
+        throw new Error("User ID is required to update data");
+      }
+
+      const docRef = doc(FIRESTORE, "users", userIdToUpdate);
+      const docSnapshot = await getDoc(docRef);
+      let existingData: any;
+      if (docSnapshot.exists) {
+        existingData = docSnapshot.data();
+      }
+      // Merge hiddenFields
+      let updatedHiddenFields = existingData?.hiddenFields || {};
+      if (data.hiddenFields) {
+        updatedHiddenFields = {
+          ...updatedHiddenFields,
+          ...data.hiddenFields,
+        };
+      }
+
+      const updatedData = {
+        ...existingData,
+        ...data,
+        hiddenFields: updatedHiddenFields,
+      };
+
+      await setDoc(docRef, updatedData, { merge: true });
+      // Update local state
+      setUserData((prevData) => {
+        const newData = { ...prevData, ...data };
+        newData.hiddenFields = updatedHiddenFields;
+        return newData;
+      });
+    } catch (error) {
+      console.error("Failed to update user data: ", error);
+    }
+  };
+
   const fetchUserData = async (userId: string) => {
-    console.log("FROM CONTEXT: Fetching user data for:", userId);
     try {
       if (!userId) {
         // If no userId is present, navigate to LandingPage
+        console.log(
+          "fetchUserData(): No user ID provided, returning EARLY landing page"
+        );
         router.replace({
           pathname: `onboarding/LandingPageScreen` as any,
         });
         return;
       }
+      console.log("fetchUserData(): Fetching user data for:", userId);
+
+      // Fetching the user document from Firestore
       const docRef = doc(FIRESTORE, "users", userId);
       const docSnap = await getDoc(docRef);
       const userDataFromFirestore = docSnap.data() as UserDataType;
-      const userCurrentOnboardingScreen =
-        userDataFromFirestore?.currentOnboardingScreen || "PhoneNumberScreen";
-      if (docSnap.exists()) {
+      if (docSnap.exists) {
         setUserData(userDataFromFirestore);
         if (userDataFromFirestore.onboardingCompleted) {
-          console.log(
-            "onboardingCompleted:",
-            userDataFromFirestore.onboardingCompleted
-          );
+          // If onboarding is completed, navigate to the main app screen
           updateUserData({
             ...userDataFromFirestore,
             currentOnboardingScreen: "Connect",
@@ -295,13 +534,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             pathname: `/main/Connect` as any,
           });
         } else {
+          console.log("fetchUserData(): onboarding not completed yet");
+          // Otherwise, navigate based on the current onboarding screen
+          const userCurrentOnboardingScreen =
+            userDataFromFirestore.currentOnboardingScreen ||
+            "PhoneNumberScreen";
           router.replace({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
           });
         }
+      } else if (
+        // For first-time users from Google SSO
+        currentUser?.providerData.some(
+          (provider) => provider.providerId === "google.com"
+        )
+      ) {
+        console.log(
+          "fetchUserData(): For first-time users from Google SSO, navigate to PhoneNumberScreen"
+        );
+        router.replace({
+          pathname: `onboarding/PhoneNumberScreen` as any,
+        });
       } else {
-        // If user opens up the app for the first time, they MIGHT be taken to NameScreen instead of the landingpage.
-        // Probably there is a currentUser with an id but not in the firestore. Weird.
+        console.log(
+          "fetchUserData(): For first-time users from Google SSO, after linking phone number, navigate to NameScreen"
+        );
         router.replace({
           pathname: `onboarding/NameScreen` as any,
         });
@@ -311,10 +568,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Function to update the last active timestamp
+  // Update the last active timestamp
   const updateLastActive = async () => {
+    if (!userData.onboardingCompleted) {
+      return;
+    }
     try {
-      const userId = userData.userId; // Assuming userData is available
+      const userId = userData.userId;
       if (!userId) return;
       await updateUserData({ lastActive: serverTimestamp() });
       console.log("Last active updated successfully");
@@ -323,75 +583,180 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // This function fetches potential matches using Firestore.
   const fetchPotentialMatches = async () => {
-    try {
-      if (noMoreMatches || loadingNextBatch) {
-        console.log("No more matches to fetch or already loading.");
-        return;
-      }
+    let fetchedMatches: UserDataType[] = [];
+    let hasMoreMatches = true;
 
-      setLoadingNextBatch(true);
-      const excludedUserIds = new Set([
-        userData?.userId,
-        ...(userData?.likedMatches || []),
-        ...(userData?.dislikedMatches || []),
-        ...(userData?.matches || []),
-      ]);
-      console.log("Excluded user IDs:", excludedUserIds);
+    if (noMoreMatches || loadingNextBatch) {
+      console.log(
+        "fetchPotentialMatches(): No more matches or already loading."
+      );
+      return [];
+    }
 
-      let fetchedMatches: UserDataType[] = [];
-      let hasMoreMatches = true;
+    setLoadingNextBatch(true);
 
-      while (fetchedMatches.length < 10 && hasMoreMatches) {
-        console.log("Fetching potential matches...");
-        const usersQuery = lastVisibleMatch
-          ? query(
-              collection(FIRESTORE, "users"),
-              orderBy("userId"),
-              startAfter(lastVisibleMatch),
-              limit(10)
-            )
-          : query(collection(FIRESTORE, "users"), orderBy("userId"), limit(10));
+    const excludedUserIds = new Set([
+      userDataRef.current?.userId,
+      ...(userDataRef.current?.likedMatches || []),
+      ...(userDataRef.current?.dislikedMatches || []),
+      ...(userDataRef.current?.matches || []),
+    ]);
+    console.log("fetchPotentialMatches(): Excluded user IDs:", excludedUserIds);
 
-        const querySnapshot = await getDocs(usersQuery);
+    // Base query constraints.
+    const constraints = [orderBy("userId"), limit(10)];
 
-        if (querySnapshot.empty) {
-          console.log("No more matches available.");
-          hasMoreMatches = false;
-          setNoMoreMatches(true);
-          break;
-        }
+    // Get date preferences; default to ["Everyone"] if none selected.
+    const datePreferences =
+      userDataRef.current.matchPreferences?.datePreferences &&
+      userDataRef.current.matchPreferences.datePreferences.length > 0
+        ? userDataRef.current.matchPreferences.datePreferences
+        : ["Everyone"];
 
-        const newMatches = querySnapshot.docs
-          .map((doc) => doc.data() as UserDataType)
-          .filter((user) => !excludedUserIds.has(user.userId));
+    console.log("Current datePreferences:", datePreferences);
 
-        if (newMatches.length > 0) {
-          fetchedMatches = [...fetchedMatches, ...newMatches];
-          setLastVisibleMatch(
-            querySnapshot.docs[querySnapshot.docs.length - 1].data().userId
-          );
-        } else {
-          console.log("No new matches found in this batch.");
-          hasMoreMatches = false;
-          setNoMoreMatches(true);
-          break;
-        }
-      }
+    // Map plural to singular values.
+    const genderMap: Record<string, string> = {
+      Men: "Man",
+      Women: "Woman",
+      "Non-Binary": "Non-binary",
+    };
 
-      if (fetchedMatches.length > 0) {
-        console.log(`Fetched a batch of ${fetchedMatches.length} matches.`);
-        setPotentialMatches((prevMatches) => [
-          ...prevMatches,
-          ...fetchedMatches,
-        ]);
+    // Apply gender filtering if "Everyone" is not selected.
+    if (!datePreferences.includes("Everyone")) {
+      console.log(
+        "Applying gender filtering based on datePreferences.",
+        datePreferences
+      );
+      const mappedGenders = datePreferences.map(
+        (pref) => genderMap[pref] || pref
+      );
+      console.log("Preferred genders to filter:", mappedGenders);
+      if (mappedGenders.length === 1) {
+        constraints.push(where("gender", "==", mappedGenders[0]));
       } else {
-        console.log("No matches fetched.");
+        constraints.push(where("gender", "in", mappedGenders));
       }
-    } catch (error) {
-      console.error("Error fetching potential matches:", error);
-    } finally {
-      setLoadingNextBatch(false); // Ensure loading state is reset here
+    }
+
+    // Pagination: loop until we have 10 matches or no more results.
+    while (fetchedMatches.length < 10 && hasMoreMatches) {
+      console.log("fetchPotentialMatches(): Fetching potential matches...");
+
+      let usersQuery;
+      if (lastVisibleMatch) {
+        usersQuery = query(
+          collection(FIRESTORE, "users"),
+          ...constraints,
+          startAfter(lastVisibleMatch)
+        );
+      } else {
+        usersQuery = query(collection(FIRESTORE, "users"), ...constraints);
+      }
+
+      const querySnapshot = await getDocs(usersQuery);
+
+      if (querySnapshot.empty) {
+        console.log("fetchPotentialMatches(): No more matches available.");
+        hasMoreMatches = false;
+        setNoMoreMatches(true);
+        break;
+      }
+
+      const newMatches = querySnapshot.docs
+        .map((doc) => doc.data() as UserDataType)
+        .filter((user) => !excludedUserIds.has(user.userId));
+
+      if (newMatches.length > 0) {
+        fetchedMatches = [...fetchedMatches, ...newMatches];
+        const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+        setLastVisibleMatch(lastDoc.data().userId);
+      } else {
+        console.log(
+          "fetchPotentialMatches(): No new matches found in this batch."
+        );
+        hasMoreMatches = false;
+        setNoMoreMatches(true);
+        break;
+      }
+    }
+
+    if (fetchedMatches.length > 0) {
+      console.log(
+        `fetchPotentialMatches(): Fetched a batch of ${fetchedMatches.length} matches.`
+      );
+      setPotentialMatches((prev) => [...prev, ...fetchedMatches]);
+    } else {
+      console.log("fetchPotentialMatches(): No matches fetched.");
+    }
+
+    setLoadingNextBatch(false);
+    return fetchedMatches;
+  };
+
+  const resetPotentialMatches = () => {
+    console.log("resetPotentialMatches(): Resetting potential matches...");
+    setPotentialMatches([]);
+    setLastVisibleMatch(null);
+    setNoMoreMatches(false);
+    setCurrentPotentialMatch(null);
+  };
+
+  const loadNextPotentialMatch = async () => {
+    // Recalculate the current excluded set from userData.
+    const excludedSet = new Set([
+      userData?.userId,
+      ...(userData?.likedMatches || []),
+      ...(userData?.dislikedMatches || []),
+      ...(userData?.matches || []),
+    ]);
+
+    // Filter potentialMatches to only those not in the excluded set.
+    const validMatches = potentialMatches.filter(
+      (match) => !excludedSet.has(match.userId)
+    );
+
+    // If we have valid matches, get the next one.
+    if (validMatches.length > 0) {
+      // Determine the index of the current match within validMatches.
+      const currentValidIndex = currentPotentialMatch
+        ? validMatches.findIndex(
+            (match) => match.userId === currentPotentialMatch.userId
+          )
+        : -1;
+
+      // Get the next valid match.
+      const nextValidMatch =
+        validMatches[currentValidIndex + 1] || validMatches[0];
+
+      // Find its index in the full potentialMatches array (for consistency).
+      const fullIndex = potentialMatches.findIndex(
+        (match) => match.userId === nextValidMatch.userId
+      );
+
+      setCurrentPotentialMatch(nextValidMatch);
+      setCurrentPotentialMatchIndex(fullIndex);
+    } else if (!noMoreMatches && !loadingNextBatch) {
+      // If no valid matches exist, fetch a new batch.
+      console.log(
+        "loadNextPotentialMatch(): No valid matches found, loading new batch..."
+      );
+      const newMatches = await fetchPotentialMatches();
+      // If new matches were fetched, try to set the first valid one.
+      if (newMatches.length > 0) {
+        const validNewMatches = newMatches.filter(
+          (match) => !excludedSet.has(match.userId)
+        );
+        if (validNewMatches.length > 0) {
+          setCurrentPotentialMatch(validNewMatches[0]);
+          // The new match's index will be at the end of the existing array.
+          setCurrentPotentialMatchIndex(potentialMatches.length);
+        }
+      }
+    } else {
+      console.log("loadNextPotentialMatch(): No more matches to load.");
     }
   };
 
@@ -402,7 +767,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const detailedUsers = await Promise.all(
         userData.likesReceived.map(async (userId) => {
           const userDoc = await getDoc(doc(FIRESTORE, "users", userId));
-          return userDoc.exists() ? { userId, ...userDoc.data() } : null;
+          return userDoc.exists ? { userId, ...userDoc.data() } : null;
         })
       );
       setUserData((prev) => ({
@@ -411,20 +776,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }));
     } catch (error) {
       console.error("Failed to fetch detailed likes:", error);
-    }
-  };
-
-  const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
-    setCurrentUser(user);
-    console.log("currentUser:", user);
-    if (initializing) setInitializing(false);
-
-    if (user) {
-      await fetchUserData(user.uid);
-      console.log("OnAuthStateChanged: User is signed in");
-      updateLastActive();
-    } else {
-      setUserData(initialUserData);
     }
   };
 
@@ -442,6 +793,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return null;
   };
 
+  const destructurePhoneNumber = (phoneNumber: string) => {
+    const phoneRegex = /^\+?(\d{1,3})(\d{3})(\d{7,10})$/;
+    const match = phoneRegex.exec(phoneNumber);
+    if (!match) throw new Error("Invalid phone number format");
+    const [, countryCode, areaCode, number] = match;
+    return { countryCode, areaCode, number };
+  };
+
   const saveProgress = async (screen?: string) => {
     try {
       const screenToSave = screen || userData.currentOnboardingScreen;
@@ -456,47 +815,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Failed to save progress: ", error);
-    }
-  };
-
-  const updateUserData = async (data: Partial<UserDataType>) => {
-    try {
-      const userIdToUpdate = data.userId || userData.userId;
-      if (!userIdToUpdate) {
-        throw new Error("User ID is required to update data");
-      }
-
-      const docRef = doc(FIRESTORE, "users", userIdToUpdate);
-      const docSnapshot = await getDoc(docRef);
-      let existingData: Record<string, any> = {};
-      if (docSnapshot.exists()) {
-        existingData = docSnapshot.data();
-      }
-      // Merge hiddenFields
-      let updatedHiddenFields = existingData.hiddenFields || {};
-      if (data.hiddenFields) {
-        updatedHiddenFields = {
-          ...updatedHiddenFields,
-          ...data.hiddenFields,
-        };
-      }
-
-      const updatedData = {
-        ...existingData,
-        ...data,
-        hiddenFields: updatedHiddenFields,
-      };
-
-      await setDoc(docRef, updatedData, { merge: true });
-
-      // Update local state
-      setUserData((prevData) => {
-        const newData = { ...prevData, ...data };
-        newData.hiddenFields = updatedHiddenFields;
-        return newData;
-      });
-    } catch (error) {
-      console.error("Failed to update user data: ", error);
     }
   };
 
@@ -606,27 +924,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
-      if (googleCredential) {
-        await GoogleSignin.signOut()
-          .then(() => {
-            console.log("google user signed out!");
-          })
-          .then(() => {
-            setGoogleCredential(null);
-          });
+      // Check if there's a signed-in user
+      const currentUser = await GoogleSignin.getCurrentUser();
+      if (currentUser) {
+        // await GoogleSignin.revokeAccess(); // Revoke Google OAuth token
+        await GoogleSignin.signOut(); // Sign out from Google
+        console.log("Google account signed out!");
+        setGoogleCredential(null);
       }
-      await FIREBASE_AUTH.signOut()
-        .then(() => {
-          updateLastActive(); // Update last active before logout
-          setCurrentUser(null);
-        })
-        .then(() => console.log("User signed out! currentUser:", currentUser));
 
-      router.replace("/onboarding/LoginSignupScreen");
-      updateLastActive(); // Update last active before logout
+      // Sign out from Firebase Authentication
+      await FIREBASE_AUTH.signOut();
+      console.log("Firebase user signed out!");
+
+      // Clear any app-level user data
+      setCurrentUser(null);
+      setUserData(initialUserData);
+
+      // Navigate to Login/Signup screen
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error("Error during sign-out:", error);
     }
+    router.navigate("onboarding/LoginSignupScreen" as any);
   };
 
   const navigateToNextScreen = async () => {
@@ -698,22 +1017,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const loadNextPotentialMatch = async () => {
-    if (currentPotentialMatchIndex < potentialMatches.length - 1) {
-      const nextIndex = currentPotentialMatchIndex + 1;
-      setCurrentPotentialMatch(potentialMatches[nextIndex]);
-      setCurrentPotentialMatchIndex(nextIndex);
-    } else if (!noMoreMatches && !loadingNextBatch) {
-      // Load next batch of potential matches
-      console.log("End of current batch, loading next batch...");
-      await fetchPotentialMatches();
-    } else {
-      console.log("No more matches to load.");
-    }
-  };
-
   const likeMatch = async (matchId: string) => {
-    if (!currentUser) return;
+    // Build an exclusion set from userData
+    const excludedSet = new Set([
+      userData?.userId,
+      ...(userData?.likedMatches || []),
+      ...(userData?.dislikedMatches || []),
+      ...(userData?.matches || []),
+    ]);
+
+    // If the match is already excluded, do nothing.
+    if (excludedSet.has(matchId)) {
+      console.log("likeMatch(): This match is already excluded.");
+      return;
+    }
+
     try {
       const updatedLikedMatches = new Set([
         ...(userData.likedMatches || []),
@@ -725,26 +1043,42 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       console.log(`Liked match: ${matchId}`);
+
+      // Remove the liked match from the potentialMatches array.
+      setPotentialMatches((prevMatches) =>
+        prevMatches.filter((match) => match.userId !== matchId)
+      );
+
+      // Load the next potential match.
+      loadNextPotentialMatch();
     } catch (error) {
       console.error("Failed to like match: ", error);
     }
   };
 
   const dislikeMatch = async (matchId: string) => {
-    if (!currentUser) return;
+    // Optionally, prevent processing if match is already excluded.
+    const excludedSet = new Set([
+      userData?.userId,
+      ...(userData?.likedMatches || []),
+      ...(userData?.dislikedMatches || []),
+      ...(userData?.matches || []),
+    ]);
+    if (excludedSet.has(matchId)) {
+      console.log("handleDislike(): This match is already excluded.");
+      return;
+    }
+
     try {
-      const updatedDislikedMatches = new Set([
-        ...(userData.dislikedMatches || []),
-        matchId,
-      ]);
-
-      await updateUserData({
-        dislikedMatches: Array.from(updatedDislikedMatches),
-      });
-
-      console.log(`Disliked match: ${matchId}`);
+      await dislikeMatch(matchId);
+      // Remove the match from potentialMatches.
+      setPotentialMatches((prevMatches) =>
+        prevMatches.filter((match) => match.userId !== matchId)
+      );
+      // Then load the next potential match.
+      loadNextPotentialMatch();
     } catch (error) {
-      console.error("Failed to dislike match: ", error);
+      console.error("handleDislike(): Error disliking match:", matchId, error);
     }
   };
 
@@ -763,7 +1097,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const chatDoc = await transaction.get(chatRef);
 
         // If chat does not exist, create it
-        if (!chatDoc.exists()) {
+        if (!chatDoc.exists) {
           console.log("Chat not found. Creating a new chat...");
           transaction.set(chatRef, {
             participants: [userId, otherUserId],
@@ -815,8 +1149,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchRadiantSouls,
     fetchDetailedLikes,
     fetchPotentialMatches,
+    resetPotentialMatches,
     getImageUrl,
     noMoreMatches,
+    verifyPhoneAndSetUser,
+    handleGoogleSignIn,
   };
 
   if (initializing) {

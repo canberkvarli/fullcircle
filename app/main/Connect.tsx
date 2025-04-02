@@ -31,9 +31,7 @@ const ConnectScreen: React.FC = () => {
   const [ageRange, setAgeRange] = useState([18, 50]);
   const [originalAgeRange, setOriginalAgeRange] = useState([18, 50]);
   const [datePreferences, setDatePreferences] = useState<string[]>(
-    userData?.matchPreferences?.datePreferences ||
-      userData?.datePreferences ||
-      []
+    userData?.matchPreferences?.datePreferences || []
   );
   const [preferredEthnicities, setPreferredEthnicities] = useState<string[]>(
     userData?.matchPreferences?.preferredEthnicities || []

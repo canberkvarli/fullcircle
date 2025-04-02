@@ -26,7 +26,11 @@ export default function EditPreferenceField() {
     currentValue: any;
   }>();
   const router = useRouter();
-  const { updateUserData, userData } = useUserContext();
+  const {
+    updateUserData,
+    userData,
+    resetPotentialMatches,
+  } = useUserContext();
   const [value, setValue] = useState<any>(currentValue || null);
   const [isVisible, setIsVisible] = useState<boolean>(
     userData?.hiddenFields?.[fieldName] === false || false
@@ -70,9 +74,9 @@ export default function EditPreferenceField() {
             [fieldName]: !isVisible,
           },
         };
-
         await updateUserData(updatedData);
-        console.log("Preference updated successfully:", updatedData);
+
+        await resetPotentialMatches();
       } catch (error) {
         console.error("Error updating preferences:", error);
       }
@@ -88,6 +92,7 @@ export default function EditPreferenceField() {
   ) => {
     setValue((prev: string[] = []) => {
       if (!Array.isArray(prev)) prev = [];
+
       const isAllOption = option === allOption;
 
       if (isAllOption) {
@@ -97,6 +102,10 @@ export default function EditPreferenceField() {
       const updated = prev.includes(option)
         ? prev.filter((item) => item !== option)
         : [...prev, option];
+
+      if (updated.length === 0) {
+        return [allOption];
+      }
 
       if (
         options
@@ -153,7 +162,7 @@ export default function EditPreferenceField() {
         return (
           <CheckboxList
             options={dateOptions}
-            selected={value || []}
+            selected={value && value.length > 0 ? value : ["Everyone"]}
             onToggle={(option) =>
               handleCheckboxToggle(option, dateOptions, "Everyone")
             }

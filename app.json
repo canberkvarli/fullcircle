@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fullcircle.app",
-      "googleServicesFile": "./ios/fullcircle/Info.plist"
+      "googleServicesFile": "./ios/fullcircle/GoogleService-Info.plist"
     },
     "android": {
       "googleServicesFile": "android/app/google-services.json",
@@ -37,10 +37,8 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "@react-native-firebase/app",
-        "@react-native-firebase/auth"
-      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
       "expo-av",
       [
         "expo-location",
@@ -61,6 +59,14 @@
           "fonts": [
             "./assets/fonts/poppins/Poppins-Regular.ttf"
           ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ]
     ],

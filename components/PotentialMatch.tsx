@@ -48,7 +48,7 @@ const PotentialMatch = ({
 
   // Calculate the step to evenly distribute info sections
   const infoStep = Math.ceil(
-    infoSections.length / currentPotentialMatch.photos.length
+    infoSections?.length / currentPotentialMatch?.photos?.length
   );
 
   const handleLike = async () => {
@@ -67,7 +67,7 @@ const PotentialMatch = ({
   return (
     <View style={styles.container}>
       <Text style={styles.userName}>{currentPotentialMatch.firstName}</Text>
-      {currentPotentialMatch.photos.map((photo: any, index: number) => (
+      {currentPotentialMatch?.photos?.map((photo: any, index: number) => (
         <View key={index} style={styles.photoContainer}>
           <Image source={{ uri: photo }} style={styles.photo} />
           {!isMatched && (

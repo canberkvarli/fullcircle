@@ -16,7 +16,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "../../context/UserContext";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { STORAGE } from "@/services/FirebaseConfig";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function PhotosScreen() {
   const {
@@ -72,10 +71,9 @@ function PhotosScreen() {
 
     const response = await fetch(photoUri);
     const blob = await response.blob();
-    const storageRef = ref(STORAGE, `photos/${Date.now()}.jpg`);
-
-    await uploadBytes(storageRef, blob);
-    const photoURL = await getDownloadURL(storageRef);
+    const storageRef = STORAGE.ref(`photos/${Date.now()}.jpg`);
+    await storageRef.putFile(photoUri);
+    const photoURL = await storageRef.getDownloadURL();
     return photoURL;
   };
 

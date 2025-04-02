@@ -48,7 +48,7 @@ const UserCard: React.FC<UserCardProps> = ({
       },
       {
         title: "Date Preferences",
-        content: user.datePreferences?.join(", ") || "N/A",
+        content: user.matchPreferences.datePreferences?.join(", ") || "N/A",
       },
       {
         title: "Children Preference",

@@ -16,6 +16,7 @@ import RadioIcon from "react-native-vector-icons/Fontisto";
 import NavigationIcon from "react-native-vector-icons/FontAwesome";
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { useUserContext } from "../../context/UserContext";
+import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
 
 function EmailScreen() {
   const {
@@ -67,11 +68,14 @@ function EmailScreen() {
       await GoogleSignin.hasPlayServices();
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const { user } = await auth().signInWithCredential(googleCredential);
-      console.log("userID from Google Sign-In:", user.uid);
+      const { user } = await FIREBASE_AUTH.signInWithCredential(
+        googleCredential
+      );
+      const userId = await user.getIdToken();
+      console.log("userID from Google Sign-In:", userId);
 
       await updateUserData({
-        userId: user.uid,
+        userId,
         GoogleSSOEnabled: true,
       });
 

@@ -148,7 +148,7 @@ export default function EditUserProfile() {
     {
       fieldName: "datePreferences",
       title: "I'm Interested In",
-      value: userData.datePreferences,
+      value: userData.matchPreferences.datePreferences,
     },
   ];
 

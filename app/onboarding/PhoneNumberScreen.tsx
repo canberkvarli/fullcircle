@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import styles from "@/styles/Onboarding/PhoneNumberScreenStyles";
 import { useRouter } from "expo-router";
-import auth from "@react-native-firebase/auth";
+import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
+import { useUserContext } from "@/context/UserContext";
 import PhoneInput from "react-native-phone-number-input";
 import Icon from "react-native-vector-icons/FontAwesome";
 
@@ -20,6 +21,7 @@ function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const { signOut } = useUserContext();
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -32,7 +34,9 @@ function PhoneNumberScreen(): JSX.Element {
     setLoading(true);
 
     try {
-      const confirmation = await auth().verifyPhoneNumber(formattedPhoneNumber);
+      const confirmation = await FIREBASE_AUTH.verifyPhoneNumber(
+        formattedPhoneNumber
+      );
 
       router.replace({
         pathname: "onboarding/PhoneVerificationScreen" as any,
@@ -56,10 +60,7 @@ function PhoneNumberScreen(): JSX.Element {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0} // Adjust as needed
       >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.replace("onboarding/LoginSignupScreen" as any)}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={signOut}>
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Your Journey Begins Here</Text>

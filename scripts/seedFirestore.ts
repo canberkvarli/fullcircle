@@ -19,7 +19,9 @@ const fetchUnsplashImages = async (
 ): Promise<string[]> => {
   const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
   const response = await fetch(
-    `https://api.unsplash.com/search/photos?page=${page}&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
+    `https://api.unsplash.com/search/photos?page=${page}&query=${encodeURIComponent(
+      query
+    )}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
   );
 
   if (!response.ok) {
@@ -30,28 +32,50 @@ const fetchUnsplashImages = async (
   return data.results.map((img: any) => img.urls.small);
 };
 
-// Get gender-specific photos
+// Get gender-specific photos with fallback to ensure photos are returned
 const getGenderSpecificPhotos = async (
   gender: string,
   count: number,
   page: number
 ): Promise<string[]> => {
-  const query = gender === "Man" ? "handsome man" : "beautiful woman";
-  return await fetchUnsplashImages(query, count, page);
+  let query: string;
+  if (gender.toLowerCase() === "man") {
+    query = "handsome man";
+  } else if (gender.toLowerCase() === "woman") {
+    query = "beautiful woman";
+  } else if (gender.toLowerCase() === "non-binary") {
+    query = "non-binary model";
+  } else {
+    query = "beautiful person";
+  }
+  let photos = await fetchUnsplashImages(query, count, page);
+  if (photos.length === 0) {
+    console.warn(
+      `No photos found for query "${query}". Falling back to "portrait".`
+    );
+    photos = await fetchUnsplashImages("portrait", count, page);
+  }
+  // As an extra safeguard, if still empty, return a default placeholder image repeated 'count' times.
+  if (photos.length === 0) {
+    console.warn(
+      "No photos found even with fallback. Using placeholder images."
+    );
+    photos = Array(count).fill("https://via.placeholder.com/150");
+  }
+  return photos;
 };
 
 const lastActiveDate = new Date();
-
 const formattedLastActive = lastActiveDate.toLocaleString("en-US", {
-  weekday: "short", // Optional: "Tue" or "Tuesday"
+  weekday: "short", // e.g. "Tue"
   year: "numeric",
-  month: "short", // "Dec"
+  month: "short", // e.g. "Dec"
   day: "numeric",
-  hour: "2-digit", // "6 PM"
-  minute: "2-digit", // "09"
-  second: "2-digit", // "13"
-  hour12: true, // AM/PM
-  timeZoneName: "short", // "UTC-8"
+  hour: "2-digit", // e.g. "6 PM"
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: true,
+  timeZoneName: "short",
 });
 
 // Seed Firestore with users
@@ -71,16 +95,29 @@ const seedFirestore = async (numUsers: number) => {
       month: "short",
       day: "numeric",
     });
-
     const birthday = birthDate.getDate().toString();
     const birthmonth = birthDate.toLocaleString("default", { month: "short" });
     const birthyear = birthDate.getFullYear().toString();
-    const gender = faker.helpers.arrayElement(["Men", "Women", "Non-binary"]);
+    const gender = faker.helpers.arrayElement(["Man", "Woman", "Non-binary"]);
     const photos = await getGenderSpecificPhotos(
       gender,
       6,
       Math.floor(Math.random() * 10) + 1
     );
+
+    // Generate gender-specific names
+    let firstName: string;
+    let lastName: string;
+    if (gender === "Man") {
+      firstName = faker.person.firstName("male");
+      lastName = faker.person.lastName("male");
+    } else if (gender === "Woman") {
+      firstName = faker.person.firstName("female");
+      lastName = faker.person.lastName("female");
+    } else {
+      firstName = faker.person.firstName();
+      lastName = faker.person.lastName();
+    }
 
     // Generate location data
     const location = {
@@ -158,7 +195,8 @@ const seedFirestore = async (numUsers: number) => {
           max: faker.number.int({ min: 5, max: 9 }),
         },
       },
-      firstName: faker.person.firstName(),
+      firstName,
+      lastName,
       fullCircleSubscription: faker.datatype.boolean(),
       gender,
       height: `${faker.number.int({ min: 4, max: 6 })}.${faker.number.int({
@@ -184,11 +222,10 @@ const seedFirestore = async (numUsers: number) => {
       },
       jobLocation: faker.company.name(),
       jobTitle: faker.person.jobTitle(),
-      lastName: faker.person.lastName(),
       lastActive: formattedLastActive,
       latitude: faker.location.latitude(),
       longitude: faker.location.longitude(),
-      location: location,
+      location,
       likedMatches: [],
       likesReceived: [],
       photos,

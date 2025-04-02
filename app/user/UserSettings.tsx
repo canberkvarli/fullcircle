@@ -5,16 +5,12 @@ import { useUserContext } from "@/context/UserContext";
 import { Button } from "native-base";
 
 export default function UserSettings() {
-  const { signOut, navigateToScreen } = useUserContext();
+  const { signOut } = useUserContext();
 
-  const handleSignOut = () => {
-    signOut();
-    navigateToScreen("onboarding/LandingPageScreen" as any);
-  };
   return (
     <SafeAreaView>
       <Text>UserSettings</Text>
-      <Button onPress={handleSignOut}>Sign out</Button>
+      <Button onPress={signOut}>Sign out</Button>
     </SafeAreaView>
   );
 }
