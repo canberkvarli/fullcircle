@@ -24,8 +24,8 @@ const ConnectScreen: React.FC = () => {
     updateUserData,
     userData,
     fetchDetailedLikes,
-    fetchPotentialMatches,
     noMoreMatches,
+    resetPotentialMatches,
   } = useUserContext();
 
   const [ageRange, setAgeRange] = useState([18, 50]);
@@ -37,10 +37,10 @@ const ConnectScreen: React.FC = () => {
     userData?.matchPreferences?.preferredEthnicities || []
   );
 
-  const [heightRange, setHeightRange] = useState([3, 7]);
-  const [originalHeightRange, setOriginalHeightRange] = useState([3, 7]);
+  const [heightRange, setHeightRange] = useState([3, 8]);
+  const [originalHeightRange, setOriginalHeightRange] = useState([3, 8]);
   const [isDislikeLoading, setIsDislikeLoading] = useState(false);
-  const fullCircleSubscription = userData.fullCircleSubscription || false;
+  const fullCircleSubscription = userData?.fullCircleSubscription ?? false;
 
   useEffect(() => {
     if (!currentPotentialMatch) {
@@ -71,12 +71,12 @@ const ConnectScreen: React.FC = () => {
     setDatePreferences(preferences?.datePreferences || []);
     setPreferredEthnicities(preferences?.preferredEthnicities || []);
     setHeightRange([
-      Math.floor(preferences?.preferredHeightRange?.min || 36) / 12 || 3,
-      Math.floor(preferences?.preferredHeightRange?.max || 84) / 12 || 7,
+      preferences?.preferredHeightRange?.min || 3,
+      preferences?.preferredHeightRange?.max || 8,
     ]);
     setOriginalHeightRange([
-      Math.floor(preferences?.preferredHeightRange?.min || 36) / 12 || 3,
-      Math.floor(preferences?.preferredHeightRange?.max || 84) / 12 || 7,
+      preferences?.preferredHeightRange?.min || 3,
+      preferences?.preferredHeightRange?.max || 8,
     ]);
   };
 
@@ -103,15 +103,16 @@ const ConnectScreen: React.FC = () => {
         desiredRelationship:
           userData.matchPreferences?.desiredRelationship || "",
         preferredHeightRange: {
-          min: heightRange[0] * 12,
-          max: heightRange[1] * 12,
+          min: heightRange[0],
+          max: heightRange[1],
         },
       },
     };
 
     try {
-      updateUserData(updatedData);
+      await updateUserData(updatedData);
       console.log("Filter applied:", updatedData);
+      await resetPotentialMatches();
       setShowFilterModal(false);
       setShowHeightModal(false);
     } catch (error) {
@@ -250,7 +251,7 @@ const ConnectScreen: React.FC = () => {
         description="Select the range you're open to meeting"
         values={ageRange}
         min={18}
-        max={100}
+        max={90}
         onValuesChange={setAgeRange}
         formattedRange={`Age Range: ${ageRange[0]} - ${ageRange[1]}`}
         onClose={() => setShowFilterModal(false)}
@@ -259,23 +260,20 @@ const ConnectScreen: React.FC = () => {
         styles={styles}
       />
 
-      {/* Height Filter Modal */}
       <FilterModal
         visible={showHeightModal}
         title="Height"
-        description="Select the height range"
+        description="Select the height range (in feet)"
         values={heightRange}
         min={3}
-        max={7}
+        max={8}
         step={0.1}
         onValuesChange={(values) =>
           setHeightRange(values.map((val) => parseFloat(val.toFixed(1))))
         }
-        formattedRange={`Height Range: ${Math.floor(
-          heightRange[0]
-        )}'${Math.round((heightRange[0] % 1) * 10)}" - ${Math.floor(
-          heightRange[1]
-        )}'${Math.round((heightRange[1] % 1) * 10)}"`}
+        formattedRange={`Height Range: ${heightRange[0].toFixed(
+          1
+        )} ft - ${heightRange[1].toFixed(1)} ft`}
         onClose={() => setShowHeightModal(false)}
         onApply={handleApplyAgeFilter}
         isApplyDisabled={isApplyButtonDisabled}

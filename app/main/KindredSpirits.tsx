@@ -49,7 +49,7 @@ const KindredSpirits: React.FC = () => {
   }
 
   const handleCardPress = (user: any, isFirstCard: boolean) => {
-    if (userData.fullCircleSubscription || isFirstCard) {
+    if (userData?.fullCircleSubscription || isFirstCard) {
       router.navigate({
         pathname: "/user/UserShow" as any,
         params: { user: JSON.stringify(user), source: "KindredSpirits" },
@@ -84,7 +84,7 @@ const KindredSpirits: React.FC = () => {
               >
                 <UserCard
                   user={user}
-                  isBlurred={!userData.fullCircleSubscription && index > 0}
+                  isBlurred={!userData?.fullCircleSubscription && index > 0}
                   style={styles.smallCard}
                 />
               </TouchableOpacity>

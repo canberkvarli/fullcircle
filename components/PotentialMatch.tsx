@@ -67,6 +67,7 @@ const PotentialMatch = ({
   return (
     <View style={styles.container}>
       <Text style={styles.userName}>{currentPotentialMatch.firstName}</Text>
+      <Text style={styles.age}> {currentPotentialMatch.age} </Text>
       {currentPotentialMatch?.photos?.map((photo: any, index: number) => (
         <View key={index} style={styles.photoContainer}>
           <Image source={{ uri: photo }} style={styles.photo} />
@@ -113,6 +114,12 @@ const styles = StyleSheet.create({
     paddingLeft: 30,
     textAlign: "left",
     zIndex: 1,
+  },
+  age: {
+    fontSize: 24,
+    color: "#888",
+    paddingLeft: 30,
+    bottom: 15,
   },
   photoContainer: {
     position: "relative",

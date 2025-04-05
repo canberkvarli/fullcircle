@@ -103,6 +103,7 @@ const UserShow: React.FC = () => {
       </TouchableOpacity>
 
       <Text style={styles.nameText}>{userData.firstName || "Unknown"}</Text>
+      <Text style={styles.nameText}>{userData.age}</Text>
       <Text style={styles.locationText}>
         {userData.location?.city || "Unknown city"},
         {userData.location?.country || "Unknown country"}

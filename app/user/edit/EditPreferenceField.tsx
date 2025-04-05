@@ -18,19 +18,17 @@ const FIELD_TITLES: Record<string, string> = {
   preferredDistance: "Maximum distance",
   preferredEthnicities: "Ethnicity",
   desiredRelationship: "Relationship Type",
+  preferredHeightRange: "Preferred Height Range",
 };
 
 export default function EditPreferenceField() {
+  // Use the incoming fieldName directly.
   const { fieldName, currentValue } = useLocalSearchParams<{
     fieldName: string;
     currentValue: any;
   }>();
   const router = useRouter();
-  const {
-    updateUserData,
-    userData,
-    resetPotentialMatches,
-  } = useUserContext();
+  const { updateUserData, userData, resetPotentialMatches } = useUserContext();
   const [value, setValue] = useState<any>(currentValue || null);
   const [isVisible, setIsVisible] = useState<boolean>(
     userData?.hiddenFields?.[fieldName] === false || false
@@ -38,17 +36,25 @@ export default function EditPreferenceField() {
 
   useEffect(() => {
     if (currentValue) {
-      const parsedValue =
-        typeof currentValue === "string"
-          ? JSON.parse(currentValue)
-          : currentValue;
-
-      if (
-        fieldName === "preferredAgeRange" &&
-        typeof parsedValue === "string"
-      ) {
+      let parsedValue: any;
+      try {
+        parsedValue = JSON.parse(currentValue);
+      } catch (e) {
+        parsedValue = currentValue;
+      }
+      if (fieldName === "preferredAgeRange" && typeof parsedValue === "string") {
         const [min, max] = parsedValue.split(" - ");
         setValue({ min: parseInt(min, 10), max: parseInt(max, 10) });
+      } else if (
+        fieldName === "preferredHeightRange" &&
+        typeof parsedValue === "string" &&
+        parsedValue.includes(" - ")
+      ) {
+        // Expect a string like "3.0 - 8.0", remove any non-numeric characters.
+        const [minStr, maxStr] = parsedValue.split(" - ");
+        const cleanMin = minStr.replace(/[^0-9.]/g, "");
+        const cleanMax = maxStr.replace(/[^0-9.]/g, "");
+        setValue({ min: parseFloat(cleanMin), max: parseFloat(cleanMax) });
       } else {
         setValue(parsedValue);
       }
@@ -58,7 +64,7 @@ export default function EditPreferenceField() {
 
   const handleSave = async () => {
     const isModified =
-      value !== currentValue ||
+      JSON.stringify(value) !== JSON.stringify(currentValue) ||
       (userData?.hiddenFields?.[fieldName] !== undefined &&
         isVisible !== (userData?.hiddenFields?.[fieldName] === false));
 
@@ -67,7 +73,7 @@ export default function EditPreferenceField() {
         const updatedData: any = {
           matchPreferences: {
             ...userData.matchPreferences,
-            [fieldName]: value || [],
+            [fieldName]: value, // store value directly (e.g., height range as numbers)
           },
           hiddenFields: {
             ...userData.hiddenFields,
@@ -75,13 +81,11 @@ export default function EditPreferenceField() {
           },
         };
         await updateUserData(updatedData);
-
         await resetPotentialMatches();
       } catch (error) {
         console.error("Error updating preferences:", error);
       }
     }
-
     router.back();
   };
 
@@ -92,33 +96,24 @@ export default function EditPreferenceField() {
   ) => {
     setValue((prev: string[] = []) => {
       if (!Array.isArray(prev)) prev = [];
-
       const isAllOption = option === allOption;
-
       if (isAllOption) {
         return [allOption];
       }
-
       const updated = prev.includes(option)
         ? prev.filter((item) => item !== option)
         : [...prev, option];
-
       if (updated.length === 0) {
         return [allOption];
       }
-
       if (
-        options
-          .filter((opt) => opt !== allOption)
-          .every((opt) => updated.includes(opt))
+        options.filter((opt) => opt !== allOption).every((opt) => updated.includes(opt))
       ) {
         return [allOption];
       }
-
       if (updated.includes(allOption)) {
         return updated.filter((item) => item !== allOption);
       }
-
       return updated;
     });
   };
@@ -136,18 +131,10 @@ export default function EditPreferenceField() {
       {options.map((option) => (
         <TouchableOpacity
           key={option}
-          style={[
-            styles.checkbox,
-            selected.includes(option) && styles.checkboxSelected,
-          ]}
+          style={[styles.checkbox, selected.includes(option) && styles.checkboxSelected]}
           onPress={() => onToggle(option)}
         >
-          <Text
-            style={[
-              styles.checkboxText,
-              selected.includes(option) && styles.checkboxTextSelected,
-            ]}
-          >
+          <Text style={[styles.checkboxText, selected.includes(option) && styles.checkboxTextSelected]}>
             {option}
           </Text>
         </TouchableOpacity>
@@ -157,19 +144,17 @@ export default function EditPreferenceField() {
 
   const renderField = () => {
     switch (fieldName) {
-      case "datePreferences":
+      case "datePreferences": {
         const dateOptions = ["Men", "Women", "Non-Binary", "Everyone"];
         return (
           <CheckboxList
             options={dateOptions}
             selected={value && value.length > 0 ? value : ["Everyone"]}
-            onToggle={(option) =>
-              handleCheckboxToggle(option, dateOptions, "Everyone")
-            }
+            onToggle={(option) => handleCheckboxToggle(option, dateOptions, "Everyone")}
           />
         );
-
-      case "preferredAgeRange":
+      }
+      case "preferredAgeRange": {
         return (
           <View style={styles.sliderContainer}>
             <Text style={styles.sliderLabel}>Min Age: {value?.min || 18}</Text>
@@ -188,8 +173,8 @@ export default function EditPreferenceField() {
             <Text style={styles.sliderLabel}>Max Age: {value?.max || 70}</Text>
           </View>
         );
-
-      case "preferredDistance":
+      }
+      case "preferredDistance": {
         return (
           <View style={styles.sliderContainer}>
             <Text style={styles.sliderLabel}>
@@ -210,8 +195,8 @@ export default function EditPreferenceField() {
             />
           </View>
         );
-
-      case "preferredEthnicities":
+      }
+      case "preferredEthnicities": {
         const ethnicityOptions = [
           "American Indian",
           "East Asian",
@@ -233,8 +218,8 @@ export default function EditPreferenceField() {
             }
           />
         );
-
-      case "desiredRelationship":
+      }
+      case "desiredRelationship": {
         const relationshipOptions = ["Monogamy", "Non-Monogamy", "Open to All"];
         return (
           <CheckboxList
@@ -245,7 +230,37 @@ export default function EditPreferenceField() {
             }
           />
         );
-
+      }
+      case "preferredHeightRange": {
+        // Using feet only; default value is { min: 3, max: 8 }
+        const defaultValue = { min: 3, max: 8 };
+        const heightValue = value || defaultValue;
+        const sliderMin = 3;
+        const sliderMax = 8;
+        const sliderStep = 0.1;
+        return (
+          <View style={styles.sliderContainer}>
+            <Text style={styles.sliderLabel}>
+              Min Height: {Number(heightValue.min).toFixed(1)} ft
+            </Text>
+            <MultiSlider
+              values={[Number(heightValue.min), Number(heightValue.max)]}
+              min={sliderMin}
+              max={sliderMax}
+              step={sliderStep}
+              onValuesChange={(val) => setValue({ min: val[0], max: val[1] })}
+              trackStyle={styles.sliderTrack}
+              selectedStyle={styles.sliderSelectedTrack}
+              markerStyle={styles.sliderMarker}
+              pressedMarkerStyle={styles.sliderMarkerPressed}
+              containerStyle={styles.sliderWrapper}
+            />
+            <Text style={styles.sliderLabel}>
+              Max Height: {Number(heightValue.max).toFixed(1)} ft
+            </Text>
+          </View>
+        );
+      }
       default:
         return <Text>No field configured for this selection</Text>;
     }
@@ -261,7 +276,6 @@ export default function EditPreferenceField() {
           {FIELD_TITLES[fieldName] || `Edit ${fieldName}`}
         </Text>
       </View>
-
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {renderField()}
       </ScrollView>
@@ -343,7 +357,7 @@ const styles = StyleSheet.create({
   sliderMarker: {
     width: 25,
     height: 25,
-    borderRadius: 25 / 2,
+    borderRadius: 12.5,
     backgroundColor: "#000000",
     borderWidth: 2,
     borderColor: "#FFFFFF",

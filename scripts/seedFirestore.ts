@@ -104,6 +104,12 @@ const seedFirestore = async (numUsers: number) => {
       6,
       Math.floor(Math.random() * 10) + 1
     );
+    const heightValue = parseFloat(
+      `${faker.number.int({ min: 3, max: 7 })}.${faker.number.int({
+        min: 0,
+        max: 11,
+      })}`
+    );
 
     // Generate gender-specific names
     let firstName: string;
@@ -199,10 +205,7 @@ const seedFirestore = async (numUsers: number) => {
       lastName,
       fullCircleSubscription: faker.datatype.boolean(),
       gender,
-      height: `${faker.number.int({ min: 4, max: 6 })}.${faker.number.int({
-        min: 0,
-        max: 11,
-      })} ft`,
+      height: heightValue,
       hiddenFields: {
         childrenPreference: faker.datatype.boolean(),
         datePreferences: faker.datatype.boolean(),

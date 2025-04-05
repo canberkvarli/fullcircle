@@ -66,14 +66,14 @@ export default function DatingPreferences() {
       fieldName: "preferredDistance",
     },
     {
-      label: "Age Range",
-      value: userData?.matchPreferences?.preferredAgeRange
-        ? `${userData.matchPreferences.preferredAgeRange.min || 18} - ${
-            userData.matchPreferences.preferredAgeRange.max || 70
+      label: "Preferred Height Range",
+      value: userData?.matchPreferences?.preferredHeightRange
+        ? `${userData.matchPreferences.preferredHeightRange.min || 3} - ${
+            userData.matchPreferences.preferredHeightRange.max || 8
           }`
-        : "18 - 70",
+        : "3 - 8",
       isSubscriberField: true,
-      fieldName: "preferredAgeRange",
+      fieldName: "prefferedHeightRange",
     },
     {
       label: "Preferred Ethnicity",

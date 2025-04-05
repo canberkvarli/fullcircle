@@ -14,6 +14,13 @@ import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Checkbox from "expo-checkbox";
 import { RulerPicker } from "react-native-ruler-picker";
 
+// Helper to format a height (in feet as a float) into a feet/inches string.
+function formatHeight(height: number): string {
+  const feet = Math.floor(height);
+  const inches = Math.round((height - feet) * 12);
+  return `${feet}'${inches}"`;
+}
+
 function HeightScreen() {
   const {
     userData,
@@ -22,21 +29,22 @@ function HeightScreen() {
     navigateToPreviousScreen,
   } = useUserContext();
 
+  // Initialize selectedHeight as a number (default to 6 if no value exists)
   const [selectedHeight, setSelectedHeight] = useState<number>(
-    parseInt(userData?.height ?? "130")
+    typeof userData?.height === "number" ? userData.height : 6
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
     height: userData?.hiddenFields?.height || false,
   });
-  const [unit, setUnit] = useState<"cm" | "ft">("cm");
 
+  // Clamp the height between 3 ft and 8 ft.
   useEffect(() => {
-    if (unit === "cm" && selectedHeight > 240) {
-      setSelectedHeight(240); // Limit max height
-    } else if (unit === "ft" && selectedHeight > 8) {
-      setSelectedHeight(8); // Limit max height for feet
+    if (selectedHeight < 3) {
+      setSelectedHeight(3);
+    } else if (selectedHeight > 8) {
+      setSelectedHeight(8);
     }
-  }, [unit]);
+  }, [selectedHeight]);
 
   const handleHeightSubmit = async () => {
     try {
@@ -45,13 +53,12 @@ function HeightScreen() {
         Alert.alert("Error", "Invalid user ID");
         return;
       }
-
       await updateUserData({
         hiddenFields: {
           ...userData.hiddenFields,
           height: hiddenFields.height,
         },
-        height: selectedHeight.toString() + (unit === "cm" ? " cm" : " ft"),
+        height: selectedHeight,
       });
       navigateToNextScreen();
     } catch (error: any) {
@@ -77,36 +84,17 @@ function HeightScreen() {
           <Icon name="chevron-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Stand Tall</Text>
-        <View style={styles.unitToggleContainer}>
-          <TouchableOpacity
-            style={[
-              styles.unitButton,
-              unit === "cm" && styles.selectedUnitButton,
-            ]}
-            onPress={() => setUnit("cm")}
-          >
-            <Text style={styles.unitButtonText}>CM</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.unitButton,
-              unit === "ft" && styles.selectedUnitButton,
-            ]}
-            onPress={() => setUnit("ft")}
-          >
-            <Text style={styles.unitButtonText}>FT</Text>
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.heightInputs}>
           <Text style={styles.subtitle}>What's your height?</Text>
+          <Text style={styles.heightValue}>{formatHeight(selectedHeight)}</Text>
           <RulerPicker
-            min={unit === "cm" ? 130 : 2} // Set minimum based on unit
-            max={unit === "cm" ? 240 : 8} // Set maximum based on unit
-            step={unit === "cm" ? 1 : 0.1}
+            min={3}
+            max={8}
+            step={0.1}
             initialValue={selectedHeight}
             onValueChange={(number) => setSelectedHeight(Number(number))}
-            unit={unit}
+            unit="ft"
             width={300}
             height={300}
             indicatorHeight={80}

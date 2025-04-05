@@ -50,7 +50,7 @@ export type UserDataType = {
   birthday?: string;
   birthyear?: string;
   age?: number;
-  height?: string;
+  height?: number;
   regionName?: string;
   longitude?: number;
   latitude?: number;
@@ -196,7 +196,7 @@ const initialUserData: UserDataType = {
       max: 35,
     },
     preferredHeightRange: {
-      min: 5,
+      min: 3,
       max: 8,
     },
     preferredEthnicities: [],
@@ -281,6 +281,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [userData]);
 
+  useEffect(() => {
+    console.log(
+      "Match preferences changed, resetting matches",
+      userData.matchPreferences
+    );
+    resetPotentialMatches();
+    loadNextPotentialMatch();
+  }, [userData.matchPreferences]);
+
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
     if (isLinking) {
@@ -359,6 +368,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             "handleGoogleSignIn(): Existing user found",
             existingUser
           );
+
+          userDataToUpdate = {
+            ...existingUser,
+            ...{
+              userId: user.uid,
+              email: user.email || "",
+              firstName: userFirstName,
+              lastName: userLastName,
+              fullName: userFullName,
+              GoogleSSOEnabled: true,
+              currentOnboardingScreen:
+                existingUser.currentOnboardingScreen || "NameScreen",
+            },
+          };
           userDataToUpdate.currentOnboardingScreen =
             existingUser.currentOnboardingScreen || "NameScreen";
           await updateUserData(userDataToUpdate);
@@ -443,20 +466,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           };
 
           await updateUserData(newUser);
-        } else {
-          console.log(
-            "verifyPhoneAndSetUser(): User already exists, fetching user data..."
-          );
-          const existingUser = docSnap.data() as UserDataType;
-          const nextScreen = existingUser.onboardingCompleted
-            ? "/main/Connect"
-            : `onboarding/${
-                existingUser.currentOnboardingScreen || "NameScreen"
-              }`;
-
-          // await fetchUserData(user.uid);
-          // router.replace(nextScreen as any);
         }
+        // else {
+        //   console.log(
+        //     "verifyPhoneAndSetUser(): User already exists, fetching user data..."
+        //   );
+        //   const existingUser = docSnap.data() as UserDataType;
+        //   const nextScreen = existingUser.onboardingCompleted
+        //     ? "/main/Connect"
+        //     : `onboarding/${
+        //         existingUser.currentOnboardingScreen || "NameScreen"
+        //       }`;
+
+        //   // await fetchUserData(user.uid);
+        //   // router.replace(nextScreen as any);
+        // }
       }
     } catch (error) {
       console.error("Error verifying phone number:", error);
@@ -499,6 +523,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         newData.hiddenFields = updatedHiddenFields;
         return newData;
       });
+      // userDataRef.current = {
+      //   ...userDataRef.current,
+      //   ...data,
+      //   hiddenFields: updatedHiddenFields,
+      // };
     } catch (error) {
       console.error("Failed to update user data: ", error);
     }
@@ -524,6 +553,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const userDataFromFirestore = docSnap.data() as UserDataType;
       if (docSnap.exists) {
         setUserData(userDataFromFirestore);
+        userDataRef.current = userDataFromFirestore;
         if (userDataFromFirestore.onboardingCompleted) {
           // If onboarding is completed, navigate to the main app screen
           updateUserData({
@@ -543,12 +573,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
           });
         }
+      }
+      // if no user in firestore and they are phone sso, navgiate to namescreen
+      else if (!isSSOLogin && !userDataFromFirestore) {
+        console.log(
+          "fetchUserData(): No user in firestore, navigating to NameScreen"
+        );
+        router.replace({
+          pathname: `onboarding/NameScreen` as any,
+        });
       } else if (
         // For first-time users from Google SSO
         currentUser?.providerData.some(
           (provider) => provider.providerId === "google.com"
         )
       ) {
+        console.log("providerData", currentUser?.providerData);
         console.log(
           "fetchUserData(): For first-time users from Google SSO, navigate to PhoneNumberScreen"
         );
@@ -583,20 +623,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // This function fetches potential matches using Firestore.
   const fetchPotentialMatches = async () => {
+    userDataRef.current = userData;
+    console.log("fetching...");
     let fetchedMatches: UserDataType[] = [];
     let hasMoreMatches = true;
 
-    if (noMoreMatches || loadingNextBatch) {
-      console.log(
-        "fetchPotentialMatches(): No more matches or already loading."
-      );
-      return [];
-    }
+    // if (noMoreMatches || loadingNextBatch) {
+    //   console.log(
+    //     "fetchPotentialMatches(): No more matches or already loading."
+    //   );
+    //   setLoadingNextBatch(true);
+    //   return [];
+    // }
 
-    setLoadingNextBatch(true);
-
+    // Build the exclusion set.
     const excludedUserIds = new Set([
       userDataRef.current?.userId,
       ...(userDataRef.current?.likedMatches || []),
@@ -605,26 +646,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     ]);
     console.log("fetchPotentialMatches(): Excluded user IDs:", excludedUserIds);
 
-    // Base query constraints.
-    const constraints = [orderBy("userId"), limit(10)];
+    // ----- Build Base Query Constraints -----
+    // order by the number of likesreceived.
+    const numOfLikes = userDataRef.current?.likesReceived?.length || 0;
+    let constraints = [orderBy("userId"), limit(10)];
 
-    // Get date preferences; default to ["Everyone"] if none selected.
+    // ----- Gender Filtering -----
+    // Use datePreferences from matchPreferences; default to ["Everyone"] if not provided.
     const datePreferences =
       userDataRef.current.matchPreferences?.datePreferences &&
       userDataRef.current.matchPreferences.datePreferences.length > 0
         ? userDataRef.current.matchPreferences.datePreferences
         : ["Everyone"];
-
     console.log("Current datePreferences:", datePreferences);
 
-    // Map plural to singular values.
     const genderMap: Record<string, string> = {
       Men: "Man",
       Women: "Woman",
       "Non-Binary": "Non-binary",
     };
 
-    // Apply gender filtering if "Everyone" is not selected.
     if (!datePreferences.includes("Everyone")) {
       console.log(
         "Applying gender filtering based on datePreferences.",
@@ -641,7 +682,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
-    // Pagination: loop until we have 10 matches or no more results.
+    // ----- Age Range Filtering -----
+    const ageRange = userDataRef.current.matchPreferences?.preferredAgeRange;
+    if (ageRange && ageRange.min != null && ageRange.max != null) {
+      console.log("Applying age filtering:", ageRange);
+      constraints.push(where("age", ">=", ageRange.min));
+      constraints.push(where("age", "<=", ageRange.max));
+    }
+
+    // ----- Height Range Filtering -----
+    const heightRange =
+      userDataRef.current.matchPreferences?.preferredHeightRange;
+    if (heightRange && heightRange.min != null && heightRange.max != null) {
+      console.log("Applying height filtering:", heightRange);
+      constraints.push(where("height", ">=", heightRange.min));
+      constraints.push(where("height", "<=", heightRange.max));
+    }
+
+    // ----- Ethnicity Filtering -----
+    // const ethnicities =
+    //   userDataRef.current.matchPreferences?.preferredEthnicities;
+    // if (
+    //   ethnicities &&
+    //   ethnicities.length > 0 &&
+    //   !ethnicities.includes("Open to All")
+    // ) {
+    //   console.log("Applying ethnicity filtering:", ethnicities);
+    //   // This uses "array-contains-any" to match any of the selected ethnicities.
+    //   constraints.push(where("ethnicities", "array-contains-any", ethnicities));
+    // }
+
+    // // ----- Desired Relationship Filtering -----
+    // const relationship =
+    //   userDataRef.current.matchPreferences?.desiredRelationship;
+    // if (relationship && relationship !== "" && relationship !== "Open to All") {
+    //   console.log("Applying desired relationship filtering:", relationship);
+    //   constraints.push(where("desiredRelationship", "==", relationship));
+    // }
+
+    // ----- Pagination Loop -----
     while (fetchedMatches.length < 10 && hasMoreMatches) {
       console.log("fetchPotentialMatches(): Fetching potential matches...");
 
@@ -657,7 +736,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const querySnapshot = await getDocs(usersQuery);
-
       if (querySnapshot.empty) {
         console.log("fetchPotentialMatches(): No more matches available.");
         hasMoreMatches = false;
@@ -698,6 +776,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const resetPotentialMatches = () => {
     console.log("resetPotentialMatches(): Resetting potential matches...");
+    setLoadingNextBatch(false);
     setPotentialMatches([]);
     setLastVisibleMatch(null);
     setNoMoreMatches(false);
@@ -720,6 +799,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // If we have valid matches, get the next one.
     if (validMatches.length > 0) {
+      console.log("loadNextPotentialMatch(): Loading next potential match...");
       // Determine the index of the current match within validMatches.
       const currentValidIndex = currentPotentialMatch
         ? validMatches.findIndex(
@@ -738,7 +818,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setCurrentPotentialMatch(nextValidMatch);
       setCurrentPotentialMatchIndex(fullIndex);
-    } else if (!noMoreMatches && !loadingNextBatch) {
+    } else if (!noMoreMatches || !loadingNextBatch) {
       // If no valid matches exist, fetch a new batch.
       console.log(
         "loadNextPotentialMatch(): No valid matches found, loading new batch..."
