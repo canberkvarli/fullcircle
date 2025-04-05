@@ -334,9 +334,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const { user } = await FIREBASE_AUTH.signInWithCredential(
-        googleCredential
-      );
+      const { user } =
+        await FIREBASE_AUTH.signInWithCredential(googleCredential);
 
       setGoogleCredential(googleCredential);
       setCurrentUser(user);
@@ -446,9 +445,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           "verifyPhoneAndSetUser(): Signing in with phone credential"
         );
         // For phone-only sign in, sign in with the phone credential to create a new user session
-        const userCredential = await FIREBASE_AUTH.signInWithCredential(
-          phoneCredential
-        );
+        const userCredential =
+          await FIREBASE_AUTH.signInWithCredential(phoneCredential);
         const { user } = userCredential;
         const userDocRef = doc(FIRESTORE, "users", user.uid);
         const docSnap = await getDoc(userDocRef);
@@ -624,18 +622,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const fetchPotentialMatches = async () => {
+    // Ensure our ref is up-to-date
     userDataRef.current = userData;
     console.log("fetching...");
-    let fetchedMatches: UserDataType[] = [];
+    let fetchedMatches: any[] = [];
     let hasMoreMatches = true;
-
-    // if (noMoreMatches || loadingNextBatch) {
-    //   console.log(
-    //     "fetchPotentialMatches(): No more matches or already loading."
-    //   );
-    //   setLoadingNextBatch(true);
-    //   return [];
-    // }
 
     // Build the exclusion set.
     const excludedUserIds = new Set([
@@ -647,12 +638,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("fetchPotentialMatches(): Excluded user IDs:", excludedUserIds);
 
     // ----- Build Base Query Constraints -----
-    // order by the number of likesreceived.
+    // order by the number of likesReceived.
     const numOfLikes = userDataRef.current?.likesReceived?.length || 0;
     let constraints = [orderBy("userId"), limit(10)];
 
     // ----- Gender Filtering -----
-    // Use datePreferences from matchPreferences; default to ["Everyone"] if not provided.
     const datePreferences =
       userDataRef.current.matchPreferences?.datePreferences &&
       userDataRef.current.matchPreferences.datePreferences.length > 0
@@ -667,10 +657,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     if (!datePreferences.includes("Everyone")) {
-      console.log(
-        "Applying gender filtering based on datePreferences.",
-        datePreferences
-      );
       const mappedGenders = datePreferences.map(
         (pref) => genderMap[pref] || pref
       );
@@ -700,30 +686,53 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     // ----- Ethnicity Filtering -----
-    // const ethnicities =
-    //   userDataRef.current.matchPreferences?.preferredEthnicities;
-    // if (
-    //   ethnicities &&
-    //   ethnicities.length > 0 &&
-    //   !ethnicities.includes("Open to All")
-    // ) {
-    //   console.log("Applying ethnicity filtering:", ethnicities);
-    //   // This uses "array-contains-any" to match any of the selected ethnicities.
-    //   constraints.push(where("ethnicities", "array-contains-any", ethnicities));
-    // }
+    const ethnicities =
+      userDataRef.current.matchPreferences?.preferredEthnicities;
+    if (
+      ethnicities &&
+      ethnicities.length > 0 &&
+      !ethnicities.includes("Open to All")
+    ) {
+      console.log("Applying ethnicity filtering:", ethnicities);
+      constraints.push(where("ethnicities", "array-contains-any", ethnicities));
+    }
 
-    // // ----- Desired Relationship Filtering -----
-    // const relationship =
-    //   userDataRef.current.matchPreferences?.desiredRelationship;
-    // if (relationship && relationship !== "" && relationship !== "Open to All") {
-    //   console.log("Applying desired relationship filtering:", relationship);
-    //   constraints.push(where("desiredRelationship", "==", relationship));
-    // }
+    // ----- Distance Filtering (Bounding Box) -----
+    const currentLat = userData.latitude;
+    const currentLon = userData.longitude;
+    const maxDistance = userData.matchPreferences?.preferredDistance;
+    if (
+      currentLat != null &&
+      currentLon != null &&
+      maxDistance != null &&
+      !isNaN(currentLat) &&
+      !isNaN(currentLon) &&
+      !isNaN(maxDistance)
+    ) {
+      // Approximate: 1 degree latitude ~ 69 miles.
+      const latDelta = maxDistance / 69;
+      // For longitude, 1 degree ~ 69 * cos(latitude) miles.
+      const lonDelta =
+        maxDistance / (69 * Math.cos(currentLat * (Math.PI / 180)));
+      const minLat = currentLat - latDelta;
+      const maxLat = currentLat + latDelta;
+      const minLon = currentLon - lonDelta;
+      const maxLon = currentLon + lonDelta;
+      console.log("Applying distance filtering with bounding box:", {
+        minLat,
+        maxLat,
+        minLon,
+        maxLon,
+      });
+      constraints.push(where("latitude", ">=", minLat));
+      constraints.push(where("latitude", "<=", maxLat));
+      constraints.push(where("longitude", ">=", minLon));
+      constraints.push(where("longitude", "<=", maxLon));
+    }
 
     // ----- Pagination Loop -----
     while (fetchedMatches.length < 10 && hasMoreMatches) {
       console.log("fetchPotentialMatches(): Fetching potential matches...");
-
       let usersQuery;
       if (lastVisibleMatch) {
         usersQuery = query(
@@ -744,7 +753,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const newMatches = querySnapshot.docs
-        .map((doc) => doc.data() as UserDataType)
+        .map((doc) => doc.data())
         .filter((user) => !excludedUserIds.has(user.userId));
 
       if (newMatches.length > 0) {
@@ -985,21 +994,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     lon1: number,
     lat2: number,
     lon2: number
-  ) => {
-    const toRad = (value: number) => (value * Math.PI) / 180;
-    const R = 6371; // Earth's radius in kilometers
-
+  ): number => {
+    const toRad = (value: any) => (value * Math.PI) / 180;
+    const R = 3959; // Earth's radius in miles
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) *
-        Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in kilometers
+    return R * c;
   };
 
   const signOut = async () => {

@@ -21,8 +21,8 @@ export default function DatingPreferences() {
       return value.length === 0
         ? defaultValue
         : value.join(", ").length > 40
-        ? `${value.join(", ").slice(0, 40)}...`
-        : value.join(", ");
+          ? `${value.join(", ").slice(0, 40)}...`
+          : value.join(", ");
     }
 
     // Check if the value contains a number followed by a unit (e.g., "miles", "km")
@@ -73,7 +73,7 @@ export default function DatingPreferences() {
           }`
         : "3 - 8",
       isSubscriberField: true,
-      fieldName: "prefferedHeightRange",
+      fieldName: "preferredHeightRange",
     },
     {
       label: "Preferred Ethnicity",

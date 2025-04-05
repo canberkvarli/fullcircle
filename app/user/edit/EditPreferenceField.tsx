@@ -42,7 +42,10 @@ export default function EditPreferenceField() {
       } catch (e) {
         parsedValue = currentValue;
       }
-      if (fieldName === "preferredAgeRange" && typeof parsedValue === "string") {
+      if (
+        fieldName === "preferredAgeRange" &&
+        typeof parsedValue === "string"
+      ) {
         const [min, max] = parsedValue.split(" - ");
         setValue({ min: parseInt(min, 10), max: parseInt(max, 10) });
       } else if (
@@ -107,7 +110,9 @@ export default function EditPreferenceField() {
         return [allOption];
       }
       if (
-        options.filter((opt) => opt !== allOption).every((opt) => updated.includes(opt))
+        options
+          .filter((opt) => opt !== allOption)
+          .every((opt) => updated.includes(opt))
       ) {
         return [allOption];
       }
@@ -131,10 +136,18 @@ export default function EditPreferenceField() {
       {options.map((option) => (
         <TouchableOpacity
           key={option}
-          style={[styles.checkbox, selected.includes(option) && styles.checkboxSelected]}
+          style={[
+            styles.checkbox,
+            selected.includes(option) && styles.checkboxSelected,
+          ]}
           onPress={() => onToggle(option)}
         >
-          <Text style={[styles.checkboxText, selected.includes(option) && styles.checkboxTextSelected]}>
+          <Text
+            style={[
+              styles.checkboxText,
+              selected.includes(option) && styles.checkboxTextSelected,
+            ]}
+          >
             {option}
           </Text>
         </TouchableOpacity>
@@ -150,7 +163,9 @@ export default function EditPreferenceField() {
           <CheckboxList
             options={dateOptions}
             selected={value && value.length > 0 ? value : ["Everyone"]}
-            onToggle={(option) => handleCheckboxToggle(option, dateOptions, "Everyone")}
+            onToggle={(option) =>
+              handleCheckboxToggle(option, dateOptions, "Everyone")
+            }
           />
         );
       }

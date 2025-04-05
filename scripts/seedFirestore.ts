@@ -78,6 +78,29 @@ const formattedLastActive = lastActiveDate.toLocaleString("en-US", {
   timeZoneName: "short",
 });
 
+const ethnicities = [
+  "African American",
+  "Asian",
+  "Caucasian",
+  "Hispanic",
+  "Middle Eastern",
+  "Native American",
+  "Pacific Islander",
+  "Other",
+];
+
+const sexualOrientations = [
+  "Straight",
+  "Gay",
+  "Lesbian",
+  "Bisexual",
+  "Asexual",
+  "Demisexual",
+  "Pansexual",
+  "Queer",
+  "Questioning",
+];
+
 // Seed Firestore with users
 const seedFirestore = async (numUsers: number) => {
   const usersCollection = db.collection("users");
@@ -110,7 +133,8 @@ const seedFirestore = async (numUsers: number) => {
         max: 11,
       })}`
     );
-
+    const randomLatitude = faker.number.float({ min: 36.5, max: 38.5 });
+    const randomLongitude = faker.number.float({ min: -123.5, max: -120.5 });
     // Generate gender-specific names
     let firstName: string;
     let lastName: string;
@@ -183,19 +207,7 @@ const seedFirestore = async (numUsers: number) => {
           max: faker.number.int({ min: 26, max: 50 }),
         },
         preferredDistance: faker.number.int({ min: 5, max: 50 }),
-        preferredEthnicities: faker.helpers.arrayElements(
-          [
-            "American Indian",
-            "East Asian",
-            "Black/African Descent",
-            "Middle Eastern",
-            "Hispanic Latino",
-            "South Asian",
-            "Pacific Islander",
-            "White/Caucasian",
-          ],
-          3
-        ),
+        preferredEthnicities: faker.helpers.arrayElements(ethnicities, 3),
         preferredHeightRange: {
           min: faker.number.int({ min: 4, max: 5 }),
           max: faker.number.int({ min: 5, max: 9 }),
@@ -206,6 +218,11 @@ const seedFirestore = async (numUsers: number) => {
       fullCircleSubscription: faker.datatype.boolean(),
       gender,
       height: heightValue,
+      ethnicities: faker.helpers.arrayElements(ethnicities, 3),
+      sexualOrientation: faker.helpers.arrayElements(
+        sexualOrientations,
+        faker.number.int({ min: 1, max: 3 })
+      ),
       hiddenFields: {
         childrenPreference: faker.datatype.boolean(),
         datePreferences: faker.datatype.boolean(),
@@ -226,8 +243,8 @@ const seedFirestore = async (numUsers: number) => {
       jobLocation: faker.company.name(),
       jobTitle: faker.person.jobTitle(),
       lastActive: formattedLastActive,
-      latitude: faker.location.latitude(),
-      longitude: faker.location.longitude(),
+      latitude: randomLatitude,
+      longitude: randomLongitude,
       location,
       likedMatches: [],
       likesReceived: [],
