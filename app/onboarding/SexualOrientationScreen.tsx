@@ -23,6 +23,8 @@ const options = [
   "Pansexual",
   "Queer",
   "Questioning",
+  "Heterosexual",
+  "Polysexual",
 ];
 
 const SexualOrientationScreen = () => {

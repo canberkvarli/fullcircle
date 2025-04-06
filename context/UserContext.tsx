@@ -54,7 +54,7 @@ export type UserDataType = {
   regionName?: string;
   longitude?: number;
   latitude?: number;
-  gender?: string;
+  gender?: string[];
   sexualOrientation?: string[];
   ethnicities?: string[];
   childrenPreference?: string;
@@ -96,6 +96,7 @@ export type UserDataType = {
     preferredDistance: number;
     datePreferences: string[];
     desiredRelationship: string;
+    preferredSpiritualPractices?: string[];
   };
 };
 
@@ -203,6 +204,7 @@ const initialUserData: UserDataType = {
     preferredDistance: 100,
     datePreferences: [],
     desiredRelationship: "",
+    preferredSpiritualPractices: [],
   },
 };
 

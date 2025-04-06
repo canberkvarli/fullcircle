@@ -76,10 +76,18 @@ export default function DatingPreferences() {
       fieldName: "preferredHeightRange",
     },
     {
-      label: "Preferred Ethnicity",
-      value: userData?.matchPreferences?.preferredEthnicities,
+      label: "Preferred Relationship",
+      value: userData?.matchPreferences?.desiredRelationship || "Open to All",
       isSubscriberField: true,
-      fieldName: "preferredEthnicities",
+      fieldName: "desiredRelationship",
+    },
+    {
+      label: "Preferred Spiritual Practices",
+      value:
+        userData?.matchPreferences?.preferredSpiritualPractices ||
+        "Open to All",
+      isSubscriberField: true,
+      fieldName: "preferredSpiritualPractices",
     },
   ];
 

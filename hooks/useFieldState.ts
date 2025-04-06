@@ -1,116 +1,202 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
- function useFieldState(fieldName: string, currentFieldValue: any) {
-    const OPTIONS = {
-        gender: [
-          { title: "Man", subtitle: "Radiate your masculine energy" },
-          { title: "Woman", subtitle: "Embrace your feminine essence" },
-          { title: "Non-binary" },
-          { title: "Genderqueer" },
-          { title: "Agender" },
-          { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
-          {
-            title: "Other",
-            subtitle: "Describe your unique path",
-            input: true,
-          },
-        ],
-        sexualOrientation: [
-          "Straight",
-          "Gay",
-          "Lesbian",
-          "Bisexual",
-          "Asexual",
-          "Demisexual",
-          "Pansexual",
-          "Queer",
-          "Questioning",
-        ],
-        datePreferences: ["Men", "Women", "Everyone"],
-        educationDegree: [
-          "High School",
-          "Undergrad",
-          "Postgrad",
-          "Associate Degree",
-          "Bachelor's Degree",
-          "Master's Degree",
-          "Doctorate",
-          "Professional Certification",
-        ],
-        childrenPreference: [
-          "Don’t have children",
-          "Have children",
-          "Open to children",
-          "Want Children",
-        ],
-        ethnicities: [
-          "American Indian",
-          "East Asian",
-          "Black/African Descent",
-          "Middle Eastern",
-          "Hispanic Latino",
-          "South Asian",
-          "Pacific Islander",
-          "White/Caucasian",
-        ],
-      };
+interface HiddenFields {
+  [key: string]: boolean;
+}
+
+interface FieldConfig {
+  title: string;
+  options?: any;
+  selectedValue?: any;
+  onSelect?: (value: any) => void;
+  customInput?: string;
+  setCustomInput?: (value: string) => void;
+  clearAll?: () => void;
+  selectedHeight?: number;
+  setSelectedHeight?: (value: number) => void;
+}
+
+function useFieldState(fieldName: string, currentFieldValue: any) {
+  // Memoize OPTIONS so its reference doesn't change on every render.
+  const OPTIONS: Record<string, any> = useMemo(
+    () => ({
+      gender: [
+        { title: "Woman", subtitle: "Embrace your feminine essence" },
+        { title: "Man", subtitle: "Radiate your masculine energy" },
+        { title: "Trans Woman", subtitle: "Celebrate your authenticity" },
+        { title: "Trans Man", subtitle: "Celebrate your authenticity" },
+        { title: "Non-binary" },
+        { title: "Genderqueer" },
+        { title: "Agender" },
+        { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
+        { title: "Genderfluid", subtitle: "Embrace fluidity" },
+        {
+          title: "Other",
+          subtitle: "Describe your unique path",
+          input: true,
+        },
+      ],
+      sexualOrientation: [
+        "Heterosexual (Straight)",
+        "Gay (Homosexual)",
+        "Lesbian",
+        "Bisexual",
+        "Pansexual",
+        "Asexual (Ace)",
+        "Demisexual",
+        "Queer",
+        "Polysexual",
+        "Questioning",
+      ],
+      datePreferences: [
+        "Men",
+        "Women",
+        "Non-binary",
+        "Genderqueer",
+        "Agender",
+        "Genderfluid",
+        "Trans Woman",
+        "Trans Man",
+        "Two-Spirit",
+        "Bigender",
+        "Intersex",
+        "Everyone",
+      ],
+      educationDegree: [
+        "High School",
+        "Undergrad",
+        "Postgrad",
+        "Associate Degree",
+        "Bachelor's Degree",
+        "Master's Degree",
+        "Doctorate",
+        "Professional Certification",
+      ],
+      childrenPreference: [
+        "Don’t have children",
+        "Have children",
+        "Open to children",
+        "Want Children",
+      ],
+      ethnicities: [
+        "American Indian",
+        "East Asian",
+        "Black/African Descent",
+        "Middle Eastern",
+        "Hispanic Latino",
+        "South Asian",
+        "Pacific Islander",
+        "White/Caucasian",
+      ],
+      spiritualPractices: [
+        "Hatha/Vinyasa Yoga",
+        "Kundalini Yoga",
+        "Yin Yoga",
+        "Tantric Practices",
+        "Mindfulness Meditation",
+        "Breathwork",
+        "Reiki (Energy Work)",
+        "Chakra Healing",
+        "Qi Gong",
+        "Ayurveda",
+        "Astrology (Western)",
+        "Astrology (Vedic)",
+        "Chinese Astrology",
+        "Human Design & Numerology",
+        "Tarot/Oracle Cards",
+        "Cacao Ceremony",
+        "Ayahuasca & Plant Medicine",
+        "Sound Healing",
+        "Ecstatic Dance",
+        "Crystal Healing",
+      ],
+    }),
+    []
+  );
+
+  // States for various fields
   const [firstName, setFirstName] = useState<string>(
-      fieldName === "fullName" && currentFieldValue
-        ? currentFieldValue.split(" ")[0]
-        : currentFieldValue || ""
+    fieldName === "fullName" && currentFieldValue
+      ? currentFieldValue.split(" ")[0]
+      : currentFieldValue || ""
   );
-  
   const [lastName, setLastName] = useState<string>(
-      fieldName === "fullName" && currentFieldValue
-        ? currentFieldValue.split(" ")[1] || ""
-        : ""
+    fieldName === "fullName" && currentFieldValue
+      ? currentFieldValue.split(" ")[1] || ""
+      : ""
   );
-    
-  const [selectedGender, setSelectedGender] = useState<string | null>(null);
-  const [selectedOrientations, setSelectedOrientations] = useState<string[]>([]);
-  const [selectedDatePreferences, setSelectedDatePreferences] = useState<string[]>([]);
-  const [selectedEducation, setSelectedEducation] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<string[]>([]);
+  const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
+    []
+  );
+  const [selectedDatePreferences, setSelectedDatePreferences] = useState<
+    string[]
+  >([]);
+  const [selectedEducation, setSelectedEducation] = useState<string | null>(
+    null
+  );
   const [jobLocation, setJobLocation] = useState(currentFieldValue || "");
   const [jobTitle, setJobTitle] = useState(currentFieldValue || "");
-  const [selectedChildrenPreferences, setSelectedChildrenPreferences] = useState<string | null>(null);
+  const [selectedChildrenPreferences, setSelectedChildrenPreferences] =
+    useState<any | null>(null);
   const [selectedEthnicities, setSelectedEthnicities] = useState<string[]>([]);
+  const [selectedSpiritualPractices, setSelectedSpiritualPractices] = useState<
+    string[]
+  >([]);
   const [fullName, setFullName] = useState(currentFieldValue || "");
-  const [customInput, setCustomInput] = useState("");
+  const [customInput, setCustomInput] = useState<string>("");
+  // Height is stored as a number in ft only.
   const [selectedHeight, setSelectedHeight] = useState<number>(
-    typeof currentFieldValue === 'string' ? parseInt(currentFieldValue.replace(/\D/g, "") || "130") : 130
-  );
-  const [unit, setUnit] = useState<"cm" | "ft">(
-    currentFieldValue?.includes("ft") ? "ft" : "cm"
+    typeof currentFieldValue === "string"
+      ? parseInt(currentFieldValue.replace(/\D/g, "") || "0")
+      : currentFieldValue || 0
   );
   const [location, setLocation] = useState(currentFieldValue || "");
 
-  useEffect(() => {
-    if (fieldName === "height") {
-      if (unit === "cm" && selectedHeight > 240) {
-        setSelectedHeight(240);
-      } else if (unit === "ft" && selectedHeight > 8) {
-        setSelectedHeight(8);
-      }
-    }
-  }, [unit]);
-
+  // Update field state on load.
   useEffect(() => {
     if (fieldName === "gender") {
-      if (OPTIONS.gender.some((option) => option.title === currentFieldValue)) {
-        setSelectedGender(currentFieldValue);
-        setCustomInput("");
-      } else if (currentFieldValue) {
-        setSelectedGender("Other");
-        setCustomInput(currentFieldValue);
+      if (currentFieldValue) {
+        const genders = Array.isArray(currentFieldValue)
+          ? currentFieldValue
+          : [currentFieldValue];
+        setSelectedGender(genders);
+        if (!genders.includes("Other")) {
+          setCustomInput("");
+        }
       }
     } else if (fieldName === "sexualOrientation") {
-      setSelectedOrientations(Array.isArray(currentFieldValue) ? currentFieldValue : []);
+      setSelectedOrientations(
+        Array.isArray(currentFieldValue) ? currentFieldValue : []
+      );
     } else if (fieldName === "datePreferences") {
-      setSelectedDatePreferences(Array.isArray(currentFieldValue) ? currentFieldValue : []);
+      // If stored value is "Open to All" or an array with only that value, convert to ["Everyone"] for the UI.
+      if (typeof currentFieldValue === "string") {
+        if (currentFieldValue === "Open to All") {
+          setSelectedDatePreferences(["Everyone"]);
+        } else {
+          setSelectedDatePreferences([]);
+        }
+      } else if (Array.isArray(currentFieldValue)) {
+        if (
+          currentFieldValue.length === 0 ||
+          (currentFieldValue.length === 1 &&
+            currentFieldValue[0] === "Open to All")
+        ) {
+          setSelectedDatePreferences(["Everyone"]);
+        } else {
+          setSelectedDatePreferences(currentFieldValue);
+        }
+      } else {
+        // Default to Everyone if no value exists.
+        setSelectedDatePreferences(["Everyone"]);
+      }
     } else if (fieldName === "educationDegree") {
       setSelectedEducation(currentFieldValue || null);
     } else if (fieldName === "ethnicities") {
-      setSelectedEthnicities(Array.isArray(currentFieldValue) ? currentFieldValue : []);
+      setSelectedEthnicities(
+        Array.isArray(currentFieldValue) ? currentFieldValue : []
+      );
     } else if (fieldName === "childrenPreference") {
       setSelectedChildrenPreferences(currentFieldValue || null);
     } else if (fieldName === "jobLocation") {
@@ -123,10 +209,14 @@ import { useState, useEffect } from "react";
       setLastName(currentFieldValue || "");
     } else if (fieldName === "location") {
       setLocation(currentFieldValue || "");
+    } else if (fieldName === "spiritualPractices") {
+      setSelectedSpiritualPractices(
+        Array.isArray(currentFieldValue) ? currentFieldValue : []
+      );
     }
   }, [fieldName, currentFieldValue]);
 
-  const fieldConfig: Record<string, any> = {
+  const fieldConfig: Record<string, FieldConfig> = {
     gender: {
       title: "Gender",
       options: OPTIONS.gender,
@@ -139,9 +229,11 @@ import { useState, useEffect } from "react";
       title: "Sexuality",
       options: OPTIONS.sexualOrientation,
       selectedValue: selectedOrientations,
-      onSelect: (title: any) => {
+      onSelect: (title: string) => {
         setSelectedOrientations((prev) =>
-          prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]
+          prev.includes(title)
+            ? prev.filter((item) => item !== title)
+            : [...prev, title]
         );
       },
       clearAll: () => setSelectedOrientations([]),
@@ -150,13 +242,7 @@ import { useState, useEffect } from "react";
       title: "Date Preference",
       options: OPTIONS.datePreferences,
       selectedValue: selectedDatePreferences,
-      onSelect: (title: any) => {
-        setSelectedDatePreferences((prev) =>
-          prev.includes(title)
-            ? prev.filter((item) => item !== title)
-            : [...prev, title]
-        );
-      },
+      onSelect: setSelectedDatePreferences,
       clearAll: () => setSelectedDatePreferences([]),
     },
     childrenPreference: {
@@ -198,8 +284,6 @@ import { useState, useEffect } from "react";
     height: {
       title: "Height",
       selectedHeight,
-      unit,
-      setUnit,
       setSelectedHeight,
     },
     location: {
@@ -211,38 +295,63 @@ import { useState, useEffect } from "react";
       title: "Ethnicities",
       options: OPTIONS.ethnicities,
       selectedValue: selectedEthnicities,
-      onSelect: (title: any) => {
+      onSelect: (title: string) => {
         setSelectedEthnicities((prev) =>
-          prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]
+          prev.includes(title)
+            ? prev.filter((item) => item !== title)
+            : [...prev, title]
         );
       },
       clearAll: () => setSelectedEthnicities([]),
     },
+    spiritualPractices: {
+      title: "Spiritual Practices",
+      options: OPTIONS.spiritualPractices,
+      selectedValue: selectedSpiritualPractices,
+      onSelect: (title: string) => {
+        setSelectedSpiritualPractices((prev) =>
+          prev.includes(title)
+            ? prev.filter((item) => item !== title)
+            : [...prev, title]
+        );
+      },
+      clearAll: () => setSelectedSpiritualPractices([]),
+    },
   };
 
   return {
-    selectedGender, setSelectedGender,
-    selectedOrientations, setSelectedOrientations,
-    selectedDatePreferences, setSelectedDatePreferences,
-    selectedEducation, setSelectedEducation,
-    selectedEthnicities, setSelectedEthnicities,
-    jobLocation, setJobLocation,
-    jobTitle, setJobTitle,
-    customInput, setCustomInput,
+    selectedGender,
+    setSelectedGender,
+    selectedOrientations,
+    setSelectedOrientations,
+    selectedDatePreferences,
+    setSelectedDatePreferences,
+    selectedEducation,
+    setSelectedEducation,
+    selectedEthnicities,
+    setSelectedEthnicities,
+    jobLocation,
+    setJobLocation,
+    jobTitle,
+    setJobTitle,
+    customInput,
+    setCustomInput,
     firstName,
     setFirstName,
     lastName,
     setLastName,
     fullName,
     setFullName,
-    fieldConfig, OPTIONS,
+    fieldConfig,
+    OPTIONS,
     selectedHeight,
     setSelectedHeight,
-    unit,
-    setUnit,
     location,
     setLocation,
-    selectedChildrenPreferences, setSelectedChildrenPreferences,
+    selectedChildrenPreferences,
+    setSelectedChildrenPreferences,
+    selectedSpiritualPractices,
+    setSelectedSpiritualPractices,
   };
 }
 

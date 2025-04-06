@@ -10,7 +10,7 @@ import {
 import styles from "@/styles/Onboarding/GenderScreenStyles";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
-import { Checkbox } from "expo-checkbox";
+import Checkbox from "expo-checkbox";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 
 function GenderScreen() {
@@ -21,16 +21,30 @@ function GenderScreen() {
     userData,
   } = useUserContext();
 
-  const [selectedGender, setSelectedGender] = useState<string | null>(
-    userData?.gender || null
+  const [selectedGender, setSelectedGender] = useState<string[]>(
+    userData?.gender || []
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
     gender: userData?.hiddenFields?.gender || false,
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [customOther, setCustomOther] = useState<string>("");
 
   const toggleGender = (gender: string) => {
-    setSelectedGender((prev) => (prev === gender ? null : gender));
+    if (gender === "Other") {
+      if (selectedGender.includes("Other")) {
+        setSelectedGender(selectedGender.filter((g) => g !== "Other"));
+        setCustomOther("");
+      } else {
+        setSelectedGender([...selectedGender, "Other"]);
+      }
+    } else {
+      if (selectedGender.includes(gender)) {
+        setSelectedGender(selectedGender.filter((g) => g !== gender));
+      } else {
+        setSelectedGender([...selectedGender, gender]);
+      }
+    }
   };
 
   const toggleHidden = (fieldName: string) => {
@@ -41,22 +55,30 @@ function GenderScreen() {
   };
 
   const handleNext = async () => {
+    // Replace "Other" with the custom input if provided.
+    const finalGender = selectedGender.map((g) =>
+      g === "Other" ? (customOther ? customOther : "Other") : g
+    );
     await updateUserData({
-      gender: selectedGender || "",
+      gender: finalGender,
       hiddenFields,
     });
     navigateToNextScreen();
   };
 
   const handlePrevious = async () => {
+    const finalGender = selectedGender.map((g) =>
+      g === "Other" ? (customOther ? customOther : "Other") : g
+    );
     await updateUserData({
-      gender: selectedGender || "",
+      gender: finalGender,
       hiddenFields,
     });
     navigateToPreviousScreen();
   };
 
   useEffect(() => {
+    // Ensure hiddenFields.gender is set to a boolean.
     setHiddenFields((prev) => ({
       ...prev,
       gender: prev.gender !== undefined ? prev.gender : false,
@@ -72,10 +94,11 @@ function GenderScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>How do you identify?</Text>
 
+        {/* Main options */}
         <TouchableOpacity
           style={[
             styles.option,
-            selectedGender === "Man" && styles.optionSelected,
+            selectedGender.includes("Man") && styles.optionSelected,
           ]}
           onPress={() => toggleGender("Man")}
         >
@@ -88,7 +111,7 @@ function GenderScreen() {
         <TouchableOpacity
           style={[
             styles.option,
-            selectedGender === "Woman" && styles.optionSelected,
+            selectedGender.includes("Woman") && styles.optionSelected,
           ]}
           onPress={() => toggleGender("Woman")}
         >
@@ -115,10 +138,15 @@ function GenderScreen() {
         {dropdownOpen && (
           <View style={styles.dropdown}>
             {[
-              { title: "Non-binary" },
-              { title: "Genderqueer" },
-              { title: "Agender" },
+              { title: "Non-binary", subtitle: "Be your true self" },
+              { title: "Genderqueer", subtitle: "Embrace your uniqueness" },
+              { title: "Agender", subtitle: "Express your uniqueness" },
+              { title: "Genderfluid", subtitle: "Embrace fluidity" },
+              { title: "Trans Woman", subtitle: "Celebrate your identity" },
+              { title: "Trans Man", subtitle: "Express your identity" },
               { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
+              { title: "Bigender", subtitle: "Celebrate your duality" },
+              { title: "Intersex", subtitle: "Embrace your uniqueness" },
               {
                 title: "Other",
                 subtitle: "Describe your unique path",
@@ -129,7 +157,8 @@ function GenderScreen() {
                 key={option.title}
                 style={[
                   styles.option,
-                  selectedGender === option.title && styles.optionSelected,
+                  selectedGender.includes(option.title) &&
+                    styles.optionSelected,
                 ]}
                 onPress={() => toggleGender(option.title)}
               >
@@ -137,11 +166,12 @@ function GenderScreen() {
                 {option.subtitle && (
                   <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
                 )}
-                {option.input && (
+                {option.input && selectedGender.includes("Other") && (
                   <TextInput
                     style={styles.input}
                     placeholder="Enter here"
-                    onChangeText={(text) => setSelectedGender(text)}
+                    value={customOther}
+                    onChangeText={setCustomOther}
                   />
                 )}
               </TouchableOpacity>

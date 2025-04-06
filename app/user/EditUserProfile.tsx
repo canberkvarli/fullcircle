@@ -26,7 +26,6 @@ export default function EditUserProfile() {
   const [fieldVisibility, setFieldVisibility] = useState({});
 
   useEffect(() => {
-    // Initialize field visibility based on hiddenFields
     const initialVisibility = {
       gender: !userData.hiddenFields?.gender,
       sexualOrientation: !userData.hiddenFields?.sexualOrientation,
@@ -170,12 +169,11 @@ export default function EditUserProfile() {
     },
   ];
 
-  // Additional user info for sections
   const vitalFields = [
     {
       fieldName: "fullName",
       title: "Name",
-      value: userData.fullName || userData.firstName, // Fall back to firstName if fullName is not available
+      value: userData.fullName || userData.firstName,
     },
     {
       fieldName: "age",
@@ -201,6 +199,14 @@ export default function EditUserProfile() {
       fieldName: "childrenPreference",
       title: "Children Preference",
       value: userData.childrenPreference,
+    },
+  ];
+
+  myAltarFields = [
+    {
+      fieldName: "spiritualPractices",
+      title: "Spiritual Practices",
+      value: userData.spiritualPractices,
     },
   ];
 
@@ -270,14 +276,9 @@ export default function EditUserProfile() {
               {vitalFields.map(renderField)}
             </View>
             <View style={styles.fieldsContainer}>
-              <Text style={styles.mainTitle}>My Vices</Text>
+              <Text style={styles.mainTitle}>My Altar</Text>
               <View style={styles.separator} />
-              <EditUserProfileField
-                fieldName="Spirituality"
-                value={userData.spiritualPractices}
-                isVisible={true}
-                onPress={() => handleFieldPress("Spirituality")}
-              />
+              {myAltarFields.map(renderField)}
             </View>
           </View>
         )}

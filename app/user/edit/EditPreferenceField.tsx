@@ -19,6 +19,7 @@ const FIELD_TITLES: Record<string, string> = {
   preferredEthnicities: "Ethnicity",
   desiredRelationship: "Relationship Type",
   preferredHeightRange: "Preferred Height Range",
+  preferredSpiritualPractices: "Spiritual Practices",
 };
 
 export default function EditPreferenceField() {
@@ -158,13 +159,26 @@ export default function EditPreferenceField() {
   const renderField = () => {
     switch (fieldName) {
       case "datePreferences": {
-        const dateOptions = ["Men", "Women", "Non-Binary", "Everyone"];
+        const genderOptions: string[] = [
+          "Men",
+          "Women",
+          "Non-binary",
+          "Genderqueer",
+          "Agender",
+          "Genderfluid",
+          "Trans Woman",
+          "Trans Man",
+          "Two-Spirit",
+          "Bigender",
+          "Intersex",
+          "Everyone",
+        ];
         return (
           <CheckboxList
-            options={dateOptions}
+            options={genderOptions}
             selected={value && value.length > 0 ? value : ["Everyone"]}
             onToggle={(option) =>
-              handleCheckboxToggle(option, dateOptions, "Everyone")
+              handleCheckboxToggle(option, genderOptions, "Everyone")
             }
           />
         );
@@ -212,7 +226,7 @@ export default function EditPreferenceField() {
         );
       }
       case "preferredEthnicities": {
-        const ethnicityOptions = [
+        const ethnicityOptions: string[] = [
           "American Indian",
           "East Asian",
           "Black/African Descent",
@@ -235,7 +249,18 @@ export default function EditPreferenceField() {
         );
       }
       case "desiredRelationship": {
-        const relationshipOptions = ["Monogamy", "Non-Monogamy", "Open to All"];
+        const relationshipOptions: string[] = [
+          "Ethical Non-Monogamy",
+          "Open Relationship",
+          "Polyamory",
+          "Relationship Anarchy",
+          "Sacred Union",
+          "Spiritual Partnership",
+          "Polyamorous Hierarchy",
+          "Non-hierarchical Poly",
+          "Don't Label (Fluid)",
+          "Open to All",
+        ];
         return (
           <CheckboxList
             options={relationshipOptions}
@@ -246,8 +271,46 @@ export default function EditPreferenceField() {
           />
         );
       }
+      case "preferredSpiritualPractices": {
+        const spiritualPracticeOptions: string[] = [
+          "Hatha/Vinyasa Yoga",
+          "Kundalini Yoga",
+          "Yin Yoga",
+          "Tantric Practices",
+          "Mindfulness Meditation",
+          "Breathwork",
+          "Reiki (Energy Work)",
+          "Chakra Healing",
+          "Qi Gong",
+          "Ayurveda",
+          "Astrology (Western)",
+          "Astrology (Vedic)",
+          "Chinese Astrology",
+          "Human Design & Numerology",
+          "Tarot/Oracle Cards",
+          "Cacao Ceremony",
+          "Ayahuasca & Plant Medicine",
+          "Sound Healing",
+          "Ecstatic Dance",
+          "Crystal Healing",
+          "Open to All",
+        ];
+        return (
+          <CheckboxList
+            options={spiritualPracticeOptions}
+            selected={value && value.length > 0 ? value : ["Open to All"]}
+            onToggle={(option) =>
+              handleCheckboxToggle(
+                option,
+                spiritualPracticeOptions,
+                "Open to All"
+              )
+            }
+          />
+        );
+      }
+
       case "preferredHeightRange": {
-        // Using feet only; default value is { min: 3, max: 8 }
         const defaultValue = { min: 3, max: 8 };
         const heightValue = value || defaultValue;
         const sliderMin = 3;

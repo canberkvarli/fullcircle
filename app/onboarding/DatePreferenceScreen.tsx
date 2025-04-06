@@ -17,7 +17,7 @@ const DatePreferenceScreen: React.FC = () => {
   } = useUserContext();
 
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
-    userData?.datePreferences || []
+    userData?.matchPreferences?.datePreferences || []
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>({
     datePreferences: userData?.hiddenFields?.datePreferences || false,
@@ -29,7 +29,7 @@ const DatePreferenceScreen: React.FC = () => {
       datePreferences:
         prev.datePreferences !== undefined ? prev.datePreferences : false,
     }));
-    setSelectedPreferences(userData?.datePreferences || []);
+    setSelectedPreferences(userData?.matchPreferences?.datePreferences || []);
   }, [userData]);
 
   const handlePreferenceChange = (preference: string) => {
@@ -57,9 +57,23 @@ const DatePreferenceScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    // DRY
     try {
       await updateUserData({
-        datePreferences: selectedPreferences,
+        matchPreferences: {
+          datePreferences: selectedPreferences,
+          preferredEthnicities:
+            userData.matchPreferences?.preferredEthnicities || [],
+          preferredDistance: userData.matchPreferences?.preferredDistance || 0,
+          desiredRelationship:
+            userData.matchPreferences?.desiredRelationship || "",
+          preferredAgeRange: userData.matchPreferences?.preferredAgeRange || {
+            min: 18,
+            max: 99,
+          },
+          preferredHeightRange: userData.matchPreferences
+            ?.preferredHeightRange || { min: 0, max: 300 },
+        },
         hiddenFields: {
           ...(userData.hiddenFields || {}),
           datePreferences: hiddenFields.datePreferences,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,10 @@ import {
   FlatList,
   TextInput,
   ScrollView,
+  ActivityIndicator,
+  PermissionsAndroid,
+  Platform,
+  Alert,
 } from "react-native";
 import styles from "@/styles/User/EditFieldScreenStyles";
 import Checkbox from "expo-checkbox";
@@ -13,15 +17,27 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { RulerPicker } from "react-native-ruler-picker";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 import useFieldState from "@/hooks/useFieldState";
 
+const DEFAULT_REGION = {
+  latitude: 37.8715,
+  longitude: -122.273,
+  latitudeDelta: 0.0922,
+  longitudeDelta: 0.0421,
+};
+
 function EditFieldScreen() {
-  // TODO: Possibly think about moving every field into a separate component
   const router = useRouter();
   const { updateUserData, userData } = useUserContext();
   const { fieldName } = useLocalSearchParams();
 
-  const currentFieldValue = (userData as any)[fieldName as string] || null;
+  // For datePreferences, get the value from matchPreferences.
+  const currentFieldValue =
+    fieldName === "datePreferences"
+      ? userData.matchPreferences?.datePreferences || null
+      : (userData as any)[fieldName as string] || null;
   const isHidden =
     (userData.hiddenFields as any)?.[fieldName as string] === false;
   const fieldState = useFieldState(fieldName as string, currentFieldValue);
@@ -52,16 +68,23 @@ function EditFieldScreen() {
     setSelectedChildrenPreferences,
     selectedEthnicities,
     setSelectedEthnicities,
-    unit,
-    setUnit,
+    selectedSpiritualPractices,
+    setSelectedSpiritualPractices,
+    location, // initial location string if any
+    setLocation,
   } = fieldState;
 
   const [isVisible, setIsVisible] = useState(isHidden);
 
+  // For location editing
+  const [mapRegion, setMapRegion] = useState(DEFAULT_REGION);
+  const [regionName, setRegionName] = useState("Loading...");
+  const [loading, setLoading] = useState(true);
+
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
     sexualOrientation: "Sexuality",
-    datePreferences: "Date Preference",
+    datePreferences: "I'm interested in",
     childrenPreference: "Family Vision",
     jobLocation: "Work",
     jobTitle: "Job Title",
@@ -71,6 +94,85 @@ function EditFieldScreen() {
     height: "Height",
     location: "Location",
     ethnicities: "Ethnic Root",
+    spiritualPractices: "Spiritual Practices",
+  };
+
+  useEffect(() => {
+    if (fieldName === "location") {
+      (async () => {
+        if (Platform.OS === "android" && !(await hasLocationPermission())) {
+          setMapRegion(DEFAULT_REGION);
+          setLoading(false);
+          return;
+        }
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission to access location was denied");
+          setMapRegion(DEFAULT_REGION);
+          setLoading(false);
+          return;
+        }
+        let loc = await Location.getCurrentPositionAsync({});
+        const newRegion = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
+        setMapRegion(newRegion);
+        await updateRegionName(newRegion);
+        setLoading(false);
+      })();
+    }
+  }, [fieldName]);
+
+  const hasLocationPermission = async () => {
+    if (Platform.OS === "android") {
+      const permission = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
+      const hasPermission = await PermissionsAndroid.check(permission);
+      if (hasPermission) return true;
+      const status = await PermissionsAndroid.request(permission);
+      return status === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
+  };
+
+  const updateRegionName = async (region: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    try {
+      const places = await Location.reverseGeocodeAsync(region);
+      if (places.length > 0) {
+        setRegionName(
+          places[0].city ||
+            places[0].region ||
+            places[0].country ||
+            "Unknown Location"
+        );
+      } else {
+        setRegionName("Unknown Location");
+      }
+    } catch (error) {
+      setRegionName("Error fetching location");
+    }
+  };
+
+  const handleGetCurrentLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission to access location was denied");
+      return;
+    }
+    let loc = await Location.getCurrentPositionAsync({});
+    const newRegion = {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    };
+    setMapRegion(newRegion);
+    await updateRegionName(newRegion);
   };
 
   const handleSave = async () => {
@@ -78,38 +180,84 @@ function EditFieldScreen() {
     let newFieldValue;
 
     if (fieldName === "fullName") {
-      // Ensure the first name is not empty
       if (!firstName) {
         alert("First name is required.");
         return;
       }
       newFieldValue = lastName ? `${firstName} ${lastName}` : firstName;
     } else if (fieldName === "height") {
-      newFieldValue = `${selectedHeight} ${unit}`;
+      newFieldValue = selectedHeight;
     } else if (fieldName === "gender") {
-      // Ensure gender is not empty or invalid
-      if (!selectedGender || (selectedGender === "Other" && !customInput)) {
-        alert("Please select a valid gender or provide a custom input.");
+      if (
+        selectedGender.length === 0 ||
+        (selectedGender.includes("Other") && !customInput)
+      ) {
+        alert(
+          "Please select at least one gender and provide input for 'Other' if selected."
+        );
         return;
       }
-      newFieldValue = selectedGender === "Other" ? customInput : selectedGender;
+      newFieldValue = selectedGender.map((g) =>
+        g === "Other" ? customInput : g
+      );
+    } else if (fieldName === "datePreferences") {
+      // If no option is selected or if "Everyone" is selected,
+      // default to ["Open to All"]
+      if (
+        selectedDatePreferences.length === 0 ||
+        selectedDatePreferences.includes("Everyone")
+      ) {
+        newFieldValue = ["Open to All"];
+      } else {
+        newFieldValue = selectedDatePreferences;
+      }
+    } else if (fieldName === "location") {
+      newFieldValue = {
+        city: regionName,
+        latitude: mapRegion.latitude,
+        longitude: mapRegion.longitude,
+      };
     } else {
       newFieldValue = config?.selectedValue;
     }
 
     const isModified =
-      newFieldValue !== currentFieldValue || isVisible !== isHidden;
+      JSON.stringify(newFieldValue) !== JSON.stringify(currentFieldValue) ||
+      isVisible !== isHidden;
 
     if (isModified) {
-      await updateUserData({
-        [fieldName as string]: newFieldValue,
-        hiddenFields: {
-          ...userData.hiddenFields,
-          [fieldName as string]: !isVisible,
-        },
-      });
+      // For datePreferences, save under matchPreferences.
+      if (fieldName === "datePreferences") {
+        const existingMatchPrefs = userData.matchPreferences || {
+          preferredAgeRange: { min: 18, max: 99 },
+          preferredHeightRange: { min: 3, max: 8 },
+          preferredEthnicities: [],
+          preferredDistance: 100,
+          datePreferences: [],
+          desiredRelationship: "Not Specified",
+          preferredSpiritualPractices: [],
+        };
+        const updatedMatchPrefs = {
+          ...existingMatchPrefs,
+          datePreferences: newFieldValue,
+        };
+        await updateUserData({
+          matchPreferences: updatedMatchPrefs,
+          hiddenFields: {
+            ...userData.hiddenFields,
+            [fieldName as string]: !isVisible,
+          },
+        });
+      } else {
+        await updateUserData({
+          [fieldName as string]: newFieldValue,
+          hiddenFields: {
+            ...userData.hiddenFields,
+            [fieldName as string]: !isVisible,
+          },
+        });
+      }
     }
-
     router.back();
   };
 
@@ -122,60 +270,30 @@ function EditFieldScreen() {
 
   const handleDatePreferenceSelection = (title: string) => {
     if (title === "Everyone") {
-      if (
-        selectedDatePreferences.includes("Men") ||
-        selectedDatePreferences.includes("Women")
-      ) {
-        setSelectedDatePreferences(["Everyone"]);
-      } else {
-        setSelectedDatePreferences((prev) =>
-          prev.includes("Everyone") ? [] : ["Everyone"]
-        );
-      }
+      setSelectedDatePreferences(["Everyone"]);
     } else {
-      const newPreferences = selectedDatePreferences.includes(title)
-        ? selectedDatePreferences.filter((pref) => pref !== title)
-        : [...selectedDatePreferences, title];
-
-      if (newPreferences.includes("Men") && newPreferences.includes("Women")) {
-        setSelectedDatePreferences([title]);
-      } else {
-        setSelectedDatePreferences(newPreferences);
-      }
-
-      if (newPreferences.includes("Men") || newPreferences.includes("Women")) {
-        setSelectedDatePreferences(
-          newPreferences.filter((pref) => pref !== "Everyone")
-        );
-      }
+      setSelectedDatePreferences((prev: string[]) => {
+        const withoutEveryone = prev.filter((pref) => pref !== "Everyone");
+        if (withoutEveryone.includes(title)) {
+          return withoutEveryone.filter((pref) => pref !== title);
+        } else {
+          return [...withoutEveryone, title];
+        }
+      });
     }
   };
 
   const renderHeightPicker = () => (
     <View style={styles.heightPickerContainer}>
       <RulerPicker
-        min={unit === "cm" ? 130 : 4.3} // min height in cm or ft
-        max={unit === "cm" ? 240 : 7.9} // max height in cm or ft
-        step={unit === "cm" ? 1 : 0.1} // step size in cm or ft
-        unit={unit} // cm or ft
-        fractionDigits={unit === "cm" ? 0 : 1} // decimal places
+        min={3}
+        max={8}
+        step={0.1}
+        unit="ft"
+        fractionDigits={1}
         initialValue={selectedHeight}
         onValueChange={(value) => setSelectedHeight(Number(value))}
       />
-      <View style={styles.unitToggleContainer}>
-        <TouchableOpacity
-          style={unit === "cm" ? styles.activeUnit : styles.inactiveUnit}
-          onPress={() => setUnit("cm")}
-        >
-          <Text style={styles.unitText}>cm</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={unit === "ft" ? styles.activeUnit : styles.inactiveUnit}
-          onPress={() => setUnit("ft")}
-        >
-          <Text style={styles.unitText}>ft</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 
@@ -186,53 +304,52 @@ function EditFieldScreen() {
         <Text style={styles.ageText}>{age}</Text>
         <Text style={styles.birthdateText}>{birthdate}</Text>
         <Text style={styles.noticeText}>
-          Please contact the Circle team at [your-email@example.com] to change
-          your age. This requires you to upload your ID.
+          Please contact the Circle team to change your age. This requires you
+          to upload your ID.
         </Text>
       </View>
     );
   };
 
   const renderOption = (
-    option:
-      | {
-          title: string;
-          subtitle?: string;
-          input?: boolean;
-        }
-      | string
+    option: string | { title: string; subtitle?: string; input?: boolean }
   ) => {
     const title = typeof option === "string" ? option : option.title;
     const subtitle = typeof option === "string" ? null : option.subtitle;
     const input = typeof option === "string" ? false : option.input;
-    const isSelected =
-      fieldName === "gender"
-        ? selectedGender === title
-        : fieldName === "datePreferences"
-        ? selectedDatePreferences.includes(title)
-        : fieldName === "sexualOrientation"
-        ? selectedOrientations.includes(title)
-        : fieldName === "educationDegree"
-        ? selectedEducation === title
-        : fieldName === "ethnicities"
-        ? selectedEthnicities.includes(title)
-        : fieldName === "childrenPreference"
-        ? fieldState.selectedChildrenPreferences?.includes(title)
-        : false;
+    let isSelected = false;
+
+    if (fieldName === "gender") {
+      isSelected = selectedGender.includes(title);
+    } else if (fieldName === "sexualOrientation") {
+      isSelected = selectedOrientations.includes(title);
+    } else if (fieldName === "datePreferences") {
+      isSelected = selectedDatePreferences.includes(title);
+    } else if (fieldName === "educationDegree") {
+      isSelected = selectedEducation === title;
+    } else if (fieldName === "ethnicities") {
+      isSelected = selectedEthnicities.includes(title);
+    } else if (fieldName === "childrenPreference") {
+      isSelected = (selectedChildrenPreferences || []).includes(title);
+    } else if (fieldName === "spiritualPractices") {
+      isSelected = (selectedSpiritualPractices as string[]).includes(title);
+    }
+
     return (
       <TouchableOpacity
         style={styles.optionContainer}
         onPress={() => {
           if (fieldName === "gender") {
-            if (title === "Other") {
-              setSelectedGender("Other");
-              setCustomInput("");
-            } else {
-              setSelectedGender(title);
+            setSelectedGender((prev: string[]) =>
+              prev.includes(title)
+                ? prev.filter((item) => item !== title)
+                : [...prev, title]
+            );
+            if (title === "Other" && !selectedGender.includes("Other")) {
               setCustomInput("");
             }
           } else if (fieldName === "sexualOrientation") {
-            setSelectedOrientations((prev) =>
+            setSelectedOrientations((prev: string[]) =>
               prev.includes(title)
                 ? prev.filter((orientation) => orientation !== title)
                 : [...prev, title]
@@ -245,13 +362,19 @@ function EditFieldScreen() {
             handleEthnicitySelection(title);
           } else if (fieldName === "childrenPreference") {
             setSelectedChildrenPreferences(title);
+          } else if (fieldName === "spiritualPractices") {
+            setSelectedSpiritualPractices((prev: string[]) =>
+              prev.includes(title)
+                ? prev.filter((item) => item !== title)
+                : [...prev, title]
+            );
           }
         }}
       >
         <View>
           <Text style={styles.optionText}>{title}</Text>
           {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
-          {input && selectedGender === "Other" && (
+          {input && selectedGender.includes("Other") && (
             <TextInput
               style={styles.input}
               placeholder="Enter here"
@@ -314,22 +437,59 @@ function EditFieldScreen() {
           />
         )}
 
-        {fieldName !== "jobLocation" &&
+        {fieldName === "location" ? (
+          <View style={styles.mapContainer}>
+            <Text style={styles.regionName}>{regionName}</Text>
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color="black"
+                style={styles.loadingIndicator}
+              />
+            ) : (
+              <MapView
+                style={styles.map}
+                region={mapRegion}
+                onRegionChangeComplete={(newRegion) => {
+                  setMapRegion(newRegion);
+                  updateRegionName(newRegion);
+                }}
+                showsUserLocation
+                showsMyLocationButton
+              >
+                <Marker
+                  coordinate={{
+                    latitude: mapRegion.latitude,
+                    longitude: mapRegion.longitude,
+                  }}
+                  title={"You are here"}
+                />
+              </MapView>
+            )}
+            <TouchableOpacity
+              style={styles.currentLocationButton}
+              onPress={handleGetCurrentLocation}
+            >
+              <Text style={styles.buttonText}>Get Current Location</Text>
+            </TouchableOpacity>
+          </View>
+        ) : fieldName !== "jobLocation" &&
           fieldName !== "jobTitle" &&
-          fieldName !== "firstName" && (
-            <FlatList
-              data={
-                OPTIONS[fieldName as keyof typeof OPTIONS] as Array<
-                  string | { title: string; subtitle?: string; input?: boolean }
-                >
-              }
-              renderItem={({ item }) => renderOption(item)}
-              keyExtractor={(item) =>
-                typeof item === "string" ? item : item.title
-              }
-              scrollEnabled={false}
-            />
-          )}
+          fieldName !== "firstName" ? (
+          <FlatList
+            data={
+              OPTIONS[fieldName as keyof typeof OPTIONS] as Array<
+                string | { title: string; subtitle?: string; input?: boolean }
+              >
+            }
+            renderItem={({ item }) => renderOption(item)}
+            keyExtractor={(item) =>
+              typeof item === "string" ? item : item.title
+            }
+            scrollEnabled={false}
+          />
+        ) : null}
+
         {fieldName === "age" && renderAgeSection()}
         {fieldName === "height" && renderHeightPicker()}
       </ScrollView>
