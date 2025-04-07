@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,13 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
-import { Image } from "expo-image";
-
-const photoCache: Record<string, string[]> = {};
 
 const UserShow: React.FC = () => {
   const { user, source } = useLocalSearchParams();
@@ -21,52 +19,28 @@ const UserShow: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { likeMatch, getImageUrl } = useUserContext();
 
-  const fetchPhotos = useCallback(async () => {
-    const userData = JSON.parse(user as string);
-    const userId = userData.userId;
-
-    if (photoCache[userId]) {
-      console.log(
-        `Fetched photo URLs from cache for user ${userId}:`,
-        photoCache[userId]
-      );
-      setPhotoUrls(photoCache[userId]);
-      setLoading(false);
-      return;
-    }
-
-    console.log(`Fetching photo URLs from server for user ${userId}...`);
-    setLoading(true);
-
-    try {
+  useEffect(() => {
+    // USE REDIS CACHE or alternatively use a local cache
+    const fetchPhotos = async () => {
+      const userData = JSON.parse(user as string);
+      setLoading(true);
       if (userData.photos && userData.photos.length > 0) {
         const urls = await Promise.all(
-          userData.photos.map((photoPath: string) => getImageUrl(photoPath))
+          userData.photos.map((photoPath: string) => {
+            return getImageUrl(photoPath);
+          })
         );
-
-        const filteredUrls = urls.filter((url) => url !== null);
-        photoCache[userId] = filteredUrls; // Store in cache
-        console.log(
-          `Fetched and cached photo URLs for user ${userId}:`,
-          filteredUrls
-        );
+        const filteredUrls = urls.filter((url) => url !== null) as string[];
         setPhotoUrls(filteredUrls);
       } else {
-        console.log(`No photos available for user ${userId}.`);
+        console.log(`No photos available for user ${userData.userId}.`);
       }
-    } catch (error) {
-      console.error("Error fetching photos:", error);
-    } finally {
       setLoading(false);
-    }
+    };
+    fetchPhotos();
   }, [user, getImageUrl]);
 
-  useEffect(() => {
-    fetchPhotos();
-  }, [fetchPhotos]);
-
   const userData = JSON.parse(user as string);
-
   const shouldShowHeart = source === "KindredSpirits";
   const shouldShowRose = source === "RadiantSouls";
 
@@ -93,7 +67,10 @@ const UserShow: React.FC = () => {
       title: "Children Preference",
       content: userData.childrenPreference || "N/A",
     },
-    { title: "Education Degree", content: userData.educationDegree || "N/A" },
+    {
+      title: "Education Degree",
+      content: userData.educationDegree || "N/A",
+    },
   ];
 
   return (
@@ -105,7 +82,7 @@ const UserShow: React.FC = () => {
       <Text style={styles.nameText}>{userData.firstName || "Unknown"}</Text>
       <Text style={styles.nameText}>{userData.age}</Text>
       <Text style={styles.locationText}>
-        {userData.location?.city || "Unknown city"},
+        {userData.location?.city || "Unknown city"},{" "}
         {userData.location?.country || "Unknown country"}
       </Text>
 
@@ -113,15 +90,10 @@ const UserShow: React.FC = () => {
         {loading ? (
           <ActivityIndicator size="large" color="#D8BFAA" />
         ) : photoUrls.length > 0 ? (
-          photoUrls.map((photo, index) => (
+          photoUrls.map((url, index) => (
             <View key={index} style={styles.cardWrapper}>
               <View>
-                <Image
-                  source={{ uri: photo }}
-                  style={styles.photo}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
+                <Image source={{ uri: url }} style={styles.photo} />
                 <TouchableOpacity
                   style={styles.iconWrapper}
                   onPress={handleHeartPress}
@@ -135,7 +107,6 @@ const UserShow: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Information */}
               {index < details.length && (
                 <View style={styles.detailsContainer}>
                   <View style={styles.card}>
@@ -187,9 +158,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   photo: {
-    width: "100%",
+    width: 400,
     height: 400,
-    borderRadius: 20,
+    borderRadius: 30,
+    marginVertical: 10,
   },
   detailsContainer: {
     marginTop: 10,

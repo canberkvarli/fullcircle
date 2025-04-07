@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -18,8 +18,9 @@ const PotentialMatch = ({
   currentPotentialMatch: any;
   isMatched?: boolean;
 }) => {
-  const { likeMatch, loadNextPotentialMatch } = useUserContext();
-  const [isLoading, setIsLoading] = useState(false);
+  const { likeMatch, loadNextPotentialMatch, getImageUrl } = useUserContext();
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [isPhotoLoading, setIsPhotoLoading] = useState(true);
 
   // Consolidate info for spreading evenly across photos
   const infoSections = [
@@ -48,19 +49,31 @@ const PotentialMatch = ({
 
   // Calculate the step to evenly distribute info sections
   const infoStep = Math.ceil(
-    infoSections?.length / currentPotentialMatch?.photos?.length
+    infoSections.length / currentPotentialMatch.photos.length
   );
 
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      if (currentPotentialMatch && currentPotentialMatch.photos) {
+        const urls = await Promise.all(
+          currentPotentialMatch.photos.map((photoPath: string) =>
+            getImageUrl(photoPath)
+          )
+        );
+        setPhotoUrls(urls.filter((url) => url !== null));
+      }
+      setIsPhotoLoading(false);
+    };
+
+    fetchPhotos();
+  }, [currentPotentialMatch, getImageUrl]);
+
   const handleLike = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
     try {
       await likeMatch(currentPotentialMatch.userId);
       loadNextPotentialMatch();
     } catch (error) {
       console.error("Error liking match: ", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -68,36 +81,33 @@ const PotentialMatch = ({
     <View style={styles.container}>
       <Text style={styles.userName}>{currentPotentialMatch.firstName}</Text>
       <Text style={styles.age}> {currentPotentialMatch.age} </Text>
-      {currentPotentialMatch?.photos?.map((photo: any, index: number) => (
-        <View key={index} style={styles.photoContainer}>
-          <Image source={{ uri: photo }} style={styles.photo} />
-          {!isMatched && (
-            <TouchableOpacity
-              style={styles.heartIcon}
-              onPress={handleLike}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="large" color="black" />
-              ) : (
+
+      {isPhotoLoading ? (
+        <ActivityIndicator size="large" color="black" />
+      ) : (
+        photoUrls.map((url, index) => (
+          <View key={index} style={styles.photoContainer}>
+            <Image source={{ uri: url }} style={styles.photo} />
+            {!isMatched && (
+              <TouchableOpacity style={styles.heartIcon} onPress={handleLike}>
                 <Icon name="heart" size={40} color="black" />
-              )}
-            </TouchableOpacity>
-          )}
-          {/* Spread info evenly across photos */}
-          {infoSections
-            .slice(index * infoStep, (index + 1) * infoStep)
-            .map((info, i) => (
-              <InfoCard
-                key={i}
-                title={info.title}
-                content={info.content}
-                currentPotentialMatch={currentPotentialMatch}
-                isMatched={isMatched}
-              />
-            ))}
-        </View>
-      ))}
+              </TouchableOpacity>
+            )}
+            {/* Spread info evenly across photos */}
+            {infoSections
+              .slice(index * infoStep, (index + 1) * infoStep)
+              .map((info, i) => (
+                <InfoCard
+                  key={i}
+                  title={info.title}
+                  content={info.content}
+                  currentPotentialMatch={currentPotentialMatch}
+                  isMatched={isMatched}
+                />
+              ))}
+          </View>
+        ))
+      )}
     </View>
   );
 };
@@ -113,13 +123,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingLeft: 30,
     textAlign: "left",
-    zIndex: 1,
   },
   age: {
     fontSize: 24,
     color: "#888",
     paddingLeft: 30,
-    bottom: 15,
+    marginBottom: 10,
   },
   photoContainer: {
     position: "relative",

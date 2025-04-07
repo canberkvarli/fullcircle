@@ -12,20 +12,36 @@ import { useUserContext } from "@/context/UserContext";
 import UserCard from "@/components/UserCard";
 
 const RadiantSouls = () => {
-  const { userData, fetchRadiantSouls } = useUserContext();
-  const [radiantSouls, setRadiantSouls] = useState([]);
+  const { userData, fetchRadiantSouls, getImageUrl } = useUserContext();
+  const [radiantSouls, setRadiantSouls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // USE REDIS CACHE or alternatively use a local cache
     const loadRadiantSouls = async () => {
       setLoading(true);
       const souls = await fetchRadiantSouls();
-      setRadiantSouls(souls as React.SetStateAction<never[]>);
+      // Convert each user's photo storage paths into download URLs
+      const soulsWithPhotos = await Promise.all(
+        souls.map(async (user: any) => {
+          if (user.photos && user.photos.length > 0) {
+            const urls = await Promise.all(
+              user.photos.map(async (photoPath: string) => {
+                const url = await getImageUrl(photoPath);
+                return url;
+              })
+            );
+            return { ...user, photos: urls.filter((url) => url !== null) };
+          }
+          return user;
+        })
+      );
+      setRadiantSouls(soulsWithPhotos);
       setLoading(false);
     };
 
     loadRadiantSouls();
-  }, [userData.matchPreferences]);
+  }, [userData.matchPreferences, getImageUrl]);
 
   return (
     <View style={styles.container}>

@@ -31,10 +31,8 @@ const UserCard: React.FC<UserCardProps> = ({
   showDetails = false,
   onHeartPress,
 }) => {
-  const photos = user.photos || [];
-  const randomIndex =
-    photos.length > 0 ? Math.floor(Math.random() * photos.length) : 0;
-  const mainPhoto = photos[randomIndex] || null;
+  const photos: string[] = user.photos || [];
+  const mainPhoto = photos[2] || null;
   const avatarPhoto = photos[0] || null;
 
   return (
@@ -46,7 +44,7 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
-        {/* Main Photo Container */}
+        {/* Main Photo Container (square) */}
         <View style={styles.mainPhotoContainer}>
           {mainPhoto ? (
             <Image source={{ uri: mainPhoto }} style={styles.mainPhoto} />
@@ -56,7 +54,7 @@ const UserCard: React.FC<UserCardProps> = ({
             </View>
           )}
         </View>
-        {/* Footer containing avatar and user name */}
+        {/* Footer using flex layout for avatar and name */}
         <View style={styles.footer}>
           {avatarPhoto && (
             <View style={styles.avatarContainer}>
@@ -152,7 +150,8 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    marginTop: 10,
+    paddingHorizontal: 10,
   },
   avatarContainer: {
     width: 80,

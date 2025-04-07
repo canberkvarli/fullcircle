@@ -794,7 +794,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentPotentialMatch(null);
   };
 
-  const loadNextPotentialMatch = async () => {
+  const loadNextPotentialMatch: () => Promise<void> = async () => {
     // Recalculate the current excluded set from userData.
     const excludedSet = new Set([
       userData?.userId,
@@ -1088,13 +1088,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getImageUrl = async (imagePath: string) => {
+    if (imagePath.startsWith("http")) {
+      return STORAGE.refFromURL(imagePath).getDownloadURL();
+    }
     if (imageCache[imagePath]) {
       return imageCache[imagePath];
     }
-
-    const storageRef = ref(STORAGE, imagePath);
     try {
-      const url = await getDownloadURL(storageRef);
+      const url = await STORAGE.ref(imagePath).getDownloadURL();
       imageCache[imagePath] = url;
       return url;
     } catch (error) {

@@ -7,9 +7,104 @@ admin.initializeApp({
   credential: admin.credential.cert(
     require("../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-049b194953.json")
   ),
+  storageBucket: "fullcircle-3d01a.appspot.com",
 });
 
 const db = admin.firestore();
+const bucket = admin.storage().bucket();
+
+const genders = [
+  "Woman",
+  "Man",
+  "Trans Woman",
+  "Trans Man",
+  "Non-binary",
+  "Genderqueer",
+  "Agender",
+  "Two-Spirit",
+  "Genderfluid",
+  "Other",
+];
+
+const sexualOrientations = [
+  "Heterosexual (Straight)",
+  "Gay (Homosexual)",
+  "Lesbian",
+  "Bisexual",
+  "Pansexual",
+  "Asexual (Ace)",
+  "Demisexual",
+  "Queer",
+  "Polysexual",
+  "Questioning",
+];
+
+const datePreferencesArray = [
+  "Men",
+  "Women",
+  "Non-binary",
+  "Genderqueer",
+  "Agender",
+  "Genderfluid",
+  "Trans Woman",
+  "Trans Man",
+  "Two-Spirit",
+  "Bigender",
+  "Intersex",
+  "Everyone",
+];
+
+const educationDegrees = [
+  "High School",
+  "Undergrad",
+  "Postgrad",
+  "Associate Degree",
+  "Bachelor's Degree",
+  "Master's Degree",
+  "Doctorate",
+  "Professional Certification",
+];
+
+const childrenPreferences = [
+  "Don’t have children",
+  "Have children",
+  "Open to children",
+  "Want Children",
+];
+
+const ethnicitiesArray = [
+  "American Indian",
+  "East Asian",
+  "Black/African Descent",
+  "Middle Eastern",
+  "Hispanic Latino",
+  "South Asian",
+  "Pacific Islander",
+  "White/Caucasian",
+];
+
+const spiritualPracticesArray = [
+  "Hatha/Vinyasa Yoga",
+  "Kundalini Yoga",
+  "Yin Yoga",
+  "Tantric Practices",
+  "Mindfulness Meditation",
+  "Breathwork",
+  "Reiki (Energy Work)",
+  "Chakra Healing",
+  "Qi Gong",
+  "Ayurveda",
+  "Astrology (Western)",
+  "Astrology (Vedic)",
+  "Chinese Astrology",
+  "Human Design & Numerology",
+  "Tarot/Oracle Cards",
+  "Cacao Ceremony",
+  "Ayahuasca & Plant Medicine",
+  "Sound Healing",
+  "Ecstatic Dance",
+  "Crystal Healing",
+];
 
 // Fetch Unsplash Images based on query
 const fetchUnsplashImages = async (
@@ -39,11 +134,16 @@ const getGenderSpecificPhotos = async (
   page: number
 ): Promise<string[]> => {
   let query: string;
-  if (gender.toLowerCase() === "man") {
+  // Use a simple mapping for gender-specific queries
+  if (gender.toLowerCase().includes("man")) {
     query = "handsome man";
-  } else if (gender.toLowerCase() === "woman") {
+  } else if (gender.toLowerCase().includes("woman")) {
     query = "beautiful woman";
-  } else if (gender.toLowerCase() === "non-binary") {
+  } else if (
+    gender.toLowerCase().includes("non-binary") ||
+    gender.toLowerCase().includes("genderqueer") ||
+    gender.toLowerCase().includes("agender")
+  ) {
     query = "non-binary model";
   } else {
     query = "beautiful person";
@@ -55,7 +155,7 @@ const getGenderSpecificPhotos = async (
     );
     photos = await fetchUnsplashImages("portrait", count, page);
   }
-  // As an extra safeguard, if still empty, return a default placeholder image repeated 'count' times.
+  // Fallback to a placeholder image if needed
   if (photos.length === 0) {
     console.warn(
       "No photos found even with fallback. Using placeholder images."
@@ -63,6 +163,37 @@ const getGenderSpecificPhotos = async (
     photos = Array(count).fill("https://via.placeholder.com/150");
   }
   return photos;
+};
+
+// Upload a photo from a URL to Firebase Storage and return the storage path
+const uploadPhotoToStorage = async (
+  photoUrl: string,
+  userId: string,
+  index: number
+): Promise<string> => {
+  try {
+    console.log(`Fetching photo from Unsplash: ${photoUrl}`);
+    const response = await fetch(photoUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image from ${photoUrl}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    // Update the filePath to store under "users/photos"
+    const filePath = `users/photos/${userId}/photo_${index}.jpg`;
+    const file = bucket.file(filePath);
+    await file.save(buffer, {
+      metadata: {
+        contentType: response.headers.get("content-type") || "image/jpeg",
+      },
+    });
+    console.log(`Uploaded photo for user ${userId} to ${filePath}`);
+    return filePath; // This storage path will be stored in Firestore.
+  } catch (error) {
+    console.error("Error uploading photo:", error);
+    // Fallback: return the original URL if upload fails.
+    return photoUrl;
+  }
 };
 
 const lastActiveDate = new Date();
@@ -77,29 +208,6 @@ const formattedLastActive = lastActiveDate.toLocaleString("en-US", {
   hour12: true,
   timeZoneName: "short",
 });
-
-const ethnicities = [
-  "African American",
-  "Asian",
-  "Caucasian",
-  "Hispanic",
-  "Middle Eastern",
-  "Native American",
-  "Pacific Islander",
-  "Other",
-];
-
-const sexualOrientations = [
-  "Straight",
-  "Gay",
-  "Lesbian",
-  "Bisexual",
-  "Asexual",
-  "Demisexual",
-  "Pansexual",
-  "Queer",
-  "Questioning",
-];
 
 // Seed Firestore with users
 const seedFirestore = async (numUsers: number) => {
@@ -121,12 +229,21 @@ const seedFirestore = async (numUsers: number) => {
     const birthday = birthDate.getDate().toString();
     const birthmonth = birthDate.toLocaleString("default", { month: "short" });
     const birthyear = birthDate.getFullYear().toString();
-    const gender = faker.helpers.arrayElement(["Man", "Woman", "Non-binary"]);
-    const photos = await getGenderSpecificPhotos(
+
+    const gender = faker.helpers.arrayElement(genders);
+
+    // Get Unsplash photos then upload them to Firebase Storage.
+    const unsplashPhotos = await getGenderSpecificPhotos(
       gender,
       6,
       Math.floor(Math.random() * 10) + 1
     );
+    const uploadedPhotos = await Promise.all(
+      unsplashPhotos.map((photoUrl, index) =>
+        uploadPhotoToStorage(photoUrl, userId, index)
+      )
+    );
+
     const heightValue = parseFloat(
       `${faker.number.int({ min: 3, max: 7 })}.${faker.number.int({
         min: 0,
@@ -135,13 +252,20 @@ const seedFirestore = async (numUsers: number) => {
     );
     const randomLatitude = faker.number.float({ min: 36.5, max: 38.5 });
     const randomLongitude = faker.number.float({ min: -123.5, max: -120.5 });
-    // Generate gender-specific names
+
+    // Generate gender-specific names based on the gender value.
     let firstName: string;
     let lastName: string;
-    if (gender === "Man") {
+    if (
+      gender.toLowerCase().includes("man") &&
+      !gender.toLowerCase().includes("trans")
+    ) {
       firstName = faker.person.firstName("male");
       lastName = faker.person.lastName("male");
-    } else if (gender === "Woman") {
+    } else if (
+      gender.toLowerCase().includes("woman") &&
+      !gender.toLowerCase().includes("trans")
+    ) {
       firstName = faker.person.firstName("female");
       lastName = faker.person.lastName("female");
     } else {
@@ -149,7 +273,7 @@ const seedFirestore = async (numUsers: number) => {
       lastName = faker.person.lastName();
     }
 
-    // Generate location data
+    // Generate location data.
     const location = {
       city: faker.location.city(),
       country: faker.location.country(),
@@ -176,29 +300,10 @@ const seedFirestore = async (numUsers: number) => {
       birthday,
       birthmonth,
       birthyear,
-      childrenPreference: faker.helpers.arrayElement([
-        "Don’t have children",
-        "Have children",
-        "Open to children",
-        "Want Children",
-      ]),
       countryCode: faker.phone.number(),
       currentOnboardingScreen: "onboarding/LandingPageScreen",
-      datePreferences: faker.helpers.arrayElements(
-        ["Men", "Women", "Everyone"],
-        1
-      ),
       dislikedMatches: [],
-      educationDegree: faker.helpers.arrayElement([
-        "High School",
-        "Undergrad",
-        "Postgrad",
-        "Associate Degree",
-        "Bachelor's Degree",
-        "Master's Degree",
-        "Doctorate",
-        "Professional Certification",
-      ]),
+      educationDegree: faker.helpers.arrayElement(educationDegrees),
       email: faker.internet.email(),
       matchPreferences: {
         location: faker.location.city(),
@@ -207,20 +312,43 @@ const seedFirestore = async (numUsers: number) => {
           max: faker.number.int({ min: 26, max: 50 }),
         },
         preferredDistance: faker.number.int({ min: 5, max: 50 }),
-        preferredEthnicities: faker.helpers.arrayElements(ethnicities, 3),
+        preferredEthnicities: faker.helpers.arrayElements(
+          ethnicitiesArray,
+          faker.number.int({ min: 1, max: 3 })
+        ),
         preferredHeightRange: {
           min: faker.number.int({ min: 4, max: 5 }),
           max: faker.number.int({ min: 5, max: 9 }),
         },
+        datePreferences: faker.helpers.arrayElements(
+          datePreferencesArray,
+          faker.number.int({ min: 1, max: 2 })
+        ),
+        childrenPreference: faker.helpers.arrayElement(childrenPreferences),
+        preferredSpiritualPractices: faker.helpers.arrayElements(
+          spiritualPracticesArray,
+          faker.number.int({ min: 1, max: 3 })
+        ),
+        preferredSexualOrientation: faker.helpers.arrayElements(
+          sexualOrientations,
+          faker.number.int({ min: 1, max: 3 })
+        ),
       },
       firstName,
       lastName,
       fullCircleSubscription: faker.datatype.boolean(),
       gender,
       height: heightValue,
-      ethnicities: faker.helpers.arrayElements(ethnicities, 3),
+      ethnicities: faker.helpers.arrayElements(
+        ethnicitiesArray,
+        faker.number.int({ min: 1, max: 3 })
+      ),
       sexualOrientation: faker.helpers.arrayElements(
         sexualOrientations,
+        faker.number.int({ min: 1, max: 3 })
+      ),
+      spiritualPractices: faker.helpers.arrayElements(
+        spiritualPracticesArray,
         faker.number.int({ min: 1, max: 3 })
       ),
       hiddenFields: {
@@ -248,12 +376,12 @@ const seedFirestore = async (numUsers: number) => {
       location,
       likedMatches: [],
       likesReceived: [],
-      photos,
+      photos: uploadedPhotos,
       matches: [],
     };
   }
 
-  // Generate mutual likes and matches
+  // Generate mutual likes and matches.
   userIds.forEach((userId) => {
     const likedUsers = faker.helpers.arrayElements(
       userIds.filter((id) => id !== userId),
@@ -272,7 +400,7 @@ const seedFirestore = async (numUsers: number) => {
     });
   });
 
-  // Add users to Firestore
+  // Add users to Firestore.
   for (const [userId, userData] of Object.entries(userDataList)) {
     try {
       await usersCollection.doc(userId).set(userData);
