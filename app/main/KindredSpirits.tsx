@@ -52,7 +52,7 @@ const KindredSpirits: React.FC = () => {
     if (userData?.fullCircleSubscription || isFirstCard) {
       router.navigate({
         pathname: "/user/UserShow" as any,
-        params: { user: JSON.stringify(user), source: "KindredSpirits" },
+        params: { user: JSON.stringify(user), source: "isFromKindredSpirits" },
       });
     } else {
       router.navigate({

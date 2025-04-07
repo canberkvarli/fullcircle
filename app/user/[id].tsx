@@ -7,22 +7,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Dimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 
 const UserShow: React.FC = () => {
-  const { user, source } = useLocalSearchParams();
+  const { user, isFromRadiantSouls, isFromKindredSpirits } =
+    useLocalSearchParams();
   const router = useRouter();
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { likeMatch, getImageUrl } = useUserContext();
+  const userData = JSON.parse(user as string);
 
   useEffect(() => {
-    // USE REDIS CACHE or alternatively use a local cache
     const fetchPhotos = async () => {
-      const userData = JSON.parse(user as string);
       setLoading(true);
       if (userData.photos && userData.photos.length > 0) {
         const urls = await Promise.all(
@@ -39,10 +40,6 @@ const UserShow: React.FC = () => {
     };
     fetchPhotos();
   }, [user, getImageUrl]);
-
-  const userData = JSON.parse(user as string);
-  const shouldShowHeart = source === "KindredSpirits";
-  const shouldShowRose = source === "RadiantSouls";
 
   const handleHeartPress = () => {
     likeMatch(userData.userId);
@@ -90,19 +87,23 @@ const UserShow: React.FC = () => {
         {loading ? (
           <ActivityIndicator size="large" color="#D8BFAA" />
         ) : photoUrls.length > 0 ? (
-          photoUrls.map((url, index) => (
+          photoUrls.map((photo, index) => (
             <View key={index} style={styles.cardWrapper}>
               <View>
-                <Image source={{ uri: url }} style={styles.photo} />
+                <Image
+                  source={{ uri: photo }}
+                  style={styles.photo}
+                  resizeMode="cover"
+                />
                 <TouchableOpacity
                   style={styles.iconWrapper}
                   onPress={handleHeartPress}
                 >
-                  {shouldShowHeart && (
-                    <Icon name="heart" size={30} color="red" />
+                  {isFromKindredSpirits && (
+                    <Icon name="heart" size={40} color="red" />
                   )}
-                  {shouldShowRose && (
-                    <Icon name="pagelines" size={30} color="#D8BFAA" />
+                  {isFromRadiantSouls && (
+                    <Icon name="pagelines" size={40} color="#D8BFAA" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -158,10 +159,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   photo: {
-    width: 400,
+    width: Dimensions.get("window").width - 32,
     height: 400,
-    borderRadius: 30,
-    marginVertical: 10,
+    borderRadius: 20,
   },
   detailsContainer: {
     marginTop: 10,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     right: 10,
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     borderRadius: 20,
-    padding: 5,
+    padding: 10,
   },
   errorText: {
     textAlign: "center",
