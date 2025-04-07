@@ -12,7 +12,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { Image } from "expo-image";
 
-const photoCache: Record<string, string[]> = {}; //Gloval cache for photo URLs
+const photoCache: Record<string, string[]> = {};
 
 const UserShow: React.FC = () => {
   const { user, source } = useLocalSearchParams();

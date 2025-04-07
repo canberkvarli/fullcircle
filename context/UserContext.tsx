@@ -57,7 +57,6 @@ export type UserDataType = {
   gender?: string[];
   sexualOrientation?: string[];
   ethnicities?: string[];
-  childrenPreference?: string;
   jobLocation?: string;
   jobTitle?: string;
   educationDegree?: string;
@@ -92,10 +91,11 @@ export type UserDataType = {
       min: number;
       max: number;
     };
-    preferredEthnicities: string[];
+    childrenPreference?: string;
+    preferredEthnicities?: string[];
     preferredDistance: number;
     datePreferences: string[];
-    desiredRelationship: string;
+    desiredRelationship?: string;
     preferredSpiritualPractices?: string[];
   };
 };

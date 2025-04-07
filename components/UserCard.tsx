@@ -31,39 +31,11 @@ const UserCard: React.FC<UserCardProps> = ({
   showDetails = false,
   onHeartPress,
 }) => {
-  const firstPhoto = user.photos?.[0];
-
-  // Helper function to render user details
-  const renderDetails = () => {
-    const details = [
-      { title: "Gender", content: user.gender || "N/A" },
-      { title: "Height", content: user.height || "N/A" },
-      {
-        title: "Ethnicities",
-        content: user.ethnicities?.join(", ") || "N/A",
-      },
-      {
-        title: "Sexual Orientation",
-        content: user.sexualOrientation?.join(", ") || "N/A",
-      },
-      {
-        title: "Date Preferences",
-        content: user.matchPreferences.datePreferences?.join(", ") || "N/A",
-      },
-      {
-        title: "Children Preference",
-        content: user.childrenPreference || "N/A",
-      },
-      { title: "Education Degree", content: user.educationDegree || "N/A" },
-    ];
-
-    return details.map((detail, index) => (
-      <View key={index} style={styles.detailRow}>
-        <Text style={styles.detailTitle}>{detail.title}:</Text>
-        <Text style={styles.detailContent}>{detail.content}</Text>
-      </View>
-    ));
-  };
+  const photos = user.photos || [];
+  const randomIndex =
+    photos.length > 0 ? Math.floor(Math.random() * photos.length) : 0;
+  const mainPhoto = photos[randomIndex] || null;
+  const avatarPhoto = photos[0] || null;
 
   return (
     <TouchableOpacity onPress={onPress} disabled={!onPress}>
@@ -74,31 +46,63 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
-        <View style={styles.imageContainer}>
-          {firstPhoto ? (
-            <Image source={{ uri: firstPhoto }} style={styles.photo} />
+        {/* Main Photo Container */}
+        <View style={styles.mainPhotoContainer}>
+          {mainPhoto ? (
+            <Image source={{ uri: mainPhoto }} style={styles.mainPhoto} />
           ) : (
             <View style={styles.photoFallback}>
               <Text>No Photo Available</Text>
             </View>
           )}
-          {isBlurred ? (
-            <BlurView intensity={150} tint="default" style={styles.blurOverlay}>
-              <Text style={styles.userNameBlurred}>
-                {user.firstName || "Unknown"}
-              </Text>
-            </BlurView>
-          ) : (
-            <Text style={styles.userName}>{user.firstName || "Unknown"}</Text>
-          )}
-          {onHeartPress && (
-            <TouchableOpacity style={styles.heartIcon} onPress={onHeartPress}>
-              <Icon name="heart" size={30} color="red" />
-            </TouchableOpacity>
-          )}
         </View>
+        {/* Footer containing avatar and user name */}
+        <View style={styles.footer}>
+          {avatarPhoto && (
+            <View style={styles.avatarContainer}>
+              <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
+            </View>
+          )}
+          <Text style={styles.userName}>{user.firstName || "Unknown"}</Text>
+        </View>
+        {onHeartPress && (
+          <TouchableOpacity style={styles.heartIcon} onPress={onHeartPress}>
+            <Icon name="heart" size={30} color="red" />
+          </TouchableOpacity>
+        )}
         {showDetails && (
-          <View style={styles.detailsContainer}>{renderDetails()}</View>
+          <View style={styles.detailsContainer}>
+            {[
+              { title: "Gender", content: user.gender?.join(", ") || "N/A" },
+              { title: "Height", content: user.height || "N/A" },
+              {
+                title: "Ethnicities",
+                content: user.ethnicities?.join(", ") || "N/A",
+              },
+              {
+                title: "Sexual Orientation",
+                content: user.sexualOrientation?.join(", ") || "N/A",
+              },
+              {
+                title: "Date Preferences",
+                content:
+                  user.matchPreferences.datePreferences?.join(", ") || "N/A",
+              },
+              {
+                title: "Children Preference",
+                content: user.childrenPreference || "N/A",
+              },
+              {
+                title: "Education Degree",
+                content: user.educationDegree || "N/A",
+              },
+            ].map((detail, index) => (
+              <View key={index} style={styles.detailRow}>
+                <Text style={styles.detailTitle}>{detail.title}:</Text>
+                <Text style={styles.detailContent}>{detail.content}</Text>
+              </View>
+            ))}
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -113,9 +117,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
     elevation: 3,
-    alignItems: "center",
-    width: width * 0.8, // 80% of the screen width
-    height: height * 0.66, // 66% of the screen height
+    width: width * 0.8,
+    height: height * 0.66,
+    flexDirection: "column",
+    justifyContent: "space-between",
   },
   radiantCard: {
     backgroundColor: "#EDE9E3",
@@ -126,6 +131,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
+  mainPhotoContainer: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  mainPhoto: {
+    width: "100%",
+    height: "100%",
+  },
   photoFallback: {
     width: "100%",
     height: "100%",
@@ -134,41 +149,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f0f0f0",
   },
-  imageContainer: {
-    width: "100%",
-    height: "70%",
-    borderRadius: 10,
-    position: "relative",
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
   },
-  photo: {
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: "hidden",
+    backgroundColor: "#ccc",
+    marginRight: 10,
+  },
+  avatar: {
     width: "100%",
     height: "100%",
-    borderRadius: 10,
-  },
-  blurOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
   },
   userName: {
     fontSize: 18,
-    fontWeight: "bold",
     color: "#000",
-    marginTop: 10,
-  },
-  userNameBlurred: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#000",
-    top: 112,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    opacity: 0.3,
   },
   detailsContainer: {
     marginTop: 10,
