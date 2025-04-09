@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Dimensions,
   TouchableOpacity,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const { width, height } = Dimensions.get("window");
@@ -20,6 +19,8 @@ interface UserCardProps {
   onPress?: () => void;
   showDetails?: boolean;
   onHeartPress?: () => void;
+  // Optionally, if you want to resolve photo paths on the fly:
+  getImageUrl?: (photoPath: string) => Promise<string>;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -30,10 +31,37 @@ const UserCard: React.FC<UserCardProps> = ({
   onPress,
   showDetails = false,
   onHeartPress,
+  getImageUrl,
 }) => {
   const photos: string[] = user.photos || [];
-  const mainPhoto = photos[2] || null;
-  const avatarPhoto = photos[0] || null;
+  const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
+
+  // Optionally resolve photos if getImageUrl is provided.
+  useEffect(() => {
+    if (getImageUrl) {
+      const resolvePhotos = async () => {
+        const updated = await Promise.all(
+          photos.map(async (photo) =>
+            photo.startsWith("http") ? photo : await getImageUrl(photo)
+          )
+        );
+        setResolvedPhotos(updated);
+      };
+      resolvePhotos();
+    } else {
+      setResolvedPhotos(photos);
+    }
+  }, [photos, getImageUrl]);
+
+  // For Radiant Souls we use photo index 2 (or fallback to index 0),
+  // whereas for Kindred Spirits (default), we use index 0.
+  const mainPhoto =
+    variant === "radiant"
+      ? resolvedPhotos[2] || resolvedPhotos[0] || null
+      : resolvedPhotos[0] || null;
+
+  // For radiant variant, we need an avatar (first photo), but for default we don't.
+  const avatarPhoto = resolvedPhotos[0] || null;
 
   return (
     <TouchableOpacity onPress={onPress} disabled={!onPress}>
@@ -44,7 +72,13 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
-        {/* Main Photo Container (square) */}
+        {variant === "default" && (
+          <View style={styles.headerDefault}>
+            <Text style={styles.headerTextDefault}>
+              {user.firstName || "Unknown"}
+            </Text>
+          </View>
+        )}
         <View style={styles.mainPhotoContainer}>
           {mainPhoto ? (
             <Image source={{ uri: mainPhoto }} style={styles.mainPhoto} />
@@ -54,15 +88,17 @@ const UserCard: React.FC<UserCardProps> = ({
             </View>
           )}
         </View>
-        {/* Footer using flex layout for avatar and name */}
-        <View style={styles.footer}>
-          {avatarPhoto && (
-            <View style={styles.avatarContainer}>
-              <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
-            </View>
-          )}
-          <Text style={styles.userName}>{user.firstName || "Unknown"}</Text>
-        </View>
+        {/** For Radiant Souls, render the footer with avatar and name just as before */}
+        {variant === "radiant" && (
+          <View style={styles.footer}>
+            {avatarPhoto && (
+              <View style={styles.avatarContainer}>
+                <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
+              </View>
+            )}
+            <Text style={styles.userName}>{user.firstName || "Unknown"}</Text>
+          </View>
+        )}
         {onHeartPress && (
           <TouchableOpacity style={styles.heartIcon} onPress={onHeartPress}>
             <Icon name="heart" size={30} color="red" />
@@ -146,6 +182,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f0f0f0",
+  },
+  headerDefault: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  headerTextDefault: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#000",
   },
   footer: {
     flexDirection: "row",

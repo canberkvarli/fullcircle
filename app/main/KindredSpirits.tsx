@@ -15,19 +15,50 @@ import { useRouter } from "expo-router";
 const { width: screenWidth } = Dimensions.get("window");
 
 const KindredSpirits: React.FC = () => {
-  const { userData, fetchDetailedLikes } = useUserContext();
+  const { userData, getImageUrl } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (!userData?.detailedLikesReceived) {
-      setIsLoading(true);
+    const loadLikedUsersWithPhotos = async () => {
+      if (!userData?.detailedLikesReceived) {
+        setIsLoading(true);
+      } else {
+        const processedLikes = await Promise.all(
+          userData.detailedLikesReceived.map(async (user: any) => {
+            if (user.photos && user.photos.length > 0) {
+              const urls = await Promise.all(
+                user.photos.map(async (photoPath: string) => {
+                  const url = await getImageUrl(photoPath);
+                  return url;
+                })
+              );
+              return { ...user, photos: urls.filter((url) => url !== null) };
+            }
+            return user;
+          })
+        );
+        setLikedByUsers(processedLikes);
+        setIsLoading(false);
+      }
+    };
+
+    loadLikedUsersWithPhotos();
+  }, [userData.detailedLikesReceived, getImageUrl]);
+
+  const handleCardPress = (user: any, isFirstCard: boolean) => {
+    if (userData?.fullCircleSubscription || isFirstCard) {
+      router.navigate({
+        pathname: "/user/UserShow" as any,
+        params: { user: JSON.stringify(user), source: "isFromKindredSpirits" },
+      });
     } else {
-      setLikedByUsers(userData.detailedLikesReceived);
-      setIsLoading(false);
+      router.navigate({
+        pathname: "/user/FullCircleSubscription" as any,
+      });
     }
-  }, [userData.detailedLikesReceived]);
+  };
 
   if (isLoading) {
     return (
@@ -48,26 +79,12 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  const handleCardPress = (user: any, isFirstCard: boolean) => {
-    if (userData?.fullCircleSubscription || isFirstCard) {
-      router.navigate({
-        pathname: "/user/UserShow" as any,
-        params: { user: JSON.stringify(user), source: "isFromKindredSpirits" },
-      });
-    } else {
-      router.navigate({
-        pathname: "/user/FullCircleSubscription" as any,
-      });
-    }
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.likesText}>Likes you</Text>
       <View style={styles.gridContainer}>
         {likedByUsers.map((user, index) => {
           const isFirstCard = index === 0;
-
           return (
             <View
               key={user.userId}
@@ -125,13 +142,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    marginBottom: 20,
   },
   userCardContainer: {
-    flexBasis: "48%",
+    flexBasis: "50%",
   },
   smallCard: {
-    width: 150,
+    width: 180,
     height: 220,
+    padding: 5,
   },
   loadingContainer: {
     flex: 1,
