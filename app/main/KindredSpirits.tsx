@@ -2,17 +2,17 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
-  Dimensions,
   TouchableOpacity,
   ActivityIndicator,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 
-const { width: screenWidth } = Dimensions.get("window");
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const KindredSpirits: React.FC = () => {
   const { userData, getImageUrl } = useUserContext();
@@ -25,6 +25,7 @@ const KindredSpirits: React.FC = () => {
       if (!userData?.detailedLikesReceived) {
         setIsLoading(true);
       } else {
+        // Process each user: Convert each photo storage path into a download URL.
         const processedLikes = await Promise.all(
           userData.detailedLikesReceived.map(async (user: any) => {
             if (user.photos && user.photos.length > 0) {
@@ -79,35 +80,36 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
+  const firstUser = likedByUsers[0];
+
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <ScrollView
+      contentContainerStyle={styles.scrollContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.likesText}>Likes you</Text>
+      <TouchableOpacity onPress={() => handleCardPress(firstUser, true)}>
+        <UserCard
+          user={firstUser}
+          variant="default"
+          isBlurred={false}
+          style={styles.largeCard}
+        />
+      </TouchableOpacity>
+
       <View style={styles.gridContainer}>
-        {likedByUsers.map((user, index) => {
-          const isFirstCard = index === 0;
-          return (
-            <View
-              key={user.userId}
-              style={[
-                styles.userCardContainer,
-                {
-                  width:
-                    likedByUsers.length === 1 ? screenWidth - 32 : undefined,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                onPress={() => handleCardPress(user, isFirstCard)}
-              >
-                <UserCard
-                  user={user}
-                  isBlurred={!userData?.fullCircleSubscription && index > 0}
-                  style={styles.smallCard}
-                />
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+        {likedByUsers.slice(1).map((user, index) => (
+          <View key={user.userId} style={styles.userCardContainer}>
+            <TouchableOpacity onPress={() => handleCardPress(user, false)}>
+              <UserCard
+                user={user}
+                variant="default"
+                isBlurred={!userData.fullCircleSubscription}
+                style={styles.smallCard}
+              />
+            </TouchableOpacity>
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
@@ -116,15 +118,22 @@ const KindredSpirits: React.FC = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
+    backgroundColor: "#EDE9E3",
     padding: 16,
+    paddingBottom: 20,
     marginTop: 25,
-    backgroundColor: "#f9f9f9",
   },
   likesText: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "left",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
   },
   noLikesContainer: {
     flex: 1,
@@ -138,25 +147,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+  largeCard: {
+    width: screenWidth - 32,
+    height: screenHeight * 0.52,
+    marginBottom: 20,
+  },
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 20,
   },
   userCardContainer: {
-    flexBasis: "50%",
+    flexBasis: "48%",
+    marginBottom: 16,
   },
   smallCard: {
     width: 180,
     height: 220,
-    padding: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
   },
 });
 

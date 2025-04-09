@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 
@@ -14,7 +16,7 @@ const { width, height } = Dimensions.get("window");
 interface UserCardProps {
   user: any;
   isBlurred?: boolean;
-  style?: object;
+  style?: StyleProp<ViewStyle>;
   variant?: "default" | "radiant";
   onPress?: () => void;
   showDetails?: boolean;
@@ -36,7 +38,7 @@ const UserCard: React.FC<UserCardProps> = ({
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
 
-  // Optionally resolve photos if getImageUrl is provided.
+  // Resolve photos if getImageUrl is provided.
   useEffect(() => {
     if (getImageUrl) {
       const resolvePhotos = async () => {
@@ -53,14 +55,14 @@ const UserCard: React.FC<UserCardProps> = ({
     }
   }, [photos, getImageUrl]);
 
-  // For Radiant Souls we use photo index 2 (or fallback to index 0),
+  // For Radiant Souls we use photo index 2 (fallback to index 0),
   // whereas for Kindred Spirits (default), we use index 0.
   const mainPhoto =
     variant === "radiant"
       ? resolvedPhotos[2] || resolvedPhotos[0] || null
       : resolvedPhotos[0] || null;
 
-  // For radiant variant, we need an avatar (first photo), but for default we don't.
+  // For radiant variant, we display an avatar (from index 0).
   const avatarPhoto = resolvedPhotos[0] || null;
 
   return (
@@ -81,14 +83,17 @@ const UserCard: React.FC<UserCardProps> = ({
         )}
         <View style={styles.mainPhotoContainer}>
           {mainPhoto ? (
-            <Image source={{ uri: mainPhoto }} style={styles.mainPhoto} />
+            <Image
+              source={{ uri: mainPhoto }}
+              style={styles.mainPhoto}
+              blurRadius={variant === "default" && isBlurred ? 20 : 0}
+            />
           ) : (
             <View style={styles.photoFallback}>
               <Text>No Photo Available</Text>
             </View>
           )}
         </View>
-        {/** For Radiant Souls, render the footer with avatar and name just as before */}
         {variant === "radiant" && (
           <View style={styles.footer}>
             {avatarPhoto && (
