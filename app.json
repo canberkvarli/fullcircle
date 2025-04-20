@@ -18,11 +18,15 @@
       "googleServicesFile": "./ios/fullcircle/GoogleService-Info.plist"
     },
     "android": {
+      "kotlinVersion": "1.7.20",
       "googleServicesFile": "android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResourcesInReleaseBuilds": true,
+      "useLegacyPackaging": true,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
@@ -66,6 +70,10 @@
         {
           "ios": {
             "useFrameworks": "static"
+          },
+          "android": {
+            "kotlinVersion": "1.9.25",
+            "gradleVersion": "8.8"
           }
         }
       ]

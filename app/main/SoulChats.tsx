@@ -8,81 +8,48 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
-import { FIRESTORE } from "@/services/FirebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
 import { Link } from "expo-router";
 
 const SoulChats: React.FC = () => {
-  const { userData, createOrFetchChat } = useUserContext();
+  const { userData, createOrFetchChat, fetchChatMatches, getImageUrl } =
+    useUserContext();
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchLastMessage = async (chatId: string) => {
+  const fetchAndProcessMatches = async () => {
     try {
-      const chatDocRef = doc(FIRESTORE, `chats/${chatId}`);
-      const chatDoc = await getDoc(chatDocRef);
-
-      if (chatDoc.exists()) {
-        const chatData = chatDoc.data();
-        const messages = chatData.messages || []; // Default to empty array if no messages
-        if (messages.length > 0) {
-          const lastMessage = messages[messages.length - 1]; // Get the last message
-          return lastMessage.text || ""; // Assuming `text` field exists
-        }
-      }
+      // fetch chat matches from context (ensure your fetchChatMatches returns match data)
+      const fetchedMatches = await fetchChatMatches();
+      // Process each match to download their photos (convert storage paths to valid URLs)
+      const processedMatches = await Promise.all(
+        fetchedMatches.map(async (match: any) => {
+          if (match && match.photos && match.photos.length > 0 && getImageUrl) {
+            const processedPhotos = await Promise.all(
+              match.photos.map(async (photoPath: string) => {
+                // Call getImageUrl to get a downloadable URL
+                const url = await getImageUrl(photoPath);
+                return url;
+              })
+            );
+            return {
+              ...match,
+              photos: processedPhotos.filter((url) => url !== null),
+            };
+          }
+          return match;
+        })
+      );
+      setMatches(processedMatches.filter((match) => match !== null));
     } catch (error) {
-      console.error(`Failed to fetch last message for chat ${chatId}:`, error);
+      console.error("Failed to fetch matches:", error);
+    } finally {
+      setIsLoading(false);
     }
-    return null;
   };
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const userDocRef = doc(FIRESTORE, `users/${userData.userId}`);
-        const userDoc = await getDoc(userDocRef);
-
-        let userMatches = [];
-        if (userDoc.exists() && userDoc.data().matches) {
-          userMatches = userDoc.data().matches;
-        } else if (userData.matches) {
-          userMatches = userData.matches;
-        }
-
-        if (!userMatches || userMatches.length === 0) {
-          setMatches([]);
-          return;
-        }
-
-        const matchDetails = await Promise.all(
-          userMatches.map(async (matchId: string) => {
-            const matchDocRef = doc(FIRESTORE, `users/${matchId}`);
-            const matchDoc = await getDoc(matchDocRef);
-            if (!matchDoc.exists()) return null;
-
-            const matchData: { userId: string; lastMessage?: string | null } = {
-              userId: matchId,
-              ...(matchDoc.data() as Record<string, unknown>),
-            };
-
-            // Fetch the last message for the chat
-            const chatId = [userData.userId, matchId].sort().join("_"); // Chat ID convention
-            matchData.lastMessage = await fetchLastMessage(chatId);
-
-            return matchData;
-          })
-        );
-
-        setMatches(matchDetails.filter((match) => match !== null));
-      } catch (error) {
-        console.error("Failed to fetch matches:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMatches();
-  }, []);
+    fetchAndProcessMatches();
+  }, [userData, fetchChatMatches, getImageUrl]);
 
   if (isLoading) {
     return (
@@ -107,21 +74,27 @@ const SoulChats: React.FC = () => {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Matches</Text>
-
       {matches.map((match) => {
-        const chatId = [userData.userId, match.userId].sort().join("_"); // Create chat ID convention
-
+        // Generate chat ID using a sorted combination of the IDs
+        const chatId = [userData.userId, match.userId].sort().join("_");
         return (
           <Link
             key={match.userId}
-            href={`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}`}
+            href={`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`}
             onPress={async () => {
               await createOrFetchChat(userData.userId, match.userId);
             }}
           >
             <View style={styles.matchRow}>
               <View style={styles.avatarContainer}>
-                <Image source={{ uri: match.photos[0] }} style={styles.photo} />
+                {match.photos && match.photos[0] ? (
+                  <Image
+                    source={{ uri: match.photos[0] }}
+                    style={styles.photo}
+                  />
+                ) : (
+                  <Text>No Image</Text>
+                )}
               </View>
               <View style={styles.matchInfo}>
                 <Text style={styles.matchName}>{match.firstName}</Text>

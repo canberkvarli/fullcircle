@@ -25,6 +25,9 @@ import {
   orderBy,
   limit,
   startAfter,
+  onSnapshot,
+  updateDoc,
+  arrayUnion,
 } from "@react-native-firebase/firestore";
 
 import { getDownloadURL, ref } from "@react-native-firebase/storage";
@@ -140,8 +143,19 @@ type UserContextType = {
   loadingNextBatch: boolean;
   createOrFetchChat: (
     userId: string,
-    otherUserId: string
+    matchedUserId: string
   ) => Promise<string | null>;
+  subscribeToChatMessages: (
+    chatId: string,
+    onMessageReceived: (message: any) => void
+  ) => void;
+  sendMessage: (
+    chatId: string,
+    messageText: string,
+    senderId: string,
+    receiverId: string
+  ) => void;
+  fetchChatMatches: () => Promise<any[]>;
   fetchRadiantSouls: () => Promise<any[]>;
   fetchDetailedLikes: () => void;
   fetchPotentialMatches: () => void;
@@ -1171,24 +1185,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const createOrFetchChat = async (
     userId: string,
-    otherUserId: string
+    matchedUserId: string
   ): Promise<string | null> => {
-    // Generate a consistent chat ID by sorting user IDs alphabetically
-    const chatId = [userId, otherUserId].sort().join("_");
-
+    const chatId = [userId, matchedUserId].sort().join("_");
     try {
-      const chatRef = doc(FIRESTORE, `chats/${chatId}`);
-
-      // Use a transaction to handle potential concurrency issues
+      const chatRef = doc(FIRESTORE, "chats", chatId);
       await runTransaction(FIRESTORE, async (transaction) => {
         const chatDoc = await transaction.get(chatRef);
-
-        // If chat does not exist, create it
         if (!chatDoc.exists) {
           console.log("Chat not found. Creating a new chat...");
           transaction.set(chatRef, {
-            participants: [userId, otherUserId],
-            messages: [],
+            participants: [userId, matchedUserId],
+            messages: [], // messages will use fields: text, senderId, timestamp
             createdAt: new Date().toISOString(),
           });
           console.log("New chat created, returning chatId:", chatId);
@@ -1196,11 +1204,115 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           console.log("Chat already exists, returning chatId:", chatId);
         }
       });
-
       return chatId;
     } catch (error) {
       console.error("Error creating or fetching chat:", error);
       return null;
+    }
+  };
+
+  // Subscribe to real-time chat messages using onSnapshot.
+  const subscribeToChatMessages = (
+    chatId: string,
+    callback: (messages: any[]) => void
+  ) => {
+    const chatRef = doc(FIRESTORE, "chats", chatId);
+    const unsubscribe = onSnapshot(chatRef, (docSnapshot) => {
+      const chatData = docSnapshot.data();
+      if (chatData && chatData.messages) {
+        // Ensure messages are sorted by timestamp (assuming ISO strings)
+        const sortedMessages = chatData.messages.sort(
+          (a: any, b: any) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        callback(sortedMessages);
+      } else {
+        callback([]);
+      }
+    });
+    return unsubscribe;
+  };
+
+  const sendMessage = async (
+    chatId: string,
+    messageText: string,
+    senderId: string,
+    receiverId: string
+  ): Promise<void> => {
+    const chatRef = doc(FIRESTORE, "chats", chatId);
+    try {
+      await updateDoc(chatRef, {
+        messages: arrayUnion({
+          text: messageText,
+          sender: senderId,
+          receiver: receiverId,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  const fetchLastMessage = async (chatId: string): Promise<string | null> => {
+    console.log(
+      "fetchLastMessage(): Fetching last message for chatId:",
+      chatId
+    );
+    try {
+      const chatDocRef = doc(FIRESTORE, "chats", chatId);
+      const chatDoc = await getDoc(chatDocRef);
+      if (chatDoc.exists) {
+        const chatData = chatDoc.data();
+        const messages = chatData?.messages || [];
+        if (messages.length > 0) {
+          const lastMessage = messages[messages.length - 1];
+          return lastMessage.text || "";
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch last message for chat ${chatId}:`, error);
+    }
+    return null;
+  };
+
+  const fetchChatMatches = async (): Promise<any[]> => {
+    try {
+      // Get fresh user data from Firestore
+      const userDocRef = doc(FIRESTORE, "users", userData.userId);
+      const userDoc = await getDoc(userDocRef);
+
+      let userMatches: string[] = [];
+      if (userDoc.exists && userDoc.data()?.matches) {
+        userMatches = userDoc.data()?.matches;
+      }
+
+      if (!userMatches || userMatches.length === 0) {
+        return [];
+      }
+
+      const matchDetails = await Promise.all(
+        userMatches.map(async (matchId: string) => {
+          const matchDocRef = doc(FIRESTORE, "users", matchId);
+          const matchDoc = await getDoc(matchDocRef);
+          if (!matchDoc.exists) return null;
+
+          const matchData: any = {
+            userId: matchId,
+            ...matchDoc.data(),
+          };
+
+          // Build chat ID by sorting user IDs
+          const chatId = [userData.userId, matchId].sort().join("_");
+          matchData.lastMessage = await fetchLastMessage(chatId);
+
+          return matchData;
+        })
+      );
+      return matchDetails.filter((match) => match !== null);
+    } catch (error) {
+      console.error("Error fetching chat matches from context:", error);
+      return [];
     }
   };
 
@@ -1233,6 +1345,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     loadNextPotentialMatch,
     loadingNextBatch,
     createOrFetchChat,
+    subscribeToChatMessages,
+    sendMessage,
     fetchRadiantSouls,
     fetchDetailedLikes,
     fetchPotentialMatches,
@@ -1241,6 +1355,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     noMoreMatches,
     verifyPhoneAndSetUser,
     handleGoogleSignIn,
+    fetchChatMatches,
   };
 
   if (initializing) {

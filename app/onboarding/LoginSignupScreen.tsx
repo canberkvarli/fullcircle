@@ -13,7 +13,7 @@ import WelcomeTitle from "../../components/WelcomeTitle";
 import SSOButtons from "../../components/SSOButtons";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 
-const videoSource = require("../../assets/videos/danielle.mov");
+const videoSource = require("../../assets/videos/ecstatic.mp4");
 
 function LoginSignupScreen(): JSX.Element {
   const router = useRouter();
