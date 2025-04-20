@@ -50,7 +50,6 @@
     "gluestack-ui": "^0.7.22",
     "lottie-react-native": "6.7.0",
     "native-base": "^3.4.28",
-    "patch-package": "^8.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
@@ -78,6 +77,7 @@
     "@types/uuid": "^10.0.0",
     "jest": "^29.4.0",
     "jest-expo": "~51.0.4",
+    "patch-package": "^8.0.0",
     "react-test-renderer": "18.2.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.3.3"
