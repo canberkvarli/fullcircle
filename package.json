@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "eas-build-post-install": "patch-package"
   },
   "jest": {
     "preset": "jest-expo"
