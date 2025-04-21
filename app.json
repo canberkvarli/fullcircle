@@ -19,7 +19,7 @@
     },
     "android": {
       "kotlinVersion": "1.7.20",
-      "googleServicesFile": "android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
