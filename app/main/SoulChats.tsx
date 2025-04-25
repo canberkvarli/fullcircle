@@ -6,50 +6,39 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { Link } from "expo-router";
 
 const SoulChats: React.FC = () => {
-  const { userData, createOrFetchChat, fetchChatMatches, getImageUrl } =
+  const { userData, createOrFetchChat, subscribeToChatMatches, getImageUrl } =
     useUserContext();
+
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchAndProcessMatches = async () => {
-    try {
-      // fetch chat matches from context (ensure your fetchChatMatches returns match data)
-      const fetchedMatches = await fetchChatMatches();
-      // Process each match to download their photos (convert storage paths to valid URLs)
-      const processedMatches = await Promise.all(
-        fetchedMatches.map(async (match: any) => {
-          if (match && match.photos && match.photos.length > 0 && getImageUrl) {
-            const processedPhotos = await Promise.all(
-              match.photos.map(async (photoPath: string) => {
-                // Call getImageUrl to get a downloadable URL
-                const url = await getImageUrl(photoPath);
-                return url;
-              })
-            );
-            return {
-              ...match,
-              photos: processedPhotos.filter((url) => url !== null),
-            };
-          }
-          return match;
-        })
-      );
-      setMatches(processedMatches.filter((match) => match !== null));
-    } catch (error) {
-      console.error("Failed to fetch matches:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchAndProcessMatches();
-  }, [userData, fetchChatMatches, getImageUrl]);
+    // Subscribe to your chat list in real time
+    const unsubscribe = subscribeToChatMatches(
+      userData.userId,
+      async (chatList) => {
+        // Resolve photo URLs
+        const withPhotos = await Promise.all(
+          chatList.map(async (m) => {
+            const photos = m.photos || [];
+            const urls = photos.length
+              ? (await Promise.all(photos.map(getImageUrl))).filter(Boolean)
+              : [];
+            return { ...m, photos: urls };
+          })
+        );
+        setMatches(withPhotos);
+        setIsLoading(false);
+      }
+    );
+    return unsubscribe;
+  }, [userData.userId, subscribeToChatMatches, getImageUrl]);
 
   if (isLoading) {
     return (
@@ -59,7 +48,7 @@ const SoulChats: React.FC = () => {
     );
   }
 
-  if (matches.length === 0) {
+  if (!matches.length) {
     return (
       <View style={styles.noMatchesContainer}>
         <Text style={styles.noMatchesText}>No matches yet!</Text>
@@ -75,30 +64,42 @@ const SoulChats: React.FC = () => {
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Matches</Text>
       {matches.map((match) => {
-        // Generate chat ID using a sorted combination of the IDs
         const chatId = [userData.userId, match.userId].sort().join("_");
+        const isUnread = match.lastMessageSender !== userData.userId;
         return (
           <Link
             key={match.userId}
-            href={`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`}
+            href={`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(
+              JSON.stringify(match)
+            )}`}
             onPress={async () => {
               await createOrFetchChat(userData.userId, match.userId);
             }}
           >
             <View style={styles.matchRow}>
-              <View style={styles.avatarContainer}>
-                {match.photos && match.photos[0] ? (
-                  <Image
-                    source={{ uri: match.photos[0] }}
-                    style={styles.photo}
-                  />
-                ) : (
-                  <Text>No Image</Text>
-                )}
+              <View style={styles.avatarWrapper}>
+                <View style={styles.avatarContainer}>
+                  {match.photos[0] ? (
+                    <Image
+                      source={{ uri: match.photos[0] }}
+                      style={styles.photo}
+                    />
+                  ) : (
+                    <Text>No Image</Text>
+                  )}
+                </View>
+                {isUnread && <View style={styles.unreadDot} />}
               </View>
               <View style={styles.matchInfo}>
-                <Text style={styles.matchName}>{match.firstName}</Text>
-                <Text style={styles.conversationText}>
+                <Text style={[styles.matchName, isUnread && styles.unreadText]}>
+                  {match.firstName}
+                </Text>
+                <Text
+                  style={[
+                    styles.conversationText,
+                    isUnread && styles.unreadText,
+                  ]}
+                >
                   {match.lastMessage
                     ? match.lastMessage.length > 40
                       ? `${match.lastMessage.slice(0, 40)}...`
@@ -148,6 +149,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#D3C6BA",
   },
+  avatarWrapper: {
+    position: "relative",
+    marginRight: 10,
+  },
   avatarContainer: {
     width: 80,
     height: 80,
@@ -155,13 +160,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#ccc",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
     overflow: "hidden",
   },
   photo: {
     width: "100%",
     height: "100%",
-    borderRadius: 25,
+    borderRadius: 40,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#3B82F6",
   },
   matchInfo: {
     flex: 1,
@@ -174,6 +187,10 @@ const styles = StyleSheet.create({
   conversationText: {
     fontSize: 15,
     color: "#666",
+  },
+  unreadText: {
+    fontWeight: "bold",
+    color: "#000",
   },
   loadingContainer: {
     flex: 1,

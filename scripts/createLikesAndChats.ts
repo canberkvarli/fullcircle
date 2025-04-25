@@ -10,6 +10,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+const FieldValue = admin.firestore.FieldValue;
 
 const CURRENT_USER_ID = process.argv[2];
 if (!CURRENT_USER_ID) {
@@ -18,7 +19,6 @@ if (!CURRENT_USER_ID) {
 }
 
 async function simulateDummyLikesAndChats(): Promise<void> {
-  // STEP 1: Fetch current user's document
   const currentUserRef = db.collection("users").doc(CURRENT_USER_ID);
   const currentUserSnap = await currentUserRef.get();
   if (!currentUserSnap.exists) {
@@ -30,120 +30,107 @@ async function simulateDummyLikesAndChats(): Promise<void> {
   currentUserData.matches = currentUserData.matches || [];
   currentUserData.likesReceived = currentUserData.likesReceived || [];
 
-  // STEP 2: Fetch dummy users (all except current user)
-  const usersSnapshot = await db.collection("users").get();
-  const dummyUsers: Array<{ id: string; data: any }> = [];
-  usersSnapshot.forEach((doc) => {
-    if (doc.id !== CURRENT_USER_ID) {
-      dummyUsers.push({ id: doc.id, data: doc.data() });
-    }
-  });
-  dummyUsers.sort(() => Math.random() - 0.5);
-  const selectedDummyUsers = dummyUsers.slice(0, 10);
-
-  // Divide: first half for one-sided likes; second half for mutual matches.
-  const dummyLikes = selectedDummyUsers.slice(0, 5);
-  const dummyMatches = selectedDummyUsers.slice(5, 10);
+  const allUsersSnap = await db.collection("users").get();
+  const others = allUsersSnap.docs
+    .filter((d) => d.id !== CURRENT_USER_ID)
+    .map((d) => ({ id: d.id, data: d.data() as any }));
+  faker.helpers.shuffle(others);
+  const [dummyLikes, dummyMatches] = [others.slice(0, 5), others.slice(5, 10)];
 
   const batch = db.batch();
 
-  // STEP 3: Process one-sided likes (kindred spirits)
-  for (const dummy of dummyLikes) {
-    const dummyRef = db.collection("users").doc(dummy.id);
-    const dummyData = dummy.data;
-    dummyData.likedMatches = dummyData.likedMatches || [];
-    if (!dummyData.likedMatches.includes(CURRENT_USER_ID)) {
-      dummyData.likedMatches.push(CURRENT_USER_ID);
-      batch.update(dummyRef, { likedMatches: dummyData.likedMatches });
+  dummyLikes.forEach(({ id, data }) => {
+    const docRef = db.collection("users").doc(id);
+    const liked = data.likedMatches || [];
+    if (!liked.includes(CURRENT_USER_ID)) {
+      liked.push(CURRENT_USER_ID);
+      batch.update(docRef, { likedMatches: liked });
     }
-    if (!currentUserData.likesReceived.includes(dummy.id)) {
-      currentUserData.likesReceived.push(dummy.id);
+    if (!currentUserData.likesReceived.includes(id)) {
+      currentUserData.likesReceived.push(id);
     }
-  }
+  });
 
-  // STEP 4: Process mutual matches
-  for (const dummy of dummyMatches) {
-    const dummyRef = db.collection("users").doc(dummy.id);
-    const dummyData = dummy.data;
-    dummyData.likedMatches = dummyData.likedMatches || [];
-    dummyData.matches = dummyData.matches || [];
-    if (!dummyData.likedMatches.includes(CURRENT_USER_ID)) {
-      dummyData.likedMatches.push(CURRENT_USER_ID);
-    }
-    if (!dummyData.matches.includes(CURRENT_USER_ID)) {
-      dummyData.matches.push(CURRENT_USER_ID);
-    }
-    batch.update(dummyRef, {
-      likedMatches: dummyData.likedMatches,
-      matches: dummyData.matches,
+  dummyMatches.forEach(({ id, data }) => {
+    const docRef = db.collection("users").doc(id);
+    const liked = data.likedMatches || [];
+    const matched = data.matches || [];
+    if (!liked.includes(CURRENT_USER_ID)) liked.push(CURRENT_USER_ID);
+    if (!matched.includes(CURRENT_USER_ID)) matched.push(CURRENT_USER_ID);
+    batch.update(docRef, {
+      likedMatches: liked,
+      matches: matched,
     });
-    if (!currentUserData.likedMatches.includes(dummy.id)) {
-      currentUserData.likedMatches.push(dummy.id);
-    }
-    if (!currentUserData.matches.includes(dummy.id)) {
-      currentUserData.matches.push(dummy.id);
-    }
-    if (!currentUserData.likesReceived.includes(dummy.id)) {
-      currentUserData.likesReceived.push(dummy.id);
-    }
-  }
+
+    if (!currentUserData.likedMatches.includes(id))
+      currentUserData.likedMatches.push(id);
+    if (!currentUserData.matches.includes(id)) currentUserData.matches.push(id);
+    if (!currentUserData.likesReceived.includes(id))
+      currentUserData.likesReceived.push(id);
+  });
+
   batch.update(currentUserRef, {
     likedMatches: currentUserData.likedMatches,
     matches: currentUserData.matches,
     likesReceived: currentUserData.likesReceived,
   });
-
   await batch.commit();
-  console.log("User likes updated.");
+  console.log("User likes and matches updated.");
 
-  // STEP 5: Create chat conversations for mutual matches with back-to-back messages.
-  for (const dummy of dummyMatches) {
-    const chatId = [CURRENT_USER_ID, dummy.id].sort().join("_");
+  for (const { id: otherId } of dummyMatches) {
+    const chatId = [CURRENT_USER_ID, otherId].sort().join("_");
     const chatRef = db.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
-    if (chatSnap.exists) {
-      console.log(`Chat already exists for: ${chatId}`);
-      continue;
-    }
 
-    // Create a preset conversation:
     const conversation = [
       {
-        text: "Hi, how are you?",
+        text: "Hey there! 👋 " + faker.hacker.phrase(),
         sender: CURRENT_USER_ID,
         timestamp: new Date().toISOString(),
       },
       {
-        text: "I'm good, thanks! How about you?",
-        sender: dummy.id,
+        text: faker.hacker.ingverb() + " sounds fun!",
+        sender: otherId,
         timestamp: new Date().toISOString(),
       },
       {
-        text: "Doing well. What have you been up to today?",
+        text: "Absolutely, just trying to " + faker.hacker.verb(),
         sender: CURRENT_USER_ID,
         timestamp: new Date().toISOString(),
       },
       {
-        text: "Just relaxing and enjoying some time off.",
-        sender: dummy.id,
+        text: "Let me know when you have time to " + faker.hacker.noun(),
+        sender: otherId,
         timestamp: new Date().toISOString(),
       },
     ];
 
-    await chatRef.set({
-      participants: [CURRENT_USER_ID, dummy.id],
-      messages: conversation,
-      createdAt: new Date().toISOString(),
-    });
-    console.log(`Chat created for: ${chatId}`);
+    const lastMsg = conversation[conversation.length - 1].text;
+
+    if (!chatSnap.exists) {
+      await chatRef.set({
+        participants: [CURRENT_USER_ID, otherId],
+        messages: conversation,
+        createdAt: FieldValue.serverTimestamp(),
+        lastMessage: lastMsg,
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
+      console.log(`Created chat ${chatId} with lastMessage: "${lastMsg}"`);
+    } else {
+      await chatRef.update({
+        lastMessage: lastMsg,
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
+      console.log(`Updated chat ${chatId} lastMessage to: "${lastMsg}"`);
+    }
   }
 
-  console.log("Dummy likes and chat conversations created successfully.");
+  console.log("Dummy chat conversations seeded successfully.");
 }
 
 simulateDummyLikesAndChats()
   .then(() => process.exit(0))
-  .catch((error) => {
-    console.error("Script error:", error);
+  .catch((err) => {
+    console.error("Script error:", err);
     process.exit(1);
   });
