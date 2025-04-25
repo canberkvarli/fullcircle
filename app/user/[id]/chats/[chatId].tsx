@@ -169,17 +169,19 @@ const Chat: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#EDE9E3" },
+  container: { flex: 1, padding: 16, backgroundColor: "#EDE9E3" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#D3C6BA",
-    backgroundColor: "#fff",
   },
-  backButton: { marginRight: 12 },
-  headerTitle: { fontSize: 20, fontWeight: "bold", color: "#7E7972" },
+  backButton: { marginLeft: 10 },
+  headerTitle: {
+    paddingLeft: 10,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#7E7972",
+  },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
   inputToolbar: {
     borderTopWidth: 1,
