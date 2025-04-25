@@ -15,12 +15,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fullcircle.app",
-      "googleServicesFile": "./ios/fullcircle/GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
+      "package": "com.fullcircle.app",
       "gradleVersion": "8.8",
       "kotlinVersion": "1.9.25",
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -32,8 +33,7 @@
         "googleMaps": {
           "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
         }
-      },
-      "package": "com.fullcircle.app"
+      }
     },
     "web": {
       "bundler": "metro",
