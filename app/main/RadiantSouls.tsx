@@ -90,7 +90,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#EDE9E3",
     padding: 16,
-    marginTop: 25,
   },
   header: {
     flexDirection: "row",
