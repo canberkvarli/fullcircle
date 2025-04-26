@@ -1110,7 +1110,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       return STORAGE.refFromURL(imagePath).getDownloadURL();
     }
     if (imageCache[imagePath]) {
-      console.log("Using cached image:", imagePath);
       return imageCache[imagePath];
     }
     try {
