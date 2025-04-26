@@ -132,13 +132,13 @@ const UserShow: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 25,
+    // marginTop: 25,
     padding: 16,
     backgroundColor: "#EDE9E3",
   },
   backButton: {
     marginBottom: 16,
-    marginLeft: 10,
+    marginLeft: 20,
   },
   nameText: {
     fontSize: 28,

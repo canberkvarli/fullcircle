@@ -127,10 +127,7 @@ const Chat: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="chevron-left" size={24} color="#7E7972" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
@@ -175,7 +172,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 12,
   },
-  backButton: { marginLeft: 10 },
   headerTitle: {
     paddingLeft: 10,
     fontSize: 20,
