@@ -22,31 +22,36 @@ const KindredSpirits: React.FC = () => {
 
   useEffect(() => {
     const loadLikedUsersWithPhotos = async () => {
-      if (!userData?.detailedLikesReceived) {
-        setIsLoading(true);
-      } else {
-        // Process each user: Convert each photo storage path into a download URL.
-        const processedLikes = await Promise.all(
-          userData.detailedLikesReceived.map(async (user: any) => {
-            if (user.photos && user.photos.length > 0) {
-              const urls = await Promise.all(
-                user.photos.map(async (photoPath: string) => {
-                  const url = await getImageUrl(photoPath);
-                  return url;
-                })
-              );
-              return { ...user, photos: urls.filter((url) => url !== null) };
-            }
-            return user;
-          })
-        );
-        setLikedByUsers(processedLikes);
+      // If detailedLikesReceived is undefined or empty, show "no likes" immediately
+      if (
+        !userData?.detailedLikesReceived ||
+        userData.detailedLikesReceived.length === 0
+      ) {
+        console.log("No likes received");
+        setLikedByUsers([]);
         setIsLoading(false);
+        return;
       }
+
+      const processedLikes = await Promise.all(
+        userData.detailedLikesReceived.map(async (user: any) => {
+          if (user.photos && user.photos.length > 0) {
+            const urls = await Promise.all(
+              user.photos.map((photoPath: string) => getImageUrl(photoPath))
+            );
+            return { ...user, photos: urls.filter((url) => url !== null) };
+          }
+          return user;
+        })
+      );
+
+      console.log("Processed Likes:", processedLikes);
+      setLikedByUsers(processedLikes);
+      setIsLoading(false);
     };
 
     loadLikedUsersWithPhotos();
-  }, [userData.detailedLikesReceived, getImageUrl]);
+  }, [userData?.detailedLikesReceived, getImageUrl]);
 
   const handleCardPress = (user: any, isFirstCard: boolean) => {
     if (userData?.fullCircleSubscription || isFirstCard) {
@@ -72,14 +77,34 @@ const KindredSpirits: React.FC = () => {
   if (likedByUsers.length === 0) {
     return (
       <View style={styles.noLikesContainer}>
-        <Text style={styles.noLikesText}>No likes yet--we're here to help</Text>
-        <Text style={styles.noLikesText}>
-          We can get you seen by more daters, sooner.
+        <Text style={styles.noLikesTitle}>No one’s vibing with you… yet.</Text>
+        <Text style={styles.noLikesSubtitle}>
+          Radiate more love by upgrading to FullCircle for unlimited visibility,
+          or send a one-time Boost to soar to the top of the feed.
         </Text>
+
+        <TouchableOpacity
+          style={styles.upgradeButton}
+          onPress={() =>
+            router.navigate({ pathname: "/user/FullCircleSubscription" })
+          }
+        >
+          <Text style={styles.upgradeButtonText}>Upgrade to FullCircle ✨</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.boostButton}
+          onPress={() =>
+            router.navigate({ pathname: "/user/FullCircleSubscription" })
+          }
+        >
+          <Text style={styles.boostButtonText}>Send a Boost ❤️‍🔥</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  // Render grid of likes
   const firstUser = likedByUsers[0];
 
   return (
@@ -88,6 +113,7 @@ const KindredSpirits: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.likesText}>Likes you</Text>
+
       <TouchableOpacity onPress={() => handleCardPress(firstUser, true)}>
         <UserCard
           user={firstUser}
@@ -98,7 +124,7 @@ const KindredSpirits: React.FC = () => {
       </TouchableOpacity>
 
       <View style={styles.gridContainer}>
-        {likedByUsers.slice(1).map((user, index) => (
+        {likedByUsers.slice(1).map((user) => (
           <View key={user.userId} style={styles.userCardContainer}>
             <TouchableOpacity onPress={() => handleCardPress(user, false)}>
               <UserCard
@@ -136,15 +162,48 @@ const styles = StyleSheet.create({
   },
   noLikesContainer: {
     flex: 1,
-    padding: 16,
+    padding: 24,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#EDE9E3",
   },
-  noLikesText: {
-    fontSize: 18,
+  noLikesTitle: {
+    fontSize: 22,
+    fontWeight: "700",
     textAlign: "center",
-    marginTop: 20,
+    marginBottom: 12,
+    color: "#3A3A3A",
+  },
+  noLikesSubtitle: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+    color: "#5C5C5C",
+  },
+  upgradeButton: {
+    backgroundColor: "#7E7972",
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+    marginBottom: 12,
+  },
+  upgradeButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  boostButton: {
+    borderColor: "#7E7972",
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+  },
+  boostButtonText: {
+    color: "#7E7972",
+    fontSize: 16,
+    fontWeight: "600",
   },
   largeCard: {
     width: screenWidth - 32,
