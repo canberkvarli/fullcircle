@@ -10,8 +10,8 @@ import LottieView from "lottie-react-native";
 import circleAnimation from "../../assets/animations/black-circle.json";
 
 const ConnectScreen: React.FC = () => {
-  const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
-  const [showHeightModal, setShowHeightModal] = useState<boolean>(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showHeightModal, setShowHeightModal] = useState(false);
 
   const {
     likeMatch,
@@ -40,20 +40,35 @@ const ConnectScreen: React.FC = () => {
 
   const [isDislikeLoading, setIsDislikeLoading] = useState(false);
 
+  // like.json controls
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
-  const [animationFinished, setAnimationFinished] = useState(false);
+  const [likeAnimFinished, setLikeAnimFinished] = useState(false);
 
+  // dislike.json controls
+  const [showDislikeAnimation, setShowDislikeAnimation] = useState(false);
+  const [dislikeAnimFinished, setDislikeAnimFinished] = useState(false);
+
+  // photos loaded?
   const [isPhotoLoading, setIsPhotoLoading] = useState(true);
 
+  // 1) Fetch detailed likes once
   useEffect(() => {
     if (!userData.detailedLikesReceived) {
       fetchDetailedLikes();
     }
   }, [userData]);
 
+  // reset photo-loading when a new match arrives
+  useEffect(() => {
+    if (currentPotentialMatch) {
+      setIsPhotoLoading(true);
+    }
+  }, [currentPotentialMatch]);
+
+
   const handleLike = async (userId: string) => {
     setShowLikeAnimation(true);
-    setAnimationFinished(false);
+    setLikeAnimFinished(false);
     try {
       await likeMatch(userId);
     } catch (err) {
@@ -61,25 +76,49 @@ const ConnectScreen: React.FC = () => {
       setShowLikeAnimation(false);
       return;
     }
+
     loadNextPotentialMatch();
   };
 
-  const handleAnimationFinish = () => {
-    setAnimationFinished(true);
+  // when like.json ends
+  const handleLikeAnimationFinish = () => {
+    setLikeAnimFinished(true);
   };
 
+  // hide like.json only once both it and photos are done
   useEffect(() => {
-    if (animationFinished && !isPhotoLoading) {
+    if (likeAnimFinished && !isPhotoLoading) {
       setShowLikeAnimation(false);
-      setAnimationFinished(false);
+      setLikeAnimFinished(false);
     }
-  }, [animationFinished, isPhotoLoading]);
+  }, [likeAnimFinished, isPhotoLoading]);
 
-  useEffect(() => {
-    if (currentPotentialMatch) {
-      setIsPhotoLoading(true);
+  const handleDislike = async (userId: string) => {
+    setShowDislikeAnimation(true);
+    setDislikeAnimFinished(false);
+    try {
+      await dislikeMatch(userId);
+    } catch (err) {
+      console.error("Dislike failed:", err);
+      setShowDislikeAnimation(false);
+      return;
     }
-  }, [currentPotentialMatch]);
+    // fetch next immediately
+    loadNextPotentialMatch();
+  };
+
+  // when dislike.json ends
+  const handleDislikeAnimationFinish = () => {
+    setDislikeAnimFinished(true);
+  };
+
+  // hide dislike.json only once both it and photos are done
+  useEffect(() => {
+    if (dislikeAnimFinished && !isPhotoLoading) {
+      setShowDislikeAnimation(false);
+      setDislikeAnimFinished(false);
+    }
+  }, [dislikeAnimFinished, isPhotoLoading]);
 
   // sync preferences into local state
   const updateMatchPreferences = (preferences: {
@@ -114,12 +153,12 @@ const ConnectScreen: React.FC = () => {
     }
   }, [userData]);
 
+  // apply filter
   const handleApplyAgeFilter = async () => {
     if (!userData?.userId) {
       console.error("User ID is missing. Cannot apply filter.");
       return;
     }
-
     const updatedData = {
       userId: userData.userId,
       matchPreferences: {
@@ -136,7 +175,6 @@ const ConnectScreen: React.FC = () => {
         },
       },
     };
-
     try {
       await updateUserData(updatedData);
       await resetPotentialMatches();
@@ -153,11 +191,13 @@ const ConnectScreen: React.FC = () => {
     heightRange[0] === originalHeightRange[0] &&
     heightRange[1] === originalHeightRange[1];
 
+  // only show loader when fetching & there are matches to load
   const isLoading =
     loadingNextBatch || !currentPotentialMatch || isPhotoLoading;
 
   return (
     <View style={styles.container}>
+      {/* black-circle loader */}
       {!noMoreMatches && isLoading && (
         <View style={styles.loadingOverlay}>
           <LottieView
@@ -169,13 +209,27 @@ const ConnectScreen: React.FC = () => {
         </View>
       )}
 
+      {/* like.json overlay */}
       {showLikeAnimation && (
         <View style={styles.animationContainer}>
           <LottieView
             source={require("../../assets/animations/like.json")}
             autoPlay
             loop={false}
-            onAnimationFinish={handleAnimationFinish}
+            onAnimationFinish={handleLikeAnimationFinish}
+            style={styles.animation}
+          />
+        </View>
+      )}
+
+      {/* dislike.json overlay */}
+      {showDislikeAnimation && (
+        <View style={styles.animationContainer}>
+          <LottieView
+            source={require("../../assets/animations/dislike.json")}
+            autoPlay
+            loop={false}
+            onAnimationFinish={handleDislikeAnimationFinish}
             style={styles.animation}
           />
         </View>
@@ -202,7 +256,7 @@ const ConnectScreen: React.FC = () => {
         </View>
       ) : (
         <>
-          {/* top tabs */}
+          {/* tabs */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -255,7 +309,7 @@ const ConnectScreen: React.FC = () => {
             </Link>
           </ScrollView>
 
-          {/* match card */}
+          {/* match */}
           <ScrollView
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
@@ -266,7 +320,9 @@ const ConnectScreen: React.FC = () => {
                   currentPotentialMatch={currentPotentialMatch}
                   isMatched={false}
                   onLike={handleLike}
-                  disableInteractions={showLikeAnimation}
+                  disableInteractions={
+                    showLikeAnimation || showDislikeAnimation
+                  }
                   onPhotosLoaded={() => setIsPhotoLoading(false)}
                 />
               )}
@@ -275,7 +331,9 @@ const ConnectScreen: React.FC = () => {
         </>
       )}
 
+      {/* dislike button (hidden during both like & dislike animations) */}
       {!showLikeAnimation &&
+        !showDislikeAnimation &&
         !isLoading &&
         !noMoreMatches &&
         currentPotentialMatch && (
@@ -283,9 +341,7 @@ const ConnectScreen: React.FC = () => {
             onPress={() => {
               if (isDislikeLoading) return;
               setIsDislikeLoading(true);
-              dislikeMatch(currentPotentialMatch.userId).finally(() =>
-                setIsDislikeLoading(false)
-              );
+              handleDislike(currentPotentialMatch.userId);
             }}
             style={styles.dislikeButton}
           >
@@ -293,7 +349,7 @@ const ConnectScreen: React.FC = () => {
           </TouchableOpacity>
         )}
 
-      {/* Age Filter Modal */}
+      {/* filter modals */}
       <FilterModal
         visible={showFilterModal}
         title="Age"
@@ -308,8 +364,6 @@ const ConnectScreen: React.FC = () => {
         isApplyDisabled={isApplyButtonDisabled}
         styles={styles}
       />
-
-      {/* Height Filter Modal */}
       <FilterModal
         visible={showHeightModal}
         title="Height"
