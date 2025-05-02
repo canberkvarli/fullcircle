@@ -35,6 +35,7 @@ export type UserDataType = {
   userId: string;
   lastActive?: any;
   isSeedUser: boolean;
+  isRadiantSoul?: boolean;
   currentOnboardingScreen: string;
   phoneNumber: string;
   verificationId?: string | null;
@@ -102,6 +103,23 @@ export type UserDataType = {
   };
 };
 
+export type MatchPreferencesType = {
+  preferredAgeRange?: {
+    min: number;
+    max: number;
+  };
+  preferredHeightRange?: {
+    min: number;
+    max: number;
+  };
+  childrenPreference?: string;
+  preferredEthnicities?: string[];
+  preferredDistance: number;
+  datePreferences: string[];
+  desiredRelationship?: string;
+  preferredSpiritualPractices?: string[];
+};
+
 type UserContextType = {
   currentOnboardingScreen: string;
   setcurrentOnboardingScreen: React.Dispatch<React.SetStateAction<string>>;
@@ -134,9 +152,9 @@ type UserContextType = {
   >;
   signOut: () => Promise<void>;
   completeOnboarding: () => void;
-  likeMatch: (matchId: string) => Promise<void>;
-  dislikeMatch: (matchId: string) => Promise<void>;
-  currentPotentialMatch: any;
+  likeMatch: (matchId: string) => any;
+  dislikeMatch: (matchId: string) => any;
+  currentPotentialMatch: UserDataType | null;
   setCurrentPotentialMatch: React.Dispatch<React.SetStateAction<any>>;
   loadNextPotentialMatch: () => void;
   loadingNextBatch: boolean;
@@ -302,13 +320,36 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [userData]);
 
   useEffect(() => {
+    // don’t kick off until we actually have preferences from Firestore
+    if (!userData.matchPreferences) return;
+
     console.log(
       "Match preferences changed, resetting matches",
       userData.matchPreferences
     );
     resetPotentialMatches();
-    loadNextPotentialMatch();
+
+    const initFetch = async () => {
+      const initialBatch = await fetchPotentialMatches();
+      if (initialBatch.length > 0) {
+        setCurrentPotentialMatch(initialBatch[0]);
+        setCurrentPotentialMatchIndex(0);
+      }
+    };
+
+    initFetch();
   }, [userData.matchPreferences]);
+
+  useEffect(() => {
+    // don’t prefetch until we have at least one batch
+    if (potentialMatches.length === 0) return;
+
+    const buffer = potentialMatches.length - currentPotentialMatchIndex - 1;
+    if (buffer < 3 && !loadingNextBatch && !noMoreMatches) {
+      console.log("Buffer is low, fetching more potential matches...");
+      fetchPotentialMatches();
+    }
+  }, [potentialMatches, currentPotentialMatchIndex]);
 
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
@@ -641,166 +682,167 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const fetchPotentialMatches = async () => {
-    // Ensure our ref is up-to-date
-    userDataRef.current = userData;
-    console.log("fetching...");
-    let fetchedMatches: any[] = [];
-    let hasMoreMatches = true;
+  const buildQueryConstraints = ({
+    matchPreferences,
+    currentLat,
+    currentLon,
+  }: {
+    matchPreferences?: typeof userData.matchPreferences;
+    currentLat?: number;
+    currentLon?: number;
+  }) => {
+    const constraints: any[] = [];
 
-    // Build the exclusion set.
-    const excludedUserIds = new Set([
-      userDataRef.current?.userId,
-      ...(userDataRef.current?.likedMatches || []),
-      ...(userDataRef.current?.dislikedMatches || []),
-      ...(userDataRef.current?.matches || []),
-    ]);
-    console.log("fetchPotentialMatches(): Excluded user IDs:", excludedUserIds);
+    // --- Gender / datePreferences ---
+    const prefs = matchPreferences?.datePreferences ?? [];
 
-    // ----- Build Base Query Constraints -----
-    // order by the number of likesReceived.
-    const numOfLikes = userDataRef.current?.likesReceived?.length || 0;
-    let constraints = [orderBy("userId"), limit(10)];
+    // If they picked “Everyone”, skip the gender filter completely
+    if (!prefs.includes("Everyone")) {
+      // Drop any stray “Everyone” if it ever appears alongside others
+      const filtered = prefs.filter((p) => p !== "Everyone");
 
-    // ----- Gender Filtering -----
-    const datePreferences =
-      userDataRef.current.matchPreferences?.datePreferences &&
-      userDataRef.current.matchPreferences.datePreferences.length > 0
-        ? userDataRef.current.matchPreferences.datePreferences
-        : ["Everyone"];
-    console.log("Current datePreferences:", datePreferences);
+      const genderMap: Record<string, string> = {
+        Men: "Man",
+        Women: "Woman",
+        "Non-Binary": "Non-binary",
+      };
+      const mapped = filtered.map((p) => genderMap[p] || p);
 
-    const genderMap: Record<string, string> = {
-      Men: "Man",
-      Women: "Woman",
-      "Non-Binary": "Non-binary",
-    };
-
-    if (!datePreferences.includes("Everyone")) {
-      const mappedGenders = datePreferences.map(
-        (pref) => genderMap[pref] || pref
-      );
-      console.log("Preferred genders to filter:", mappedGenders);
-      if (mappedGenders.length === 1) {
-        constraints.push(where("gender", "==", mappedGenders[0]));
-      } else {
-        constraints.push(where("gender", "in", mappedGenders));
+      if (mapped.length === 1) {
+        constraints.push(where("gender", "==", mapped[0]));
+      } else if (mapped.length > 1) {
+        constraints.push(where("gender", "in", mapped));
       }
     }
 
-    // ----- Age Range Filtering -----
-    const ageRange = userDataRef.current.matchPreferences?.preferredAgeRange;
-    if (ageRange && ageRange.min != null && ageRange.max != null) {
-      console.log("Applying age filtering:", ageRange);
-      constraints.push(where("age", ">=", ageRange.min));
-      constraints.push(where("age", "<=", ageRange.max));
+    // --- Age Range ---
+    const age = matchPreferences?.preferredAgeRange;
+    if (age?.min != null && age?.max != null) {
+      constraints.push(where("age", ">=", age.min));
+      constraints.push(where("age", "<=", age.max));
     }
 
-    // ----- Height Range Filtering -----
-    const heightRange =
-      userDataRef.current.matchPreferences?.preferredHeightRange;
-    if (heightRange && heightRange.min != null && heightRange.max != null) {
-      console.log("Applying height filtering:", heightRange);
-      constraints.push(where("height", ">=", heightRange.min));
-      constraints.push(where("height", "<=", heightRange.max));
+    // --- Height Range ---
+    const height = matchPreferences?.preferredHeightRange;
+    if (height?.min != null && height?.max != null) {
+      constraints.push(where("height", ">=", height.min));
+      constraints.push(where("height", "<=", height.max));
     }
 
-    // ----- Ethnicity Filtering -----
-    const ethnicities =
-      userDataRef.current.matchPreferences?.preferredEthnicities;
-    if (
-      ethnicities &&
-      ethnicities.length > 0 &&
-      !ethnicities.includes("Open to All")
-    ) {
-      console.log("Applying ethnicity filtering:", ethnicities);
+    // --- Ethnicity ---
+    const ethnicities = matchPreferences?.preferredEthnicities;
+    if (ethnicities?.length && !ethnicities.includes("Open to All")) {
       constraints.push(where("ethnicities", "array-contains-any", ethnicities));
     }
 
-    // ----- Distance Filtering (Bounding Box) -----
-    const currentLat = userData.latitude;
-    const currentLon = userData.longitude;
-    const maxDistance = userData.matchPreferences?.preferredDistance;
+    // --- Distance Bounding Box ---
     if (
       currentLat != null &&
       currentLon != null &&
-      maxDistance != null &&
-      !isNaN(currentLat) &&
-      !isNaN(currentLon) &&
-      !isNaN(maxDistance)
+      matchPreferences?.preferredDistance != null
     ) {
-      // Approximate: 1 degree latitude ~ 69 miles.
-      const latDelta = maxDistance / 69;
-      // For longitude, 1 degree ~ 69 * cos(latitude) miles.
-      const lonDelta =
-        maxDistance / (69 * Math.cos(currentLat * (Math.PI / 180)));
-      const minLat = currentLat - latDelta;
-      const maxLat = currentLat + latDelta;
-      const minLon = currentLon - lonDelta;
-      const maxLon = currentLon + lonDelta;
-      console.log("Applying distance filtering with bounding box:", {
-        minLat,
-        maxLat,
-        minLon,
-        maxLon,
-      });
-      constraints.push(where("latitude", ">=", minLat));
-      constraints.push(where("latitude", "<=", maxLat));
-      constraints.push(where("longitude", ">=", minLon));
-      constraints.push(where("longitude", "<=", maxLon));
+      const maxDist = matchPreferences.preferredDistance;
+      const latDelta = maxDist / 69;
+      const lonDelta = maxDist / (69 * Math.cos((currentLat * Math.PI) / 180));
+      constraints.push(where("latitude", ">=", currentLat - latDelta));
+      constraints.push(where("latitude", "<=", currentLat + latDelta));
+      constraints.push(where("longitude", ">=", currentLon - lonDelta));
+      constraints.push(where("longitude", "<=", currentLon + lonDelta));
     }
 
-    // ----- Pagination Loop -----
-    while (fetchedMatches.length < 10 && hasMoreMatches) {
-      console.log("fetchPotentialMatches(): Fetching potential matches...");
-      let usersQuery;
-      if (lastVisibleMatch) {
-        usersQuery = query(
-          collection(FIRESTORE, "users"),
-          ...constraints,
-          startAfter(lastVisibleMatch)
-        );
-      } else {
-        usersQuery = query(collection(FIRESTORE, "users"), ...constraints);
-      }
+    return constraints;
+  };
 
-      const querySnapshot = await getDocs(usersQuery);
-      if (querySnapshot.empty) {
-        console.log("fetchPotentialMatches(): No more matches available.");
-        hasMoreMatches = false;
+  const fetchPotentialMatches = async () => {
+    setLoadingNextBatch(true);
+    userDataRef.current = userData;
+    console.log("fetching...");
+    const excluded = new Set([
+      userData.userId,
+      ...(userData.likedMatches || []),
+      ...(userData.dislikedMatches || []),
+      ...(userData.matches || []),
+    ]);
+
+    const baseConstraints = [
+      orderBy("userId"),
+      limit(10),
+      ...buildQueryConstraints({
+        matchPreferences: userData.matchPreferences,
+        currentLat: userData.latitude,
+        currentLon: userData.longitude,
+      }),
+    ];
+
+    let fetched: any[] = [];
+    let hasMore = true;
+
+    while (fetched.length < 10 && hasMore) {
+      console.log("fetching batch...");
+      const usersQ = lastVisibleMatch
+        ? query(
+            collection(FIRESTORE, "users"),
+            ...baseConstraints,
+            startAfter(lastVisibleMatch)
+          )
+        : query(collection(FIRESTORE, "users"), ...baseConstraints);
+      const snap = await getDocs(usersQ);
+      if (snap.empty) {
+        console.log("no more matches");
+        setNoMoreMatches(true);
+        break;
+      }
+      const newBatch = snap.docs
+        .map((d) => d.data())
+        .filter((u) => !excluded.has(u.userId) && !u.isRadiantSoul);
+      if (!newBatch.length) {
         setNoMoreMatches(true);
         break;
       }
 
-      const newMatches = querySnapshot.docs
-        .map((doc) => doc.data())
-        .filter((user) => !excludedUserIds.has(user.userId));
-
-      if (newMatches.length > 0) {
-        fetchedMatches = [...fetchedMatches, ...newMatches];
-        const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-        setLastVisibleMatch(lastDoc.data().userId);
-      } else {
-        console.log(
-          "fetchPotentialMatches(): No new matches found in this batch."
-        );
-        hasMoreMatches = false;
-        setNoMoreMatches(true);
-        break;
-      }
+      fetched.push(...newBatch);
+      const lastDoc = snap.docs[snap.docs.length - 1];
+      setLastVisibleMatch(lastDoc.data().userId);
+      console.log("fetched batch", fetched.length);
     }
 
-    if (fetchedMatches.length > 0) {
-      console.log(
-        `fetchPotentialMatches(): Fetched a batch of ${fetchedMatches.length} matches.`
-      );
-      setPotentialMatches((prev) => [...prev, ...fetchedMatches]);
-    } else {
-      console.log("fetchPotentialMatches(): No matches fetched.");
+    if (fetched.length) {
+      setPotentialMatches((p) => [...p, ...fetched]);
     }
-
     setLoadingNextBatch(false);
-    return fetchedMatches;
+    return fetched;
+  };
+
+  const fetchRadiantSouls = async () => {
+    try {
+      const { userId, latitude, longitude, matchPreferences } = userData;
+      if (!userId) {
+        console.error("No userId found in userData.");
+        return [];
+      }
+
+      // 1) grab the top 10 by likesReceived
+      const q = query(
+        collection(FIRESTORE, "users"),
+        orderBy("likesReceived", "desc"),
+        limit(10),
+        ...buildQueryConstraints({
+          matchPreferences,
+          currentLat: latitude,
+          currentLon: longitude,
+        })
+      );
+      const snap = await getDocs(q);
+
+      const souls = snap.docs.map((d) => d.data() as UserDataType);
+      if (!souls.length) return [];
+
+      // 3) return them for your “Radiant Souls” UI
+      return souls;
+    } catch (err) {
+      console.error("Error fetching Radiant Souls:", err);
+      return [];
+    }
   };
 
   const resetPotentialMatches = () => {
@@ -822,30 +864,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     ]);
 
     // Filter potentialMatches to only those not in the excluded set.
-    const validMatches = potentialMatches.filter(
-      (match) => !excludedSet.has(match.userId)
+    const valid = potentialMatches.filter((m) => !excludedSet.has(m.userId));
+    const currentIdx = valid.findIndex(
+      (m) => m.userId === currentPotentialMatch?.userId
     );
 
     // If we have valid matches, get the next one.
-    if (validMatches.length > 0) {
-      console.log("loadNextPotentialMatch(): Loading next potential match...");
-      // Determine the index of the current match within validMatches.
-      const currentValidIndex = currentPotentialMatch
-        ? validMatches.findIndex(
-            (match) => match.userId === currentPotentialMatch.userId
-          )
-        : -1;
-
-      // Get the next valid match.
-      const nextValidMatch =
-        validMatches[currentValidIndex + 1] || validMatches[0];
-
-      // Find its index in the full potentialMatches array (for consistency).
+    if (valid.length > currentIdx + 1) {
+      const next = valid[currentIdx + 1];
       const fullIndex = potentialMatches.findIndex(
-        (match) => match.userId === nextValidMatch.userId
+        (m) => m.userId === next.userId
       );
-
-      setCurrentPotentialMatch(nextValidMatch);
+      setCurrentPotentialMatch(next);
       setCurrentPotentialMatchIndex(fullIndex);
     } else if (!noMoreMatches || !loadingNextBatch) {
       // If no valid matches exist, fetch a new batch.
@@ -867,6 +897,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       console.log("loadNextPotentialMatch(): No more matches to load.");
     }
+  };
+
+  const likeMatch = async (matchId: string): Promise<void> => {
+    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
+    // loadNextPotentialMatch();
+
+    const newLikes = [...(userData.likedMatches ?? []), matchId];
+    return updateUserData({ likedMatches: newLikes }).catch((err) => {
+      console.error("Could not update likedMatches:", err);
+      throw err;
+    });
+  };
+
+  const dislikeMatch = async (matchId: string): Promise<void> => {
+    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
+    // loadNextPotentialMatch();
+
+    const newDislikes = [...(userData.dislikedMatches ?? []), matchId];
+    return updateUserData({ dislikedMatches: newDislikes }).catch((err) => {
+      console.error("Could not update dislikedMatches:", err);
+      // rethrow if you want ConnectScreen to know about it
+      throw err;
+    });
   };
 
   const fetchDetailedLikes = async () => {
@@ -928,85 +981,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const milesToKm = (miles: number) => miles * 1.60934;
-
-  const fetchRadiantSouls = async () => {
-    try {
-      const userId = userData.userId;
-      if (!userId) {
-        console.error("No userId found in userData.");
-        return [];
-      }
-
-      const userLatitude = userData.latitude;
-      const userLongitude = userData.longitude;
-      const {
-        preferredAgeRange,
-        preferredHeightRange,
-        preferredEthnicities,
-        preferredDistance = 100,
-      } = userData.matchPreferences || {};
-
-      const preferredDistanceKm = milesToKm(preferredDistance);
-
-      console.log("User Preferences:", userData.matchPreferences);
-
-      // Base query: Exclude current user
-      let userQuery = query(
-        collection(FIRESTORE, "users"),
-        // orderBy("likesReceived", "desc"),
-        limit(50)
-      );
-
-      // Add optional filters
-      // if (preferredAgeRange?.min && preferredAgeRange?.max) {
-      //   userQuery = query(
-      //     userQuery,
-      //     where("age", ">=", preferredAgeRange.min),
-      //     where("age", "<=", preferredAgeRange.max)
-      //   );
-      // }
-
-      // if (preferredHeightRange?.min && preferredHeightRange?.max) {
-      //   userQuery = query(
-      //     userQuery,
-      //     where("height", ">=", preferredHeightRange.min),
-      //     where("height", "<=", preferredHeightRange.max)
-      //   );
-      // }
-
-      // if (preferredEthnicities && preferredEthnicities.length > 0) {
-      //   userQuery = query(
-      //     userQuery,
-      //     where("ethnicities", "array-contains-any", preferredEthnicities)
-      //   );
-      // }
-
-      // Execute query
-      const querySnapshot = await getDocs(userQuery);
-      let radiantSouls = querySnapshot.docs.map((doc) => doc.data());
-
-      // Filter by distance
-      // if (userLatitude !== undefined && userLongitude !== undefined) {
-      //   radiantSouls = radiantSouls.filter((soul) => {
-      //     const { latitude, longitude } = soul;
-      //     if (!latitude || !longitude) return false;
-
-      //     const distance = calculateHaversineDistance(
-      //       userLatitude,
-      //       userLongitude,
-      //       latitude,
-      //       longitude
-      //     );
-      //     return distance <= preferredDistanceKm;
-      //   });
-      // }
-
-      return radiantSouls.slice(0, 10); // Limit to 10 for UI display
-    } catch (error) {
-      console.error("Error fetching Radiant Souls:", error);
-      return [];
-    }
-  };
 
   // Haversine formula for distance calculation
   const calculateHaversineDistance = (
@@ -1119,71 +1093,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error) {
       console.error("Error fetching image URL:", error);
       return null;
-    }
-  };
-
-  const likeMatch = async (matchId: string) => {
-    // Build an exclusion set from userData
-    const excludedSet = new Set([
-      userData?.userId,
-      ...(userData?.likedMatches || []),
-      ...(userData?.dislikedMatches || []),
-      ...(userData?.matches || []),
-    ]);
-
-    // If the match is already excluded, do nothing.
-    if (excludedSet.has(matchId)) {
-      console.log("likeMatch(): This match is already excluded.");
-      return;
-    }
-
-    try {
-      const updatedLikedMatches = new Set([
-        ...(userData.likedMatches || []),
-        matchId,
-      ]);
-
-      await updateUserData({
-        likedMatches: Array.from(updatedLikedMatches),
-      });
-
-      console.log(`Liked match: ${matchId}`);
-
-      // Remove the liked match from the potentialMatches array.
-      setPotentialMatches((prevMatches) =>
-        prevMatches.filter((match) => match.userId !== matchId)
-      );
-
-      // Load the next potential match.
-      loadNextPotentialMatch();
-    } catch (error) {
-      console.error("Failed to like match: ", error);
-    }
-  };
-
-  const dislikeMatch = async (matchId: string) => {
-    // Optionally, prevent processing if match is already excluded.
-    const excludedSet = new Set([
-      userData?.userId,
-      ...(userData?.likedMatches || []),
-      ...(userData?.dislikedMatches || []),
-      ...(userData?.matches || []),
-    ]);
-    if (excludedSet.has(matchId)) {
-      console.log("handleDislike(): This match is already excluded.");
-      return;
-    }
-
-    try {
-      await dislikeMatch(matchId);
-      // Remove the match from potentialMatches.
-      setPotentialMatches((prevMatches) =>
-        prevMatches.filter((match) => match.userId !== matchId)
-      );
-      // Then load the next potential match.
-      loadNextPotentialMatch();
-    } catch (error) {
-      console.error("handleDislike(): Error disliking match:", matchId, error);
     }
   };
 

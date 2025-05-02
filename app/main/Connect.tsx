@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  TouchableOpacity,
-  ActivityIndicator,
-  Text,
-  ScrollView,
-} from "react-native";
+import { View, TouchableOpacity, Text, ScrollView } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import PotentialMatch from "@/components/PotentialMatch";
 import { useUserContext } from "@/context/UserContext";
 import styles from "@/styles/Main/ConnectStyles";
 import { Link } from "expo-router";
 import FilterModal from "@/components/modals/FiltersModal";
+import LottieView from "lottie-react-native";
+import circleAnimation from "../../assets/animations/black-circle.json";
 
 const ConnectScreen: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
   const [showHeightModal, setShowHeightModal] = useState<boolean>(false);
+
   const {
+    likeMatch,
     dislikeMatch,
     currentPotentialMatch,
     loadNextPotentialMatch,
@@ -28,7 +26,7 @@ const ConnectScreen: React.FC = () => {
     resetPotentialMatches,
   } = useUserContext();
 
-  const [ageRange, setAgeRange] = useState([18, 50]);
+  const [ageRange, setAgeRange] = useState([18, 70]);
   const [originalAgeRange, setOriginalAgeRange] = useState([18, 50]);
   const [datePreferences, setDatePreferences] = useState<string[]>(
     userData?.matchPreferences?.datePreferences || []
@@ -39,14 +37,13 @@ const ConnectScreen: React.FC = () => {
 
   const [heightRange, setHeightRange] = useState([3, 8]);
   const [originalHeightRange, setOriginalHeightRange] = useState([3, 8]);
-  const [isDislikeLoading, setIsDislikeLoading] = useState(false);
-  const fullCircleSubscription = userData?.fullCircleSubscription ?? false;
 
-  useEffect(() => {
-    if (!currentPotentialMatch) {
-      loadNextPotentialMatch();
-    }
-  }, [currentPotentialMatch]);
+  const [isDislikeLoading, setIsDislikeLoading] = useState(false);
+
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
+  const [animationFinished, setAnimationFinished] = useState(false);
+
+  const [isPhotoLoading, setIsPhotoLoading] = useState(true);
 
   useEffect(() => {
     if (!userData.detailedLikesReceived) {
@@ -54,6 +51,37 @@ const ConnectScreen: React.FC = () => {
     }
   }, [userData]);
 
+  const handleLike = async (userId: string) => {
+    setShowLikeAnimation(true);
+    setAnimationFinished(false);
+    try {
+      await likeMatch(userId);
+    } catch (err) {
+      console.error("Like failed:", err);
+      setShowLikeAnimation(false);
+      return;
+    }
+    loadNextPotentialMatch();
+  };
+
+  const handleAnimationFinish = () => {
+    setAnimationFinished(true);
+  };
+
+  useEffect(() => {
+    if (animationFinished && !isPhotoLoading) {
+      setShowLikeAnimation(false);
+      setAnimationFinished(false);
+    }
+  }, [animationFinished, isPhotoLoading]);
+
+  useEffect(() => {
+    if (currentPotentialMatch) {
+      setIsPhotoLoading(true);
+    }
+  }, [currentPotentialMatch]);
+
+  // sync preferences into local state
   const updateMatchPreferences = (preferences: {
     preferredAgeRange?: { min?: number; max?: number };
     datePreferences?: string[];
@@ -61,22 +89,22 @@ const ConnectScreen: React.FC = () => {
     preferredHeightRange?: { min?: number; max?: number };
   }) => {
     setAgeRange([
-      preferences?.preferredAgeRange?.min || 18,
-      preferences?.preferredAgeRange?.max || 35,
+      preferences?.preferredAgeRange?.min ?? 18,
+      preferences?.preferredAgeRange?.max ?? 35,
     ]);
     setOriginalAgeRange([
-      preferences?.preferredAgeRange?.min || 18,
-      preferences?.preferredAgeRange?.max || 35,
+      preferences?.preferredAgeRange?.min ?? 18,
+      preferences?.preferredAgeRange?.max ?? 35,
     ]);
-    setDatePreferences(preferences?.datePreferences || []);
-    setPreferredEthnicities(preferences?.preferredEthnicities || []);
+    setDatePreferences(preferences?.datePreferences ?? []);
+    setPreferredEthnicities(preferences?.preferredEthnicities ?? []);
     setHeightRange([
-      preferences?.preferredHeightRange?.min || 3,
-      preferences?.preferredHeightRange?.max || 8,
+      preferences?.preferredHeightRange?.min ?? 3,
+      preferences?.preferredHeightRange?.max ?? 8,
     ]);
     setOriginalHeightRange([
-      preferences?.preferredHeightRange?.min || 3,
-      preferences?.preferredHeightRange?.max || 8,
+      preferences?.preferredHeightRange?.min ?? 3,
+      preferences?.preferredHeightRange?.max ?? 8,
     ]);
   };
 
@@ -87,7 +115,7 @@ const ConnectScreen: React.FC = () => {
   }, [userData]);
 
   const handleApplyAgeFilter = async () => {
-    if (!userData || !userData.userId) {
+    if (!userData?.userId) {
       console.error("User ID is missing. Cannot apply filter.");
       return;
     }
@@ -96,12 +124,12 @@ const ConnectScreen: React.FC = () => {
       userId: userData.userId,
       matchPreferences: {
         preferredAgeRange: { min: ageRange[0], max: ageRange[1] },
-        datePreferences: datePreferences,
-        preferredDistance: userData.matchPreferences?.preferredDistance || 100,
+        datePreferences,
+        preferredDistance: userData.matchPreferences?.preferredDistance ?? 100,
         preferredEthnicities:
-          userData.matchPreferences?.preferredEthnicities || [],
+          userData.matchPreferences?.preferredEthnicities ?? [],
         desiredRelationship:
-          userData.matchPreferences?.desiredRelationship || "",
+          userData.matchPreferences?.desiredRelationship ?? "",
         preferredHeightRange: {
           min: heightRange[0],
           max: heightRange[1],
@@ -111,7 +139,6 @@ const ConnectScreen: React.FC = () => {
 
     try {
       await updateUserData(updatedData);
-      console.log("Filter applied:", updatedData);
       await resetPotentialMatches();
       setShowFilterModal(false);
       setShowHeightModal(false);
@@ -126,8 +153,34 @@ const ConnectScreen: React.FC = () => {
     heightRange[0] === originalHeightRange[0] &&
     heightRange[1] === originalHeightRange[1];
 
+  const isLoading =
+    loadingNextBatch || !currentPotentialMatch || isPhotoLoading;
+
   return (
     <View style={styles.container}>
+      {!noMoreMatches && isLoading && (
+        <View style={styles.loadingOverlay}>
+          <LottieView
+            source={circleAnimation}
+            autoPlay
+            loop
+            style={styles.loadingAnimation}
+          />
+        </View>
+      )}
+
+      {showLikeAnimation && (
+        <View style={styles.animationContainer}>
+          <LottieView
+            source={require("../../assets/animations/like.json")}
+            autoPlay
+            loop={false}
+            onAnimationFinish={handleAnimationFinish}
+            style={styles.animation}
+          />
+        </View>
+      )}
+
       {noMoreMatches ? (
         <View style={styles.noMatchesContainer}>
           <Text style={styles.noMatchesText}>No more matches available</Text>
@@ -148,7 +201,8 @@ const ConnectScreen: React.FC = () => {
           </Link>
         </View>
       ) : (
-        <View>
+        <>
+          {/* top tabs */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -158,7 +212,7 @@ const ConnectScreen: React.FC = () => {
               href={{ pathname: "/user/DatingPreferences" }}
               style={styles.slider}
             >
-              <Icon name="sliders" size={24} color={"black"} />
+              <Icon name="sliders" size={24} color="black" />
             </Link>
             <TouchableOpacity
               style={[styles.tab, styles.activeTab]}
@@ -168,7 +222,7 @@ const ConnectScreen: React.FC = () => {
               <Icon
                 name="chevron-down"
                 size={12}
-                color={"#7E7972"}
+                color={styles.caretIcon.color}
                 style={styles.caretIcon}
               />
             </TouchableOpacity>
@@ -180,7 +234,7 @@ const ConnectScreen: React.FC = () => {
               <Icon
                 name="chevron-down"
                 size={12}
-                color={"#7E7972"}
+                color={styles.caretIcon.color}
                 style={styles.caretIcon}
               />
             </TouchableOpacity>
@@ -201,48 +255,43 @@ const ConnectScreen: React.FC = () => {
             </Link>
           </ScrollView>
 
+          {/* match card */}
           <ScrollView
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.matchContainer}>
-              {loadingNextBatch || !currentPotentialMatch ? (
-                <ActivityIndicator
-                  size="large"
-                  color="black"
-                  style={styles.loadingIndicator}
+              {currentPotentialMatch && (
+                <PotentialMatch
+                  currentPotentialMatch={currentPotentialMatch}
+                  isMatched={false}
+                  onLike={handleLike}
+                  disableInteractions={showLikeAnimation}
+                  onPhotosLoaded={() => setIsPhotoLoading(false)}
                 />
-              ) : (
-                <PotentialMatch currentPotentialMatch={currentPotentialMatch} />
               )}
             </View>
           </ScrollView>
-        </View>
+        </>
       )}
 
-      {!loadingNextBatch && !noMoreMatches && (
-        <TouchableOpacity
-          onPress={() => {
-            if (!isDislikeLoading) {
+      {!showLikeAnimation &&
+        !isLoading &&
+        !noMoreMatches &&
+        currentPotentialMatch && (
+          <TouchableOpacity
+            onPress={() => {
+              if (isDislikeLoading) return;
               setIsDislikeLoading(true);
-              dislikeMatch(currentPotentialMatch.userId)
-                .then(() => {
-                  loadNextPotentialMatch();
-                })
-                .finally(() => {
-                  setIsDislikeLoading(false);
-                });
-            }
-          }}
-          style={styles.dislikeButton}
-        >
-          {isDislikeLoading ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
+              dislikeMatch(currentPotentialMatch.userId).finally(() =>
+                setIsDislikeLoading(false)
+              );
+            }}
+            style={styles.dislikeButton}
+          >
             <Icon name="times" style={styles.dislikeIcon} />
-          )}
-        </TouchableOpacity>
-      )}
+          </TouchableOpacity>
+        )}
 
       {/* Age Filter Modal */}
       <FilterModal
@@ -251,7 +300,7 @@ const ConnectScreen: React.FC = () => {
         description="Select the range you're open to meeting"
         values={ageRange}
         min={18}
-        max={90}
+        max={70}
         onValuesChange={setAgeRange}
         formattedRange={`Age Range: ${ageRange[0]} - ${ageRange[1]}`}
         onClose={() => setShowFilterModal(false)}
@@ -260,6 +309,7 @@ const ConnectScreen: React.FC = () => {
         styles={styles}
       />
 
+      {/* Height Filter Modal */}
       <FilterModal
         visible={showHeightModal}
         title="Height"
@@ -268,8 +318,8 @@ const ConnectScreen: React.FC = () => {
         min={3}
         max={8}
         step={0.1}
-        onValuesChange={(values) =>
-          setHeightRange(values.map((val) => parseFloat(val.toFixed(1))))
+        onValuesChange={(vals) =>
+          setHeightRange(vals.map((v) => parseFloat(v.toFixed(1))))
         }
         formattedRange={`Height Range: ${heightRange[0].toFixed(
           1

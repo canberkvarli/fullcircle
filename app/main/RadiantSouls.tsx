@@ -88,6 +88,7 @@ const RadiantSouls = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 40,
     backgroundColor: "#EDE9E3",
     padding: 16,
   },

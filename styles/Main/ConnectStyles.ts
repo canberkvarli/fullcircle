@@ -8,6 +8,7 @@ const darkNeutral = "#7E7972";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 40,
     padding: 16,
     backgroundColor: primaryColor,
   },
@@ -85,6 +86,7 @@ const styles = StyleSheet.create({
   },
   caretIcon: {
     marginLeft: 5,
+    color: "#7E7972",
   },
   activeTab: {
     borderWidth: 2,
@@ -269,6 +271,29 @@ const styles = StyleSheet.create({
     color: darkNeutral,
     fontWeight: "bold",
     fontSize: 16,
+  },
+
+  animationContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+    zIndex: 11,
+  },
+  animation: {
+    width: 250,
+    height: 250,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    zIndex: 10,
+  },
+  loadingAnimation: {
+    width: 200,
+    height: 200,
   },
 });
 

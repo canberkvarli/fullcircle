@@ -133,34 +133,37 @@ const getGenderSpecificPhotos = async (
   count: number,
   page: number
 ): Promise<string[]> => {
+  const lower = gender.toLowerCase();
   let query: string;
-  // Use a simple mapping for gender-specific queries
-  if (gender.toLowerCase().includes("man")) {
-    query = "handsome man";
-  } else if (gender.toLowerCase().includes("woman")) {
+
+  // check exact/trans first so “woman” doesn’t match the “man” branch
+  if (lower === "woman" || lower === "trans woman") {
     query = "beautiful woman";
+  } else if (lower === "man" || lower === "trans man") {
+    query = "handsome man";
   } else if (
-    gender.toLowerCase().includes("non-binary") ||
-    gender.toLowerCase().includes("genderqueer") ||
-    gender.toLowerCase().includes("agender")
+    [
+      "non-binary",
+      "genderqueer",
+      "agender",
+      "two-spirit",
+      "genderfluid",
+      "other",
+    ].includes(lower)
   ) {
     query = "non-binary model";
   } else {
-    query = "beautiful person";
+    query = "portrait";
   }
+
+  // now fetch exactly `count` images for that query
   let photos = await fetchUnsplashImages(query, count, page);
   if (photos.length === 0) {
-    console.warn(
-      `No photos found for query "${query}". Falling back to "portrait".`
-    );
+    console.warn(`No photos for "${query}", falling back to generic portrait.`);
     photos = await fetchUnsplashImages("portrait", count, page);
   }
-  // Fallback to a placeholder image if needed
   if (photos.length === 0) {
-    console.warn(
-      "No photos found even with fallback. Using placeholder images."
-    );
-    photos = Array(count).fill("https://via.placeholder.com/150");
+    return Array(count).fill("https://via.placeholder.com/150");
   }
   return photos;
 };
@@ -413,4 +416,4 @@ const seedFirestore = async (numUsers: number) => {
   console.log(`Finished adding ${numUsers} users with mutual likes.`);
 };
 
-seedFirestore(50).catch(console.error);
+seedFirestore(100).catch(console.error);

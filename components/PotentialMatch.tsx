@@ -1,28 +1,46 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import InfoCard from "@/components/InfoCard";
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
 
-const PotentialMatch = ({
-  currentPotentialMatch,
-  isMatched = false,
-}: {
+type Props = {
   currentPotentialMatch: any;
   isMatched?: boolean;
+  onLike: (userId: string) => void;
+  disableInteractions: boolean;
+  onPhotosLoaded?: () => void;
+};
+
+const PotentialMatch: React.FC<Props> = ({
+  currentPotentialMatch,
+  isMatched = false,
+  onLike,
+  disableInteractions,
+  onPhotosLoaded,
 }) => {
-  const { likeMatch, loadNextPotentialMatch, getImageUrl } = useUserContext();
+  const { getImageUrl } = useUserContext();
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [isPhotoLoading, setIsPhotoLoading] = useState(true);
 
-  // Consolidate info for spreading evenly across photos
+  // once photos load, notify parent and render UI
+  useEffect(() => {
+    const fetchAll = async () => {
+      if (currentPotentialMatch.photos) {
+        const urls = await Promise.all(
+          currentPotentialMatch.photos.map((path: string) => getImageUrl(path))
+        );
+        setPhotoUrls(urls.filter((u): u is string => !!u));
+      }
+      setIsPhotoLoading(false);
+      onPhotosLoaded?.();
+    };
+    fetchAll();
+  }, [currentPotentialMatch, getImageUrl, onPhotosLoaded]);
+
+  // hide until photos done
+  if (isPhotoLoading) return null;
+
   const infoSections = [
     {
       title: "Children Preference",
@@ -34,80 +52,62 @@ const PotentialMatch = ({
     },
     {
       title: "Ethnicities",
-      content: currentPotentialMatch?.ethnicities?.join(", "),
+      content: currentPotentialMatch.ethnicities?.join(", "),
     },
     { title: "Height", content: currentPotentialMatch.height },
     {
       title: "Location",
-      content: `${currentPotentialMatch?.location?.city}, ${currentPotentialMatch?.location?.country}`,
+      content: `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`,
     },
     {
       title: "Sexual Orientation",
-      content: currentPotentialMatch?.sexualOrientation?.join(", "),
+      content: currentPotentialMatch.sexualOrientation?.join(", "),
     },
   ];
 
-  // Calculate the step to evenly distribute info sections
-  const infoStep = Math.ceil(
-    infoSections.length / currentPotentialMatch.photos.length
-  );
-
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      if (currentPotentialMatch && currentPotentialMatch.photos) {
-        const urls = await Promise.all(
-          currentPotentialMatch.photos.map((photoPath: string) =>
-            getImageUrl(photoPath)
-          )
-        );
-        setPhotoUrls(urls.filter((url) => url !== null));
-      }
-      setIsPhotoLoading(false);
-    };
-
-    fetchPhotos();
-  }, [currentPotentialMatch, getImageUrl]);
-
-  const handleLike = async () => {
-    try {
-      await likeMatch(currentPotentialMatch.userId);
-      loadNextPotentialMatch();
-    } catch (error) {
-      console.error("Error liking match: ", error);
-    }
-  };
+  const infoStep = Math.ceil(infoSections.length / photoUrls.length);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.userName}>{currentPotentialMatch.firstName}</Text>
-      <Text style={styles.age}> {currentPotentialMatch.age} </Text>
+      <Text style={styles.userName}>
+        {currentPotentialMatch.firstName}, {currentPotentialMatch.age}
+      </Text>
 
-      {isPhotoLoading ? (
-        <ActivityIndicator size="large" color="black" />
-      ) : (
-        photoUrls.map((url, index) => (
-          <View key={index} style={styles.photoContainer}>
-            <Image source={{ uri: url }} style={styles.photo} />
-            {!isMatched && (
-              <TouchableOpacity style={styles.heartIcon} onPress={handleLike}>
-                <Icon name="heart" size={40} color="black" />
-              </TouchableOpacity>
-            )}
-            {/* Spread info evenly across photos */}
-            {infoSections
-              .slice(index * infoStep, (index + 1) * infoStep)
-              .map((info, i) => (
-                <InfoCard
-                  key={i}
-                  title={info.title}
-                  content={info.content}
-                  currentPotentialMatch={currentPotentialMatch}
-                  isMatched={isMatched}
-                />
-              ))}
-          </View>
-        ))
-      )}
+      {photoUrls.map((url, i) => (
+        <View key={i} style={styles.photoContainer}>
+          <Image source={{ uri: url }} style={styles.photo} />
+
+          {!isMatched && (
+            <TouchableOpacity
+              style={styles.heartIcon}
+              onPress={() =>
+                !disableInteractions && onLike(currentPotentialMatch.userId)
+              }
+              disabled={disableInteractions}
+            >
+              <Icon
+                name="heart"
+                size={40}
+                color={disableInteractions ? "#ccc" : "red"}
+              />
+            </TouchableOpacity>
+          )}
+
+          {infoSections
+            .slice(i * infoStep, (i + 1) * infoStep)
+            .map((info, idx) => (
+              <InfoCard
+                key={idx}
+                title={info.title}
+                content={info.content}
+                currentPotentialMatch={currentPotentialMatch}
+                isMatched={isMatched}
+                onLike={onLike}
+                disableInteractions={disableInteractions}
+              />
+            ))}
+        </View>
+      ))}
     </View>
   );
 };
@@ -120,15 +120,8 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
-    paddingLeft: 30,
-    textAlign: "left",
-  },
-  age: {
-    fontSize: 24,
-    color: "#888",
-    paddingLeft: 30,
     marginBottom: 10,
+    paddingLeft: 30,
   },
   photoContainer: {
     position: "relative",

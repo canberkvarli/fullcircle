@@ -1,59 +1,44 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { useUserContext } from "@/context/UserContext";
 
-const InfoCard = ({
-  title,
-  content,
-  currentPotentialMatch,
-  isMatched = false,
-}: {
+type InfoCardProps = {
   title: string;
   content: string;
   currentPotentialMatch: any;
   isMatched?: boolean;
-}) => {
-  const { likeMatch, loadNextPotentialMatch } = useUserContext();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleLike = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    try {
-      await likeMatch(currentPotentialMatch.userId);
-      loadNextPotentialMatch();
-    } catch (error) {
-      console.error("Error liking match: ", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <View style={styles.infoCard}>
-      <Text style={styles.infoTitle}>{title}</Text>
-      <Text style={styles.infoContent}>{content}</Text>
-      <View style={styles.iconContainer}>
-        {!isMatched && (
-          <TouchableOpacity onPress={handleLike} disabled={isLoading}>
-            {isLoading ? (
-              <ActivityIndicator size="small" color="grey" />
-            ) : (
-              <Icon name="heart" size={30} color="grey" style={styles.icon} />
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+  onLike: (userId: string) => void;
+  disableInteractions: boolean;
 };
+
+const InfoCard: React.FC<InfoCardProps> = ({
+  title,
+  content,
+  currentPotentialMatch,
+  isMatched = false,
+  onLike,
+  disableInteractions,
+}) => (
+  <View style={styles.infoCard}>
+    <Text style={styles.infoTitle}>{title}</Text>
+    <Text style={styles.infoContent}>{content}</Text>
+    {!isMatched && (
+      <TouchableOpacity
+        onPress={() =>
+          !disableInteractions && onLike(currentPotentialMatch.userId)
+        }
+        disabled={disableInteractions}
+        style={styles.iconContainer}
+      >
+        <Icon
+          name="heart"
+          size={30}
+          color={disableInteractions ? "#ccc" : "grey"}
+        />
+      </TouchableOpacity>
+    )}
+  </View>
+);
 
 const styles = StyleSheet.create({
   infoCard: {
