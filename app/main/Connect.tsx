@@ -65,7 +65,6 @@ const ConnectScreen: React.FC = () => {
     }
   }, [currentPotentialMatch]);
 
-
   const handleLike = async (userId: string) => {
     setShowLikeAnimation(true);
     setLikeAnimFinished(false);
@@ -96,17 +95,19 @@ const ConnectScreen: React.FC = () => {
   const handleDislike = async (userId: string) => {
     setShowDislikeAnimation(true);
     setDislikeAnimFinished(false);
+    setIsDislikeLoading(true);
+
     try {
       await dislikeMatch(userId);
+      loadNextPotentialMatch();
     } catch (err) {
       console.error("Dislike failed:", err);
       setShowDislikeAnimation(false);
       return;
+    } finally {
+      setIsDislikeLoading(false);
     }
-    // fetch next immediately
-    loadNextPotentialMatch();
   };
-
   // when dislike.json ends
   const handleDislikeAnimationFinish = () => {
     setDislikeAnimFinished(true);
@@ -235,7 +236,7 @@ const ConnectScreen: React.FC = () => {
         </View>
       )}
 
-      {noMoreMatches ? (
+      {!isLoading && noMoreMatches ? (
         <View style={styles.noMatchesContainer}>
           <Text style={styles.noMatchesText}>No more matches available</Text>
           <Text style={styles.noMatchesSubText}>
@@ -338,11 +339,7 @@ const ConnectScreen: React.FC = () => {
         !noMoreMatches &&
         currentPotentialMatch && (
           <TouchableOpacity
-            onPress={() => {
-              if (isDislikeLoading) return;
-              setIsDislikeLoading(true);
-              handleDislike(currentPotentialMatch.userId);
-            }}
+            onPress={() => handleDislike(currentPotentialMatch.userId)}
             style={styles.dislikeButton}
           >
             <Icon name="times" style={styles.dislikeIcon} />
