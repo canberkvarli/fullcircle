@@ -8,6 +8,7 @@ const darkNeutral = "#7E7972";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 40,
     padding: 16,
     backgroundColor: primaryColor,
   },
