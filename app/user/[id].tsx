@@ -176,6 +176,7 @@ const UserShow: React.FC = () => {
       {/* Fixed header */}
       <View style={styles.headerOverlay}>
         <View style={styles.headerContainer}>
+          {/* TODO FIX THE BACK Button not working properly */}
           <Link href="/main/RadiantSouls" asChild>
             <TouchableOpacity
               hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
@@ -186,19 +187,28 @@ const UserShow: React.FC = () => {
               </View>
             </TouchableOpacity>
           </Link>
-
           <Animated.Text
-            style={[styles.nameCenter, { opacity: headerOpacity }]}
+            style={[
+              styles.nameCenter,
+              { opacity: headerOpacity },
+              !isFromRadiantSouls && {
+                position: "absolute",
+                left: 0,
+                right: 0,
+                textAlign: "center",
+              },
+            ]}
           >
             {currentUser.firstName}
           </Animated.Text>
-
-          <TouchableOpacity style={styles.orbsButton}>
-            <Icon name="pagelines" size={22} color="#D8BFAA" />
-            <Text style={styles.orbsButtonText}>
-              Orbs ({userData.numOfOrbs ?? 0})
-            </Text>
-          </TouchableOpacity>
+          {isFromRadiantSouls && (
+            <TouchableOpacity style={styles.orbsButton}>
+              <Icon name="pagelines" size={22} color="#D8BFAA" />
+              <Text style={styles.orbsButtonText}>
+                Orbs ({userData.numOfOrbs ?? 0})
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
