@@ -15,10 +15,12 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import LottieView from "lottie-react-native";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import leavesAnimation from "../../assets/animations/leaves.json";
+import SlidingTabBar from "@/components/SlidingTabBar";
 
 const HEADER_HEIGHT = 120;
 const HEADER_FADE_START = 80;
 const HEADER_FADE_END = 120;
+const TAB_BAR_HEIGHT = 80;
 
 const UserShow: React.FC = () => {
   const router = useRouter();
@@ -35,7 +37,12 @@ const UserShow: React.FC = () => {
   const [showOrbAnim, setShowOrbAnim] = useState(false);
   const [orbAnimFinished, setOrbAnimFinished] = useState(false);
 
+  // raw scrollY
   const scrollY = useRef(new Animated.Value(0)).current;
+  // tab bar translateY (0 = visible, TAB_BAR_HEIGHT = hidden)
+  const tabTranslateY = useRef(new Animated.Value(TAB_BAR_HEIGHT)).current;
+  // to detect scroll direction
+  const lastY = useRef(0);
 
   useEffect(() => {
     if (isFromRadiantSouls) {
@@ -122,6 +129,36 @@ const UserShow: React.FC = () => {
     extrapolate: "clamp",
   });
 
+  // onScroll handler to track direction & animate tab bar
+  const onScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (e: any) => {
+        const y = e.nativeEvent.contentOffset.y;
+        const dy = y - lastY.current;
+
+        if (dy > 5) {
+          // user scrolling down → show bar
+          Animated.timing(tabTranslateY, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        } else if (dy < -5) {
+          // user scrolling up → hide bar
+          Animated.timing(tabTranslateY, {
+            toValue: TAB_BAR_HEIGHT,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+
+        lastY.current = y;
+      },
+    }
+  );
+
   return (
     <SafeAreaView style={styles.wrapper}>
       {showOrbAnim && (
@@ -136,7 +173,7 @@ const UserShow: React.FC = () => {
         </View>
       )}
 
-      {/* Fixed header with Back, centered name, Orbs */}
+      {/* Fixed header */}
       <View style={styles.headerOverlay}>
         <View style={styles.headerContainer}>
           <Link href="/main/RadiantSouls" asChild>
@@ -168,14 +205,13 @@ const UserShow: React.FC = () => {
       {/* Scrollable content */}
       <Animated.ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.container}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: TAB_BAR_HEIGHT + 20 },
+        ]}
+        onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        {/* Top‑left name, above the first photo */}
         <Animated.Text style={[styles.topName, { opacity: leftNameOpacity }]}>
           {currentUser.firstName}
         </Animated.Text>
@@ -222,6 +258,9 @@ const UserShow: React.FC = () => {
           ))
         )}
       </Animated.ScrollView>
+
+      {/* Sliding, hide/show tab bar */}
+      <SlidingTabBar translateY={tabTranslateY} />
     </SafeAreaView>
   );
 };
@@ -231,7 +270,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#EDE9E3",
   },
-
   headerOverlay: {
     position: "absolute",
     top: 0,
@@ -257,27 +295,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#7E7972",
   },
-
   nameCenter: {
     position: "relative",
-    justifyContent: "center",
     left: 25,
-    right: 0,
     textAlign: "center",
     fontSize: 22,
     fontWeight: "bold",
     color: "#7E7972",
   },
-
   scrollView: {
     flex: 1,
     marginTop: HEADER_HEIGHT,
   },
   container: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
   },
-
   topName: {
     marginLeft: 16,
     marginBottom: 8,
@@ -285,7 +317,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#7E7972",
   },
-
   photoCard: {
     marginBottom: 14,
   },
@@ -295,7 +326,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 12,
   },
-
   overlayIcons: {
     width: "100%",
     alignItems: "flex-end",
@@ -310,12 +340,10 @@ const styles = StyleSheet.create({
     left: 8,
     bottom: 26,
   },
-
   detailCard: {
     backgroundColor: "#f9f9f9",
     borderRadius: 10,
     padding: 40,
-    // marginTop: 20,
     borderWidth: 1,
     borderColor: "#ddd",
     position: "relative",
@@ -340,7 +368,6 @@ const styles = StyleSheet.create({
     color: "gray",
     marginTop: 8,
   },
-
   orbsButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -355,7 +382,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#7E7972",
   },
-
   animOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end",
