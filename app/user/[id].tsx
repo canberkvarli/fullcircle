@@ -1,199 +1,373 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Image,
   Dimensions,
+  SafeAreaView,
+  Animated,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { useUserContext } from "@/context/UserContext";
+import LottieView from "lottie-react-native";
+import { useUserContext, UserDataType } from "@/context/UserContext";
+import leavesAnimation from "../../assets/animations/leaves.json";
+
+const HEADER_HEIGHT = 120;
+const HEADER_FADE_START = 80;
+const HEADER_FADE_END = 120;
 
 const UserShow: React.FC = () => {
-  const { user, isFromRadiantSouls, isFromKindredSpirits } =
-    useLocalSearchParams();
   const router = useRouter();
+  const { user: userParam, isFromRadiantSouls } = useLocalSearchParams();
+  const initialUser: UserDataType = JSON.parse(userParam as string);
+  const { getImageUrl, orbLike, fetchRadiantSouls, userData } =
+    useUserContext();
+
+  const [souls, setSouls] = useState<UserDataType[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentUser, setCurrentUser] = useState<UserDataType>(initialUser);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const { likeMatch, getImageUrl } = useUserContext();
-  const userData = JSON.parse(user as string);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [showOrbAnim, setShowOrbAnim] = useState(false);
+  const [orbAnimFinished, setOrbAnimFinished] = useState(false);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const fetchPhotos = async () => {
-      setLoading(true);
-      if (userData.photos && userData.photos.length > 0) {
-        const urls = await Promise.all(
-          userData.photos.map((photoPath: string) => {
-            return getImageUrl(photoPath);
-          })
-        );
-        const filteredUrls = urls.filter((url) => url !== null) as string[];
-        setPhotoUrls(filteredUrls);
-      } else {
-        console.log(`No photos available for user ${userData.userId}.`);
-      }
-      setLoading(false);
-    };
-    fetchPhotos();
-  }, [user, getImageUrl]);
+    if (isFromRadiantSouls) {
+      fetchRadiantSouls().then((list) => {
+        setSouls(list);
+        const idx = list.findIndex((u) => u.userId === initialUser.userId);
+        setCurrentIndex(idx >= 0 ? idx : 0);
+      });
+    }
+  }, []);
 
-  const handleHeartPress = () => {
-    likeMatch(userData.userId);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoadingPhotos(true);
+      if (currentUser.photos?.length) {
+        const urls = await Promise.all(
+          currentUser.photos.map((p) => getImageUrl(p))
+        );
+        if (active) setPhotoUrls(urls.filter((u): u is string => !!u));
+      }
+      setLoadingPhotos(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (orbAnimFinished && !loadingPhotos) {
+      setShowOrbAnim(false);
+      setOrbAnimFinished(false);
+      const next = currentIndex + 1;
+      if (souls[next]) {
+        setCurrentIndex(next);
+        setCurrentUser(souls[next]);
+      } else {
+        router.back();
+      }
+    }
+  }, [orbAnimFinished, loadingPhotos]);
+
+  const handleOrbLike = async () => {
+    if ((userData.numOfOrbs ?? 0) < 1) return;
+    setShowOrbAnim(true);
+    setOrbAnimFinished(false);
+    try {
+      await orbLike(currentUser.userId);
+    } catch {
+      setShowOrbAnim(false);
+    }
   };
 
   const details = [
-    { title: "Gender", content: userData.gender || "N/A" },
-    { title: "Height", content: userData.height || "N/A" },
+    { title: "Gender", content: userData?.gender?.join(", ") ?? "N/A" },
+    { title: "Height", content: `${userData?.height ?? "N/A"}` },
     {
       title: "Ethnicities",
-      content: userData.ethnicities?.join(", ") || "N/A",
+      content: userData?.ethnicities?.join(", ") ?? "N/A",
     },
     {
       title: "Sexual Orientation",
-      content: userData.sexualOrientation?.join(", ") || "N/A",
+      content: userData?.sexualOrientation?.join(", ") ?? "N/A",
     },
     {
       title: "Date Preferences",
-      content: userData.matchPreferences.datePreferences?.join(", ") || "N/A",
+      content: userData?.matchPreferences?.datePreferences?.join(", ") ?? "N/A",
     },
     {
-      title: "Children Preference",
-      content: userData.childrenPreference || "N/A",
+      title: "Children Preferences",
+      content: userData?.matchPreferences?.childrenPreference ?? "N/A",
     },
-    {
-      title: "Education Degree",
-      content: userData.educationDegree || "N/A",
-    },
+    { title: "Education", content: userData?.educationDegree ?? "N/A" },
   ];
 
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [HEADER_FADE_START, HEADER_FADE_END],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+  const leftNameOpacity = scrollY.interpolate({
+    inputRange: [HEADER_FADE_START, HEADER_FADE_END],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
   return (
-    <ScrollView style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Icon name="chevron-left" size={24} color="#7E7972" />
-      </TouchableOpacity>
+    <SafeAreaView style={styles.wrapper}>
+      {showOrbAnim && (
+        <View style={styles.animOverlay}>
+          <LottieView
+            source={leavesAnimation}
+            autoPlay
+            loop={false}
+            onAnimationFinish={() => setOrbAnimFinished(true)}
+            style={styles.animation}
+          />
+        </View>
+      )}
 
-      <Text style={styles.nameText}>{userData.firstName || "Unknown"}</Text>
-      <Text style={styles.nameText}>{userData.age}</Text>
-      <Text style={styles.locationText}>
-        {userData.location?.city || "Unknown city"},{" "}
-        {userData.location?.country || "Unknown country"}
-      </Text>
+      {/* Fixed header with Back, centered name, Orbs */}
+      <View style={styles.headerOverlay}>
+        <View style={styles.headerContainer}>
+          <Link href="/main/RadiantSouls" asChild>
+            <TouchableOpacity
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
+              <View style={styles.backInner}>
+                <Icon name="chevron-left" size={20} color="#7E7972" />
+                <Text style={styles.backText}>Back</Text>
+              </View>
+            </TouchableOpacity>
+          </Link>
 
-      <View style={styles.contentContainer}>
-        {loading ? (
+          <Animated.Text
+            style={[styles.nameCenter, { opacity: headerOpacity }]}
+          >
+            {currentUser.firstName}
+          </Animated.Text>
+
+          <TouchableOpacity style={styles.orbsButton}>
+            <Icon name="pagelines" size={22} color="#D8BFAA" />
+            <Text style={styles.orbsButtonText}>
+              Orbs ({userData.numOfOrbs ?? 0})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Scrollable content */}
+      <Animated.ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+      >
+        {/* Top‑left name, above the first photo */}
+        <Animated.Text style={[styles.topName, { opacity: leftNameOpacity }]}>
+          {currentUser.firstName}
+        </Animated.Text>
+
+        {loadingPhotos ? (
           <ActivityIndicator size="large" color="#D8BFAA" />
-        ) : photoUrls.length > 0 ? (
-          photoUrls.map((photo, index) => (
-            <View key={index} style={styles.cardWrapper}>
-              <View>
-                <Image
-                  source={{ uri: photo }}
-                  style={styles.photo}
-                  resizeMode="cover"
-                />
+        ) : (
+          photoUrls.map((uri, i) => (
+            <View key={i} style={styles.photoCard}>
+              <Image source={{ uri }} style={styles.photo} />
+
+              <View style={styles.overlayIcons}>
                 <TouchableOpacity
-                  style={styles.iconWrapper}
-                  onPress={handleHeartPress}
+                  disabled={(userData.numOfOrbs ?? 0) < 1}
+                  onPress={handleOrbLike}
+                  style={styles.orbActionBtn}
                 >
-                  {isFromKindredSpirits && (
-                    <Icon name="heart" size={40} color="red" />
-                  )}
-                  {isFromRadiantSouls && (
-                    <Icon name="pagelines" size={40} color="#D8BFAA" />
-                  )}
+                  <Icon
+                    name="pagelines"
+                    size={28}
+                    color={(userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"}
+                  />
                 </TouchableOpacity>
               </View>
 
-              {index < details.length && (
-                <View style={styles.detailsContainer}>
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>
-                      {details[index].title}:
-                    </Text>
-                    <Text style={styles.cardContent}>
-                      {details[index].content}
-                    </Text>
-                  </View>
+              <View style={styles.detailCard}>
+                <View style={styles.overlayIconsDetail}>
+                  <TouchableOpacity
+                    disabled={(userData.numOfOrbs ?? 0) < 1}
+                    onPress={handleOrbLike}
+                    style={styles.orbDetailBtn}
+                  >
+                    <Icon
+                      name="pagelines"
+                      size={28}
+                      color={(userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"}
+                    />
+                  </TouchableOpacity>
                 </View>
-              )}
+                <Text style={styles.detailTitle}>{details[i].title}:</Text>
+                <Text style={styles.detailText}>{details[i].content}</Text>
+              </View>
             </View>
           ))
-        ) : (
-          <Text style={styles.errorText}>No photos available</Text>
         )}
-      </View>
-    </ScrollView>
+      </Animated.ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    // marginTop: 25,
-    padding: 16,
+  wrapper: {
+    flex: 1,
     backgroundColor: "#EDE9E3",
   },
-  backButton: {
-    marginBottom: 16,
-    marginLeft: 20,
+
+  headerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HEADER_HEIGHT,
+    backgroundColor: "#EDE9E3",
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    zIndex: 10,
   },
-  nameText: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    color: "#7E7972",
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  locationText: {
+  backInner: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backText: {
+    marginLeft: 6,
     fontSize: 16,
-    textAlign: "center",
     color: "#7E7972",
-    marginBottom: 16,
   },
-  contentContainer: {
-    marginTop: 20,
+
+  nameCenter: {
+    position: "relative",
+    justifyContent: "center",
+    left: 25,
+    right: 0,
+    textAlign: "center",
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#7E7972",
   },
-  cardWrapper: {
-    marginBottom: 20,
+
+  scrollView: {
+    flex: 1,
+    marginTop: HEADER_HEIGHT,
+  },
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+
+  topName: {
+    marginLeft: 16,
+    marginBottom: 8,
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#7E7972",
+  },
+
+  photoCard: {
+    marginBottom: 14,
   },
   photo: {
     width: Dimensions.get("window").width - 32,
     height: 400,
     borderRadius: 20,
+    marginBottom: 12,
   },
-  detailsContainer: {
-    marginTop: 10,
+
+  overlayIcons: {
+    width: "100%",
+    alignItems: "flex-end",
+    marginTop: -48,
+    paddingRight: 16,
+    zIndex: 10,
   },
-  card: {
+  orbActionBtn: {
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 24,
+    padding: 12,
+    left: 8,
+    bottom: 26,
+  },
+
+  detailCard: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    padding: 40,
+    // marginTop: 20,
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#f9f9f9",
+    position: "relative",
   },
-  cardTitle: {
+  overlayIconsDetail: {
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  orbDetailBtn: {
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 24,
+    padding: 12,
+  },
+  detailTitle: {
     fontSize: 18,
     fontWeight: "bold",
   },
-  cardContent: {
+  detailText: {
     fontSize: 16,
     color: "gray",
-    marginTop: 5,
+    marginTop: 8,
   },
-  iconWrapper: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: 20,
-    padding: 10,
+
+  orbsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+    borderRadius: 25,
   },
-  errorText: {
-    textAlign: "center",
-    fontSize: 16,
-    color: "#D8BFAA",
+  orbsButtonText: {
+    marginLeft: 8,
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#7E7972",
+  },
+
+  animOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    backgroundColor: "transparent",
+    pointerEvents: "none",
+    paddingBottom: 20,
+  },
+  animation: {
+    width: Dimensions.get("window").width * 1.3,
+    height: Dimensions.get("window").height * 0.6,
+    transform: [{ scale: 1.2 }],
   },
 });
 

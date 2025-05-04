@@ -36,6 +36,7 @@ export type UserDataType = {
   lastActive?: any;
   isSeedUser: boolean;
   isRadiantSoul?: boolean;
+  numOfOrbs?: number;
   currentOnboardingScreen: string;
   phoneNumber: string;
   verificationId?: string | null;
@@ -153,6 +154,7 @@ type UserContextType = {
   signOut: () => Promise<void>;
   completeOnboarding: () => void;
   likeMatch: (matchId: string) => any;
+  orbLike: (matchId: string) => Promise<void>;
   dislikeMatch: (matchId: string) => any;
   currentPotentialMatch: UserDataType | null;
   setCurrentPotentialMatch: React.Dispatch<React.SetStateAction<any>>;
@@ -213,6 +215,7 @@ const initialUserData: UserDataType = {
   userId: "",
   lastActive: null,
   isSeedUser: false,
+  numOfOrbs: 1,
   phoneNumber: "",
   email: "",
   firstName: "",
@@ -922,6 +925,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const orbLike = async (matchId: string): Promise<void> => {
+    // 1) decrement orbs locally & in Firestore
+    const newOrbCount = (userData.numOfOrbs ?? 0) - 1;
+    await updateUserData({ numOfOrbs: newOrbCount });
+
+    // 2) add to likedMatches (so they see you first)
+    const newLikes = [...(userData.likedMatches ?? []), matchId];
+    await updateUserData({ likedMatches: newLikes });
+  };
+
   const fetchDetailedLikes = async () => {
     if (!userData?.likesReceived) return;
 
@@ -1310,6 +1323,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     signOut,
     completeOnboarding,
     likeMatch,
+    orbLike,
     dislikeMatch,
     currentPotentialMatch,
     setCurrentPotentialMatch,
