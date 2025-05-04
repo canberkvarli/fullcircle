@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { useRouter } from "expo-router";
@@ -29,6 +30,7 @@ import {
   updateDoc,
   arrayUnion,
   Unsubscribe,
+  writeBatch,
 } from "@react-native-firebase/firestore";
 
 export type UserDataType = {
@@ -80,10 +82,8 @@ export type UserDataType = {
     subregion?: string;
   };
   fullCircleSubscription: boolean;
-  likedMatches?: string[];
-  dislikedMatches?: string[];
-  likesReceived?: string[];
-  detailedLikesReceived?: any[];
+  likesGivenCount?: number;
+  likesReceivedCount?: number;
   matches?: string[];
   onboardingCompleted?: boolean;
   matchPreferences?: {
@@ -120,6 +120,17 @@ export type MatchPreferencesType = {
   desiredRelationship?: string;
   preferredSpiritualPractices?: string[];
 };
+
+export interface LikeRecord {
+  matchId: string;
+  viaOrb: boolean;
+  timestamp: FirebaseFirestore.Timestamp;
+}
+
+export interface DislikeRecord {
+  matchId: string;
+  timestamp: FirebaseFirestore.Timestamp;
+}
 
 type UserContextType = {
   currentOnboardingScreen: string;
@@ -181,11 +192,15 @@ type UserContextType = {
   markChatAsRead: (chatId: string, userId: string) => Promise<void>;
   fetchChatMatches: (userId: string) => Promise<any[]>;
   fetchRadiantSouls: () => Promise<any[]>;
-  fetchDetailedLikes: () => void;
   fetchPotentialMatches: () => void;
   resetPotentialMatches: () => void;
   getImageUrl: (imagePath: string) => Promise<string | null>;
+  getReceivedLikesDetailed: () => Promise<any[]>;
   noMoreMatches: boolean;
+  likesGivenCount?: number;
+  likesReceivedCount?: number;
+  dislikesGivenCount?: number;
+  dislikesReceivedCount?: number;
 };
 
 // Initial screens and initial user data
@@ -229,7 +244,6 @@ const initialUserData: UserDataType = {
   currentOnboardingScreen: initialScreens[0],
   hiddenFields: {},
   fullCircleSubscription: false,
-  likesReceived: [],
   matchPreferences: {
     preferredAgeRange: {
       min: 18,
@@ -256,6 +270,7 @@ export const useUserContext = () => {
   }
   return context;
 };
+const imageCache: Record<string, string | Promise<string | null>> = {};
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -284,24 +299,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLinking, setIsLinking] = useState(false);
   const userDataRef = useRef(userData);
   const router = useRouter();
-  const imageCache: Record<string, string> = {};
   const webClientId =
     "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com";
   GoogleSignin.configure({
     webClientId,
     offlineAccess: false,
   });
+  const [excludedLikes, setExcludedLikes] = useState<Set<string>>(new Set());
+  const [excludedDislikes, setExcludedDislikes] = useState<Set<string>>(
+    new Set()
+  );
+  const WEEKLY_ORB_ALLOWANCE = 1;
 
   useEffect(() => {
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
     return subscriber;
   }, []);
-
-  useEffect(() => {
-    if (userData?.likesReceived) {
-      fetchDetailedLikes();
-    }
-  }, [userData.likesReceived]);
 
   // Use AppState to track changes in the app state (background/foreground)
   useEffect(() => {
@@ -353,6 +366,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       fetchPotentialMatches();
     }
   }, [potentialMatches, currentPotentialMatchIndex]);
+
+  useEffect(() => {
+    if (!userData.userId) return;
+
+    const loadExclusions = async () => {
+      const likesSnap = await getDocs(
+        collection(doc(FIRESTORE, "users", userData.userId), "likesGiven")
+      );
+      const dislikesSnap = await getDocs(
+        collection(doc(FIRESTORE, "users", userData.userId), "dislikesGiven")
+      );
+
+      setExcludedLikes(new Set(likesSnap.docs.map((d) => d.id)));
+      setExcludedDislikes(new Set(dislikesSnap.docs.map((d) => d.id)));
+    };
+
+    loadExclusions();
+  }, [userData.userId]);
 
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
@@ -760,16 +791,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoadingNextBatch(true);
     userDataRef.current = userData;
     console.log("fetching...");
-    const excluded = new Set([
+    const excluded = new Set<string>([
       userData.userId,
-      ...(userData.likedMatches || []),
-      ...(userData.dislikedMatches || []),
-      ...(userData.matches || []),
+      ...excludedLikes,
+      ...excludedDislikes,
+      ...(userData.matches ?? []),
     ]);
 
     const baseConstraints = [
-      orderBy("userId"),
+      orderBy("likesReceivedCount", "desc"),
       limit(10),
+      where("isRadiantSoul", "==", false),
       ...buildQueryConstraints({
         matchPreferences: userData.matchPreferences,
         currentLat: userData.latitude,
@@ -793,6 +825,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       if (snap.empty) {
         console.log("no more matches");
         setNoMoreMatches(true);
+        setLoadingNextBatch(false);
         break;
       }
       const newBatch = snap.docs
@@ -800,6 +833,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         .filter((u) => !excluded.has(u.userId) && !u.isRadiantSoul);
       if (!newBatch.length) {
         setNoMoreMatches(true);
+        setLoadingNextBatch(false);
         break;
       }
 
@@ -824,10 +858,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         return [];
       }
 
-      // 1) grab the top 10 by likesReceived
+      // 1) grab the top 10 by likesReceivedCount
       const q = query(
         collection(FIRESTORE, "users"),
-        orderBy("likesReceived", "desc"),
+        orderBy("likesReceivedCount", "desc"),
+        where("isRadiantSoul", "==", true),
         limit(10),
         ...buildQueryConstraints({
           matchPreferences,
@@ -859,15 +894,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const loadNextPotentialMatch: () => Promise<void> = async () => {
     // Recalculate the current excluded set from userData.
-    const excludedSet = new Set([
-      userData?.userId,
-      ...(userData?.likedMatches || []),
-      ...(userData?.dislikedMatches || []),
-      ...(userData?.matches || []),
+    const excluded = new Set<string>([
+      userData.userId,
+      ...excludedLikes,
+      ...excludedDislikes,
+      ...(userData.matches ?? []),
     ]);
 
     // Filter potentialMatches to only those not in the excluded set.
-    const valid = potentialMatches.filter((m) => !excludedSet.has(m.userId));
+    const valid = potentialMatches.filter((m) => !excluded.has(m.userId));
     const currentIdx = valid.findIndex(
       (m) => m.userId === currentPotentialMatch?.userId
     );
@@ -889,7 +924,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // If new matches were fetched, try to set the first valid one.
       if (newMatches.length > 0) {
         const validNewMatches = newMatches.filter(
-          (match) => !excludedSet.has(match.userId)
+          (match) => !excluded.has(match.userId)
         );
         if (validNewMatches.length > 0) {
           setCurrentPotentialMatch(validNewMatches[0]);
@@ -902,56 +937,196 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const likeMatch = async (matchId: string): Promise<void> => {
+  const likeMatch = async (matchId: string) => {
     setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
-    // loadNextPotentialMatch();
+    await recordLike(userData.userId, matchId, false);
+    setExcludedLikes((prev) => new Set(prev).add(matchId));
+  };
 
-    const newLikes = [...(userData.likedMatches ?? []), matchId];
-    return updateUserData({ likedMatches: newLikes }).catch((err) => {
-      console.error("Could not update likedMatches:", err);
-      throw err;
+  const dislikeMatch = async (matchId: string) => {
+    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
+    await recordDislike(userData.userId, matchId);
+    setExcludedDislikes((prev) => new Set(prev).add(matchId));
+  };
+
+  const orbLike = async (matchId: string) => {
+    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
+    await recordLike(userData.userId, matchId, true);
+    setExcludedLikes((prev) => new Set(prev).add(matchId));
+  };
+
+  const recordLike = async (
+    fromUserId: string,
+    toUserId: string,
+    viaOrb: boolean = false
+  ): Promise<void> => {
+    const fromRef = doc(FIRESTORE, "users", fromUserId);
+    const toRef = doc(FIRESTORE, "users", toUserId);
+
+    const givenRef = doc(collection(fromRef, "likesGiven"), toUserId);
+    const receivedRef = doc(collection(toRef, "likesReceived"), fromUserId);
+
+    await runTransaction(FIRESTORE, async (tx) => {
+      const fromSnap = await tx.get(fromRef);
+      const fromData = fromSnap.data()!;
+
+      // check orb allowance
+      if (
+        viaOrb &&
+        !fromData.fullCircleSubscription &&
+        (fromData.numOfOrbs ?? 0) < 1
+      ) {
+        throw new Error("No orbs left this week");
+      }
+
+      // decrement orb & bump your given counter
+      const updates: any = {
+        likesGivenCount: (fromData.likesGivenCount ?? 0) + 1,
+      };
+      if (viaOrb && !fromData.fullCircleSubscription) {
+        updates.numOfOrbs = (fromData.numOfOrbs ?? 0) - 1;
+      }
+      tx.update(fromRef, updates);
+
+      // bump receiver’s counter
+      const toSnap = await tx.get(toRef);
+      const toData = toSnap.data()!;
+      tx.update(toRef, {
+        likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
+      });
+
+      // write the actual sub‑collection records
+      tx.set(givenRef, {
+        matchId: toUserId,
+        viaOrb,
+        timestamp: serverTimestamp(),
+      });
+      tx.set(receivedRef, {
+        matchId: fromUserId,
+        viaOrb,
+        timestamp: serverTimestamp(),
+      });
+    });
+    refreshRadiantSouls();
+  };
+
+  const recordDislike = async (
+    fromUserId: string,
+    toUserId: string
+  ): Promise<void> => {
+    const fromRef = doc(FIRESTORE, "users", fromUserId);
+    const toRef = doc(FIRESTORE, "users", toUserId);
+    const givenRef = doc(collection(fromRef, "dislikesGiven"), toUserId);
+    const receivedRef = doc(collection(toRef, "dislikesReceived"), fromUserId);
+
+    await runTransaction(FIRESTORE, async (tx) => {
+      // 1) bump the “given” counter
+      const fromSnap = await tx.get(fromRef);
+      const fromData = fromSnap.data()!;
+      tx.update(fromRef, {
+        dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
+      });
+
+      // 2) bump the “received” counter
+      const toSnap = await tx.get(toRef);
+      const toData = toSnap.data()!;
+      tx.update(toRef, {
+        dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
+      });
+
+      // 3) write the records
+      tx.set(givenRef, { matchId: toUserId, timestamp: serverTimestamp() });
+      tx.set(receivedRef, {
+        matchId: fromUserId,
+        timestamp: serverTimestamp(),
+      });
     });
   };
 
-  const dislikeMatch = async (matchId: string): Promise<void> => {
-    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
-    // loadNextPotentialMatch();
+  const refreshRadiantSouls = useCallback(async () => {
+    const db = FIRESTORE;
+    const usersCol = collection(db, "users");
+    const TOP_N = 10;
 
-    const newDislikes = [...(userData.dislikedMatches ?? []), matchId];
-    return updateUserData({ dislikedMatches: newDislikes }).catch((err) => {
-      console.error("Could not update dislikedMatches:", err);
-      // rethrow if you want ConnectScreen to know about it
-      throw err;
+    // a) grab current flagged radiant souls
+    const prevSnap = await query(
+      usersCol,
+      where("isRadiantSoul", "==", true)
+    ).get();
+
+    // b) grab the new top N by likesReceivedCount
+    const topSnap = await query(
+      usersCol,
+      orderBy("likesReceivedCount", "desc"),
+      limit(TOP_N)
+    ).get();
+
+    const batch = writeBatch(db);
+    const newTopIds = new Set(topSnap.docs.map((d) => d.id));
+
+    // c) clear anyone who’s no longer top N
+    prevSnap.docs.forEach((docSnap) => {
+      if (!newTopIds.has(docSnap.id)) {
+        batch.update(docSnap.ref, { isRadiantSoul: false });
+      }
     });
-  };
 
-  const orbLike = async (matchId: string): Promise<void> => {
-    // 1) decrement orbs locally & in Firestore
-    const newOrbCount = (userData.numOfOrbs ?? 0) - 1;
-    await updateUserData({ numOfOrbs: newOrbCount });
+    // d) flag the new top N
+    topSnap.docs.forEach((docSnap) => {
+      if (!docSnap.data().isRadiantSoul) {
+        batch.update(docSnap.ref, { isRadiantSoul: true });
+      }
+    });
 
-    // 2) add to likedMatches (so they see you first)
-    const newLikes = [...(userData.likedMatches ?? []), matchId];
-    await updateUserData({ likedMatches: newLikes });
-  };
+    await batch.commit();
+    console.log("Radiant Souls refreshed");
+  }, []);
 
-  const fetchDetailedLikes = async () => {
-    if (!userData?.likesReceived) return;
+  useEffect(() => {
+    // run once at mount
+    refreshRadiantSouls();
 
-    try {
-      const detailedUsers = await Promise.all(
-        userData.likesReceived.map(async (userId) => {
-          const userDoc = await getDoc(doc(FIRESTORE, "users", userId));
-          return userDoc.exists ? { userId, ...userDoc.data() } : null;
-        })
-      );
-      setUserData((prev) => ({
-        ...prev,
-        detailedLikesReceived: detailedUsers.filter(Boolean),
-      }));
-    } catch (error) {
-      console.error("Failed to fetch detailed likes:", error);
-    }
+    // re‑run whenever app comes back to foreground
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        refreshRadiantSouls();
+      }
+    });
+
+    // then every 60 minutes in case your user never backgrounds the app
+    const id = setInterval(refreshRadiantSouls, 1000 * 60 * 60);
+
+    return () => {
+      sub.remove();
+      clearInterval(id);
+    };
+  }, [refreshRadiantSouls]);
+
+  const getReceivedLikesDetailed = async (): Promise<
+    Array<any & { viaOrb: boolean; likedAt: Date }>
+  > => {
+    const uid = userData.userId!;
+    const recSnap = await getDocs(
+      collection(doc(FIRESTORE, "users", uid), "likesReceived")
+    );
+    const records = recSnap.docs.map((d) => d.data() as LikeRecord);
+
+    // join each record with its user profile
+    const detailed = await Promise.all(
+      records.map(async (rec) => {
+        const uSnap = await getDoc(doc(FIRESTORE, "users", rec.matchId));
+        if (!uSnap.exists) return null;
+        const profile = uSnap.data() as any;
+        return {
+          ...profile,
+          userId: uSnap.id,
+          viaOrb: rec.viaOrb,
+          likedAt: rec.timestamp.toDate(),
+        };
+      })
+    );
+
+    return detailed.filter(Boolean) as any[];
   };
 
   const getIdToken = async () => {
@@ -1092,21 +1267,38 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const getImageUrl = async (imagePath: string) => {
+  const getImageUrl = async (imagePath: string): Promise<string | null> => {
+    // 1) http URLs: just forward
     if (imagePath.startsWith("http")) {
-      return STORAGE.refFromURL(imagePath).getDownloadURL();
+      return STORAGE.refFromURL(imagePath)
+        .getDownloadURL()
+        .catch((err) => {
+          console.error("Error fetching image URL:", err);
+          return null;
+        });
     }
-    if (imageCache[imagePath]) {
-      return imageCache[imagePath];
+
+    // 2) if we’ve already started (or finished) loading this path, re‑use it
+    const cached = imageCache[imagePath];
+    if (cached) {
+      // it might be a string or a Promise<string|null>
+      return typeof cached === "string" ? Promise.resolve(cached) : cached;
     }
-    try {
-      const url = await STORAGE.ref(imagePath).getDownloadURL();
-      imageCache[imagePath] = url;
-      return url;
-    } catch (error) {
-      console.error("Error fetching image URL:", error);
-      return null;
-    }
+
+    // 3) otherwise, kick off a download and cache the promise immediately
+    const loader = STORAGE.ref(imagePath)
+      .getDownloadURL()
+      .then((url) => {
+        imageCache[imagePath] = url; // replace promise with the actual URL
+        return url;
+      })
+      .catch((err) => {
+        console.error("Error fetching image URL:", err);
+        return null;
+      });
+
+    imageCache[imagePath] = loader;
+    return loader;
   };
 
   const createOrFetchChat = async (
@@ -1323,6 +1515,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     signOut,
     completeOnboarding,
     likeMatch,
+    getReceivedLikesDetailed,
     orbLike,
     dislikeMatch,
     currentPotentialMatch,
@@ -1335,7 +1528,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     sendMessage,
     markChatAsRead,
     fetchRadiantSouls,
-    fetchDetailedLikes,
     fetchPotentialMatches,
     resetPotentialMatches,
     getImageUrl,

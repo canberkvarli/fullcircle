@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
 import { Link } from "expo-router";
@@ -12,7 +11,11 @@ import { useUserContext } from "@/context/UserContext";
 import UserCard from "@/components/UserCard";
 
 const RadiantSouls = () => {
-  const { userData, fetchRadiantSouls, getImageUrl } = useUserContext();
+  const {
+    userData,
+    fetchRadiantSouls,
+    getImageUrl,
+  } = useUserContext();
   const [radiantSouls, setRadiantSouls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

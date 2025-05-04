@@ -8,7 +8,6 @@ const darkNeutral = "#7E7972";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 40,
     padding: 16,
     backgroundColor: primaryColor,
   },
@@ -288,7 +287,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: primaryColor,
     zIndex: 10,
   },
   loadingAnimation: {

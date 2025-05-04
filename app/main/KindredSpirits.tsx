@@ -15,54 +15,54 @@ import { useRouter } from "expo-router";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const KindredSpirits: React.FC = () => {
-  const { userData, getImageUrl } = useUserContext();
+  const { userData, getReceivedLikesDetailed, getImageUrl } = useUserContext();
+
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const loadLikedUsersWithPhotos = async () => {
-      // If detailedLikesReceived is undefined or empty, show "no likes" immediately
-      if (
-        !userData?.detailedLikesReceived ||
-        userData.detailedLikesReceived.length === 0
-      ) {
-        console.log("No likes received");
-        setLikedByUsers([]);
-        setIsLoading(false);
-        return;
-      }
+    if (!userData.userId) return;
 
-      const processedLikes = await Promise.all(
-        userData.detailedLikesReceived.map(async (user: any) => {
-          if (user.photos && user.photos.length > 0) {
+    const loadLikes = async () => {
+      setIsLoading(true);
+      // 1) fetch all LikeRecord docs under /users/{you}/likesReceived
+      const raw = await getReceivedLikesDetailed();
+
+      // 2) sort by timestamp descending
+      raw.sort((a, b) => b.likedAt.getTime() - a.likedAt.getTime());
+
+      // 3) resolve photo URLs
+      const withPhotos = await Promise.all(
+        raw.map(async (u: any) => {
+          if (u.photos?.length) {
             const urls = await Promise.all(
-              user.photos.map((photoPath: string) => getImageUrl(photoPath))
+              u.photos.map((p: string) => getImageUrl(p))
             );
-            return { ...user, photos: urls.filter((url) => url !== null) };
+            return { ...u, photos: urls.filter((url) => url) };
           }
-          return user;
+          return u;
         })
       );
 
-      console.log("Processed Likes:", processedLikes);
-      setLikedByUsers(processedLikes);
+      setLikedByUsers(withPhotos);
       setIsLoading(false);
     };
 
-    loadLikedUsersWithPhotos();
-  }, [userData?.detailedLikesReceived, getImageUrl]);
+    loadLikes();
+  }, [userData.userId, getImageUrl, getReceivedLikesDetailed]);
 
-  const handleCardPress = (user: any, isFirstCard: boolean) => {
-    if (userData?.fullCircleSubscription || isFirstCard) {
+  const handleCardPress = (user: any, isFirst: boolean) => {
+    if (userData.fullCircleSubscription || isFirst) {
       router.navigate({
         pathname: "/user/UserShow" as any,
-        params: { user: JSON.stringify(user), source: "isFromKindredSpirits" },
+        params: {
+          user: JSON.stringify(user),
+          source: "isFromKindredSpirits",
+        },
       });
     } else {
-      router.navigate({
-        pathname: "/user/FullCircleSubscription" as any,
-      });
+      router.navigate({ pathname: "/user/FullCircleSubscription" });
     }
   };
 
@@ -74,7 +74,7 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  if (likedByUsers.length === 0) {
+  if (!likedByUsers.length) {
     return (
       <View style={styles.noLikesContainer}>
         <Text style={styles.noLikesTitle}>No one’s vibing with you… yet.</Text>
@@ -82,7 +82,6 @@ const KindredSpirits: React.FC = () => {
           Radiate more love by upgrading to FullCircle for unlimited visibility,
           or send a one-time Boost to soar to the top of the feed.
         </Text>
-
         <TouchableOpacity
           style={styles.upgradeButton}
           onPress={() =>
@@ -91,7 +90,6 @@ const KindredSpirits: React.FC = () => {
         >
           <Text style={styles.upgradeButtonText}>Upgrade to FullCircle ✨</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.boostButton}
           onPress={() =>
@@ -104,7 +102,6 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  // Render grid of likes
   const firstUser = likedByUsers[0];
 
   return (
@@ -152,6 +149,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+    paddingTop: 14,
     textAlign: "left",
   },
   loadingContainer: {

@@ -21,7 +21,6 @@ const ConnectScreen: React.FC = () => {
     loadingNextBatch,
     updateUserData,
     userData,
-    fetchDetailedLikes,
     noMoreMatches,
     resetPotentialMatches,
   } = useUserContext();
@@ -50,13 +49,6 @@ const ConnectScreen: React.FC = () => {
 
   // photos loaded?
   const [isPhotoLoading, setIsPhotoLoading] = useState(true);
-
-  // 1) Fetch detailed likes once
-  useEffect(() => {
-    if (!userData.detailedLikesReceived) {
-      fetchDetailedLikes();
-    }
-  }, [userData]);
 
   // reset photo-loading when a new match arrives
   useEffect(() => {
@@ -235,8 +227,8 @@ const ConnectScreen: React.FC = () => {
           />
         </View>
       )}
-
-      {!isLoading && noMoreMatches ? (
+      {/* IMPORTANT: Previously it was !isLoading && noMoreMatches  */}
+      {noMoreMatches ? (
         <View style={styles.noMatchesContainer}>
           <Text style={styles.noMatchesText}>No more matches available</Text>
           <Text style={styles.noMatchesSubText}>
