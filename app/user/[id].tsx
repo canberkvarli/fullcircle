@@ -183,14 +183,13 @@ const UserShow: React.FC = () => {
         <>
           <View style={styles.headerOverlay}>
             <View style={styles.headerContainer}>
-              <Link href="/main/RadiantSouls" asChild>
+              <Link href=".." asChild>
                 <TouchableOpacity
                   hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                  style={styles.backInner}
                 >
-                  <View style={styles.backInner}>
-                    <Icon name="chevron-left" size={20} color="#7E7972" />
-                    <Text style={styles.backText}>Back</Text>
-                  </View>
+                  <Icon name="chevron-left" size={20} color="#7E7972" />
+                  <Text style={styles.backText}>Back</Text>
                 </TouchableOpacity>
               </Link>
 
