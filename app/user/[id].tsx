@@ -133,7 +133,6 @@ const UserShow: React.FC = () => {
       listener: (e: any) => {
         const y = e.nativeEvent.contentOffset.y;
         const dy = y - lastY.current;
-
         if (dy > 5) {
           Animated.timing(tabTranslateY, {
             toValue: 0,
@@ -147,7 +146,6 @@ const UserShow: React.FC = () => {
             useNativeDriver: true,
           }).start();
         }
-
         lastY.current = y;
       },
     }
@@ -178,8 +176,7 @@ const UserShow: React.FC = () => {
         </View>
       )}
 
-      {/* Header & photos (only after loadingPhotos) */}
-      {!loadingPhotos && (
+      {!loadingPhotos && !showOrbAnim && (
         <>
           <View style={styles.headerOverlay}>
             <View style={styles.headerContainer}>
@@ -407,9 +404,14 @@ const styles = StyleSheet.create({
     color: "#7E7972",
   },
   animOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: TAB_BAR_HEIGHT,
     justifyContent: "flex-end",
     alignItems: "center",
+    zIndex: 20,
     backgroundColor: "transparent",
     pointerEvents: "none",
     paddingBottom: 20,

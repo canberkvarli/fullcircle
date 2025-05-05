@@ -860,7 +860,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       orderBy("likesReceivedCount", "desc"),
       limit(10),
       ...buildQueryConstraints({
-        matchPreferences: userData.matchPreferences,
+        // matchPreferences: userData.matchPreferences,
         currentLat: userData.latitude,
         currentLon: userData.longitude,
       })

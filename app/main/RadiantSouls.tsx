@@ -5,6 +5,7 @@ import { useUserContext } from "@/context/UserContext";
 import UserCard from "@/components/UserCard";
 import LottieView from "lottie-react-native";
 import blackCircleAnimation from "../../assets/animations/black-circle.json";
+import Icon from "react-native-vector-icons/FontAwesome";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -13,25 +14,25 @@ const RadiantSouls: React.FC = () => {
   const [radiantSouls, setRadiantSouls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadRadiantSouls = async () => {
-      setLoading(true);
-      const souls = await fetchRadiantSouls();
-      const soulsWithPhotos = await Promise.all(
-        souls.map(async (user: any) => {
-          if (user.photos && user.photos.length > 0) {
-            const urls = await Promise.all(
-              user.photos.map((photoPath: string) => getImageUrl(photoPath))
-            );
-            return { ...user, photos: urls.filter((url) => url !== null) };
-          }
-          return user;
-        })
-      );
-      setRadiantSouls(soulsWithPhotos);
-      setLoading(false);
-    };
+  const loadRadiantSouls = async () => {
+    setLoading(true);
+    const souls = await fetchRadiantSouls();
+    const soulsWithPhotos = await Promise.all(
+      souls.map(async (user: any) => {
+        if (user.photos && user.photos.length > 0) {
+          const urls = await Promise.all(
+            user.photos.map((photoPath: string) => getImageUrl(photoPath))
+          );
+          return { ...user, photos: urls.filter((url) => url !== null) };
+        }
+        return user;
+      })
+    );
+    setRadiantSouls(soulsWithPhotos);
+    setLoading(false);
+  };
 
+  useEffect(() => {
     loadRadiantSouls();
   }, [userData.matchPreferences, getImageUrl]);
 
@@ -52,10 +53,21 @@ const RadiantSouls: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Radiant Souls</Text>
-        <Link href="/user/FullCircleSubscription" style={styles.button}>
-          <Text style={styles.buttonText}>Request Orbs</Text>
-        </Link>
+
+        {!userData.fullCircleSubscription ? (
+          <Link href="/user/FullCircleSubscription" style={styles.button}>
+            <Text style={styles.buttonText}>Request Orbs</Text>
+          </Link>
+        ) : (
+          <View style={styles.orbsButton}>
+            <Icon name="pagelines" size={22} color="#D8BFAA" />
+            <Text style={styles.orbsButtonText}>
+              Orbs ({userData.numOfOrbs ?? 0})
+            </Text>
+          </View>
+        )}
       </View>
+
       <Text style={styles.subtitle}>Discover the most admired profiles.</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -115,6 +127,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  orbsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  orbsButtonText: {
+    marginLeft: 8,
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#7E7972",
   },
   userCard: {
     marginRight: 16,
