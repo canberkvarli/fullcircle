@@ -850,37 +850,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return fetched;
   };
 
-  const fetchRadiantSouls = async () => {
-    try {
-      const { userId, latitude, longitude, matchPreferences } = userData;
-      if (!userId) {
-        console.error("No userId found in userData.");
-        return [];
-      }
+  const fetchRadiantSouls = async (): Promise<UserDataType[]> => {
+    if (!userData.userId) return [];
 
-      // 1) grab the top 10 by likesReceivedCount
-      const q = query(
-        collection(FIRESTORE, "users"),
-        orderBy("likesReceivedCount", "desc"),
-        where("isRadiantSoul", "==", true),
-        limit(10),
-        ...buildQueryConstraints({
-          matchPreferences,
-          currentLat: latitude,
-          currentLon: longitude,
-        })
-      );
-      const snap = await getDocs(q);
+    // 1) grab the top‑10 radiant souls
+    const soulsQuery = query(
+      collection(FIRESTORE, "users"),
+      where("isRadiantSoul", "==", true),
+      orderBy("likesReceivedCount", "desc"),
+      limit(10),
+      ...buildQueryConstraints({
+        matchPreferences: userData.matchPreferences,
+        currentLat: userData.latitude,
+        currentLon: userData.longitude,
+      })
+    );
+    const soulsSnap = await getDocs(soulsQuery);
+    const souls = soulsSnap.docs.map((d) => ({
+      userId: d.id,
+      ...(d.data() as Omit<UserDataType, "userId">),
+    }));
 
-      const souls = snap.docs.map((d) => d.data() as UserDataType);
-      if (!souls.length) return [];
+    // 2) load your likes‑given and dislikes‑given subcollections
+    const likesGivenSnap = await getDocs(
+      collection(FIRESTORE, "users", userData.userId, "likesGiven")
+    );
+    const dislikesGivenSnap = await getDocs(
+      collection(FIRESTORE, "users", userData.userId, "dislikesGiven")
+    );
 
-      // 3) return them for your “Radiant Souls” UI
-      return souls;
-    } catch (err) {
-      console.error("Error fetching Radiant Souls:", err);
-      return [];
-    }
+    // 3) build an exclusion set
+    const excluded = new Set<string>();
+    excluded.add(userData.userId);
+    likesGivenSnap.docs.forEach((doc) => excluded.add(doc.id));
+    dislikesGivenSnap.docs.forEach((doc) => excluded.add(doc.id));
+
+    // 4) filter out anyone you’ve liked or disliked (or yourself)
+    const filtered = souls.filter((u) => !excluded.has(u.userId));
+
+    return filtered;
   };
 
   const resetPotentialMatches = () => {
@@ -971,11 +979,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const fromData = fromSnap.data()!;
 
       // check orb allowance
-      if (
-        viaOrb &&
-        !fromData.fullCircleSubscription &&
-        (fromData.numOfOrbs ?? 0) < 1
-      ) {
+      if (viaOrb && (fromData.numOfOrbs ?? 0) < 1) {
         throw new Error("No orbs left this week");
       }
 
