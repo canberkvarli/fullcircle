@@ -4,13 +4,14 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
   Dimensions,
 } from "react-native";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
+import LottieView from "lottie-react-native";
+import blackCircleAnimation from "../../assets/animations/black-circle.json";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -26,13 +27,13 @@ const KindredSpirits: React.FC = () => {
 
     const loadLikes = async () => {
       setIsLoading(true);
-      // 1) fetch all LikeRecord docs under /users/{you}/likesReceived
+      // fetch all LikeRecord docs under /users/{you}/likesReceived
       const raw = await getReceivedLikesDetailed();
 
-      // 2) sort by timestamp descending
+      // sort by timestamp descending
       raw.sort((a, b) => b.likedAt.getTime() - a.likedAt.getTime());
 
-      // 3) resolve photo URLs
+      // resolve photo URLs
       const withPhotos = await Promise.all(
         raw.map(async (u: any) => {
           if (u.photos?.length) {
@@ -58,7 +59,7 @@ const KindredSpirits: React.FC = () => {
         pathname: "/user/UserShow" as any,
         params: {
           user: JSON.stringify(user),
-          source: "isFromKindredSpirits",
+          source: "KindredSpirits",
         },
       });
     } else {
@@ -68,12 +69,18 @@ const KindredSpirits: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7E7972" />
+      <View style={styles.loaderContainer}>
+        <LottieView
+          source={blackCircleAnimation}
+          autoPlay
+          loop
+          style={styles.loaderAnimation}
+        />
       </View>
     );
   }
 
+  // 2) No likes yet
   if (!likedByUsers.length) {
     return (
       <View style={styles.noLikesContainer}>
@@ -102,6 +109,7 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
+  // 3) Render likes grid
   const firstUser = likedByUsers[0];
 
   return (
@@ -152,11 +160,15 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     textAlign: "left",
   },
-  loadingContainer: {
+  loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#EDE9E3",
+  },
+  loaderAnimation: {
+    width: 120,
+    height: 120,
   },
   noLikesContainer: {
     flex: 1,

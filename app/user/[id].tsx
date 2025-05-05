@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Image,
   Dimensions,
   SafeAreaView,
@@ -15,6 +14,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import LottieView from "lottie-react-native";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import leavesAnimation from "../../assets/animations/leaves.json";
+import blackCircleAnimation from "../../assets/animations/black-circle.json";
 import SlidingTabBar from "@/components/SlidingTabBar";
 
 const HEADER_HEIGHT = 120;
@@ -37,11 +37,8 @@ const UserShow: React.FC = () => {
   const [showOrbAnim, setShowOrbAnim] = useState(false);
   const [orbAnimFinished, setOrbAnimFinished] = useState(false);
 
-  // raw scrollY
   const scrollY = useRef(new Animated.Value(0)).current;
-  // tab bar translateY (0 = visible, TAB_BAR_HEIGHT = hidden)
   const tabTranslateY = useRef(new Animated.Value(TAB_BAR_HEIGHT)).current;
-  // to detect scroll direction
   const lastY = useRef(0);
 
   useEffect(() => {
@@ -129,7 +126,6 @@ const UserShow: React.FC = () => {
     extrapolate: "clamp",
   });
 
-  // onScroll handler to track direction & animate tab bar
   const onScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     {
@@ -139,14 +135,12 @@ const UserShow: React.FC = () => {
         const dy = y - lastY.current;
 
         if (dy > 5) {
-          // user scrolling down → show bar
           Animated.timing(tabTranslateY, {
             toValue: 0,
             duration: 200,
             useNativeDriver: true,
           }).start();
         } else if (dy < -5) {
-          // user scrolling up → hide bar
           Animated.timing(tabTranslateY, {
             toValue: TAB_BAR_HEIGHT,
             duration: 200,
@@ -173,103 +167,124 @@ const UserShow: React.FC = () => {
         </View>
       )}
 
-      {/* Fixed header */}
-      <View style={styles.headerOverlay}>
-        <View style={styles.headerContainer}>
-          {/* TODO FIX THE BACK Button not working properly */}
-          <Link href="/main/RadiantSouls" asChild>
-            <TouchableOpacity
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-            >
-              <View style={styles.backInner}>
-                <Icon name="chevron-left" size={20} color="#7E7972" />
-                <Text style={styles.backText}>Back</Text>
-              </View>
-            </TouchableOpacity>
-          </Link>
-          <Animated.Text
-            style={[
-              styles.nameCenter,
-              { opacity: headerOpacity },
-              !isFromRadiantSouls && {
-                position: "absolute",
-                left: 0,
-                right: 0,
-                textAlign: "center",
-              },
-            ]}
-          >
-            {currentUser.firstName}
-          </Animated.Text>
-          {isFromRadiantSouls && (
-            <TouchableOpacity style={styles.orbsButton}>
-              <Icon name="pagelines" size={22} color="#D8BFAA" />
-              <Text style={styles.orbsButtonText}>
-                Orbs ({userData.numOfOrbs ?? 0})
-              </Text>
-            </TouchableOpacity>
-          )}
+      {loadingPhotos && !showOrbAnim && (
+        <View style={styles.loaderOverlay}>
+          <LottieView
+            source={blackCircleAnimation}
+            autoPlay
+            loop
+            style={styles.loaderAnimation}
+          />
         </View>
-      </View>
+      )}
 
-      {/* Scrollable content */}
-      <Animated.ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: TAB_BAR_HEIGHT + 20 },
-        ]}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-      >
-        <Animated.Text style={[styles.topName, { opacity: leftNameOpacity }]}>
-          {currentUser.firstName}
-        </Animated.Text>
-
-        {loadingPhotos ? (
-          <ActivityIndicator size="large" color="#D8BFAA" />
-        ) : (
-          photoUrls.map((uri, i) => (
-            <View key={i} style={styles.photoCard}>
-              <Image source={{ uri }} style={styles.photo} />
-
-              <View style={styles.overlayIcons}>
+      {/* Header & photos (only after loadingPhotos) */}
+      {!loadingPhotos && (
+        <>
+          <View style={styles.headerOverlay}>
+            <View style={styles.headerContainer}>
+              <Link href="/main/RadiantSouls" asChild>
                 <TouchableOpacity
-                  disabled={(userData.numOfOrbs ?? 0) < 1}
-                  onPress={handleOrbLike}
-                  style={styles.orbActionBtn}
+                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                 >
-                  <Icon
-                    name="pagelines"
-                    size={28}
-                    color={(userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"}
-                  />
+                  <View style={styles.backInner}>
+                    <Icon name="chevron-left" size={20} color="#7E7972" />
+                    <Text style={styles.backText}>Back</Text>
+                  </View>
                 </TouchableOpacity>
-              </View>
+              </Link>
 
-              <View style={styles.detailCard}>
-                <View style={styles.overlayIconsDetail}>
-                  <TouchableOpacity
-                    disabled={(userData.numOfOrbs ?? 0) < 1}
-                    onPress={handleOrbLike}
-                    style={styles.orbDetailBtn}
-                  >
-                    <Icon
-                      name="pagelines"
-                      size={28}
-                      color={(userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.detailTitle}>{details[i].title}:</Text>
-                <Text style={styles.detailText}>{details[i].content}</Text>
-              </View>
+              <Animated.Text
+                style={[
+                  styles.nameCenter,
+                  { opacity: headerOpacity },
+                  !isFromRadiantSouls && {
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                {currentUser.firstName}
+              </Animated.Text>
+
+              {isFromRadiantSouls && (
+                <TouchableOpacity style={styles.orbsButton}>
+                  <Icon name="pagelines" size={22} color="#D8BFAA" />
+                  <Text style={styles.orbsButtonText}>
+                    Orbs ({userData.numOfOrbs ?? 0})
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-          ))
-        )}
-      </Animated.ScrollView>
+          </View>
 
-      {/* Sliding, hide/show tab bar */}
+          <Animated.ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.container,
+              { paddingBottom: TAB_BAR_HEIGHT + 20 },
+            ]}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+          >
+            <Animated.Text
+              style={[styles.topName, { opacity: leftNameOpacity }]}
+            >
+              {currentUser.firstName}
+            </Animated.Text>
+
+            {photoUrls.map((uri, i) => (
+              <View key={i} style={styles.photoCard}>
+                <Image source={{ uri }} style={styles.photo} />
+
+                {isFromRadiantSouls && (
+                  <View style={styles.overlayIcons}>
+                    <TouchableOpacity
+                      disabled={(userData.numOfOrbs ?? 0) < 1}
+                      onPress={handleOrbLike}
+                      style={styles.orbActionBtn}
+                    >
+                      <Icon
+                        name="pagelines"
+                        size={28}
+                        color={
+                          (userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"
+                        }
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View style={styles.detailCard}>
+                  {isFromRadiantSouls && (
+                    <View style={styles.overlayIconsDetail}>
+                      <TouchableOpacity
+                        disabled={(userData.numOfOrbs ?? 0) < 1}
+                        onPress={handleOrbLike}
+                        style={styles.orbDetailBtn}
+                      >
+                        <Icon
+                          name="pagelines"
+                          size={28}
+                          color={
+                            (userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"
+                          }
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  <Text style={styles.detailTitle}>{details[i].title}:</Text>
+                  <Text style={styles.detailText}>{details[i].content}</Text>
+                </View>
+              </View>
+            ))}
+          </Animated.ScrollView>
+        </>
+      )}
+
       <SlidingTabBar translateY={tabTranslateY} />
     </SafeAreaView>
   );
@@ -404,6 +419,17 @@ const styles = StyleSheet.create({
     width: Dimensions.get("window").width * 1.3,
     height: Dimensions.get("window").height * 0.6,
     transform: [{ scale: 1.2 }],
+  },
+  loaderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#EDE9E3",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  loaderAnimation: {
+    width: 120,
+    height: 120,
   },
 });
 

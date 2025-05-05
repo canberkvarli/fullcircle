@@ -5,11 +5,14 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  ActivityIndicator,
-  TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { Link } from "expo-router";
+import LottieView from "lottie-react-native";
+import blackCircleAnimation from "../../assets/animations/black-circle.json";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 const SoulChats: React.FC = () => {
   const { userData, createOrFetchChat, subscribeToChatMatches, getImageUrl } =
@@ -19,16 +22,14 @@ const SoulChats: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Subscribe to your chat list in real time
     const unsubscribe = subscribeToChatMatches(
       userData.userId,
       async (chatList) => {
         // Resolve photo URLs
         const withPhotos = await Promise.all(
           chatList.map(async (m) => {
-            const photos = m.photos || [];
-            const urls = photos.length
-              ? (await Promise.all(photos.map(getImageUrl))).filter(Boolean)
+            const urls = m.photos?.length
+              ? (await Promise.all(m.photos.map(getImageUrl))).filter(Boolean)
               : [];
             return { ...m, photos: urls };
           })
@@ -42,12 +43,18 @@ const SoulChats: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7E7972" />
+      <View style={styles.loaderContainer}>
+        <LottieView
+          source={blackCircleAnimation}
+          autoPlay
+          loop
+          style={styles.loaderAnimation}
+        />
       </View>
     );
   }
 
+  // 2) No matches yet
   if (!matches.length) {
     return (
       <View style={styles.noMatchesContainer}>
@@ -120,6 +127,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 16,
     backgroundColor: "#EDE9E3",
+    paddingBottom: 20,
   },
   title: {
     fontSize: 24,
@@ -128,17 +136,27 @@ const styles = StyleSheet.create({
     textAlign: "left",
     color: "#7E7972",
   },
-  noMatchesContainer: {
+  loaderContainer: {
     flex: 1,
-    padding: 16,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#EDE9E3",
   },
+  loaderAnimation: {
+    width: 120,
+    height: 120,
+  },
+  noMatchesContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#EDE9E3",
+    padding: 16,
+  },
   noMatchesText: {
     fontSize: 18,
     textAlign: "center",
-    marginTop: 20,
+    marginVertical: 10,
     color: "#7E7972",
   },
   matchRow: {
@@ -155,7 +173,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 80,
     height: 80,
-    borderRadius: 50,
+    borderRadius: 40,
     backgroundColor: "#ccc",
     justifyContent: "center",
     alignItems: "center",
@@ -164,7 +182,6 @@ const styles = StyleSheet.create({
   photo: {
     width: "100%",
     height: "100%",
-    borderRadius: 40,
   },
   unreadDot: {
     position: "absolute",
@@ -190,12 +207,6 @@ const styles = StyleSheet.create({
   unreadText: {
     fontWeight: "bold",
     color: "#000",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#EDE9E3",
   },
 });
 
