@@ -39,6 +39,7 @@ export type UserDataType = {
   isSeedUser: boolean;
   isRadiantSoul?: boolean;
   numOfOrbs?: number;
+  lastOrbAssignedAt?: any;
   currentOnboardingScreen: string;
   phoneNumber: string;
   verificationId?: string | null;
@@ -183,7 +184,9 @@ type UserContextType = {
     userId: string,
     onMatchReceived: (matches: any[]) => void
   ) => Unsubscribe;
-  subscribeToReceivedLikes: (onUpdate: (users: UserDataType[]) => void) => Unsubscribe;
+  subscribeToReceivedLikes: (
+    onUpdate: (users: UserDataType[]) => void
+  ) => Unsubscribe;
   sendMessage: (
     chatId: string,
     messageText: string,
@@ -317,24 +320,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return subscriber;
   }, []);
 
-  // Use AppState to track changes in the app state (background/foreground)
-  useEffect(() => {
-    const appStateListener = AppState.addEventListener(
-      "change",
-      (nextAppState) => {
-        if (nextAppState === "active") {
-          updateLastActive();
-        } else if (nextAppState === "background") {
-          updateLastActive();
-        }
-      }
-    );
-    // Store the userData in a ref to avoid stale closures
-    userDataRef.current = userData;
-    return () => {
-      appStateListener.remove(); // Clean up listener on unmount
-    };
-  }, [userData]);
 
   useEffect(() => {
     // don’t kick off until we actually have preferences from Firestore
@@ -404,6 +389,43 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => unsubscribe();
   }, [currentUser]);
+
+  const assignWeeklyOrb = useCallback(async () => {
+    if (!userData.userId) return;
+
+    const userRef = doc(FIRESTORE, "users", userData.userId);
+
+    // If they already have >=1 orb, or we assigned within the last week, bail out.
+    const last = userData.lastOrbAssignedAt?.toMillis?.() ?? 0;
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    if ((userData.numOfOrbs ?? 0) >= 1 && now - last < oneWeekMs) {
+      return;
+    }
+
+    // Give them one orb and update the timestamp.
+    await updateDoc(userRef, {
+      numOfOrbs: 1,
+      lastOrbAssignedAt: serverTimestamp(),
+    });
+
+    // Optimistically update local state:
+    setUserData((prev) => ({
+      ...prev,
+      numOfOrbs: 1,
+      lastOrbAssignedAt: { toMillis: () => now }, // mirror the TS Timestamp shape
+    }));
+  }, [userData.userId, userData.numOfOrbs, userData.lastOrbAssignedAt]);
+
+  useEffect(() => {
+    assignWeeklyOrb();
+    // Also as a safety, every 24h in case the app never backgrounds:
+    const id = setInterval(assignWeeklyOrb, 1000 * 60 * 60 * 24);
+
+    return () => {
+      clearInterval(id);
+    };
+  }, [assignWeeklyOrb]);
 
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
@@ -1112,19 +1134,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     // run once at mount
     refreshRadiantSouls();
 
-    // re‑run whenever app comes back to foreground
-    const sub = AppState.addEventListener("change", (state) => {
+    // on foreground
+    const foregroundSub = AppState.addEventListener("change", (state) => {
       if (state === "active") {
         refreshRadiantSouls();
       }
     });
 
-    // then every 60 minutes in case your user never backgrounds the app
-    const id = setInterval(refreshRadiantSouls, 1000 * 60 * 60);
+    // every 24 hours
+    const every24h = setInterval(refreshRadiantSouls, 1000 * 60 * 60 * 24);
 
     return () => {
-      sub.remove();
-      clearInterval(id);
+      foregroundSub.remove();
+      clearInterval(every24h);
     };
   }, [refreshRadiantSouls]);
 
@@ -1568,6 +1590,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       lastMessageSender: userId,
     });
   };
+
+  useEffect(() => {
+    const onChange = (state: string) => {
+      if (state === "active") {
+        updateLastActive();
+        assignWeeklyOrb();
+        refreshRadiantSouls();
+      }
+    };
+    const sub = AppState.addEventListener("change", onChange);
+    return () => sub.remove();
+  }, [updateLastActive, assignWeeklyOrb, refreshRadiantSouls]);
+
+  useEffect(() => {
+    const id = setInterval(
+      () => {
+        assignWeeklyOrb();
+        refreshRadiantSouls();
+      },
+      1000 * 60 * 60 * 24
+    );
+    return () => clearInterval(id);
+  }, [assignWeeklyOrb, refreshRadiantSouls]);
 
   const contextValue: UserContextType = {
     currentOnboardingScreen,
