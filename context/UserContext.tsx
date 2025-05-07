@@ -183,6 +183,7 @@ type UserContextType = {
     userId: string,
     onMatchReceived: (matches: any[]) => void
   ) => Unsubscribe;
+  subscribeToReceivedLikes: (onUpdate: (users: UserDataType[]) => void) => Unsubscribe;
   sendMessage: (
     chatId: string,
     messageText: string,
@@ -384,6 +385,25 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     loadExclusions();
   }, [userData.userId]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const userDocRef = doc(FIRESTORE, "users", currentUser.uid);
+
+    const unsubscribe = onSnapshot(userDocRef, (snap) => {
+      if (!snap.exists) return;
+
+      // grab only likesReceivedCount
+      const newLikes: number = snap.get("likesReceivedCount") ?? 0;
+
+      setUserData((prev) => ({
+        ...prev,
+        likesReceivedCount: newLikes,
+      }));
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
@@ -790,7 +810,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchPotentialMatches = async () => {
     setLoadingNextBatch(true);
     userDataRef.current = userData;
-    console.log("fetching...");
+    console.log("fetching potential matches...");
     const excluded = new Set<string>([
       userData.userId,
       ...excludedLikes,
@@ -852,7 +872,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchRadiantSouls = async (): Promise<UserDataType[]> => {
     if (!userData.userId) return [];
-
+    console.log("fetching radiant souls...");
     // 1) grab the top‑10 radiant souls
     const soulsQuery = query(
       collection(FIRESTORE, "users"),
@@ -901,6 +921,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const loadNextPotentialMatch: () => Promise<void> = async () => {
+    console.log("loadNextPotentialMatch(): Loading next potential match...");
     // Recalculate the current excluded set from userData.
     const excluded = new Set<string>([
       userData.userId,
@@ -1048,6 +1069,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const refreshRadiantSouls = useCallback(async () => {
+    console.log("Refreshing Radiant Souls...");
     const db = FIRESTORE;
     const usersCol = collection(db, "users");
     const TOP_N = 10;
@@ -1271,39 +1293,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const getImageUrl = async (imagePath: string): Promise<string | null> => {
-    // 1) http URLs: just forward
-    if (imagePath.startsWith("http")) {
-      return STORAGE.refFromURL(imagePath)
+  const getImageUrl = useCallback(
+    async (imagePath: string): Promise<string | null> => {
+      // 1) http URLs: just forward & resolve via STORAGE.refFromURL
+      if (imagePath.startsWith("http")) {
+        return STORAGE.refFromURL(imagePath)
+          .getDownloadURL()
+          .catch((err) => {
+            console.error("Error fetching image URL:", err);
+            return null;
+          });
+      }
+
+      // 2) cached?
+      const cached = imageCache[imagePath];
+      if (cached) {
+        return typeof cached === "string" ? Promise.resolve(cached) : cached;
+      }
+
+      // 3) kick off download & cache the promise
+      const loader = STORAGE.ref(imagePath)
         .getDownloadURL()
+        .then((url) => {
+          imageCache[imagePath] = url;
+          return url;
+        })
         .catch((err) => {
           console.error("Error fetching image URL:", err);
           return null;
         });
-    }
 
-    // 2) if we’ve already started (or finished) loading this path, re‑use it
-    const cached = imageCache[imagePath];
-    if (cached) {
-      // it might be a string or a Promise<string|null>
-      return typeof cached === "string" ? Promise.resolve(cached) : cached;
-    }
-
-    // 3) otherwise, kick off a download and cache the promise immediately
-    const loader = STORAGE.ref(imagePath)
-      .getDownloadURL()
-      .then((url) => {
-        imageCache[imagePath] = url; // replace promise with the actual URL
-        return url;
-      })
-      .catch((err) => {
-        console.error("Error fetching image URL:", err);
-        return null;
-      });
-
-    imageCache[imagePath] = loader;
-    return loader;
-  };
+      imageCache[imagePath] = loader;
+      return loader;
+    },
+    []
+  );
 
   const createOrFetchChat = async (
     userId: string,
@@ -1400,6 +1424,55 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       callback(detailed);
     });
   };
+
+  const subscribeToReceivedLikes = useCallback(
+    (onUpdate: (users: UserDataType[]) => void) => {
+      if (!userData.userId) return () => {};
+
+      const likesRef = collection(
+        doc(FIRESTORE, "users", userData.userId),
+        "likesReceived"
+      );
+
+      const unsub = onSnapshot(likesRef, async (snap) => {
+        // build sorted list of incoming like records
+        const records = snap.docs
+          .map((d) => ({ matchId: d.id, ...(d.data() as any) }))
+          .sort(
+            (a, b) =>
+              b.timestamp.toDate().getTime() - a.timestamp.toDate().getTime()
+          );
+
+        // fetch full user data + resolved photos for each liker
+        const detailed = await Promise.all(
+          records.map(async (rec) => {
+            const uSnap = await getDoc(doc(FIRESTORE, "users", rec.matchId));
+            const uData = uSnap.exists ? (uSnap.data() as any) : {};
+            let photos: string[] = [];
+
+            if (Array.isArray(uData.photos) && uData.photos.length) {
+              photos = (
+                await Promise.all(
+                  uData.photos.map((p: string) => getImageUrl(p))
+                )
+              ).filter((url): url is string => !!url);
+            }
+
+            return {
+              userId: rec.matchId,
+              ...(uData as Omit<UserDataType, "userId">),
+              photos,
+            } as UserDataType;
+          })
+        );
+
+        onUpdate(detailed);
+      });
+
+      return unsub;
+    },
+    [userData.userId, getImageUrl]
+  );
 
   const sendMessage = async (
     chatId: string,
@@ -1529,6 +1602,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     createOrFetchChat,
     subscribeToChatMessages,
     subscribeToChatMatches,
+    subscribeToReceivedLikes,
     sendMessage,
     markChatAsRead,
     fetchRadiantSouls,

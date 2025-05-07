@@ -3,6 +3,7 @@ import { View, Image } from "react-native";
 import { Tabs } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
+import { HeartIconWithBadge } from "@/components/HeartIconWithBadge";
 
 export default function MainStackLayout() {
   const { userData } = useUserContext();
@@ -46,7 +47,7 @@ export default function MainStackLayout() {
           headerShown: false,
           tabBarLabel: "Kindred Spirits",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="heart" color={color} size={size} />
+            <HeartIconWithBadge color={color} size={size} />
           ),
         }}
       />

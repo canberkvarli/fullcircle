@@ -16,51 +16,26 @@ import blackCircleAnimation from "../../assets/animations/black-circle.json";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const KindredSpirits: React.FC = () => {
-  const { userData, getReceivedLikesDetailed, getImageUrl } = useUserContext();
-
+  const { userData, subscribeToReceivedLikes } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     if (!userData.userId) return;
-
-    const loadLikes = async () => {
-      setIsLoading(true);
-      // fetch all LikeRecord docs under /users/{you}/likesReceived
-      const raw = await getReceivedLikesDetailed();
-
-      // sort by timestamp descending
-      raw.sort((a, b) => b.likedAt.getTime() - a.likedAt.getTime());
-
-      // resolve photo URLs
-      const withPhotos = await Promise.all(
-        raw.map(async (u: any) => {
-          if (u.photos?.length) {
-            const urls = await Promise.all(
-              u.photos.map((p: string) => getImageUrl(p))
-            );
-            return { ...u, photos: urls.filter((url) => url) };
-          }
-          return u;
-        })
-      );
-
-      setLikedByUsers(withPhotos);
+    setIsLoading(true);
+    const unsubscribe = subscribeToReceivedLikes((users) => {
+      setLikedByUsers(users);
       setIsLoading(false);
-    };
-
-    loadLikes();
-  }, [userData.userId, getImageUrl, getReceivedLikesDetailed]);
+    });
+    return () => unsubscribe();
+  }, [userData.userId, subscribeToReceivedLikes]);
 
   const handleCardPress = (user: any, isFirst: boolean) => {
     if (userData.fullCircleSubscription || isFirst) {
       router.navigate({
         pathname: "/user/UserShow" as any,
-        params: {
-          user: JSON.stringify(user),
-          source: "KindredSpirits",
-        },
+        params: { user: JSON.stringify(user), source: "KindredSpirits" },
       });
     } else {
       router.navigate({ pathname: "/user/FullCircleSubscription" });
@@ -80,8 +55,7 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  // 2) No likes yet
-  if (!likedByUsers.length) {
+  if (likedByUsers.length === 0) {
     return (
       <View style={styles.noLikesContainer}>
         <Text style={styles.noLikesTitle}>No one’s vibing with you… yet.</Text>
@@ -109,8 +83,7 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  // 3) Render likes grid
-  const firstUser = likedByUsers[0];
+  const [firstUser, ...rest] = likedByUsers;
 
   return (
     <ScrollView
@@ -129,7 +102,7 @@ const KindredSpirits: React.FC = () => {
       </TouchableOpacity>
 
       <View style={styles.gridContainer}>
-        {likedByUsers.slice(1).map((user) => (
+        {rest.map((user) => (
           <View key={user.userId} style={styles.userCardContainer}>
             <TouchableOpacity onPress={() => handleCardPress(user, false)}>
               <UserCard
@@ -158,7 +131,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     paddingTop: 14,
-    textAlign: "left",
   },
   loaderContainer: {
     flex: 1,
@@ -182,19 +154,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 12,
-    color: "#3A3A3A",
   },
   noLikesSubtitle: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
-    color: "#5C5C5C",
   },
   upgradeButton: {
     backgroundColor: "#7E7972",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
+    padding: 14,
     borderRadius: 24,
     marginBottom: 12,
   },
@@ -206,8 +175,7 @@ const styles = StyleSheet.create({
   boostButton: {
     borderColor: "#7E7972",
     borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
+    padding: 12,
     borderRadius: 24,
   },
   boostButtonText: {
