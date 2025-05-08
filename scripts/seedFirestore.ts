@@ -113,7 +113,9 @@ const fetchUnsplashImages = async (
 ): Promise<string[]> => {
   const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY!;
   const res = await fetch(
-    `https://api.unsplash.com/search/photos?page=${page}&query=${encodeURIComponent(query)}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
+    `https://api.unsplash.com/search/photos?page=${page}&query=${encodeURIComponent(
+      query
+    )}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
   );
   if (!res.ok) throw new Error("Failed to fetch Unsplash images");
   const data = await res.json();
@@ -214,7 +216,7 @@ async function seedFirestore(numUsers: number) {
       faker.number.int({ min: 1, max: 10 })
     );
     const photos = await Promise.all(
-      unsplash.map((url, i) => uploadPhotoToStorage(url, userId, i))
+      unsplash.map((url, j) => uploadPhotoToStorage(url, userId, j))
     );
 
     // Location & coords
@@ -235,12 +237,18 @@ async function seedFirestore(numUsers: number) {
       ]),
     };
 
+    // generate a random signup date in the past 30 days
+    const randomSignupDate = faker.date.recent(30);
+    const createdAtTimestamp =
+      admin.firestore.Timestamp.fromDate(randomSignupDate);
+
     // Assemble doc
     userDataList[userId] = {
       userId,
       isSeedUser: true,
       isRadiantSoul: false,
       fullCircleSubscription: faker.datatype.boolean(),
+      onboardingCompleted: true,
       // Profile
       firstName,
       lastName,
@@ -271,7 +279,10 @@ async function seedFirestore(numUsers: number) {
         faker.number.int({ min: 1, max: 2 })
       ),
       height: parseFloat(
-        `${faker.number.int({ min: 4, max: 7 })}.${faker.number.int({ min: 0, max: 11 })}`
+        `${faker.number.int({ min: 4, max: 7 })}.${faker.number.int({
+          min: 0,
+          max: 11,
+        })}`
       ),
       latitude,
       longitude,
@@ -286,23 +297,25 @@ async function seedFirestore(numUsers: number) {
 
       // Matches placeholder
       matches: [],
+
+      // ← ADDED createdAt!
+      createdAt: createdAtTimestamp,
     };
   }
   console.groupEnd();
 
+  // mark some as radiant souls
   const radiantCount = Math.min(20, userIds.length);
   const radiantSample = faker.helpers.arrayElements(userIds, radiantCount);
   console.info(`⭐️ Marking ${radiantCount} users as isRadiantSoul`);
-  radiantSample.forEach((uid) => {
-    userDataList[uid].isRadiantSoul = true;
-  });
+  // radiantSample.forEach((uid) => {
+  //   userDataList[uid].isRadiantSoul = true;
+  // });
 
   console.group("2) Writing user docs to Firestore");
-  for (const [idx, [id, data]] of Object.entries(
-    Object.entries(userDataList)
-  )) {
+  for (const [id, data] of Object.entries(userDataList)) {
     console.info(`  ↳ Writing user ${id} to Firestore`);
-    await usersCol.doc(id).set(data);
+    await db.collection("users").doc(id).set(data);
   }
   console.groupEnd();
 
@@ -318,13 +331,17 @@ async function seedFirestore(numUsers: number) {
     );
 
     // bump counter
-    await usersCol.doc(fromUserId).update({
-      likesGivenCount: admin.firestore.FieldValue.increment(liked.length),
-    });
+    await db
+      .collection("users")
+      .doc(fromUserId)
+      .update({
+        likesGivenCount: admin.firestore.FieldValue.increment(liked.length),
+      });
 
     for (const toUserId of liked) {
       console.debug(`     • ${fromUserId} likes ${toUserId}`);
-      await usersCol
+      await db
+        .collection("users")
         .doc(fromUserId)
         .collection("likesGiven")
         .doc(toUserId)
@@ -333,10 +350,14 @@ async function seedFirestore(numUsers: number) {
           viaOrb: false,
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
-      await usersCol.doc(toUserId).update({
-        likesReceivedCount: admin.firestore.FieldValue.increment(1),
-      });
-      await usersCol
+      await db
+        .collection("users")
+        .doc(toUserId)
+        .update({
+          likesReceivedCount: admin.firestore.FieldValue.increment(1),
+        });
+      await db
+        .collection("users")
         .doc(toUserId)
         .collection("likesReceived")
         .doc(fromUserId)
@@ -353,7 +374,7 @@ async function seedFirestore(numUsers: number) {
   console.groupEnd();
 }
 
-seedFirestore(100)
+seedFirestore(1)
   .then(() => {
     console.log("🎉 Done seeding Firestore.");
     process.exit(0);

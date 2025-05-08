@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   Text,
@@ -26,7 +26,7 @@ function EmailScreen() {
     navigateToPreviousScreen,
     googleCredential,
   } = useUserContext();
-  const [email, setEmail] = useState(userData?.email || "");
+  const [email, setEmail] = useState("");
   const [marketingRequested, setMarketingRequested] = useState(
     userData?.marketingRequested ?? true
   );
@@ -36,6 +36,15 @@ function EmailScreen() {
     webClientId:
       "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
   });
+
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged((user) => {
+      if (user?.email) {
+        setEmail(user.email);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
@@ -68,9 +77,8 @@ function EmailScreen() {
       await GoogleSignin.hasPlayServices();
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const { user } = await FIREBASE_AUTH.signInWithCredential(
-        googleCredential
-      );
+      const { user } =
+        await FIREBASE_AUTH.signInWithCredential(googleCredential);
       const userId = await user.getIdToken();
       console.log("userID from Google Sign-In:", userId);
 

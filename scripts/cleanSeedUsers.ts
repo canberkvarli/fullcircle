@@ -10,10 +10,29 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-const cleanSeededUsers = async () => {
-  const usersCollection = db.collection("users");
+/**
+ * Recursively deletes a document and all of its subcollections.
+ */
+async function deleteDocumentAndSubcollections(
+  docRef: FirebaseFirestore.DocumentReference
+) {
+  // 1) List all subcollections under this document
+  const subcols = await docRef.listCollections();
+  // 2) For each subcollection, delete every document (and its subcollections) recursively
+  for (const subcol of subcols) {
+    const subSnap = await subcol.get();
+    for (const subDoc of subSnap.docs) {
+      await deleteDocumentAndSubcollections(subDoc.ref);
+    }
+  }
+  // 3) Finally delete the document itself
+  await docRef.delete();
+}
 
+async function cleanSeededUsers() {
   try {
+    const usersCollection = db.collection("users");
+    // 1) Find all users where isSeedUser == true
     const seededUsersSnapshot = await usersCollection
       .where("isSeedUser", "==", true)
       .get();
@@ -23,17 +42,24 @@ const cleanSeededUsers = async () => {
       return;
     }
 
-    const batch = db.batch();
+    console.log(`Found ${seededUsersSnapshot.size} seeded users. Deleting...`);
 
-    seededUsersSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
+    // 2) For each seeded user, recursively delete their subcollections and then the user doc
+    for (const userDoc of seededUsersSnapshot.docs) {
+      console.log(`→ Cleaning up user ${userDoc.id}...`);
+      await deleteDocumentAndSubcollections(userDoc.ref);
+      console.log(`✔ Deleted user ${userDoc.id} and all subcollection docs.`);
+    }
 
-    await batch.commit();
-    console.log(`Deleted ${seededUsersSnapshot.size} seeded users.`);
+    console.log(
+      "✅ All seeded users and their subcollections have been removed."
+    );
   } catch (error) {
     console.error("Error cleaning seeded users:", error);
   }
-};
+}
 
-cleanSeededUsers().catch(console.error);
+cleanSeededUsers().catch((err) => {
+  console.error("Unexpected error:", err);
+  process.exit(1);
+});

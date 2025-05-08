@@ -35,6 +35,7 @@ import {
 
 export type UserDataType = {
   userId: string;
+  createdAt: any;
   lastActive?: any;
   isSeedUser: boolean;
   isRadiantSoul?: boolean;
@@ -232,6 +233,7 @@ const initialScreens = [
 
 const initialUserData: UserDataType = {
   userId: "",
+  createdAt: serverTimestamp(),
   lastActive: null,
   isSeedUser: false,
   numOfOrbs: 1,
@@ -319,7 +321,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
     return subscriber;
   }, []);
-
 
   useEffect(() => {
     // don’t kick off until we actually have preferences from Firestore
@@ -489,6 +490,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         let userDataToUpdate: Partial<UserDataType> = {
           ...initialUserData,
           userId: user.uid,
+          createdAt: serverTimestamp(),
           email: user.email || "",
           firstName: userFirstName,
           lastName: userLastName,
@@ -1136,7 +1138,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // on foreground
     const foregroundSub = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
+      if (userData.onboardingCompleted && state === "active") {
         refreshRadiantSouls();
       }
     });

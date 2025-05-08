@@ -87,7 +87,6 @@ function HeightScreen() {
 
         <View style={styles.heightInputs}>
           <Text style={styles.subtitle}>What's your height?</Text>
-          <Text style={styles.heightValue}>{formatHeight(selectedHeight)}</Text>
           <RulerPicker
             min={3}
             max={8}
