@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   Text,
@@ -11,6 +11,7 @@ import {
 import styles from "@/styles/Onboarding/NameScreenStyles";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
+import auth from "@react-native-firebase/auth";
 import { useUserContext } from "@/context/UserContext";
 import NavigationIcon from "react-native-vector-icons/FontAwesome";
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
@@ -22,6 +23,17 @@ function NameScreen() {
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged((user) => {
+      if (user?.displayName) {
+        const [first, last] = user.displayName.split(" ");
+        setFirstName(first);
+        setLastName(last || "");
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const handleInputChange = (text: string, type: string) => {
     if (/^[a-zA-Z\s]*$/.test(text)) {

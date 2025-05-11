@@ -6,7 +6,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState } from "react-native";
 import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
@@ -158,7 +158,7 @@ type UserContextType = {
   navigateToPreviousScreen: () => void;
   navigateToScreen: (screen: string) => void;
   saveProgress: (screen?: string) => void;
-  fetchUserData: (userId: string) => Promise<void>;
+  fetchUserData: (userId: string, isSSO: boolean) => Promise<void>;
   getIdToken: () => Promise<string | null>;
   currentUser: FirebaseAuthTypes.User | null;
   setCurrentUser: React.Dispatch<
@@ -300,8 +300,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [initializing, setInitializing] = useState(true);
   const [loadingNextBatch, setLoadingNextBatch] = useState(false);
   const [lastVisibleMatch, setLastVisibleMatch] = useState<"" | null>(null);
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null);
   const [noMoreMatches, setNoMoreMatches] = useState<boolean>(false);
-  const [isSSOLogin, setIsSSOLogin] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
   const userDataRef = useRef(userData);
   const router = useRouter();
@@ -446,14 +446,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (isGoogleLogin) {
         console.log("onAuthStateChanged(): User signed in via Google");
-        setIsSSOLogin(true);
-        await fetchUserData(user.uid);
+        console.log("isGoogleLogin from onAuthStateChanged()", isGoogleLogin);
+        await fetchUserData(user.uid, isGoogleLogin);
       } else {
         console.log("onAuthStateChanged(): User signed in via phone");
-        setIsSSOLogin(false);
         // to persist with the signed in user's flow we need to fetch the user data
         // and redirect to the appropriate onboarding screen or dashboard.
-        await fetchUserData(user.uid);
+        await fetchUserData(user.uid, isGoogleLogin);
       }
 
       updateLastActive();
@@ -464,8 +463,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleGoogleSignIn = async () => {
     try {
-      setIsSSOLogin(true);
-
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
@@ -530,8 +527,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
-    } finally {
-      setIsSSOLogin(false);
     }
   };
 
@@ -670,7 +665,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (userId: string, isSSO: boolean) => {
     try {
       if (!userId) {
         // If no userId is present, navigate to LandingPage
@@ -711,34 +706,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         }
       }
-      // if no user in firestore and they are phone sso, navgiate to namescreen
-      else if (!isSSOLogin && !userDataFromFirestore) {
+      // if no user in firestore and they are phone sso, navgiate to namescreen, make sure they are not google/apple sso
+      else if (!isSSO && !userDataFromFirestore) {
         console.log(
           "fetchUserData(): No user in firestore, navigating to NameScreen"
         );
         router.replace({
           pathname: `onboarding/NameScreen` as any,
         });
-      } else if (
-        // For first-time users from Google SSO
-        currentUser?.providerData.some(
-          (provider) => provider.providerId === "google.com"
-        )
-      ) {
-        console.log("providerData", currentUser?.providerData);
-        console.log(
-          "fetchUserData(): For first-time users from Google SSO, navigate to PhoneNumberScreen"
-        );
-        router.replace({
-          pathname: `onboarding/PhoneNumberScreen` as any,
-        });
+      } else if (isSSO) {
+        console.log("First-time Google SSO ➔ PhoneNumberScreen");
+        router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
       } else {
-        console.log(
-          "fetchUserData(): For first-time users from Google SSO, after linking phone number, navigate to NameScreen"
-        );
-        router.replace({
-          pathname: `onboarding/NameScreen` as any,
-        });
+        console.log("First-time phone login ➔ NameScreen");
+        router.replace({ pathname: `onboarding/NameScreen` as any });
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
