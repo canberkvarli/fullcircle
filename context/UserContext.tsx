@@ -88,6 +88,7 @@ export type UserDataType = {
   likesReceivedCount?: number;
   matches?: string[];
   onboardingCompleted?: boolean;
+  onboardingCompletedAt?: any;
   matchPreferences?: {
     preferredAgeRange?: {
       min: number;
@@ -1256,7 +1257,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       updateUserData({ currentOnboardingScreen: nextScreen });
       router.replace(`onboarding/${nextScreen}` as any);
     } else {
-      await updateUserData({ onboardingCompleted: true });
+      await updateUserData({
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+      });
       router.replace("/");
     }
   };
@@ -1289,6 +1293,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await updateUserData({
         onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
         currentOnboardingScreen: "Connect",
       });
       await fetchPotentialMatches();
@@ -1596,6 +1601,53 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     return () => clearInterval(id);
   }, [assignWeeklyOrb, refreshRadiantSouls]);
+
+  // useEffect(() => {
+  //   if (!userData.matchPreferences || userData.latitude == null) return;
+
+  //   // 1) Base query
+  //   let ref: any = FIRESTORE.collection("users")
+  //     .where("onboardingCompleted", "==", true)
+  //     .orderBy("createdAt");
+
+  //   // 2) Apply your dynamic filters
+  //   buildQueryConstraints({
+  //     matchPreferences: userData.matchPreferences,
+  //     currentLat: userData.latitude,
+  //     currentLon: userData.longitude,
+  //   }).forEach((clause: any) => {
+  //     ref = clause(ref);
+  //   });
+
+  //   // 3) Subscribe (QuerySnapshot with docChanges)
+  //   const unsubscribe = ref.onSnapshot((qs: any) => {
+  //     const excluded = new Set([
+  //       userData.userId,
+  //       ...excludedLikes,
+  //       ...excludedDislikes,
+  //       ...(userData.matches ?? []),
+  //     ]);
+
+  //     qs.docChanges().forEach((change: any) => {
+  //       if (change.type !== "added") return;
+  //       const u = change.doc.data() as UserDataType;
+  //       if (excluded.has(u.userId)) return;
+
+  //       setPotentialMatches((prev) =>
+  //         prev.some((p) => p.userId === u.userId) ? prev : [...prev, u]
+  //       );
+  //     });
+  //   });
+
+  //   return () => unsubscribe();
+  // }, [
+  //   userData.matchPreferences,
+  //   userData.latitude,
+  //   userData.longitude,
+  //   excludedLikes,
+  //   excludedDislikes,
+  //   userData.matches,
+  // ]);
 
   const contextValue: UserContextType = {
     currentOnboardingScreen,

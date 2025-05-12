@@ -241,6 +241,15 @@ async function seedFirestore(numUsers: number) {
     const randomSignupDate = faker.date.recent(30);
     const createdAtTimestamp =
       admin.firestore.Timestamp.fromDate(randomSignupDate);
+    const onboardingOffsetMs = faker.number.int({
+      min: 0,
+      max: 6 * 60 * 60 * 1000,
+    });
+    const onboardingDate = new Date(
+      randomSignupDate.getTime() + onboardingOffsetMs
+    );
+    const onboardingCreatedAtTimestamp =
+      admin.firestore.Timestamp.fromDate(onboardingDate);
 
     // Assemble doc
     userDataList[userId] = {
@@ -300,6 +309,7 @@ async function seedFirestore(numUsers: number) {
 
       // ← ADDED createdAt!
       createdAt: createdAtTimestamp,
+      onboardingCreatedAt: onboardingCreatedAtTimestamp,
     };
   }
   console.groupEnd();
