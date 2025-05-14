@@ -384,7 +384,7 @@ async function seedFirestore(numUsers: number) {
   console.groupEnd();
 }
 
-seedFirestore(1)
+seedFirestore(50)
   .then(() => {
     console.log("🎉 Done seeding Firestore.");
     process.exit(0);

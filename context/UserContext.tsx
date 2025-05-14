@@ -606,7 +606,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         //   );
         //   const existingUser = docSnap.data() as UserDataType;
         //   const nextScreen = existingUser.onboardingCompleted
-        //     ? "/main/Connect"
+        //     ? "/(tabs)/Connect"
         //     : `onboarding/${
         //         existingUser.currentOnboardingScreen || "NameScreen"
         //       }`;
@@ -688,13 +688,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         setUserData(userDataFromFirestore);
         userDataRef.current = userDataFromFirestore;
         if (userDataFromFirestore.onboardingCompleted) {
-          // If onboarding is completed, navigate to the main app screen
+          // If onboarding is completed, navigate to the (tabs) app screen
           updateUserData({
             ...userDataFromFirestore,
             currentOnboardingScreen: "Connect",
           });
           router.replace({
-            pathname: `/main/Connect` as any,
+            pathname: `/(tabs)/Connect` as any,
           });
         } else {
           console.log("fetchUserData(): onboarding not completed yet");
@@ -1297,7 +1297,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         currentOnboardingScreen: "Connect",
       });
       await fetchPotentialMatches();
-      router.replace("/main/Connect" as any);
+      router.replace("/(tabs)/Connect" as any);
     } catch (error) {
       console.error("Failed to complete onboarding: ", error);
     }
@@ -1578,76 +1578,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       lastMessageSender: userId,
     });
   };
-
-  useEffect(() => {
-    const onChange = (state: string) => {
-      if (state === "active") {
-        updateLastActive();
-        assignWeeklyOrb();
-        refreshRadiantSouls();
-      }
-    };
-    const sub = AppState.addEventListener("change", onChange);
-    return () => sub.remove();
-  }, [updateLastActive, assignWeeklyOrb, refreshRadiantSouls]);
-
-  useEffect(() => {
-    const id = setInterval(
-      () => {
-        assignWeeklyOrb();
-        refreshRadiantSouls();
-      },
-      1000 * 60 * 60 * 24
-    );
-    return () => clearInterval(id);
-  }, [assignWeeklyOrb, refreshRadiantSouls]);
-
-  // useEffect(() => {
-  //   if (!userData.matchPreferences || userData.latitude == null) return;
-
-  //   // 1) Base query
-  //   let ref: any = FIRESTORE.collection("users")
-  //     .where("onboardingCompleted", "==", true)
-  //     .orderBy("createdAt");
-
-  //   // 2) Apply your dynamic filters
-  //   buildQueryConstraints({
-  //     matchPreferences: userData.matchPreferences,
-  //     currentLat: userData.latitude,
-  //     currentLon: userData.longitude,
-  //   }).forEach((clause: any) => {
-  //     ref = clause(ref);
-  //   });
-
-  //   // 3) Subscribe (QuerySnapshot with docChanges)
-  //   const unsubscribe = ref.onSnapshot((qs: any) => {
-  //     const excluded = new Set([
-  //       userData.userId,
-  //       ...excludedLikes,
-  //       ...excludedDislikes,
-  //       ...(userData.matches ?? []),
-  //     ]);
-
-  //     qs.docChanges().forEach((change: any) => {
-  //       if (change.type !== "added") return;
-  //       const u = change.doc.data() as UserDataType;
-  //       if (excluded.has(u.userId)) return;
-
-  //       setPotentialMatches((prev) =>
-  //         prev.some((p) => p.userId === u.userId) ? prev : [...prev, u]
-  //       );
-  //     });
-  //   });
-
-  //   return () => unsubscribe();
-  // }, [
-  //   userData.matchPreferences,
-  //   userData.latitude,
-  //   userData.longitude,
-  //   excludedLikes,
-  //   excludedDislikes,
-  //   userData.matches,
-  // ]);
 
   const contextValue: UserContextType = {
     currentOnboardingScreen,

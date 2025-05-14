@@ -5,12 +5,13 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { HeartIconWithBadge } from "@/components/HeartIconWithBadge";
 
-export default function MainStackLayout() {
+export default function TabsLayout() {
   const { userData } = useUserContext();
 
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarStyle: {
           height: 80,
           backgroundColor: "#EDE9E3",
@@ -24,7 +25,6 @@ export default function MainStackLayout() {
       <Tabs.Screen
         name="Connect"
         options={{
-          headerShown: false,
           tabBarLabel: "Connect",
           tabBarIcon: ({ color, size }) => (
             <Icon name="search" color={color} size={size} />
@@ -34,7 +34,6 @@ export default function MainStackLayout() {
       <Tabs.Screen
         name="RadiantSouls"
         options={{
-          headerShown: false,
           tabBarLabel: "Radiant Souls",
           tabBarIcon: ({ color, size }) => (
             <Icon name="star" color={color} size={size} />
@@ -44,7 +43,6 @@ export default function MainStackLayout() {
       <Tabs.Screen
         name="KindredSpirits"
         options={{
-          headerShown: false,
           tabBarLabel: "Kindred Spirits",
           tabBarIcon: ({ color, size }) => (
             <HeartIconWithBadge color={color} size={size} />
@@ -54,7 +52,6 @@ export default function MainStackLayout() {
       <Tabs.Screen
         name="SoulChats"
         options={{
-          headerShown: false,
           tabBarLabel: "Soul Chats",
           tabBarIcon: ({ color, size }) => (
             <Icon name="comments" color={color} size={size} />
@@ -64,10 +61,9 @@ export default function MainStackLayout() {
       <Tabs.Screen
         name="SacredSelf"
         options={{
-          headerShown: false,
           tabBarLabel: "Sacred Self",
           tabBarIcon: ({ color, size, focused }) =>
-            userData?.photos && userData.photos.length > 0 ? (
+            userData?.photos?.[0] ? (
               <View
                 style={{
                   width: size,

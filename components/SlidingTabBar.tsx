@@ -24,7 +24,7 @@ export default function SlidingTabBar({ translateY }: SlidingTabBarProps) {
     <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
       <TouchableOpacity
         style={styles.tabItem}
-        onPress={() => router.push("/main/Connect")}
+        onPress={() => router.push("/(tabs)/Connect")}
       >
         <Icon name="search" size={24} color="#7E7972" />
         <Text style={styles.label}>Connect</Text>
@@ -32,7 +32,7 @@ export default function SlidingTabBar({ translateY }: SlidingTabBarProps) {
 
       <TouchableOpacity
         style={styles.tabItem}
-        onPress={() => router.push("/main/RadiantSouls")}
+        onPress={() => router.push("/(tabs)/RadiantSouls")}
       >
         <Icon name="star" size={24} color="#D3C6BA" />
         <Text style={styles.label}>Radiant Souls</Text>
@@ -40,7 +40,7 @@ export default function SlidingTabBar({ translateY }: SlidingTabBarProps) {
 
       <TouchableOpacity
         style={styles.tabItem}
-        onPress={() => router.push("/main/KindredSpirits")}
+        onPress={() => router.push("/(tabs)/KindredSpirits")}
       >
         <Icon name="heart" size={24} color="#D3C6BA" />
         <Text style={styles.label}>Kindred Spirits</Text>
@@ -48,7 +48,7 @@ export default function SlidingTabBar({ translateY }: SlidingTabBarProps) {
 
       <TouchableOpacity
         style={styles.tabItem}
-        onPress={() => router.push("/main/SoulChats")}
+        onPress={() => router.push("/(tabs)/SoulChats")}
       >
         <Icon name="comments" size={24} color="#D3C6BA" />
         <Text style={styles.label}>Soul Chats</Text>
@@ -56,7 +56,7 @@ export default function SlidingTabBar({ translateY }: SlidingTabBarProps) {
 
       <TouchableOpacity
         style={styles.tabItem}
-        onPress={() => router.push("/main/SacredSelf")}
+        onPress={() => router.push("/(tabs)/SacredSelf")}
       >
         {userData?.photos && userData.photos.length > 0 ? (
           <View style={styles.avatarWrapper}>

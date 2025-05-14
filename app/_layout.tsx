@@ -11,7 +11,7 @@ export default function RootLayout() {
         <UserProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="onboarding" />
-            <Stack.Screen name="main" />
+            <Stack.Screen name="(tabs)" />
             <Stack.Screen name="user" />
           </Stack>
         </UserProvider>
