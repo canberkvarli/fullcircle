@@ -82,5 +82,8 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.3.3"
   },
+    "overrides": {
+      "undici": "7.9.0"
+  },
   "private": true
 }
