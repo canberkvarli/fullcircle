@@ -26,7 +26,7 @@ const UserShow: React.FC = () => {
   const router = useRouter();
   const { user: userParam, isFromRadiantSouls } = useLocalSearchParams();
   const initialUser: UserDataType = JSON.parse(userParam as string);
-  const { getImageUrl, orbLike, fetchRadiantSouls, userData } =
+  const { getImageUrl, orbLike, fetchRadiantSouls, userData, likeMatch } =
     useUserContext();
 
   const [souls, setSouls] = useState<UserDataType[]>([]);
@@ -235,6 +235,7 @@ const UserShow: React.FC = () => {
               <View key={i} style={styles.photoCard}>
                 <Image source={{ uri }} style={styles.photo} />
 
+                {/* Radiant‐souls orb like */}
                 {isFromRadiantSouls && (
                   <View style={styles.overlayIcons}>
                     <TouchableOpacity
@@ -253,7 +254,23 @@ const UserShow: React.FC = () => {
                   </View>
                 )}
 
+                {/* KindredSpirits heart like */}
+                {!isFromRadiantSouls && (
+                  <View style={styles.overlayIcons}>
+                    <TouchableOpacity
+                      onPress={async () => {
+                        await likeMatch(currentUser.userId);
+                        router.back();
+                      }}
+                      style={styles.heartActionBtn}
+                    >
+                      <Icon name="heart" size={28} color="#E0245E" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <View style={styles.detailCard}>
+                  {/* Radiant‐souls orb detail */}
                   {isFromRadiantSouls && (
                     <View style={styles.overlayIconsDetail}>
                       <TouchableOpacity
@@ -268,6 +285,21 @@ const UserShow: React.FC = () => {
                             (userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"
                           }
                         />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* KindredSpirits heart detail */}
+                  {!isFromRadiantSouls && (
+                    <View style={styles.overlayIconsDetail}>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          await likeMatch(currentUser.userId);
+                          router.back();
+                        }}
+                        style={styles.heartDetailBtn}
+                      >
+                        <Icon name="heart" size={28} color="#E0245E" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -361,6 +393,13 @@ const styles = StyleSheet.create({
     left: 8,
     bottom: 26,
   },
+  heartActionBtn: {
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 24,
+    padding: 12,
+    left: 8,
+    bottom: 26,
+  },
   detailCard: {
     backgroundColor: "#f9f9f9",
     borderRadius: 10,
@@ -376,6 +415,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   orbDetailBtn: {
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 24,
+    padding: 12,
+  },
+  heartDetailBtn: {
     backgroundColor: "rgba(255,255,255,0.8)",
     borderRadius: 24,
     padding: 12,
