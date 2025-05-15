@@ -897,12 +897,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("fetching radiant souls...");
 
     // 1) grab the top‑10 radiant souls
+    // IMPORTANT: comment out matchPreferences if you don't want the radiant souls to be affected by the user's preferences.
     const soulsQuery = query(
       collection(FIRESTORE, "users"),
       where("isRadiantSoul", "==", true),
       orderBy("likesReceivedCount", "desc"),
       limit(10),
       ...buildQueryConstraints({
+        matchPreferences: userData.matchPreferences,
         currentLat: userData.latitude,
         currentLon: userData.longitude,
       })
