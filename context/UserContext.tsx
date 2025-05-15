@@ -301,7 +301,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [initializing, setInitializing] = useState(true);
   const [loadingNextBatch, setLoadingNextBatch] = useState(false);
   const [lastVisibleMatch, setLastVisibleMatch] = useState<"" | null>(null);
-  const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null);
   const [noMoreMatches, setNoMoreMatches] = useState<boolean>(false);
   const [isLinking, setIsLinking] = useState(false);
   const userDataRef = useRef(userData);
@@ -316,7 +315,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [excludedDislikes, setExcludedDislikes] = useState<Set<string>>(
     new Set()
   );
-  const WEEKLY_ORB_ALLOWANCE = 1;
+  const [receivedLikes, setReceivedLikes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
@@ -387,6 +386,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         ...prev,
         likesReceivedCount: newLikes,
       }));
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Received likes from other users
+  useEffect(() => {
+    if (!currentUser) return;
+    const likesRef = collection(
+      doc(FIRESTORE, "users", currentUser.uid),
+      "likesReceived"
+    );
+
+    const unsubscribe = onSnapshot(likesRef, (snap) => {
+      const ids = new Set<string>(snap.docs.map((d) => d.id));
+      setReceivedLikes(ids);
     });
 
     return () => unsubscribe();
@@ -821,6 +836,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       userData.userId,
       ...excludedLikes,
       ...excludedDislikes,
+      ...(receivedLikes ?? []),
       ...(userData.matches ?? []),
     ]);
 
@@ -879,6 +895,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchRadiantSouls = async (): Promise<UserDataType[]> => {
     if (!userData.userId) return [];
     console.log("fetching radiant souls...");
+
     // 1) grab the top‑10 radiant souls
     const soulsQuery = query(
       collection(FIRESTORE, "users"),
@@ -886,7 +903,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       orderBy("likesReceivedCount", "desc"),
       limit(10),
       ...buildQueryConstraints({
-        // matchPreferences: userData.matchPreferences,
         currentLat: userData.latitude,
         currentLon: userData.longitude,
       })
@@ -897,24 +913,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       ...(d.data() as Omit<UserDataType, "userId">),
     }));
 
-    // 2) load your likes‑given and dislikes‑given subcollections
-    const likesGivenSnap = await getDocs(
-      collection(FIRESTORE, "users", userData.userId, "likesGiven")
-    );
-    const dislikesGivenSnap = await getDocs(
-      collection(FIRESTORE, "users", userData.userId, "dislikesGiven")
-    );
+    // 2) load your likes‑given and dislikes‑given
+    const [likesGivenSnap, dislikesGivenSnap] = await Promise.all([
+      getDocs(collection(FIRESTORE, "users", userData.userId, "likesGiven")),
+      getDocs(collection(FIRESTORE, "users", userData.userId, "dislikesGiven")),
+    ]);
 
-    // 3) build an exclusion set
-    const excluded = new Set<string>();
-    excluded.add(userData.userId);
-    likesGivenSnap.docs.forEach((doc) => excluded.add(doc.id));
-    dislikesGivenSnap.docs.forEach((doc) => excluded.add(doc.id));
+    // 3) build an exclusion set that also includes receivedLikes & existing matches
+    const excluded = new Set<string>([
+      userData.userId,
+      ...likesGivenSnap.docs.map((d) => d.id),
+      ...dislikesGivenSnap.docs.map((d) => d.id),
+      ...Array.from(receivedLikes), // ← anyone who’s liked you
+      ...(userData.matches ?? []), // ← any existing mutual matches
+    ]);
 
-    // 4) filter out anyone you’ve liked or disliked (or yourself)
-    const filtered = souls.filter((u) => !excluded.has(u.userId));
-
-    return filtered;
+    // 4) filter out excluded users
+    return souls.filter((u) => !excluded.has(u.userId));
   };
 
   const resetPotentialMatches = () => {
