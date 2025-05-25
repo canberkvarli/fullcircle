@@ -8,6 +8,7 @@ import {
   Dimensions,
   SafeAreaView,
   Animated,
+  unstable_batchedUpdates,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -24,10 +25,18 @@ const TAB_BAR_HEIGHT = 80;
 
 const UserShow: React.FC = () => {
   const router = useRouter();
-  const { user: userParam, isFromRadiantSouls } = useLocalSearchParams();
+  const { user: userParam, source } = useLocalSearchParams();
+  const isFromKindredSpirits = source === "KindredSpirits";
+  const isFromRadiantSouls = source === "RadiantSouls";
   const initialUser: UserDataType = JSON.parse(userParam as string);
-  const { getImageUrl, orbLike, fetchRadiantSouls, userData, likeMatch } =
-    useUserContext();
+  const {
+    getImageUrl,
+    orbLike,
+    fetchRadiantSouls,
+    userData,
+    likeMatch,
+    subscribeToReceivedLikes,
+  } = useUserContext();
 
   const [souls, setSouls] = useState<UserDataType[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -36,10 +45,73 @@ const UserShow: React.FC = () => {
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [showOrbAnim, setShowOrbAnim] = useState(false);
   const [orbAnimFinished, setOrbAnimFinished] = useState(false);
+  const lastLoadedPhotosFor = useRef<string | null>(null);
+  const didSubscribe = useRef(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const tabTranslateY = useRef(new Animated.Value(TAB_BAR_HEIGHT)).current;
   const lastY = useRef(0);
+
+  useEffect(() => {
+    if (!isFromKindredSpirits || !userData.userId) return;
+
+    const unsub = subscribeToReceivedLikes((users) => {
+      // swallow the first callback so we don't overwrite our nav param
+      if (!didSubscribe.current) {
+        didSubscribe.current = true;
+        return;
+      }
+
+      // on real updates (someone new un‑likes or likes),
+      // batch and update souls/currentUser/index:
+      unstable_batchedUpdates(() => {
+        setSouls(users);
+        if (users.length === 0) {
+          router.back();
+        } else {
+          setCurrentIndex(0);
+          setCurrentUser(users[0]);
+        }
+      });
+    });
+
+    return () => unsub();
+  }, [isFromKindredSpirits, userData.userId]);
+
+  useEffect(() => {
+    if (!isFromKindredSpirits || !userData.userId) return;
+
+    // track the last snapshot payload so we don’t re-render
+    let lastSnapshot: string | null = null;
+
+    const unsub = subscribeToReceivedLikes((users) => {
+      // serialize the list of IDs so we can do a deep compare
+      const key = users.map((u) => u.userId).join("|");
+      if (key === lastSnapshot) {
+        // identical payload → skip
+        return;
+      }
+      lastSnapshot = key;
+
+      // batch all three updates into one render
+      unstable_batchedUpdates(() => {
+        setSouls(users);
+
+        if (users.length === 0) {
+          // if nobody left, go back
+          router.back();
+        } else {
+          // if this is the very first snapshot, position on initialUser
+          const idx = users.findIndex((u) => u.userId === initialUser.userId);
+          const nextIndex = idx >= 0 ? idx : 0;
+          setCurrentIndex(nextIndex);
+          setCurrentUser(users[nextIndex]);
+        }
+      });
+    });
+
+    return () => unsub();
+  }, [isFromKindredSpirits, userData.userId]);
 
   useEffect(() => {
     if (isFromRadiantSouls) {
@@ -52,21 +124,32 @@ const UserShow: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const id = currentUser.userId;
+    if (!id || id === lastLoadedPhotosFor.current) {
+      // same user → don’t reload
+      return;
+    }
+    lastLoadedPhotosFor.current = id;
+
     let active = true;
+    setLoadingPhotos(true);
+
     (async () => {
-      setLoadingPhotos(true);
       if (currentUser.photos?.length) {
         const urls = await Promise.all(
           currentUser.photos.map((p) => getImageUrl(p))
         );
-        if (active) setPhotoUrls(urls.filter((u): u is string => !!u));
+        if (active) {
+          setPhotoUrls(urls.filter((u): u is string => !!u));
+        }
       }
-      setLoadingPhotos(false);
+      if (active) setLoadingPhotos(false);
     })();
+
     return () => {
       active = false;
     };
-  }, [currentUser]);
+  }, [currentUser.userId]);
 
   useEffect(() => {
     if (orbAnimFinished && !loadingPhotos) {
@@ -91,6 +174,22 @@ const UserShow: React.FC = () => {
     } catch {
       setShowOrbAnim(false);
     }
+  };
+
+  const handleHeartPress = async () => {
+    const likedId = currentUser.userId;
+    const nextSouls = souls.filter((u) => u.userId !== likedId);
+
+    if (nextSouls.length) {
+      // show the next one right away
+      setSouls(nextSouls);
+      setCurrentIndex(0);
+      setCurrentUser(nextSouls[0]);
+    } else {
+      router.back();
+    }
+
+    await likeMatch(likedId);
   };
 
   const details = [
@@ -255,13 +354,10 @@ const UserShow: React.FC = () => {
                 )}
 
                 {/* KindredSpirits heart like */}
-                {!isFromRadiantSouls && (
+                {isFromKindredSpirits && (
                   <View style={styles.overlayIcons}>
                     <TouchableOpacity
-                      onPress={async () => {
-                        await likeMatch(currentUser.userId);
-                        router.back();
-                      }}
+                      onPress={handleHeartPress}
                       style={styles.heartActionBtn}
                     >
                       <Icon name="heart" size={28} color="#E0245E" />
@@ -290,13 +386,10 @@ const UserShow: React.FC = () => {
                   )}
 
                   {/* KindredSpirits heart detail */}
-                  {!isFromRadiantSouls && (
+                  {isFromKindredSpirits && (
                     <View style={styles.overlayIconsDetail}>
                       <TouchableOpacity
-                        onPress={async () => {
-                          await likeMatch(currentUser.userId);
-                          router.back();
-                        }}
+                        onPress={handleHeartPress}
                         style={styles.heartDetailBtn}
                       >
                         <Icon name="heart" size={28} color="#E0245E" />

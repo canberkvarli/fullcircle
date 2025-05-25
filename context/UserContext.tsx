@@ -1018,9 +1018,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const givenRef = doc(collection(fromRef, "likesGiven"), toUserId);
     const receivedRef = doc(collection(toRef, "likesReceived"), fromUserId);
 
+    // incoming like record to us
+    const incomingRef = doc(collection(fromRef, "likesReceived"), toUserId);
+
     await runTransaction(FIRESTORE, async (tx) => {
       const fromSnap = await tx.get(fromRef);
       const fromData = fromSnap.data()!;
+
+      // check if they already liked us
+      const incomingSnap = await tx.get(incomingRef);
+      const hadLikedUs = incomingSnap.exists;
 
       // check orb allowance
       if (viaOrb && (fromData.numOfOrbs ?? 0) < 1) {
@@ -1033,6 +1040,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       if (viaOrb && !fromData.fullCircleSubscription) {
         updates.numOfOrbs = (fromData.numOfOrbs ?? 0) - 1;
+      }
+      // if they’d already liked us, remove that incoming like & decrement our counter
+      if (hadLikedUs) {
+        tx.delete(incomingRef);
+        updates.likesReceivedCount = (fromData.likesReceivedCount ?? 1) - 1;
       }
       tx.update(fromRef, updates);
 
@@ -1054,6 +1066,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         viaOrb,
         timestamp: serverTimestamp(),
       });
+      // if it was mutual, also write your matches subcollections
+      if (hadLikedUs) {
+        const myMatchRef = doc(collection(fromRef, "matches"), toUserId);
+        const theirMatchRef = doc(collection(toRef, "matches"), fromUserId);
+        tx.set(myMatchRef, { timestamp: serverTimestamp() });
+        tx.set(theirMatchRef, { timestamp: serverTimestamp() });
+      }
     });
     refreshRadiantSouls();
   };

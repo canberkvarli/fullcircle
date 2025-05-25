@@ -45,15 +45,11 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     await db
       .collection("users")
       .doc(fromUserId)
-      .update({
-        likesGivenCount: FieldValue.increment(1),
-      });
+      .update({ likesGivenCount: FieldValue.increment(1) });
     await db
       .collection("users")
       .doc(toUserId)
-      .update({
-        likesReceivedCount: FieldValue.increment(1),
-      });
+      .update({ likesReceivedCount: FieldValue.increment(1) });
 
     // 2) Write LikeRecord in sub-collections
     await db
@@ -81,21 +77,17 @@ async function simulateDummyLikesAndChats(): Promise<void> {
 
   // --- Seed mutual matches (both directions) ---
   for (const { id: otherId } of dummyMatches) {
-    // A → B (other likes current)
-    const fromA = otherId,
-      toA = CURRENT_USER_ID;
+    // A -> B (other likes current)
+    const fromA = otherId;
+    const toA = CURRENT_USER_ID;
     await db
       .collection("users")
       .doc(fromA)
-      .update({
-        likesGivenCount: FieldValue.increment(1),
-      });
+      .update({ likesGivenCount: FieldValue.increment(1) });
     await db
       .collection("users")
       .doc(toA)
-      .update({
-        likesReceivedCount: FieldValue.increment(1),
-      });
+      .update({ likesReceivedCount: FieldValue.increment(1) });
     await db
       .collection("users")
       .doc(fromA)
@@ -117,16 +109,14 @@ async function simulateDummyLikesAndChats(): Promise<void> {
         timestamp: FieldValue.serverTimestamp(),
       });
 
-    // B → A (current likes other)
-    const fromB = CURRENT_USER_ID,
-      toB = otherId;
+    // B -> A (current user likes other)
+    const fromB = CURRENT_USER_ID;
+    const toB = otherId;
     await currentUserRef.update({ likesGivenCount: FieldValue.increment(1) });
     await db
       .collection("users")
       .doc(toB)
-      .update({
-        likesReceivedCount: FieldValue.increment(1),
-      });
+      .update({ likesReceivedCount: FieldValue.increment(1) });
     await currentUserRef
       .collection("likesGiven")
       .doc(toB)
@@ -146,16 +136,30 @@ async function simulateDummyLikesAndChats(): Promise<void> {
         timestamp: FieldValue.serverTimestamp(),
       });
 
+    // Delete the incoming like and decrement badge (simulate heart-back)
+    await currentUserRef.update({
+      likesReceivedCount: FieldValue.increment(-1),
+    });
+    await currentUserRef.collection("likesReceived").doc(otherId).delete();
+
     // 3) Update matches arrays on both user docs
     await db
       .collection("users")
       .doc(otherId)
-      .update({
-        matches: FieldValue.arrayUnion(CURRENT_USER_ID),
-      });
-    await currentUserRef.update({
-      matches: FieldValue.arrayUnion(otherId),
-    });
+      .update({ matches: FieldValue.arrayUnion(CURRENT_USER_ID) });
+    await currentUserRef.update({ matches: FieldValue.arrayUnion(otherId) });
+
+    // 4) Seed matches subcollections for future logic
+    await db
+      .collection("users")
+      .doc(otherId)
+      .collection("matches")
+      .doc(CURRENT_USER_ID)
+      .set({ timestamp: FieldValue.serverTimestamp() });
+    await currentUserRef
+      .collection("matches")
+      .doc(otherId)
+      .set({ timestamp: FieldValue.serverTimestamp() });
   }
 
   console.log("Dummy likes and matches seeded.");
@@ -166,26 +170,28 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     const chatRef = db.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
 
+    // Pre-generate timestamps for messages
+    const now = new Date();
     const conversation = [
       {
         text: `Hey there! 👋 ${faker.hacker.phrase()}`,
         sender: CURRENT_USER_ID,
-        timestamp: new Date().toISOString(),
+        timestamp: now,
       },
       {
         text: `${faker.hacker.ingverb()} sounds fun!`,
         sender: otherId,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(now.getTime() + 1000),
       },
       {
         text: `Absolutely, just trying to ${faker.hacker.verb()}`,
         sender: CURRENT_USER_ID,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(now.getTime() + 2000),
       },
       {
         text: `Let me know when you have time to ${faker.hacker.noun()}`,
         sender: otherId,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(now.getTime() + 3000),
       },
     ];
     const lastMsg = conversation[conversation.length - 1].text;

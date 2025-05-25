@@ -79,7 +79,7 @@ const RadiantSouls: React.FC = () => {
                 pathname: "/user/UserShow" as any,
                 params: {
                   user: JSON.stringify(user),
-                  isFromRadiantSouls: "true",
+                  source: "RadiantSouls",
                 },
               }}
             >
