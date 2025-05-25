@@ -1,6 +1,10 @@
+import * as path from "path";
+import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -238,7 +242,7 @@ async function seedFirestore(numUsers: number) {
     };
 
     // generate a random signup date in the past 30 days
-    const randomSignupDate = faker.date.recent(30);
+    const randomSignupDate = faker.date.recent({ days: 30 });
     const createdAtTimestamp =
       admin.firestore.Timestamp.fromDate(randomSignupDate);
     const onboardingOffsetMs = faker.number.int({
@@ -318,9 +322,9 @@ async function seedFirestore(numUsers: number) {
   const radiantCount = Math.min(20, userIds.length);
   const radiantSample = faker.helpers.arrayElements(userIds, radiantCount);
   console.info(`⭐️ Marking ${radiantCount} users as isRadiantSoul`);
-  // radiantSample.forEach((uid) => {
-  //   userDataList[uid].isRadiantSoul = true;
-  // });
+  radiantSample.forEach((uid) => {
+    userDataList[uid].isRadiantSoul = true;
+  });
 
   console.group("2) Writing user docs to Firestore");
   for (const [id, data] of Object.entries(userDataList)) {

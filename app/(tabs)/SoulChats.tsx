@@ -25,7 +25,6 @@ const SoulChats: React.FC = () => {
     const unsubscribe = subscribeToChatMatches(
       userData.userId,
       async (chatList) => {
-        // Resolve photo URLs
         const withPhotos = await Promise.all(
           chatList.map(async (m) => {
             const urls = m.photos?.length
@@ -54,7 +53,6 @@ const SoulChats: React.FC = () => {
     );
   }
 
-  // 2) No matches yet
   if (!matches.length) {
     return (
       <View style={styles.noMatchesContainer}>
@@ -106,12 +104,14 @@ const SoulChats: React.FC = () => {
                     styles.conversationText,
                     isUnread && styles.unreadText,
                   ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {match.lastMessage
                     ? match.lastMessage.length > 40
-                      ? `${match.lastMessage.slice(0, 40)}...`
+                      ? `${match.lastMessage.slice(0, 35)}...`
                       : match.lastMessage
-                    : `Start the match with ${match.firstName}`}
+                    : `Start the chat with ${match.firstName}`}
                 </Text>
               </View>
             </View>
@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
-    textAlign: "left",
     color: "#7E7972",
   },
   loaderContainer: {
@@ -162,13 +161,14 @@ const styles = StyleSheet.create({
   matchRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#D3C6BA",
+    paddingRight: 16,
   },
   avatarWrapper: {
     position: "relative",
-    marginRight: 10,
+    marginRight: 16,
   },
   avatarContainer: {
     width: 80,
@@ -194,15 +194,18 @@ const styles = StyleSheet.create({
   },
   matchInfo: {
     flex: 1,
+    paddingRight: 8,
   },
   matchName: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#7E7972",
+    marginBottom: 4,
   },
   conversationText: {
     fontSize: 15,
     color: "#666",
+    lineHeight: 20,
   },
   unreadText: {
     fontWeight: "bold",

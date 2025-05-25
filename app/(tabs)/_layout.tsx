@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useUserContext } from "@/context/UserContext";
 import { HeartIconWithBadge } from "@/components/HeartIconWithBadge";
+import { MatchesIconWithBadge } from "@/components/MatchesIconWithBadge";
 
 export default function TabsLayout() {
   const { userData } = useUserContext();
@@ -54,7 +55,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Soul Chats",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="comments" color={color} size={size} />
+            <MatchesIconWithBadge color={color} size={size} />
           ),
         }}
       />

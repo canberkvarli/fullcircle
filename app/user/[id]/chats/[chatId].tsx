@@ -17,12 +17,13 @@ import {
   User as GCUser,
 } from "react-native-gifted-chat";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 
 const Chat: React.FC = () => {
   const { otherUserId, matchUser } = useRoute().params as any;
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const {
     userData,
@@ -127,7 +128,7 @@ const Chat: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => router.back()}>
           <Icon name="chevron-left" size={24} color="#7E7972" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>

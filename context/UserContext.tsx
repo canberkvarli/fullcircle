@@ -124,6 +124,15 @@ export type MatchPreferencesType = {
   preferredSpiritualPractices?: string[];
 };
 
+export interface MatchType {
+  userId: string;
+  firstName?: string;
+  photos?: string[];
+  lastMessage: string;
+  lastMessageSender: string;
+  lastUpdated: Date;
+}
+
 export interface LikeRecord {
   matchId: string;
   viaOrb: boolean;
@@ -195,7 +204,10 @@ type UserContextType = {
     senderId: string,
     receiverId: string
   ) => void;
+  chatMatches: MatchType[];
+  markMatchAsRead: (matchId: string, userId: string) => Promise<void>;
   markChatAsRead: (chatId: string, userId: string) => Promise<void>;
+  unreadMatchesCount: number;
   fetchChatMatches: (userId: string) => Promise<any[]>;
   fetchRadiantSouls: () => Promise<any[]>;
   fetchPotentialMatches: () => void;
@@ -302,6 +314,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loadingNextBatch, setLoadingNextBatch] = useState(false);
   const [lastVisibleMatch, setLastVisibleMatch] = useState<"" | null>(null);
   const [noMoreMatches, setNoMoreMatches] = useState<boolean>(false);
+  const [chatMatches, setChatMatches] = useState<MatchType[]>([]);
+  const [unreadMatchesCount, setUnreadMatchesCount] = useState(0);
   const [isLinking, setIsLinking] = useState(false);
   const userDataRef = useRef(userData);
   const router = useRouter();
@@ -443,6 +457,49 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       clearInterval(id);
     };
   }, [assignWeeklyOrb]);
+
+  useEffect(() => {
+    if (!userData.userId) return;
+    const q = query(
+      collection(FIRESTORE, "chats"),
+      where("participants", "array-contains", userData.userId)
+    );
+    const unsub = onSnapshot(q, async (snap) => {
+      const detailed: MatchType[] = await Promise.all(
+        snap.docs.map(async (chatSnap) => {
+          const data = chatSnap.data();
+          const otherId = data.participants.find(
+            (id: string) => id !== userData.userId
+          )!;
+          const userSnap = await getDoc(doc(FIRESTORE, "users", otherId));
+          const profile = userSnap.exists ? userSnap.data()! : {};
+
+          const lastUpdated = data.lastUpdated?.toDate
+            ? data.lastUpdated.toDate()
+            : new Date(data.createdAt);
+
+          return {
+            userId: otherId,
+            firstName: profile.firstName,
+            photos: profile.photos,
+            lastMessage: data.lastMessage || "",
+            lastMessageSender: data.lastMessageSender || "",
+            lastUpdated,
+          };
+        })
+      );
+      // sort newest first
+      detailed.sort(
+        (a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime()
+      );
+      setChatMatches(detailed);
+      // count those where the *other* user was the last sender
+      setUnreadMatchesCount(
+        detailed.filter((m) => m.lastMessageSender !== userData.userId).length
+      );
+    });
+    return () => unsub();
+  }, [userData.userId]);
 
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
@@ -904,7 +961,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       orderBy("likesReceivedCount", "desc"),
       limit(10),
       ...buildQueryConstraints({
-        matchPreferences: userData.matchPreferences,
+        // Removed the matchpreferences so that the radiant souls are not affected by the user's preferences.
+        // showing the most liked radiant souls always, in the radius of the user's preferences only.
+        // matchPreferences: userData.matchPreferences,
         currentLat: userData.latitude,
         currentLon: userData.longitude,
       })
@@ -1068,10 +1127,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       // if it was mutual, also write your matches subcollections
       if (hadLikedUs) {
+        console.log("mutual like");
         const myMatchRef = doc(collection(fromRef, "matches"), toUserId);
         const theirMatchRef = doc(collection(toRef, "matches"), fromUserId);
         tx.set(myMatchRef, { timestamp: serverTimestamp() });
         tx.set(theirMatchRef, { timestamp: serverTimestamp() });
+        const chatId = [fromUserId, toUserId].sort().join("_");
+        const chatRef = doc(FIRESTORE, "chats", chatId);
+        tx.set(chatRef, {
+          participants: [fromUserId, toUserId],
+          messages: [],
+          lastMessage: "",
+          lastMessageSender: "",
+          createdAt: serverTimestamp(),
+          lastUpdated: serverTimestamp(),
+        });
       }
     });
     refreshRadiantSouls();
@@ -1615,6 +1685,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const markMatchAsRead = useCallback(
+    async (otherUserId: string) => {
+      const chatId = [userData.userId, otherUserId].sort().join("_");
+      const chatRef = doc(FIRESTORE, "chats", chatId);
+      await updateDoc(chatRef, {
+        lastMessageSender: userData.userId,
+      });
+      // optimistic local decrement:
+      setUnreadMatchesCount((c) => Math.max(0, c - 1));
+    },
+    [userData.userId]
+  );
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -1659,6 +1742,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     verifyPhoneAndSetUser,
     handleGoogleSignIn,
     fetchChatMatches,
+    chatMatches,
+    markMatchAsRead,
+    unreadMatchesCount,
   };
 
   if (initializing) {

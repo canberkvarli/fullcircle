@@ -41,7 +41,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
   for (const { id: fromUserId } of dummyLikes) {
     const toUserId = CURRENT_USER_ID;
 
-    // 1) Increment counters
+    // Increment counters
     await db
       .collection("users")
       .doc(fromUserId)
@@ -51,7 +51,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(toUserId)
       .update({ likesReceivedCount: FieldValue.increment(1) });
 
-    // 2) Write LikeRecord in sub-collections
+    // Write LikeRecords
     await db
       .collection("users")
       .doc(fromUserId)
@@ -62,7 +62,6 @@ async function simulateDummyLikesAndChats(): Promise<void> {
         viaOrb: false,
         timestamp: FieldValue.serverTimestamp(),
       });
-
     await db
       .collection("users")
       .doc(toUserId)
@@ -77,89 +76,64 @@ async function simulateDummyLikesAndChats(): Promise<void> {
 
   // --- Seed mutual matches (both directions) ---
   for (const { id: otherId } of dummyMatches) {
-    // A -> B (other likes current)
-    const fromA = otherId;
-    const toA = CURRENT_USER_ID;
+    // A -> B
     await db
       .collection("users")
-      .doc(fromA)
+      .doc(otherId)
       .update({ likesGivenCount: FieldValue.increment(1) });
+    await currentUserRef.update({
+      likesReceivedCount: FieldValue.increment(1),
+    });
     await db
       .collection("users")
-      .doc(toA)
-      .update({ likesReceivedCount: FieldValue.increment(1) });
-    await db
-      .collection("users")
-      .doc(fromA)
+      .doc(otherId)
       .collection("likesGiven")
-      .doc(toA)
+      .doc(CURRENT_USER_ID)
       .set({
-        matchId: toA,
+        matchId: CURRENT_USER_ID,
         viaOrb: false,
         timestamp: FieldValue.serverTimestamp(),
       });
-    await db
-      .collection("users")
-      .doc(toA)
-      .collection("likesReceived")
-      .doc(fromA)
-      .set({
-        matchId: fromA,
-        viaOrb: false,
-        timestamp: FieldValue.serverTimestamp(),
-      });
+    await currentUserRef.collection("likesReceived").doc(otherId).set({
+      matchId: otherId,
+      viaOrb: false,
+      timestamp: FieldValue.serverTimestamp(),
+    });
 
-    // B -> A (current user likes other)
-    const fromB = CURRENT_USER_ID;
-    const toB = otherId;
+    // B -> A
     await currentUserRef.update({ likesGivenCount: FieldValue.increment(1) });
     await db
       .collection("users")
-      .doc(toB)
+      .doc(otherId)
       .update({ likesReceivedCount: FieldValue.increment(1) });
-    await currentUserRef
-      .collection("likesGiven")
-      .doc(toB)
-      .set({
-        matchId: toB,
-        viaOrb: false,
-        timestamp: FieldValue.serverTimestamp(),
-      });
+    await currentUserRef.collection("likesGiven").doc(otherId).set({
+      matchId: otherId,
+      viaOrb: false,
+      timestamp: FieldValue.serverTimestamp(),
+    });
     await db
       .collection("users")
-      .doc(toB)
+      .doc(otherId)
       .collection("likesReceived")
-      .doc(fromB)
+      .doc(CURRENT_USER_ID)
       .set({
-        matchId: fromB,
+        matchId: CURRENT_USER_ID,
         viaOrb: false,
         timestamp: FieldValue.serverTimestamp(),
       });
 
-    // Delete the incoming like and decrement badge (simulate heart-back)
+    // Delete incoming like and decrement
     await currentUserRef.update({
       likesReceivedCount: FieldValue.increment(-1),
     });
     await currentUserRef.collection("likesReceived").doc(otherId).delete();
 
-    // 3) Update matches arrays on both user docs
+    // Update matches arrays only (no subcollections)
     await db
       .collection("users")
       .doc(otherId)
       .update({ matches: FieldValue.arrayUnion(CURRENT_USER_ID) });
     await currentUserRef.update({ matches: FieldValue.arrayUnion(otherId) });
-
-    // 4) Seed matches subcollections for future logic
-    await db
-      .collection("users")
-      .doc(otherId)
-      .collection("matches")
-      .doc(CURRENT_USER_ID)
-      .set({ timestamp: FieldValue.serverTimestamp() });
-    await currentUserRef
-      .collection("matches")
-      .doc(otherId)
-      .set({ timestamp: FieldValue.serverTimestamp() });
   }
 
   console.log("Dummy likes and matches seeded.");
@@ -170,7 +144,6 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     const chatRef = db.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
 
-    // Pre-generate timestamps for messages
     const now = new Date();
     const conversation = [
       {
@@ -204,13 +177,11 @@ async function simulateDummyLikesAndChats(): Promise<void> {
         lastMessage: lastMsg,
         lastUpdated: FieldValue.serverTimestamp(),
       });
-      console.log(`Created chat ${chatId}: "${lastMsg}"`);
     } else {
       await chatRef.update({
         lastMessage: lastMsg,
         lastUpdated: FieldValue.serverTimestamp(),
       });
-      console.log(`Updated chat ${chatId} lastMessage: "${lastMsg}"`);
     }
   }
 
