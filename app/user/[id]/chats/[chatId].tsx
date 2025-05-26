@@ -117,7 +117,6 @@ const Chat: React.FC = () => {
       for (const m of newMsgs) {
         await sendMessage(chatId, m.text || "", userData.userId, otherUserId);
       }
-      setMessages((prev) => GiftedChat.append(prev, newMsgs));
     },
     [chatId, sendMessage, userData.userId, otherUserId]
   );
