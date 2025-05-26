@@ -64,9 +64,10 @@ const Chat: React.FC = () => {
     };
   }, [userData.userId, otherUserId, createOrFetchChat]);
 
-  // subscribe → messages + mark read
+  // subscribe to messages
   useEffect(() => {
     if (!chatId) return;
+
     const unsubscribe = subscribeToChatMessages(chatId, (rawMsgs: any[]) => {
       const formatted = rawMsgs
         .map((m, idx) => ({
@@ -86,14 +87,23 @@ const Chat: React.FC = () => {
           } as GCUser,
         }))
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
       setMessages(formatted);
 
-      markChatAsRead(chatId, userData.userId).catch(console.error);
+      // mark as read only if there's at least one message from the other user
+      const hasMessagesFromOther = rawMsgs.some(
+        (m) => m.sender === otherUserId
+      );
+      if (rawMsgs.length > 0 && hasMessagesFromOther) {
+        markChatAsRead(chatId, userData.userId).catch(console.error);
+      }
     });
+
     return unsubscribe;
   }, [
     chatId,
     userData.userId,
+    otherUserId,
     subscribeToChatMessages,
     otherUserData,
     markChatAsRead,
@@ -103,6 +113,7 @@ const Chat: React.FC = () => {
   const handleSend = useCallback(
     async (newMsgs: IMessage[] = []) => {
       if (!chatId) return;
+
       for (const m of newMsgs) {
         await sendMessage(chatId, m.text || "", userData.userId, otherUserId);
       }
@@ -119,10 +130,19 @@ const Chat: React.FC = () => {
         right: { backgroundColor: "#D8BFAA" },
         left: { backgroundColor: "#B8C1B2" },
       }}
+      textStyle={{
+        right: { color: "#fff" },
+        left: { color: "#fff" },
+      }}
     />
   );
+
   const renderInputToolbar = (props: any) => (
-    <InputToolbar {...props} containerStyle={styles.inputToolbar} />
+    <InputToolbar
+      {...props}
+      containerStyle={styles.inputToolbar}
+      primaryStyle={styles.inputPrimary}
+    />
   );
 
   return (
@@ -144,22 +164,24 @@ const Chat: React.FC = () => {
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 75 : 0}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
-          <GiftedChat
-            messages={messages}
-            onSend={handleSend}
-            user={{
-              _id: userData.userId,
-              name: userData.firstName,
-              avatar: userData.photos?.[0],
-            }}
-            placeholder="Type a message…"
-            showUserAvatar
-            renderUsernameOnMessage
-            renderBubble={renderBubble}
-            renderInputToolbar={renderInputToolbar}
-          />
+          <View style={{ flex: 1 }}>
+            <GiftedChat
+              messages={messages}
+              onSend={handleSend}
+              user={{
+                _id: userData.userId,
+                name: userData.firstName,
+                avatar: userData.photos?.[0],
+              }}
+              placeholder="Type a message…"
+              showUserAvatar
+              renderUsernameOnMessage
+              renderBubble={renderBubble}
+              renderInputToolbar={renderInputToolbar}
+            />
+          </View>
         </KeyboardAvoidingView>
       )}
     </SafeAreaView>
@@ -167,24 +189,39 @@ const Chat: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#EDE9E3" },
+  container: {
+    flex: 1,
+    backgroundColor: "#EDE9E3",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#EDE9E3",
+    borderBottomWidth: 1,
+    borderBottomColor: "#D3C6BA",
   },
   headerTitle: {
-    paddingLeft: 10,
+    paddingLeft: 12,
     fontSize: 20,
     fontWeight: "bold",
     color: "#7E7972",
   },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   inputToolbar: {
     borderTopWidth: 1,
     borderTopColor: "#D3C6BA",
     backgroundColor: "#fff",
-    padding: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  inputPrimary: {
+    alignItems: "center",
   },
 });
 

@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Dimensions,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { Link } from "expo-router";
 import LottieView from "lottie-react-native";
 import blackCircleAnimation from "../../assets/animations/black-circle.json";
-
-const { width: screenWidth } = Dimensions.get("window");
 
 const SoulChats: React.FC = () => {
   const { userData, createOrFetchChat, subscribeToChatMatches, getImageUrl } =
@@ -70,7 +61,13 @@ const SoulChats: React.FC = () => {
       <Text style={styles.title}>Matches</Text>
       {matches.map((match) => {
         const chatId = [userData.userId, match.userId].sort().join("_");
-        const isUnread = match.lastMessageSender !== userData.userId;
+        // Show as unread if:
+        // 1. There's a message and it's from the other user, OR
+        // 2. It's a new match with no messages (empty lastMessage)
+        const isUnread = match.lastMessage
+          ? match.lastMessageSender !== userData.userId
+          : true;
+
         return (
           <Link
             key={match.userId}

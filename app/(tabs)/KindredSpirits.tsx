@@ -125,6 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EDE9E3",
     padding: 16,
     paddingBottom: 20,
+    paddingTop: 36,
   },
   likesText: {
     fontSize: 24,
