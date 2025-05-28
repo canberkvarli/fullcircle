@@ -20,6 +20,7 @@ import {
   User as GCUser,
   Send,
 } from "react-native-gifted-chat";
+import ChatOptionsModal from "@/components/modals/ChatOptionsModal";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -48,6 +49,7 @@ const Chat: React.FC = () => {
   const [fullUserData, setFullUserData] = useState<any>(null);
   const [matchDate, setMatchDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<"chat" | "profile">("chat");
+  const [optionsVisible, setOptionsVisible] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -245,133 +247,153 @@ const Chat: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.backAndTitle}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <Icon name="chevron-left" size={24} color="#7E7972" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>
-              {otherUserData?.firstName || "Chat"}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.moreButton}>
-            <Icon name="ellipsis-v" size={20} color="#7E7972" />
-          </TouchableOpacity>
-        </View>
+    <>
+      <ChatOptionsModal
+        visible={optionsVisible}
+        onClose={() => setOptionsVisible(false)}
+        onUnmatch={() => {
+          // unmatch logic
+          console.log("unmatch!");
+          setOptionsVisible(false);
+        }}
+        onReport={() => {
+          // report logic
+          console.log("report!");
+          setOptionsVisible(false);
+        }}
+      />
 
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "chat" && styles.activeTab]}
-            onPress={() => handleTabChange("chat")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "chat" && styles.activeTabText,
-              ]}
-            >
-              Chat
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "profile" && styles.activeTab]}
-            onPress={() => handleTabChange("profile")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "profile" && styles.activeTabText,
-              ]}
-            >
-              Profile
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Content Container with swipe animation */}
-      <View style={styles.contentWrapper}>
-        <Animated.View
-          style={[
-            styles.slidingContainer,
-            {
-              transform: [{ translateX: slideAnim }],
-            },
-          ]}
-        >
-          {/* Chat View */}
-          <View style={styles.tabContent}>
-            <KeyboardAvoidingView
-              style={{ flex: 1 }}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-            >
-              <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
-                <GiftedChat
-                  messages={messages}
-                  onSend={handleSend}
-                  user={{
-                    _id: userData.userId,
-                    name: userData.firstName,
-                    avatar: userData.photos?.[0],
-                  }}
-                  placeholder="Type a message…"
-                  showUserAvatar={false}
-                  renderBubble={renderBubble}
-                  renderInputToolbar={renderInputToolbar}
-                  renderSend={renderSend}
-                  alwaysShowSend
-                  scrollToBottomStyle={styles.scrollToBottom}
-                  minInputToolbarHeight={56}
-                  bottomOffset={Platform.OS === "ios" ? 20 : 0}
-                  keyboardShouldPersistTaps="never"
-                  textInputProps={{
-                    style: styles.textInput,
-                    placeholder: "Type a message…",
-                    placeholderTextColor: "#999",
-                    multiline: true,
-                    maxLength: 1000,
-                  }}
-                  renderFooter={renderMatchIndicator}
-                />
-              </Animated.View>
-            </KeyboardAvoidingView>
-          </View>
-
-          {/* Profile View using PotentialMatch component */}
-          <View style={styles.tabContent}>
-            {fullUserData ? (
-              <ScrollView
-                style={styles.profileScrollView}
-                contentContainerStyle={styles.profileContent}
-                showsVerticalScrollIndicator={false}
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.backAndTitle}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={styles.backButton}
               >
-                <PotentialMatch
-                  currentPotentialMatch={fullUserData}
-                  isMatched={true}
-                  onLike={() => {}} // No-op since already matched
-                  disableInteractions={true}
-                />
-              </ScrollView>
-            ) : (
-              <View style={styles.profileLoader}>
-                <ActivityIndicator size="large" color="#D8BFAA" />
-                <Text style={styles.profileLoadingText}>
-                  Loading profile...
-                </Text>
-              </View>
-            )}
+                <Icon name="chevron-left" size={24} color="#7E7972" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>
+                {otherUserData?.firstName || "Chat"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setOptionsVisible(true)}
+              style={styles.moreButton}
+            >
+              <Icon name="ellipsis-v" size={20} color="#7E7972" />
+            </TouchableOpacity>
           </View>
-        </Animated.View>
-      </View>
-    </SafeAreaView>
+
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "chat" && styles.activeTab]}
+              onPress={() => handleTabChange("chat")}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "chat" && styles.activeTabText,
+                ]}
+              >
+                Chat
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "profile" && styles.activeTab]}
+              onPress={() => handleTabChange("profile")}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "profile" && styles.activeTabText,
+                ]}
+              >
+                Profile
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Content Container with swipe animation */}
+        <View style={styles.contentWrapper}>
+          <Animated.View
+            style={[
+              styles.slidingContainer,
+              {
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            {/* Chat View */}
+            <View style={styles.tabContent}>
+              <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+              >
+                <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
+                  <GiftedChat
+                    messages={messages}
+                    onSend={handleSend}
+                    user={{
+                      _id: userData.userId,
+                      name: userData.firstName,
+                      avatar: userData.photos?.[0],
+                    }}
+                    placeholder="Type a message…"
+                    showUserAvatar={false}
+                    renderBubble={renderBubble}
+                    renderInputToolbar={renderInputToolbar}
+                    renderSend={renderSend}
+                    alwaysShowSend
+                    scrollToBottomStyle={styles.scrollToBottom}
+                    minInputToolbarHeight={56}
+                    bottomOffset={Platform.OS === "ios" ? 20 : 0}
+                    keyboardShouldPersistTaps="never"
+                    textInputProps={{
+                      style: styles.textInput,
+                      placeholder: "Type a message…",
+                      placeholderTextColor: "#999",
+                      multiline: true,
+                      maxLength: 1000,
+                    }}
+                    renderFooter={renderMatchIndicator}
+                  />
+                </Animated.View>
+              </KeyboardAvoidingView>
+            </View>
+
+            {/* Profile View using PotentialMatch component */}
+            <View style={styles.tabContent}>
+              {fullUserData ? (
+                <ScrollView
+                  style={styles.profileScrollView}
+                  contentContainerStyle={styles.profileContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <PotentialMatch
+                    currentPotentialMatch={fullUserData}
+                    isMatched={true}
+                    onLike={() => {}}
+                    disableInteractions={true}
+                  />
+                </ScrollView>
+              ) : (
+                <View style={styles.profileLoader}>
+                  <ActivityIndicator size="large" color="#D8BFAA" />
+                  <Text style={styles.profileLoadingText}>
+                    Loading profile...
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Animated.View>
+        </View>
+      </SafeAreaView>
+    </>
   );
 };
 
