@@ -7,7 +7,6 @@ import { useRouter } from "expo-router";
 function LandingPageScreen(): JSX.Element {
   const router = useRouter();
 
-  // TODO-TESTING: Revert back to LoginSignupScreen.
   const handleAnimationFinish = () => {
     router.replace("onboarding/LoginSignupScreen" as any);
   };
@@ -15,7 +14,7 @@ function LandingPageScreen(): JSX.Element {
   return (
     <View style={styles.container}>
       <LottieView
-        source={require("../../assets/animations/black-circle.json")}
+        source={require("../../assets/animations/mandala.json")}
         style={styles.animation}
         autoPlay
         loop={false}

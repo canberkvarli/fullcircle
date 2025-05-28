@@ -169,6 +169,7 @@ type UserContextType = {
   navigateToScreen: (screen: string) => void;
   saveProgress: (screen?: string) => void;
   fetchUserData: (userId: string, isSSO: boolean) => Promise<void>;
+  fetchUserById: (userId: string) => void;
   getIdToken: () => Promise<string | null>;
   currentUser: FirebaseAuthTypes.User | null;
   setCurrentUser: React.Dispatch<
@@ -796,6 +797,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+    }
+  };
+
+  const fetchUserById = async (userId: string) => {
+    try {
+      const userDocRef = doc(FIRESTORE, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists) {
+        return { userId: userDoc.id, ...userDoc.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return null;
     }
   };
 
@@ -1715,6 +1730,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     navigateToScreen,
     saveProgress,
     fetchUserData,
+    fetchUserById,
     getIdToken,
     currentUser,
     setCurrentUser,

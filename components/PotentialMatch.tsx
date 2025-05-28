@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  ImageBackground,
+} from "react-native";
 import InfoCard from "@/components/InfoCard";
 import { useUserContext } from "@/context/UserContext";
 import Icon from "react-native-vector-icons/FontAwesome";
+
+const { width: screenWidth } = Dimensions.get("window");
+const IMAGE_MARGIN = 32;
+const MAX_PHOTO_SIZE = screenWidth - IMAGE_MARGIN;
 
 type Props = {
   currentPotentialMatch: any;
@@ -23,7 +34,6 @@ const PotentialMatch: React.FC<Props> = ({
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [isPhotoLoading, setIsPhotoLoading] = useState(true);
 
-  // once photos load, notify parent and render UI
   useEffect(() => {
     const fetchAll = async () => {
       if (currentPotentialMatch.photos) {
@@ -38,7 +48,6 @@ const PotentialMatch: React.FC<Props> = ({
     fetchAll();
   }, [currentPotentialMatch, getImageUrl, onPhotosLoaded]);
 
-  // hide until photos done
   if (isPhotoLoading) return null;
 
   const infoSections = [
@@ -57,7 +66,9 @@ const PotentialMatch: React.FC<Props> = ({
     { title: "Height", content: currentPotentialMatch.height },
     {
       title: "Location",
-      content: `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`,
+      content: currentPotentialMatch.location?.city
+        ? `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`
+        : "Location not provided",
     },
     {
       title: "Sexual Orientation",
@@ -72,26 +83,29 @@ const PotentialMatch: React.FC<Props> = ({
       <Text style={styles.userName}>
         {currentPotentialMatch.firstName}, {currentPotentialMatch.age}
       </Text>
-
       {photoUrls.map((url, i) => (
         <View key={i} style={styles.photoContainer}>
-          <Image source={{ uri: url }} style={styles.photo} />
-
-          {!isMatched && (
-            <TouchableOpacity
-              style={styles.heartIcon}
-              onPress={() =>
-                !disableInteractions && onLike(currentPotentialMatch.userId)
-              }
-              disabled={disableInteractions}
-            >
-              <Icon
-                name="heart"
-                size={40}
-                color={disableInteractions ? "#ccc" : "red"}
-              />
-            </TouchableOpacity>
-          )}
+          <ImageBackground
+            source={{ uri: url }}
+            style={styles.photoBackground}
+            imageStyle={styles.photo}
+          >
+            {!isMatched && (
+              <TouchableOpacity
+                onPress={() =>
+                  !disableInteractions && onLike(currentPotentialMatch.userId)
+                }
+                disabled={disableInteractions}
+                style={styles.heartWrapper}
+              >
+                <Icon
+                  name="heart"
+                  size={40}
+                  color={disableInteractions ? "#ccc" : "red"}
+                />
+              </TouchableOpacity>
+            )}
+          </ImageBackground>
 
           {infoSections
             .slice(i * infoStep, (i + 1) * infoStep)
@@ -116,28 +130,32 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     marginBottom: 20,
+    alignItems: "center",
   },
   userName: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
-    paddingLeft: 30,
   },
   photoContainer: {
     position: "relative",
     marginBottom: 20,
+    alignItems: "center",
+    width: MAX_PHOTO_SIZE,
   },
-  photo: {
-    width: 400,
-    height: 400,
-    borderRadius: 30,
+  photoBackground: {
+    width: MAX_PHOTO_SIZE,
+    height: MAX_PHOTO_SIZE,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+    alignItems: "flex-end",
     marginVertical: 10,
   },
-  heartIcon: {
-    position: "absolute",
-    bottom: 180,
-    right: 50,
-    zIndex: 10,
+  photo: {
+    borderRadius: 30,
+  },
+  heartWrapper: {
+    padding: 12,
   },
 });
 
