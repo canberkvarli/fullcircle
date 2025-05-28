@@ -249,15 +249,17 @@ const Chat: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Icon name="chevron-left" size={24} color="#7E7972" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {otherUserData?.firstName || "Chat"}
-          </Text>
+          <View style={styles.backAndTitle}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Icon name="chevron-left" size={24} color="#7E7972" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {otherUserData?.firstName || "Chat"}
+            </Text>
+          </View>
           <TouchableOpacity style={styles.moreButton}>
             <Icon name="ellipsis-v" size={20} color="#7E7972" />
           </TouchableOpacity>
@@ -393,10 +395,15 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: -8,
   },
+  backAndTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#7E7972",
+    marginLeft: 8,
   },
   moreButton: {
     padding: 8,

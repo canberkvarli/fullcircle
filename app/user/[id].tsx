@@ -279,15 +279,17 @@ const UserShow: React.FC = () => {
         <>
           <View style={styles.headerOverlay}>
             <View style={styles.headerContainer}>
-              <Link href=".." asChild>
-                <TouchableOpacity
-                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                  style={styles.backInner}
-                >
-                  <Icon name="chevron-left" size={20} color="#7E7972" />
-                  <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
-              </Link>
+              <View style={styles.backSection}>
+                <Link href=".." asChild>
+                  <TouchableOpacity
+                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                    style={styles.backInner}
+                  >
+                    <Icon name="chevron-left" size={20} color="#7E7972" />
+                    <Text style={styles.backText}>Back</Text>
+                  </TouchableOpacity>
+                </Link>
+              </View>
 
               <Animated.Text
                 style={[
@@ -424,14 +426,19 @@ const styles = StyleSheet.create({
     height: HEADER_HEIGHT,
     backgroundColor: "#EDE9E3",
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: 45,
     zIndex: 10,
   },
   headerContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
   },
+  backSection: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+
   backInner: {
     flexDirection: "row",
     alignItems: "center",
@@ -439,6 +446,13 @@ const styles = StyleSheet.create({
   backText: {
     marginLeft: 6,
     fontSize: 16,
+    color: "#7E7972",
+  },
+
+  backNameText: {
+    marginTop: 4,
+    fontSize: 20,
+    fontWeight: "bold",
     color: "#7E7972",
   },
   nameCenter: {
@@ -459,7 +473,7 @@ const styles = StyleSheet.create({
   topName: {
     marginLeft: 16,
     marginBottom: 8,
-    fontSize: 22,
+    fontSize: 32,
     fontWeight: "bold",
     color: "#7E7972",
   },

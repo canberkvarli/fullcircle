@@ -80,9 +80,12 @@ const PotentialMatch: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.userName}>
-        {currentPotentialMatch.firstName}, {currentPotentialMatch.age}
-      </Text>
+      {!isMatched && (
+        <Text style={styles.userName}>
+          {currentPotentialMatch.firstName}, {currentPotentialMatch.age}
+        </Text>
+      )}
+
       {photoUrls.map((url, i) => (
         <View key={i} style={styles.photoContainer}>
           <ImageBackground
