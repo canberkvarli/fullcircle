@@ -11,7 +11,7 @@ import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
-import blackCircleAnimation from "../../assets/animations/black-circle.json";
+import loadingMandalaAnimation from "../../assets/animations/loading_mandala.json";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -46,7 +46,7 @@ const KindredSpirits: React.FC = () => {
     return (
       <View style={styles.loaderContainer}>
         <LottieView
-          source={blackCircleAnimation}
+          source={loadingMandalaAnimation}
           autoPlay
           loop
           style={styles.loaderAnimation}

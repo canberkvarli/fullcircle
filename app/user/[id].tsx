@@ -15,7 +15,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import LottieView from "lottie-react-native";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import leavesAnimation from "../../assets/animations/leaves.json";
-import blackCircleAnimation from "../../assets/animations/black-circle.json";
+import loadingMandalaAnimation from "../../assets/animations/loading_mandala.json";
 import SlidingTabBar from "@/components/SlidingTabBar";
 
 const HEADER_HEIGHT = 120;
@@ -267,7 +267,7 @@ const UserShow: React.FC = () => {
       {loadingPhotos && !showOrbAnim && (
         <View style={styles.loaderOverlay}>
           <LottieView
-            source={blackCircleAnimation}
+            source={loadingMandalaAnimation}
             autoPlay
             loop
             style={styles.loaderAnimation}

@@ -4,7 +4,7 @@ import { Link } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import UserCard from "@/components/UserCard";
 import LottieView from "lottie-react-native";
-import blackCircleAnimation from "../../assets/animations/black-circle.json";
+import loadingMandala from "../../assets/animations/loading_mandala.json";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -40,7 +40,7 @@ const RadiantSouls: React.FC = () => {
     return (
       <View style={styles.loaderContainer}>
         <LottieView
-          source={blackCircleAnimation}
+          source={loadingMandala}
           autoPlay
           loop
           style={styles.loaderAnimation}

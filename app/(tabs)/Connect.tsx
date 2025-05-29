@@ -7,7 +7,7 @@ import styles from "@/styles/Main/ConnectStyles";
 import { Link } from "expo-router";
 import FilterModal from "@/components/modals/FiltersModal";
 import LottieView from "lottie-react-native";
-import circleAnimation from "../../assets/animations/black-circle.json";
+import loadingMandala from "../../assets/animations/loading_mandala.json";
 
 const ConnectScreen: React.FC = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -190,11 +190,11 @@ const ConnectScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* black-circle loader */}
+      {/* loading_mandala loader */}
       {!noMoreMatches && isLoading && (
         <View style={styles.loadingOverlay}>
           <LottieView
-            source={circleAnimation}
+            source={loadingMandala}
             autoPlay
             loop
             style={styles.loadingAnimation}

@@ -14,7 +14,7 @@ function LandingPageScreen(): JSX.Element {
   return (
     <View style={styles.container}>
       <LottieView
-        source={require("../../assets/animations/mandala.json")}
+        source={require("../../assets/animations/loading_mandala.json")}
         style={styles.animation}
         autoPlay
         loop={false}

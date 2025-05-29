@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { useUserContext } from "@/context/UserContext";
 import { Link } from "expo-router";
 import LottieView from "lottie-react-native";
-import blackCircleAnimation from "../../assets/animations/black-circle.json";
+import loadingMandalaAnimation from "../../assets/animations/loading_mandala.json";
 
 const SoulChats: React.FC = () => {
   const { userData, createOrFetchChat, subscribeToChatMatches, getImageUrl } =
@@ -35,7 +35,7 @@ const SoulChats: React.FC = () => {
     return (
       <View style={styles.loaderContainer}>
         <LottieView
-          source={blackCircleAnimation}
+          source={loadingMandalaAnimation}
           autoPlay
           loop
           style={styles.loaderAnimation}

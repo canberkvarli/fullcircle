@@ -573,10 +573,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         if (docSnap.exists) {
           // User already exists; use their current onboarding screen if defined
           const existingUser = docSnap.data() as UserDataType;
-          console.log(
-            "handleGoogleSignIn(): Existing user found",
-            existingUser
-          );
+          console.log("handleGoogleSignIn(): Existing user found");
 
           userDataToUpdate = {
             ...existingUser,
