@@ -134,6 +134,22 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(otherId)
       .update({ matches: FieldValue.arrayUnion(CURRENT_USER_ID) });
     await currentUserRef.update({ matches: FieldValue.arrayUnion(otherId) });
+
+    // 4) Create matches subcollection documents
+    await db
+      .collection("users")
+      .doc(otherId)
+      .collection("matches")
+      .doc(CURRENT_USER_ID)
+      .set({
+        matchId: CURRENT_USER_ID,
+        timestamp: FieldValue.serverTimestamp(),
+      });
+
+    await currentUserRef.collection("matches").doc(otherId).set({
+      matchId: otherId,
+      timestamp: FieldValue.serverTimestamp(),
+    });
   }
 
   console.log("Dummy likes and matches seeded.");

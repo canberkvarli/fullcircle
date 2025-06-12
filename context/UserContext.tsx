@@ -31,7 +31,10 @@ import {
   arrayUnion,
   Unsubscribe,
   writeBatch,
+  addDoc,
 } from "@react-native-firebase/firestore";
+
+import firestore from "@react-native-firebase/firestore";
 
 export type UserDataType = {
   userId: string;
@@ -220,6 +223,12 @@ type UserContextType = {
   likesReceivedCount?: number;
   dislikesGivenCount?: number;
   dislikesReceivedCount?: number;
+  reportUser: (
+    userId: string,
+    reason: string,
+    details: string | undefined
+  ) => any;
+  unmatchUser: (userId: string) => any;
 };
 
 // Initial screens and initial user data
@@ -339,7 +348,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // don’t kick off until we actually have preferences from Firestore
-    if (!userData.matchPreferences) return;
+    if (!userData.onboardingCompleted && !userData.matchPreferences) return;
 
     console.log(
       "Match preferences changed, resetting matches",
@@ -356,7 +365,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     initFetch();
-  }, [userData.matchPreferences]);
+  }, [userData.matchPreferences, userData.onboardingCompleted, currentUser]);
 
   useEffect(() => {
     // don’t prefetch until we have at least one batch
@@ -1234,7 +1243,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // run once at mount
-    refreshRadiantSouls();
+    // refreshRadiantSouls();
 
     // on foreground
     const foregroundSub = AppState.addEventListener("change", (state) => {
@@ -1463,19 +1472,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<string | null> => {
     const chatId = [userId, matchedUserId].sort().join("_");
     try {
-      const chatRef = doc(FIRESTORE, "chats", chatId);
-      await runTransaction(FIRESTORE, async (tx) => {
-        const snap = await tx.get(chatRef);
+      // Check if they're matched by looking in the matches subcollection
+      const matchDoc = await FIRESTORE.collection("users")
+        .doc(userId)
+        .collection("matches")
+        .doc(matchedUserId)
+        .get();
+
+      if (!matchDoc.exists) {
+        console.log("Users are not matched, cannot create chat");
+        return null;
+      }
+
+      const chatRef = FIRESTORE.collection("chats").doc(chatId);
+
+      await FIRESTORE.runTransaction(async (transaction) => {
+        const snap = await transaction.get(chatRef);
         if (!snap.exists) {
-          tx.set(chatRef, {
+          transaction.set(chatRef, {
             participants: [userId, matchedUserId],
             messages: [],
             lastMessage: "",
-            lastUpdated: serverTimestamp(),
-            createdAt: serverTimestamp(),
+            lastUpdated: firestore.FieldValue.serverTimestamp(),
+            createdAt: firestore.FieldValue.serverTimestamp(),
           });
         }
       });
+
       return chatId;
     } catch (err) {
       console.error("createOrFetchChat error:", err);
@@ -1519,8 +1542,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     return onSnapshot(q, async (snap) => {
+      // Only process chats that actually exist
+      const existingChats = snap.docs.filter((doc) => doc.exists);
+
       const detailed = await Promise.all(
-        snap.docs.map(async (chatSnap) => {
+        existingChats.map(async (chatSnap) => {
           const data = chatSnap.data();
           const participants: string[] = data.participants;
           const otherId = participants.find((id) => id !== userId)!;
@@ -1697,6 +1723,155 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  const unmatchUser = async (otherUserId: string) => {
+    if (!userData.userId) return false;
+
+    try {
+      const chatId = [userData.userId, otherUserId].sort().join("_");
+
+      // 1. Check for existing likes BEFORE deleting them
+      const likeGivenDoc = await FIRESTORE.collection("users")
+        .doc(userData.userId)
+        .collection("likesGiven")
+        .doc(otherUserId)
+        .get();
+
+      const likeReceivedDoc = await FIRESTORE.collection("users")
+        .doc(userData.userId)
+        .collection("likesReceived")
+        .doc(otherUserId)
+        .get();
+
+      const hadGivenLike = likeGivenDoc.exists;
+      const hadReceivedLike = likeReceivedDoc.exists;
+
+      // 2. Delete the chat document
+      await FIRESTORE.collection("chats").doc(chatId).delete();
+
+      // 3. Remove from both users' matches arrays
+      const batch = FIRESTORE.batch();
+
+      const currentUserRef = FIRESTORE.collection("users").doc(userData.userId);
+      const otherUserRef = FIRESTORE.collection("users").doc(otherUserId);
+
+      batch.update(currentUserRef, {
+        matches: firestore.FieldValue.arrayRemove(otherUserId),
+      });
+
+      batch.update(otherUserRef, {
+        matches: firestore.FieldValue.arrayRemove(userData.userId),
+      });
+
+      // 4. Remove from matches subcollections
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(userData.userId)
+          .collection("matches")
+          .doc(otherUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("matches")
+          .doc(userData.userId)
+      );
+
+      // 5. Delete all like records
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(userData.userId)
+          .collection("likesGiven")
+          .doc(otherUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(userData.userId)
+          .collection("likesReceived")
+          .doc(otherUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("likesGiven")
+          .doc(userData.userId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("likesReceived")
+          .doc(userData.userId)
+      );
+
+      // 6. Update like counts based on what existed before deletion
+      if (hadGivenLike) {
+        batch.update(currentUserRef, {
+          likesGivenCount: firestore.FieldValue.increment(-1),
+        });
+        batch.update(otherUserRef, {
+          likesReceivedCount: firestore.FieldValue.increment(-1),
+        });
+        console.log("like given count decremented");
+      }
+
+      if (hadReceivedLike) {
+        batch.update(currentUserRef, {
+          likesReceivedCount: firestore.FieldValue.increment(-1),
+        });
+        batch.update(otherUserRef, {
+          likesGivenCount: firestore.FieldValue.increment(-1),
+        });
+        console.log("like received count decremented");
+      }
+
+      // Commit all changes at once
+      await batch.commit();
+
+      // 7. Update local exclusion sets
+      setExcludedLikes((prev) => {
+        const newSet = new Set(prev);
+        console.log("excluded likes set", newSet);
+        newSet.delete(otherUserId);
+        console.log("new set after deleting.", newSet);
+        return newSet;
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error unmatching user:", error);
+      return false;
+    }
+  };
+
+  const reportUser = async (
+    reportedUserId: string,
+    reason: string,
+    details?: string
+  ) => {
+    if (!userData.userId) return false;
+
+    try {
+      await addDoc(collection(FIRESTORE, "reports"), {
+        reportedBy: userData.userId,
+        reportedUser: reportedUserId,
+        reason,
+        details: details || "",
+        status: "pending",
+        createdAt: serverTimestamp(),
+      });
+
+      await unmatchUser(reportedUserId);
+
+      return true;
+    } catch (error) {
+      console.error("Error reporting user:", error);
+      return false;
+    }
+  };
+
   const markMatchAsRead = useCallback(
     async (otherUserId: string) => {
       const chatId = [userData.userId, otherUserId].sort().join("_");
@@ -1758,6 +1933,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     chatMatches,
     markMatchAsRead,
     unreadMatchesCount,
+    reportUser,
+    unmatchUser,
   };
 
   if (initializing) {

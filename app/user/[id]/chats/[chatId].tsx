@@ -26,6 +26,7 @@ import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import PotentialMatch from "@/components/PotentialMatch";
+import ReportModal from "@/components/modals/ReportModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -40,6 +41,8 @@ const Chat: React.FC = () => {
     sendMessage,
     markChatAsRead,
     fetchUserById,
+    reportUser,
+    unmatchUser,
   } = useUserContext();
 
   const [chatId, setChatId] = useState<string | null>(null);
@@ -50,6 +53,8 @@ const Chat: React.FC = () => {
   const [matchDate, setMatchDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState<"chat" | "profile">("chat");
   const [optionsVisible, setOptionsVisible] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [isUnmatching, setIsUnmatching] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -75,9 +80,13 @@ const Chat: React.FC = () => {
   // Create/fetch chatId and get match date
   useEffect(() => {
     let mounted = true;
+
+    // Don't try to create chat if unmatching
+    if (isUnmatching) return;
+
     (async () => {
       const id = await createOrFetchChat(userData.userId, otherUserId);
-      if (mounted) {
+      if (mounted && !isUnmatching) {
         setChatId(id);
         setMatchDate(new Date());
         setIsLoading(false);
@@ -93,14 +102,26 @@ const Chat: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [userData.userId, otherUserId, createOrFetchChat]);
-
+  }, [userData.userId, otherUserId, createOrFetchChat, isUnmatching]);
   // Subscribe to messages
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatId || !matchDate) return;
 
     const unsubscribe = subscribeToChatMessages(chatId, (rawMsgs: any[]) => {
-      const formatted = rawMsgs
+      // Create the match message
+      const matchMessage: IMessage = {
+        _id: "match-indicator",
+        text: `You matched with ${otherUserData?.firstName || "them"}!`,
+        createdAt: matchDate,
+        system: true, // This makes it a system message
+        user: {
+          _id: "system",
+          name: "System",
+        },
+      };
+
+      // Format chat messages
+      const chatMessages = rawMsgs
         .map((m, idx) => ({
           _id: `${m.timestamp}-${idx}`,
           text: m.text,
@@ -119,7 +140,10 @@ const Chat: React.FC = () => {
         }))
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      setMessages(formatted);
+      // Combine match message with chat messages
+      // The match message will always be at the beginning (oldest)
+      const allMessages = [...chatMessages, matchMessage];
+      setMessages(allMessages);
 
       // Mark as read only if there's at least one message from the other user
       const hasMessagesFromOther = rawMsgs.some(
@@ -138,6 +162,7 @@ const Chat: React.FC = () => {
     subscribeToChatMessages,
     otherUserData,
     markChatAsRead,
+    matchDate,
   ]);
 
   // Handle tab change with swipe-like animation
@@ -166,6 +191,31 @@ const Chat: React.FC = () => {
     [chatId, sendMessage, userData.userId, otherUserId]
   );
 
+  // Add a custom system message renderer for the match indicator:
+  const renderSystemMessage = (props: any) => {
+    return (
+      <View style={styles.systemMessageContainer}>
+        <View style={styles.systemMessage}>
+          <Icon
+            name="heart"
+            size={16}
+            color="#D8BFAA"
+            style={styles.systemHeartIcon}
+          />
+          <Text style={styles.systemMessageText}>
+            {props.currentMessage.text}
+          </Text>
+          <Text style={styles.systemMessageDate}>
+            {props.currentMessage.createdAt.toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </Text>
+        </View>
+      </View>
+    );
+  };
   // Custom bubble renderer with better styling
   const renderBubble = (props: any) => (
     <Bubble
@@ -251,18 +301,44 @@ const Chat: React.FC = () => {
       <ChatOptionsModal
         visible={optionsVisible}
         onClose={() => setOptionsVisible(false)}
-        onUnmatch={() => {
-          // unmatch logic
-          console.log("unmatch!");
+        onUnmatch={async () => {
           setOptionsVisible(false);
+          setIsUnmatching(true); // Set flag to prevent operations
+
+          // Navigate immediately
+          router.replace("/(tabs)/SoulChats");
+
+          // Perform unmatch after navigation
+          await unmatchUser(otherUserId);
         }}
         onReport={() => {
-          // report logic
-          console.log("report!");
           setOptionsVisible(false);
+          setShowReportModal(true);
         }}
       />
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        userName={otherUserData?.firstName || "this user"}
+        onSubmit={async (reason, details) => {
+          setShowReportModal(false); // Close modal immediately
 
+          // Navigate away first
+          router.replace("/(tabs)/SoulChats");
+
+          // Then submit report in background
+          setTimeout(async () => {
+            const success = await reportUser(otherUserId, reason, details);
+            if (success) {
+              // Optionally show a toast or notification that report was submitted
+              console.log("Report submitted successfully");
+            } else {
+              // You might want to show an error notification here
+              console.error("Failed to submit report");
+            }
+          }, 300);
+        }}
+      />
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -348,6 +424,7 @@ const Chat: React.FC = () => {
                     renderBubble={renderBubble}
                     renderInputToolbar={renderInputToolbar}
                     renderSend={renderSend}
+                    renderSystemMessage={renderSystemMessage} // Add this
                     alwaysShowSend
                     scrollToBottomStyle={styles.scrollToBottom}
                     minInputToolbarHeight={56}
@@ -360,7 +437,6 @@ const Chat: React.FC = () => {
                       multiline: true,
                       maxLength: 1000,
                     }}
-                    renderFooter={renderMatchIndicator}
                   />
                 </Animated.View>
               </KeyboardAvoidingView>
@@ -589,6 +665,44 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: "#7E7972",
+    fontStyle: "italic",
+  },
+  systemMessageContainer: {
+    alignItems: "center",
+    marginVertical: 15,
+    paddingHorizontal: 20,
+  },
+  systemMessage: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F5F5F5",
+    maxWidth: "80%",
+  },
+  systemHeartIcon: {
+    marginBottom: 6,
+  },
+  systemMessageText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#7E7972",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  systemMessageDate: {
+    fontSize: 13,
+    color: "#B8C1B2",
     fontStyle: "italic",
   },
 });
