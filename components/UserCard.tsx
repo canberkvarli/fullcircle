@@ -21,8 +21,8 @@ interface UserCardProps {
   onPress?: () => void;
   showDetails?: boolean;
   onHeartPress?: () => void;
-  // Optionally, if you want to resolve photo paths on the fly:
   getImageUrl?: (photoPath: string) => Promise<string>;
+  isOrbLike?: boolean;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -34,6 +34,7 @@ const UserCard: React.FC<UserCardProps> = ({
   showDetails = false,
   onHeartPress,
   getImageUrl,
+  isOrbLike = false,
 }) => {
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
@@ -74,6 +75,11 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
+        {isOrbLike && (
+          <View style={styles.orbIconContainer}>
+            <Icon name="pagelines" size={20} color="#D8BFAA" />
+          </View>
+        )}
         {variant === "default" && (
           <View style={styles.headerDefault}>
             <Text style={styles.headerTextDefault}>
@@ -187,6 +193,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f0f0f0",
+  },
+  orbIconContainer: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   headerDefault: {
     paddingHorizontal: 8,

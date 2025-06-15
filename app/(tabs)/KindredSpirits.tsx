@@ -98,6 +98,7 @@ const KindredSpirits: React.FC = () => {
           variant="default"
           isBlurred={false}
           style={styles.largeCard}
+          isOrbLike={firstUser.viaOrb}
         />
       </TouchableOpacity>
 
@@ -110,6 +111,7 @@ const KindredSpirits: React.FC = () => {
                 variant="default"
                 isBlurred={!userData.fullCircleSubscription}
                 style={styles.smallCard}
+                isOrbLike={user.viaOrb}
               />
             </TouchableOpacity>
           </View>

@@ -347,8 +347,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   useEffect(() => {
-    // don’t kick off until we actually have preferences from Firestore
-    if (!userData.onboardingCompleted && !userData.matchPreferences) return;
+    // Early return if onboarding is not completed
+    if (!userData.onboardingCompleted) {
+      console.log("Skipping match fetch - onboarding not completed");
+      return;
+    }
+
+    // Also check if we have a valid user
+    if (!userData.userId || !currentUser) {
+      console.log("Skipping match fetch - no user ID or current user");
+      return;
+    }
+
+    // Check if match preferences are properly initialized
+    if (!userData.matchPreferences?.datePreferences?.length) {
+      console.log("Skipping match fetch - match preferences not initialized");
+      return;
+    }
 
     console.log(
       "Match preferences changed, resetting matches",
@@ -365,10 +380,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     initFetch();
-  }, [userData.matchPreferences, userData.onboardingCompleted, currentUser]);
+  }, [
+    userData.matchPreferences,
+    userData.onboardingCompleted,
+    userData.userId,
+    currentUser,
+  ]);
 
   useEffect(() => {
-    // don’t prefetch until we have at least one batch
+    // Don't prefetch during onboarding
+    if (!userData.onboardingCompleted) return;
+
+    // Don't prefetch until we have at least one batch
     if (potentialMatches.length === 0) return;
 
     const buffer = potentialMatches.length - currentPotentialMatchIndex - 1;
@@ -376,25 +399,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Buffer is low, fetching more potential matches...");
       fetchPotentialMatches();
     }
-  }, [potentialMatches, currentPotentialMatchIndex]);
+  }, [
+    potentialMatches,
+    currentPotentialMatchIndex,
+    userData.onboardingCompleted,
+  ]);
 
   useEffect(() => {
-    if (!userData.userId) return;
+    if (!userData.userId || !userData.onboardingCompleted) return;
 
     const loadExclusions = async () => {
-      const likesSnap = await getDocs(
-        collection(doc(FIRESTORE, "users", userData.userId), "likesGiven")
-      );
-      const dislikesSnap = await getDocs(
-        collection(doc(FIRESTORE, "users", userData.userId), "dislikesGiven")
-      );
+      const likesSnap = await FIRESTORE.collection("users")
+        .doc(userData.userId)
+        .collection("likesGiven")
+        .get();
+      const dislikesSnap = await FIRESTORE.collection("users")
+        .doc(userData.userId)
+        .collection("dislikesGiven")
+        .get();
 
       setExcludedLikes(new Set(likesSnap.docs.map((d) => d.id)));
       setExcludedDislikes(new Set(dislikesSnap.docs.map((d) => d.id)));
     };
 
     loadExclusions();
-  }, [userData.userId]);
+  }, [userData.userId, userData.onboardingCompleted]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -440,7 +469,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const last = userData.lastOrbAssignedAt?.toMillis?.() ?? 0;
     const now = Date.now();
     const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-    if ((userData.numOfOrbs ?? 0) >= 1 && now - last < oneWeekMs) {
+    if ((userData.numOfOrbs ?? 0) >= 1 || now - last < oneWeekMs) {
       return;
     }
 
@@ -469,7 +498,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [assignWeeklyOrb]);
 
   useEffect(() => {
-    if (!userData.userId) return;
+    if (!userData.userId || !userData.onboardingCompleted) return;
+
     const q = query(
       collection(FIRESTORE, "chats"),
       where("participants", "array-contains", userData.userId)
@@ -509,7 +539,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       );
     });
     return () => unsub();
-  }, [userData.userId]);
+  }, [userData.userId, userData.onboardingCompleted]);
 
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
@@ -713,6 +743,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       if (docSnapshot.exists) {
         existingData = docSnapshot.data();
       }
+
       // Merge hiddenFields
       let updatedHiddenFields = existingData?.hiddenFields || {};
       if (data.hiddenFields) {
@@ -729,6 +760,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       await setDoc(docRef, updatedData, { merge: true });
+
       // Update local state
       setUserData((prevData) => {
         const newData = { ...prevData, ...data };
@@ -907,9 +939,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const fetchPotentialMatches = async () => {
+    // Early return if onboarding not completed
+    if (!userData.onboardingCompleted) {
+      console.log(
+        "Skipping potential matches fetch - onboarding not completed"
+      );
+      return [];
+    }
+
+    if (!userData.userId) {
+      console.log("Skipping potential matches fetch - no user ID");
+      return [];
+    }
+
     setLoadingNextBatch(true);
     userDataRef.current = userData;
     console.log("fetching potential matches...");
+
     const excluded = new Set<string>([
       userData.userId,
       ...excludedLikes,
@@ -1092,16 +1138,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     toUserId: string,
     viaOrb: boolean = false
   ): Promise<void> => {
-    const fromRef = doc(FIRESTORE, "users", fromUserId);
-    const toRef = doc(FIRESTORE, "users", toUserId);
+    const fromRef = FIRESTORE.collection("users").doc(fromUserId);
+    const toRef = FIRESTORE.collection("users").doc(toUserId);
 
-    const givenRef = doc(collection(fromRef, "likesGiven"), toUserId);
-    const receivedRef = doc(collection(toRef, "likesReceived"), fromUserId);
+    const givenRef = fromRef.collection("likesGiven").doc(toUserId);
+    const receivedRef = toRef.collection("likesReceived").doc(fromUserId);
 
     // incoming like record to us
-    const incomingRef = doc(collection(fromRef, "likesReceived"), toUserId);
+    const incomingRef = fromRef.collection("likesReceived").doc(toUserId);
 
-    await runTransaction(FIRESTORE, async (tx) => {
+    await FIRESTORE.runTransaction(async (tx) => {
       const fromSnap = await tx.get(fromRef);
       const fromData = fromSnap.data()!;
 
@@ -1121,51 +1167,81 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       if (viaOrb && !fromData.fullCircleSubscription) {
         updates.numOfOrbs = (fromData.numOfOrbs ?? 0) - 1;
       }
-      // if they’d already liked us, remove that incoming like & decrement our counter
+      // if they'd already liked us, remove that incoming like & decrement our counter
       if (hadLikedUs) {
         tx.delete(incomingRef);
         updates.likesReceivedCount = (fromData.likesReceivedCount ?? 1) - 1;
       }
       tx.update(fromRef, updates);
 
-      // bump receiver’s counter
+      // bump receiver's counter
       const toSnap = await tx.get(toRef);
       const toData = toSnap.data()!;
       tx.update(toRef, {
         likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
       });
 
-      // write the actual sub‑collection records
+      // write the actual sub‑collection records with viaOrb flag
       tx.set(givenRef, {
         matchId: toUserId,
         viaOrb,
-        timestamp: serverTimestamp(),
+        timestamp: firestore.FieldValue.serverTimestamp(),
       });
       tx.set(receivedRef, {
         matchId: fromUserId,
         viaOrb,
-        timestamp: serverTimestamp(),
+        timestamp: firestore.FieldValue.serverTimestamp(),
       });
+
       // if it was mutual, also write your matches subcollections
       if (hadLikedUs) {
         console.log("mutual like");
-        const myMatchRef = doc(collection(fromRef, "matches"), toUserId);
-        const theirMatchRef = doc(collection(toRef, "matches"), fromUserId);
-        tx.set(myMatchRef, { timestamp: serverTimestamp() });
-        tx.set(theirMatchRef, { timestamp: serverTimestamp() });
+        const myMatchRef = fromRef.collection("matches").doc(toUserId);
+        const theirMatchRef = toRef.collection("matches").doc(fromUserId);
+        tx.set(myMatchRef, {
+          timestamp: firestore.FieldValue.serverTimestamp(),
+        });
+        tx.set(theirMatchRef, {
+          timestamp: firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Update matches arrays
+        tx.update(fromRef, {
+          matches: firestore.FieldValue.arrayUnion(toUserId),
+        });
+        tx.update(toRef, {
+          matches: firestore.FieldValue.arrayUnion(fromUserId),
+        });
+
         const chatId = [fromUserId, toUserId].sort().join("_");
-        const chatRef = doc(FIRESTORE, "chats", chatId);
+        const chatRef = FIRESTORE.collection("chats").doc(chatId);
         tx.set(chatRef, {
           participants: [fromUserId, toUserId],
           messages: [],
           lastMessage: "",
           lastMessageSender: "",
-          createdAt: serverTimestamp(),
-          lastUpdated: serverTimestamp(),
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          lastUpdated: firestore.FieldValue.serverTimestamp(),
         });
       }
     });
-    refreshRadiantSouls();
+
+    // Update local state after successful transaction
+    if (viaOrb && !userData.fullCircleSubscription) {
+      setUserData((prev) => ({
+        ...prev,
+        numOfOrbs: Math.max(0, (prev.numOfOrbs ?? 1) - 1),
+        likesGivenCount: (prev.likesGivenCount ?? 0) + 1,
+      }));
+    } else {
+      setUserData((prev) => ({
+        ...prev,
+        likesGivenCount: (prev.likesGivenCount ?? 0) + 1,
+      }));
+    }
+
+    // Don't refresh radiant souls here - it's too expensive to do on every like
+    // refreshRadiantSouls();
   };
 
   const recordDislike = async (
@@ -1202,6 +1278,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const refreshRadiantSouls = useCallback(async () => {
+    // Don't refresh during onboarding
+    if (!userData.onboardingCompleted) {
+      console.log("Skipping radiant souls refresh - onboarding not completed");
+      return;
+    }
+
     console.log("Refreshing Radiant Souls...");
     const db = FIRESTORE;
     const usersCol = collection(db, "users");
@@ -1223,7 +1305,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const batch = writeBatch(db);
     const newTopIds = new Set(topSnap.docs.map((d) => d.id));
 
-    // c) clear anyone who’s no longer top N
+    // c) clear anyone who's no longer top N
     prevSnap.docs.forEach((docSnap) => {
       if (!newTopIds.has(docSnap.id)) {
         batch.update(docSnap.ref, { isRadiantSoul: false });
@@ -1239,11 +1321,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     await batch.commit();
     console.log("Radiant Souls refreshed");
-  }, []);
+  }, [userData.onboardingCompleted]);
 
   useEffect(() => {
+    // Don't run during onboarding
+    if (!userData.onboardingCompleted) return;
+
     // run once at mount
-    // refreshRadiantSouls();
+    refreshRadiantSouls();
 
     // on foreground
     const foregroundSub = AppState.addEventListener("change", (state) => {
@@ -1259,7 +1344,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       foregroundSub.remove();
       clearInterval(every24h);
     };
-  }, [refreshRadiantSouls]);
+  }, [refreshRadiantSouls, userData.onboardingCompleted]);
 
   const getReceivedLikesDetailed = async (): Promise<
     Array<any & { viaOrb: boolean; likedAt: Date }>
@@ -1579,54 +1664,81 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
-  const subscribeToReceivedLikes = useCallback(
-    (onUpdate: (users: UserDataType[]) => void) => {
-      if (!userData.userId) return () => {};
+  const subscribeToReceivedLikes = (
+    callback: (users: any[]) => void
+  ): (() => void) => {
+    if (!userData.userId) {
+      return () => {};
+    }
 
-      const likesRef = collection(
-        doc(FIRESTORE, "users", userData.userId),
-        "likesReceived"
-      );
+    const unsubscribe = FIRESTORE.collection("users")
+      .doc(userData.userId)
+      .collection("likesReceived")
+      .onSnapshot(async (snapshot) => {
+        const likeRecords = snapshot.docs.map((doc) => ({
+          userId: doc.id,
+          ...doc.data(),
+        }));
 
-      const unsub = onSnapshot(likesRef, async (snap) => {
-        // build sorted list of incoming like records
-        const records = snap.docs
-          .map((d) => ({ matchId: d.id, ...(d.data() as any) }))
-          .sort(
-            (a, b) =>
-              b.timestamp.toDate().getTime() - a.timestamp.toDate().getTime()
-          );
+        // Fetch user data for each like
+        const usersWithData = await Promise.all(
+          likeRecords.map(
+            async (record: {
+              userId: string;
+              viaOrb?: boolean;
+              timestamp?: any;
+            }) => {
+              const userDoc = await FIRESTORE.collection("users")
+                .doc(record.userId)
+                .get();
 
-        // fetch full user data + resolved photos for each liker
-        const detailed = await Promise.all(
-          records.map(async (rec) => {
-            const uSnap = await getDoc(doc(FIRESTORE, "users", rec.matchId));
-            const uData = uSnap.exists ? (uSnap.data() as any) : {};
-            let photos: string[] = [];
+              if (userDoc.exists) {
+                const userData = userDoc.data();
 
-            if (Array.isArray(uData.photos) && uData.photos.length) {
-              photos = (
-                await Promise.all(
-                  uData.photos.map((p: string) => getImageUrl(p))
-                )
-              ).filter((url): url is string => !!url);
+                // Resolve photo URLs
+                let resolvedPhotos: string[] = [];
+                if (userData?.photos && Array.isArray(userData.photos)) {
+                  resolvedPhotos = (
+                    await Promise.all(
+                      userData.photos.map((photoPath: string) =>
+                        getImageUrl(photoPath)
+                      )
+                    )
+                  ).filter((url): url is string => !!url);
+                }
+
+                return {
+                  ...userData,
+                  userId: record.userId,
+                  photos: resolvedPhotos, // Use resolved photos
+                  viaOrb: record.viaOrb || false, // Include viaOrb flag
+                  likeTimestamp: record.timestamp, // Include timestamp for sorting
+                };
+              }
+              return null;
             }
-
-            return {
-              userId: rec.matchId,
-              ...(uData as Omit<UserDataType, "userId">),
-              photos,
-            } as UserDataType;
-          })
+          )
         );
 
-        onUpdate(detailed);
+        // Filter out nulls and sort: orb likes first (newest to oldest), then regular likes
+        const validUsers = usersWithData
+          .filter((user): user is any => user !== null)
+          .sort((a, b) => {
+            // First sort by orb status
+            if (a.viaOrb && !b.viaOrb) return -1;
+            if (!a.viaOrb && b.viaOrb) return 1;
+
+            // Then sort by timestamp (newest first)
+            const timeA = a.likeTimestamp?.toMillis() || 0;
+            const timeB = b.likeTimestamp?.toMillis() || 0;
+            return timeB - timeA;
+          });
+
+        callback(validUsers);
       });
 
-      return unsub;
-    },
-    [userData.userId, getImageUrl]
-  );
+    return unsubscribe;
+  };
 
   const sendMessage = async (
     chatId: string,

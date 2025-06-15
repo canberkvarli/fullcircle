@@ -36,6 +36,14 @@ const RadiantSouls: React.FC = () => {
     loadRadiantSouls();
   }, [userData.matchPreferences, getImageUrl]);
 
+  // Add a refresh trigger when orbs count changes (meaning an orb was used)
+  useEffect(() => {
+    // Only refresh if we're not already loading
+    if (!loading && userData.numOfOrbs !== undefined) {
+      loadRadiantSouls();
+    }
+  }, [userData.numOfOrbs]);
+
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
