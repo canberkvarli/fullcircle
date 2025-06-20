@@ -46,7 +46,6 @@ export default function SacredSelf() {
         <View style={styles.icons}>
           <Link
             href={{ pathname: "/user/DatingPreferences" as any }}
-            onPress={() => console.log("Preferences clicked")}
             style={styles.sliderIcon}
           >
             <Icon
@@ -56,7 +55,7 @@ export default function SacredSelf() {
               style={styles.preferencesIcon}
             />
           </Link>
-          <Link href={"/user/UserSettings" as any}>
+          <Link href="/user/UserSettings">
             <Icon
               name="cog"
               size={24}

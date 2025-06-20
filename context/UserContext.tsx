@@ -5,13 +5,16 @@ import React, {
   useEffect,
   useRef,
   useCallback,
+  ReactNode,
 } from "react";
-import { AppState } from "react-native";
-import { useRouter } from "expo-router";
+import { AppState, Alert } from "react-native";
+import { useRouter, useSegments } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
 import auth from "@react-native-firebase/auth";
+import * as Location from "expo-location";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   doc,
@@ -108,6 +111,35 @@ export type UserDataType = {
     desiredRelationship?: string;
     preferredSpiritualPractices?: string[];
   };
+  settings?: UserSettings;
+};
+
+export type UserSettings = {
+  isPaused?: boolean;
+  showLastActiveStatus?: boolean;
+  isSelfieVerified?: boolean;
+  selfieVerificationDate?: Date;
+  pushNotifications?: PushNotificationSettings;
+  connectedAccounts?: {
+    google?: boolean;
+    apple?: boolean;
+  };
+};
+
+export type PushNotificationSettings = {
+  enableAll?: boolean;
+  muteAll?: boolean;
+  newLikes?: boolean;
+  newMatches?: boolean;
+  newMessages?: boolean;
+  promotions?: boolean;
+  announcements?: boolean;
+};
+
+export type NotificationPreferences = {
+  messageNotifications?: boolean;
+  matchNotifications?: boolean;
+  likeNotifications?: boolean;
 };
 
 export type MatchPreferencesType = {
@@ -229,6 +261,8 @@ type UserContextType = {
     details: string | undefined
   ) => any;
   unmatchUser: (userId: string) => any;
+  updateUserSettings: (settings: Partial<UserSettings>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 // Initial screens and initial user data
@@ -288,6 +322,24 @@ const initialUserData: UserDataType = {
     desiredRelationship: "",
     preferredSpiritualPractices: [],
   },
+  settings: {
+    isPaused: false,
+    showLastActiveStatus: true,
+    isSelfieVerified: false,
+    pushNotifications: {
+      enableAll: true,
+      muteAll: false,
+      newLikes: true,
+      newMatches: true,
+      newMessages: true,
+      promotions: true,
+      announcements: true,
+    },
+    connectedAccounts: {
+      google: false,
+      apple: false,
+    },
+  },
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -329,6 +381,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLinking, setIsLinking] = useState(false);
   const userDataRef = useRef(userData);
   const router = useRouter();
+  const segments = useSegments();
+  const getScreenPath = (screen: string) => `onboarding/${screen}` as any;
   const webClientId =
     "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com";
   GoogleSignin.configure({
@@ -626,6 +680,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
               currentOnboardingScreen:
                 existingUser.currentOnboardingScreen || "NameScreen",
             },
+            settings: {
+              ...existingUser?.settings,
+              connectedAccounts: {
+                ...existingUser?.settings?.connectedAccounts,
+                google: true,
+              },
+            },
           };
           userDataToUpdate.currentOnboardingScreen =
             existingUser.currentOnboardingScreen || "NameScreen";
@@ -774,6 +835,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // };
     } catch (error) {
       console.error("Failed to update user data: ", error);
+    }
+  };
+
+  const updateUserSettings = async (settings: Partial<UserSettings>) => {
+    try {
+      const updatedSettings = {
+        ...(userData.settings || {}), // Add null check with default empty object
+        ...settings,
+      };
+
+      await updateUserData({
+        settings: updatedSettings,
+      });
+    } catch (error) {
+      console.error("Error updating user settings:", error);
+      throw error;
     }
   };
 
@@ -968,6 +1045,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       orderBy("likesReceivedCount", "desc"),
       limit(10),
       where("isRadiantSoul", "==", false),
+      where("settings.isPaused", "!=", true),
       ...buildQueryConstraints({
         matchPreferences: userData.matchPreferences,
         currentLat: userData.latitude,
@@ -1997,6 +2075,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     [userData.userId]
   );
 
+  const deleteAccount = () => {
+    console.log("deleteAccount");
+  }
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -2047,6 +2129,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     unreadMatchesCount,
     reportUser,
     unmatchUser,
+    updateUserSettings,
+    deleteAccount
   };
 
   if (initializing) {
