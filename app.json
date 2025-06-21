@@ -15,7 +15,30 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fullcircle.app",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "buildNumber": "1",
+      "deploymentTarget": "13.4",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
+        "NSPhotoLibraryUsageDescription": "Allow Circle to access your photo library to share your photos.",
+        "NSCameraUsageDescription": "Allow Circle to access your camera to take photos.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "com.fullcircle.app",
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft"
+            ]
+          },
+          {
+            "CFBundleURLName": "com.fullcircle.app",
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft"
+            ]
+          }
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.fullcircle.app",
@@ -33,7 +56,20 @@
         "googleMaps": {
           "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
         }
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -42,7 +78,14 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       "@react-native-firebase/auth",
       "expo-av",
       [
@@ -55,7 +98,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Circle to share your photos."
+          "photosPermission": "Allow Circle to share your photos.",
+          "cameraPermission": "Allow Circle to access your camera to take photos."
         }
       ],
       [
@@ -70,7 +114,10 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "deploymentTarget": "13.4",
+            "newArchEnabled": false,
+            "flipper": false
           },
           "android": {
             "kotlinVersion": "1.9.25",

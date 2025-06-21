@@ -1,11 +1,15 @@
 {
   "cli": {
-    "version": ">= 10.0.2"
+    "version": ">= 10.0.2",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
     },
     "development-simulator": {
       "developmentClient": true,
@@ -14,6 +18,17 @@
         "simulator": true
       },
       "environment": "development"
+    },
+    "local": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true,
+        "resourceClass": "medium"
+      },
+      "android": {
+        "resourceClass": "medium"
+      }
     },
     "preview": {
       "distribution": "internal"
