@@ -1,8 +1,7 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import * as FontAwesome from "react-native-vector-icons/FontAwesome";
-import * as MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import onboardingProgressBarIcons from "../assets/icons/onboardingProgressBarIcons.json";
+import { View, StyleSheet, useColorScheme, Platform } from "react-native";
+import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors, Spacing } from "@/constants/Colors";
 
 const iconLibraries = {
   FontAwesome,
@@ -14,11 +13,34 @@ interface IconConfig {
   name: string;
 }
 
+// Spiritual icons - you can replace these with custom Flaticon SVGs
+const spiritualProgressBarIcons = {
+  "NameScreen": { "type": "MaterialCommunityIcons", "name": "account-heart" },
+  "EmailScreen": { "type": "MaterialCommunityIcons", "name": "email" },
+  "BirthdateScreen": { "type": "MaterialCommunityIcons", "name": "calendar-star" },
+  "LocationScreen": { "type": "MaterialCommunityIcons", "name": "map-marker-radius" },
+  "GenderScreen": { "type": "MaterialCommunityIcons", "name": "human-male-female" },
+  "SexualOrientationScreen": { "type": "MaterialCommunityIcons", "name": "heart-multiple" },
+  "DatePreferenceScreen": { "type": "MaterialCommunityIcons", "name": "heart-circle" },
+  "HeightScreen": { "type": "MaterialCommunityIcons", "name": "human-handsup" },
+  "EthnicityScreen": { "type": "MaterialCommunityIcons", "name": "earth" },
+  "FamilyVisionScreen": { "type": "MaterialCommunityIcons", "name": "home-heart" },
+  "JobLocationScreen": { "type": "MaterialCommunityIcons", "name": "office-building-marker" },
+  "JobTitleScreen": { "type": "MaterialCommunityIcons", "name": "briefcase-variant" },
+  "EducationScreen": { "type": "MaterialCommunityIcons", "name": "school" },
+  "SpiritualScreen": { "type": "MaterialCommunityIcons", "name": "meditation" },
+  "PhotosScreen": { "type": "MaterialCommunityIcons", "name": "camera-iris" }
+};
+
 const OnboardingProgressBar = ({
   currentScreen,
 }: {
   currentScreen: string;
 }) => {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const styles = createStyles(colorScheme);
+  
   const onboardingScreens = [
     "NameScreen",
     "EmailScreen",
@@ -42,19 +64,35 @@ const OnboardingProgressBar = ({
   return (
     <View style={styles.container}>
       {onboardingScreens.map((screen, index) => {
-        const iconConfig = onboardingProgressBarIcons[
-          screen as keyof typeof onboardingProgressBarIcons
-        ] as unknown as IconConfig;
+        const iconConfig = spiritualProgressBarIcons[
+          screen as keyof typeof spiritualProgressBarIcons
+        ] as IconConfig;
 
         if (!iconConfig) return <View key={screen} style={styles.dot} />;
 
         const { type, name } = iconConfig;
-        const IconComponent = iconLibraries[type]?.default;
+        const IconComponent = iconLibraries[type];
+        const isActive = index === currentIndex;
+        const isCompleted = index < currentIndex;
 
         return (
           <View key={screen} style={styles.stepContainer}>
-            {index === currentIndex ? (
-              <IconComponent name={name} size={24} color="blue" />
+            {isActive ? (
+              <View style={styles.activeIconContainer}>
+                <IconComponent 
+                  name={name} 
+                  size={16} 
+                  color={colors.primary} 
+                />
+              </View>
+            ) : isCompleted ? (
+              <View style={styles.completedIconContainer}>
+                <MaterialCommunityIcons 
+                  name="check" 
+                  size={10} 
+                  color={colors.background} 
+                />
+              </View>
             ) : (
               <View style={styles.dot} />
             )}
@@ -65,23 +103,60 @@ const OnboardingProgressBar = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 16,
-    top: 65,
-    justifyContent: "space-between",
-  },
-  stepContainer: {
-    alignItems: "center",
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 6,
-    backgroundColor: "gray",
-  },
-});
+const createStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginHorizontal: Spacing.lg,
+      marginTop: Spacing.xl,
+      marginBottom: Spacing.sm,
+      justifyContent: "space-between",
+      paddingVertical: Spacing.xs,
+    },
+    stepContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 12, // Smaller for more compact layout
+    },
+    activeIconContainer: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.tertiary,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.15,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    completedIconContainer: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+    },
+  });
+};
 
 export default OnboardingProgressBar;

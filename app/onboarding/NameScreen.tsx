@@ -77,9 +77,7 @@ function NameScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <OnboardingProgressBar currentScreen="NameScreen" />
-      
-      {/* Back Button with proper spacing */}
+      {/* Back Button at top left */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
@@ -89,6 +87,9 @@ function NameScreen() {
       >
         <Ionicons name="chevron-back" size={24} color={colors.textDark} />
       </TouchableOpacity>
+
+      {/* Progress Bar below back button */}
+      <OnboardingProgressBar currentScreen="NameScreen" />
 
       {/* Title */}
       <Text style={styles.title}>What's your name?</Text>
@@ -182,15 +183,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     backButton: {
       backgroundColor: colors.card,
-      padding: Spacing.sm,
+      padding: Spacing.xs,
       borderRadius: BorderRadius.full,
       width: 44,
       height: 44,
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      marginLeft: Spacing.lg, // Added proper spacing from left edge
-      marginBottom: Spacing.xl,
+      marginLeft: Spacing.md,
+      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }), // Top positioning
+      marginBottom: 0, // No bottom margin needed
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -204,11 +206,11 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     title: {
-      fontSize: Typography.sizes['4xl'],
+      fontSize: Typography.sizes['5xl'],
       fontWeight: Typography.weights.bold,
       color: colors.textDark,
       textAlign: "left",
-      marginTop: Spacing['2xl'],
+      marginTop: Spacing.sm,
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
     },
