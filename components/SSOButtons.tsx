@@ -144,7 +144,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     phoneButtonText: {
       fontSize: Typography.sizes.base,
-      color: colors.primary,
+      color: colors.text,
       fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.4)',

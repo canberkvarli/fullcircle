@@ -115,7 +115,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 2,
     },
     secondaryButtonText: {
-      color: colors.primary,
+      color: colors.text,
       textShadowColor: 'rgba(0, 0, 0, 0.4)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,

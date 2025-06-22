@@ -7,14 +7,15 @@ import {
   Alert,
   Modal,
   View,
+  useColorScheme,
+  Platform,
 } from "react-native";
-import styles from "@/styles/Onboarding/NameScreenStyles";
-import Icon from "react-native-vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import auth from "@react-native-firebase/auth";
 import { useUserContext } from "@/context/UserContext";
-import NavigationIcon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 
 function NameScreen() {
   const { userData, navigateToNextScreen, updateUserData, signOut } =
@@ -23,6 +24,10 @@ function NameScreen() {
   const [firstName, setFirstName] = useState(userData.firstName || "");
   const [lastName, setLastName] = useState(userData.lastName || "");
   const [isModalVisible, setIsModalVisible] = useState(false);
+  
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const styles = createStyles(colorScheme);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -73,6 +78,8 @@ function NameScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <OnboardingProgressBar currentScreen="NameScreen" />
+      
+      {/* Back Button with proper spacing */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => {
@@ -80,40 +87,61 @@ function NameScreen() {
           signOut();
         }}
       >
-        <NavigationIcon name="chevron-left" size={24} color="black" />
+        <Ionicons name="chevron-back" size={24} color={colors.textDark} />
       </TouchableOpacity>
+
+      {/* Title */}
       <Text style={styles.title}>What's your name?</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="First name"
-        placeholderTextColor="gray"
-        value={firstName}
-        onChangeText={(text) => handleInputChange(text, "firstName")}
-        autoFocus
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name (optional)"
-        placeholderTextColor="gray"
-        value={lastName}
-        onChangeText={(text) => handleInputChange(text, "lastName")}
-      />
-      <TouchableOpacity onPress={() => setIsModalVisible(true)}>
+
+      {/* Input Fields */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="First name"
+          placeholderTextColor={colors.textMuted}
+          value={firstName}
+          onChangeText={(text) => handleInputChange(text, "firstName")}
+          autoFocus
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name (optional)"
+          placeholderTextColor={colors.textMuted}
+          value={lastName}
+          onChangeText={(text) => handleInputChange(text, "lastName")}
+        />
+      </View>
+
+      {/* Optional Text with Link */}
+      <TouchableOpacity 
+        style={styles.optionalTextContainer}
+        onPress={() => setIsModalVisible(true)}
+      >
         <Text style={styles.optionalText}>
           Last name is optional and only shared with matches.{" "}
           <Text style={styles.linkText}>Why?</Text>
         </Text>
       </TouchableOpacity>
+
+      {/* Affirmation */}
       <Text style={styles.affirmation}>
         Every name carries a unique vibration
       </Text>
-      <Icon
-        style={styles.submitButton}
-        name="chevron-right"
-        size={24}
-        onPress={handleNameSubmit}
-      />
 
+      {/* Submit Button */}
+      <TouchableOpacity 
+        style={styles.submitButton} 
+        onPress={handleNameSubmit}
+        disabled={!firstName.trim()}
+      >
+        <Ionicons 
+          name="chevron-forward" 
+          size={24} 
+          color={firstName.trim() ? colors.background : colors.textMuted} 
+        />
+      </TouchableOpacity>
+
+      {/* Modal */}
       <Modal
         transparent
         animationType="slide"
@@ -141,5 +169,179 @@ function NameScreen() {
     </SafeAreaView>
   );
 }
+
+const createStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return {
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: Spacing.lg,
+      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+    },
+    backButton: {
+      backgroundColor: colors.card,
+      padding: Spacing.sm,
+      borderRadius: BorderRadius.full,
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      marginLeft: Spacing.lg, // Added proper spacing from left edge
+      marginBottom: Spacing.xl,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    title: {
+      fontSize: Typography.sizes['4xl'],
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
+      textAlign: "left",
+      marginTop: Spacing['2xl'],
+      marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.lg,
+    },
+    inputContainer: {
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    input: {
+      height: 56,
+      backgroundColor: colors.card,
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+      fontWeight: Typography.weights.medium,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    optionalTextContainer: {
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.xl,
+    },
+    optionalText: {
+      fontSize: Typography.sizes.sm,
+      fontStyle: "italic",
+      color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
+      lineHeight: Typography.sizes.sm * 1.4,
+    },
+    linkText: {
+      fontStyle: "normal",
+      textDecorationLine: "underline",
+      color: colors.primary,
+      fontWeight: Typography.weights.medium,
+    },
+    affirmation: {
+      position: 'absolute',
+      bottom: Platform.select({ ios: 120, android: 100 }),
+      left: Spacing.lg,
+      right: Spacing.lg,
+      textAlign: "center",
+      fontSize: Typography.sizes.lg,
+      fontStyle: "italic",
+      fontWeight: Typography.weights.light,
+      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      lineHeight: Typography.sizes.lg * 1.4,
+    },
+    submitButton: {
+      position: "absolute",
+      bottom: Platform.select({ ios: 50, android: 30 }),
+      right: Spacing.xl,
+      backgroundColor: colors.primary,
+      borderRadius: BorderRadius.full,
+      width: 56,
+      height: 56,
+      justifyContent: "center",
+      alignItems: "center",
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContainer: {
+      width: "85%",
+      maxWidth: 400,
+      padding: Spacing['2xl'],
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.xl,
+      alignItems: "center",
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.25,
+          shadowRadius: 20,
+        },
+        android: {
+          elevation: 10,
+        },
+      }),
+    },
+    modalTitle: {
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
+      marginBottom: Spacing.lg,
+      textAlign: "center",
+    },
+    modalText: {
+      fontSize: Typography.sizes.base,
+      textAlign: "center",
+      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      lineHeight: Typography.sizes.base * 1.5,
+      marginBottom: Spacing.xl,
+    },
+    modalCloseButton: {
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      backgroundColor: colors.primary,
+      borderRadius: BorderRadius.full,
+      minWidth: 120,
+    },
+    modalCloseText: {
+      color: colors.background,
+      fontWeight: Typography.weights.semibold,
+      fontSize: Typography.sizes.base,
+      textAlign: 'center',
+    },
+  };
+};
 
 export default NameScreen;

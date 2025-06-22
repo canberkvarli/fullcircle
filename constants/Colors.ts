@@ -10,12 +10,12 @@ export const Colors = {
   light: {
     // Core colors
     text: '#FFFFFF', // Pure white for better contrast over video
+    textDark: '#3D3B37', // Dark charcoal for light backgrounds
     background: '#FAF8F5', // Warm off-white
     tint: tintColorLight,
     icon: '#8B7B6B',
     tabIconDefault: '#A09080',
     tabIconSelected: tintColorLight,
-    textDark: '#3D3B37', // Dark text for better readability
     
     // Primary palette - earthy & calming
     primary: '#7B6B5C', // Warm brown (main CTA)
@@ -48,6 +48,7 @@ export const Colors = {
   dark: {
     // Core colors
     text: '#F5E6D3', // Warm cream
+    textDark: '#2A2825', // Very dark for light backgrounds in dark mode
     background: '#1A1815', // Deep charcoal
     tint: tintColorDark,
     icon: '#C4A984',
@@ -83,7 +84,6 @@ export const Colors = {
     gradientEnd: '#7B6B5C',
   },
 };
-
 // Typography scale for consistent sizing
 export const Typography = {
   sizes: {

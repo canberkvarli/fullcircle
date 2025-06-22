@@ -767,7 +767,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             number,
             currentOnboardingScreen: "NameScreen",
           };
-
           await updateUserData(newUser);
         }
         // else {
