@@ -9,7 +9,7 @@ const tintColorDark = '#F5E6D3'; // Warm cream
 export const Colors = {
   light: {
     // Core colors
-    text: '#3D3B37', // Dark charcoal for readability
+    text: '#FFFFFF', // Pure white for better contrast over video
     background: '#FAF8F5', // Warm off-white
     tint: tintColorLight,
     icon: '#8B7B6B',
@@ -34,11 +34,11 @@ export const Colors = {
     // UI elements
     border: '#E8E0D5',
     card: '#FFFFFF',
-    overlay: 'rgba(61, 59, 55, 0.7)',
+    overlay: 'rgba(0, 0, 0, 0.4)', // Lighter overlay for better text visibility
     
     // Text variations
-    textLight: '#6B6560',
-    textMuted: '#8B8580',
+    textLight: '#F5F5F5', // Very light for better readability
+    textMuted: '#E0E0E0', // Lighter muted text
     
     // Gradients (for special elements)
     gradientStart: '#7B6B5C',
@@ -71,11 +71,11 @@ export const Colors = {
     // UI elements
     border: '#2D2B27',
     card: '#252320',
-    overlay: 'rgba(26, 24, 21, 0.85)',
+    overlay: 'rgba(0, 0, 0, 0.6)', // Balanced overlay for dark mode
     
     // Text variations
-    textLight: '#D4C8B8',
-    textMuted: '#A09080',
+    textLight: '#F0F0F0', // Brighter for better visibility
+    textMuted: '#D0D0D0', // Lighter muted text
     
     // Gradients (for special elements)
     gradientStart: '#C4A984',
@@ -124,6 +124,7 @@ export const Spacing = {
   xl: 32,
   '2xl': 48,
   '3xl': 64,
+  '4xl': 96,
 };
 
 // Border radius scale

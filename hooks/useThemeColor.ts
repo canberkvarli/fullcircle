@@ -1,7 +1,3 @@
-/**
- * Hook for accessing theme colors throughout the app
- */
-
 import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/Colors';
 
