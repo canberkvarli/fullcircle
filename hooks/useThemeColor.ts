@@ -1,10 +1,8 @@
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * Hook for accessing theme colors throughout the app
  */
 
 import { useColorScheme } from 'react-native';
-
 import { Colors } from '@/constants/Colors';
 
 export function useThemeColor(
@@ -19,4 +17,14 @@ export function useThemeColor(
   } else {
     return Colors[theme][colorName];
   }
+}
+
+// Convenience hook to get all theme colors at once
+export function useTheme() {
+  const colorScheme = useColorScheme() ?? 'light';
+  return {
+    colors: Colors[colorScheme],
+    colorScheme,
+    isDark: colorScheme === 'dark',
+  };
 }

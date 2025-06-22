@@ -1,15 +1,22 @@
 import { StyleSheet } from "react-native";
+import { Colors } from '@/constants/Colors';
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  animation: {
-    width: "100%",
-    height: "100%",
-  },
-});
+const createStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    animation: {
+      width: "80%",
+      height: "80%",
+      opacity: 0.9,
+    },
+  });
+};
 
-export default styles;
+export default createStyles;

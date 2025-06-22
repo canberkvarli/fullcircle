@@ -1,11 +1,13 @@
 import React from "react";
 import LottieView from "lottie-react-native";
-import { View } from "react-native";
-import styles from "@/styles/LandingPageStyles";
+import { View, useColorScheme } from "react-native";
+import createStyles from "@/styles/LandingPageStyles";
 import { useRouter } from "expo-router";
 
 function LandingPageScreen(): JSX.Element {
   const router = useRouter();
+  const colorScheme = useColorScheme() ?? 'light';
+  const styles = createStyles(colorScheme);
 
   const handleAnimationFinish = () => {
     router.replace("onboarding/LoginSignupScreen" as any);

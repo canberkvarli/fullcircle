@@ -5,19 +5,25 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  useColorScheme,
 } from "react-native";
-import styles from "@/styles/Onboarding/LoginSignupScreenStyles";
+import createStyles from "@/styles/Onboarding/LoginSignupScreenStyles";
 import { useRouter } from "expo-router";
 import { Video, ResizeMode } from "expo-av";
 import WelcomeTitle from "../../components/WelcomeTitle";
 import SSOButtons from "../../components/SSOButtons";
-import FontAwesome from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/constants/Colors';
 
 const videoSource = require("../../assets/videos/danielle.mp4");
 
 function LoginSignupScreen(): JSX.Element {
   const router = useRouter();
   const video = useRef(null);
+  const colorScheme = useColorScheme() ?? 'light';
+  const styles = createStyles(colorScheme);
+  const colors = Colors[colorScheme];
+  
   const [status, setStatus] = useState({});
   const [showSSOButtons, setShowSSOButtons] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -56,7 +62,7 @@ function LoginSignupScreen(): JSX.Element {
       {!videoLoaded && (
         <ActivityIndicator
           size="large"
-          color="#ffffff"
+          color={colors.primary}
           style={styles.loadingIndicator}
         />
       )}
@@ -64,7 +70,7 @@ function LoginSignupScreen(): JSX.Element {
         <View style={styles.overlay}>
           {showSSOButtons && (
             <TouchableOpacity style={styles.backIcon} onPress={handleGoBack}>
-              <FontAwesome name="chevron-left" size={24} color="white" />
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
           )}
           <Image
@@ -73,9 +79,7 @@ function LoginSignupScreen(): JSX.Element {
           />
           <WelcomeTitle />
           <Text style={styles.affirmation}>
-            <Text style={{ fontStyle: "italic" }}>
-              Embark on a journey of love and self-discovery.
-            </Text>
+            Embark on a journey of love and self-discovery
           </Text>
           <Text style={styles.infoText}>
             By signing up for Circle, you agree to our{" "}
@@ -86,7 +90,7 @@ function LoginSignupScreen(): JSX.Element {
             <Text style={styles.link} onPress={() => console.log("pressed")}>
               Privacy Policy
             </Text>
-            , and{" "}
+            {" "}and{" "}
             <Text style={styles.link} onPress={() => console.log("pressed")}>
               Cookies Policy
             </Text>
@@ -95,7 +99,7 @@ function LoginSignupScreen(): JSX.Element {
           {showSSOButtons ? (
             <SSOButtons />
           ) : (
-            <View>
+            <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, styles.primaryButton]}
                 onPress={() =>
@@ -108,7 +112,9 @@ function LoginSignupScreen(): JSX.Element {
                 style={[styles.button, styles.secondaryButton]}
                 onPress={handleSignIn}
               >
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                  Sign In
+                </Text>
               </TouchableOpacity>
             </View>
           )}

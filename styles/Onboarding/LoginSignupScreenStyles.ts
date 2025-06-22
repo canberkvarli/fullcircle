@@ -1,6 +1,10 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
+import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
 
-const styles = StyleSheet.create({
+const createStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
     container: {
       flex: 1,
       justifyContent: "center",
@@ -8,13 +12,15 @@ const styles = StyleSheet.create({
     },
     backgroundVideo: {
       ...StyleSheet.absoluteFillObject,
+      resizeMode: "cover",
     },
     overlay: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      padding: 20,
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
+      padding: Spacing.lg,
+      backgroundColor: colors.overlay,
+      ...StyleSheet.absoluteFillObject,
     },
     loadingIndicator: {
       position: "absolute",
@@ -26,60 +32,94 @@ const styles = StyleSheet.create({
       width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 20,
+      padding: Spacing.lg,
       position: 'relative',
     },
     logo: {
-      width: 150,
-      height: 150,
-      tintColor: '#FFFFFF',
-      marginBottom: 20,
+      width: 120,
+      height: 120,
+      tintColor: colors.text,
+      marginBottom: Spacing.xl,
+      opacity: 0.9,
     },
     affirmation: {
-      fontSize: 18,
-      color: "#fff",
+      fontSize: Typography.sizes.lg,
+      color: colors.text,
       textAlign: "center",
-      marginVertical: 10,
+      marginVertical: Spacing.md,
+      fontWeight: Typography.weights.light,
+      lineHeight: Typography.sizes.lg * 1.5,
+      paddingHorizontal: Spacing.lg,
+      opacity: 0.95,
     },
     infoText: {
-      fontSize: 12,
-      color: "#fff",
+      fontSize: Typography.sizes.xs,
+      color: colors.textLight,
       textAlign: "center",
-      marginVertical: 20,
+      marginVertical: Spacing.lg,
+      paddingHorizontal: Spacing.xl,
+      lineHeight: Typography.sizes.xs * 1.6,
+      opacity: 0.85,
     },
     link: {
-      color: "#add8e6",
+      color: colors.primary,
       textDecorationLine: "underline",
+      fontWeight: Typography.weights.medium,
     },
     button: {
-      borderRadius: 30,
-      paddingVertical: 12,
-      paddingHorizontal: 24,
+      borderRadius: BorderRadius.full,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
       alignItems: 'center',
-      marginTop: 10,
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
+      marginTop: Spacing.md,
+      minWidth: 200,
+      // Softer shadows for a calming effect
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
     },
     primaryButton: {
-      backgroundColor: '#8A2BE2',
+      backgroundColor: colors.primary,
     },
     secondaryButton: {
-      backgroundColor: '#6A5ACD',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: colors.primary,
     },
     buttonText: {
-      color: '#FFFFFF',
-      fontSize: 18,
-      fontWeight: 'bold',
+      color: colors.text,
+      fontSize: Typography.sizes.base,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
+    },
+    secondaryButtonText: {
+      color: colors.primary,
     },
     backIcon: {
-      width: 30,
-      height: 30,
-      top: 30,
-      marginRight: 'auto',
+      position: 'absolute',
+      top: Platform.select({ ios: 50, android: 30 }),
+      left: Spacing.lg,
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: BorderRadius.full,
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
-});
+    buttonContainer: {
+      width: '100%',
+      paddingHorizontal: Spacing.xl,
+      gap: Spacing.sm,
+    },
+  });
+};
 
-export default styles;
+export default createStyles;
