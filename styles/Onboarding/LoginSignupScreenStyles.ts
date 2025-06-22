@@ -1,8 +1,10 @@
 import { StyleSheet, Platform } from "react-native";
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
+import { useFont } from '@/hooks/useFont';
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const { titleFont, subtitleFont, affirmationFont, buttonFont, captionFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -33,15 +35,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       width: 100,
       height: 100,
       tintColor: colors.text,
-      opacity: 1,
     },
     titleSection: {
       alignItems: 'center',
-      marginTop: -50, // Pull it up closer to logo
+      marginTop: -50,
     },
     title: {
-      fontSize: Typography.sizes['3xl'],
-      fontWeight: Typography.weights.bold,
+      ...titleFont,
       color: colors.text,
       letterSpacing: 2,
       marginBottom: Spacing.xs,
@@ -50,29 +50,26 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 4,
     },
     subTitle: {
-      fontSize: Typography.sizes.lg,
+      ...subtitleFont,
       color: colors.textLight,
       fontStyle: "italic",
-      fontWeight: Typography.weights.light,
       textShadowColor: 'rgba(0, 0, 0, 0.6)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
     },
     affirmation: {
-      fontSize: Typography.sizes.lg,
+      ...affirmationFont,
       color: colors.text,
       textAlign: "center",
-      fontWeight: Typography.weights.light,
       lineHeight: Typography.sizes.lg * 1.4,
       paddingHorizontal: Spacing.lg,
-      opacity: 1,
       textShadowColor: 'rgba(0, 0, 0, 0.7)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
     },
     buttonSection: {
       width: '100%',
-      paddingTop: Spacing.lg, // Added padding on top
+      paddingTop: Spacing.lg,
     },
     buttonContainer: {
       width: '100%',
@@ -106,9 +103,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderColor: colors.primary,
     },
     buttonText: {
+      ...buttonFont,
       color: colors.text,
-      fontSize: Typography.sizes.base,
-      fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
       textShadowOffset: { width: 1, height: 1 },
@@ -127,19 +123,18 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: Spacing.sm,
     },
     infoText: {
-      fontSize: Typography.sizes.xs,
+      ...captionFont,
       color: colors.textLight,
       textAlign: "center",
       lineHeight: Typography.sizes.xs * 1.6,
-      opacity: 1,
       textShadowColor: 'rgba(0, 0, 0, 0.6)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
     link: {
-      color: '#87CEEB', // Light blue for better visibility
+      ...buttonFont,
+      color: '#87CEEB',
       textDecorationLine: "underline",
-      fontWeight: Typography.weights.medium,
       textShadowColor: 'rgba(0, 0, 0, 0.5)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
