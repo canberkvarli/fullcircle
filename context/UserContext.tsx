@@ -875,6 +875,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         setUserData(userDataFromFirestore);
         userDataRef.current = userDataFromFirestore;
         if (userDataFromFirestore.onboardingCompleted) {
+          console.log("fetchUserData(): onboarding completed");
           // If onboarding is completed, navigate to the (tabs) app screen
           updateUserData({
             ...userDataFromFirestore,

@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   useColorScheme,
+  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
@@ -17,6 +18,7 @@ import { useUserContext } from "@/context/UserContext";
 import PhoneInput from "react-native-phone-number-input";
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -111,8 +113,19 @@ function PhoneNumberScreen(): JSX.Element {
           {loading ? (
             <ActivityIndicator size="large" color={colors.primary} />
           ) : (
-            <TouchableOpacity style={styles.nextButton} onPress={handleSubmit}>
-              <Ionicons name="chevron-forward" size={24} color={colors.background} />
+            <TouchableOpacity 
+              style={[
+                styles.nextButton,
+                !formattedPhoneNumber && styles.nextButtonDisabled
+              ]} 
+              onPress={handleSubmit}
+              disabled={!formattedPhoneNumber}
+            >
+              <Ionicons 
+                name="chevron-forward" 
+                size={24} 
+                color={formattedPhoneNumber ? colors.background : colors.background} 
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -123,8 +136,9 @@ function PhoneNumberScreen(): JSX.Element {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const { titleFont, subtitleFont, inputFont, captionFont, affirmationFont } = useFont();
   
-  return {
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -175,37 +189,33 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: Spacing.sm,
     },
     phoneInputText: {
-      fontSize: Typography.sizes.base,
-      color: colors.text === '#FFFFFF' ? '#3D3B37' : colors.text, // Dark text for light backgrounds
-      fontWeight: Typography.weights.medium,
+      ...inputFont,
+      color: colors.textDark,
     },
     codeText: {
-      fontSize: Typography.sizes.base,
-      color: colors.text === '#FFFFFF' ? '#3D3B37' : colors.text, // Dark text for light backgrounds
-      fontWeight: Typography.weights.medium,
+      ...inputFont,
+      color: colors.textDark,
     },
     countryPicker: {
       backgroundColor: 'transparent',
     },
     title: {
-      fontSize: Typography.sizes['4xl'],
-      fontWeight: Typography.weights.bold,
-      color: colors.text === '#FFFFFF' ? '#3D3B37' : colors.text, // Use dark text for readability
+      ...titleFont,
+      color: colors.textDark,
       marginTop: Spacing.lg,
       marginLeft: Spacing.xl,
       textAlign: "left",
     },
     subtitle: {
-      fontSize: Typography.sizes.lg,
-      color: colors.text === '#FFFFFF' ? '#6B6560' : colors.textLight, // Use appropriate contrast
+      ...subtitleFont,
+      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "center",
       marginTop: Spacing.xl,
       marginBottom: Spacing.xl,
-      fontWeight: Typography.weights.light,
     },
     notificationText: {
-      fontSize: Typography.sizes.sm,
-      color: colors.text === '#FFFFFF' ? '#8B8580' : colors.textMuted, // Use muted but visible color
+      ...captionFont,
+      color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       textAlign: "center",
       marginTop: Spacing.lg,
       lineHeight: Typography.sizes.sm * 1.5,
@@ -213,17 +223,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     affirmationContainer: {
       position: "absolute",
-      bottom: 100, // Position above the nextButton
+      bottom: 100,
       left: 0,
       right: 0,
       paddingHorizontal: Spacing.lg,
     },
     affirmation: {
-      fontSize: Typography.sizes.lg,
-      color: colors.text === '#FFFFFF' ? '#6B6560' : colors.textLight, // Use appropriate contrast
+      ...affirmationFont,
+      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "center",
       fontStyle: "italic",
-      fontWeight: Typography.weights.light,
       lineHeight: Typography.sizes.lg * 1.4,
     },
     nextButton: {
@@ -243,6 +252,20 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
         android: {
           elevation: 6,
+        },
+      }),
+    },
+    nextButtonDisabled: {
+      backgroundColor: colors.textMuted,
+      opacity: 0.6,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.textMuted,
+          shadowOpacity: 0.15,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 3,
         },
       }),
     },
@@ -268,7 +291,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
       }),
     },
-  };
+  });
 };
 
 export default PhoneNumberScreen;

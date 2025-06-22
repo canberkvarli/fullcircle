@@ -11,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useUserContext } from "@/context/UserContext";
+import { useFont } from "@/hooks/useFont";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
@@ -77,6 +78,7 @@ function SSOButtons(): JSX.Element {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const { buttonFont, captionFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -96,7 +98,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     ssoButton: {
       width: '100%',
-      maxWidth: 280, // Smaller max width
+      maxWidth: 280,
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.full,
       alignItems: "center",
@@ -125,27 +127,24 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderColor: colors.primary,
     },
     buttonText: {
-      fontSize: Typography.sizes.base,
+      ...buttonFont,
       color: colors.text,
-      fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
     googleButtonText: {
-      fontSize: Typography.sizes.base,
+      ...buttonFont,
       color: colors.text,
-      fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
     phoneButtonText: {
-      fontSize: Typography.sizes.base,
+      ...buttonFont,
       color: colors.text,
-      fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.4)',
       textShadowOffset: { width: 1, height: 1 },
@@ -157,9 +156,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: Spacing.sm,
     },
     logoutText: {
-      fontSize: Typography.sizes.sm,
+      ...captionFont,
       color: colors.textMuted,
-      fontWeight: Typography.weights.medium,
       textDecorationLine: 'underline',
       textShadowColor: 'rgba(0, 0, 0, 0.4)',
       textShadowOffset: { width: 1, height: 1 },

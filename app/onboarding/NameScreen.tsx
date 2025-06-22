@@ -9,6 +9,7 @@ import {
   View,
   useColorScheme,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import auth from "@react-native-firebase/auth";
@@ -16,6 +17,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 function NameScreen() {
   const { userData, navigateToNextScreen, updateUserData, signOut } =
@@ -131,14 +133,17 @@ function NameScreen() {
 
       {/* Submit Button */}
       <TouchableOpacity 
-        style={styles.submitButton} 
+        style={[
+          styles.submitButton,
+          !firstName.trim() && styles.submitButtonDisabled
+        ]} 
         onPress={handleNameSubmit}
         disabled={!firstName.trim()}
       >
         <Ionicons 
           name="chevron-forward" 
           size={24} 
-          color={firstName.trim() ? colors.background : colors.textMuted} 
+          color={firstName.trim() ? colors.background : colors.background} 
         />
       </TouchableOpacity>
 
@@ -173,8 +178,9 @@ function NameScreen() {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const { titleFont, inputFont, captionFont, affirmationFont, buttonFont, modalTitleFont, modalBodyFont } = useFont();
   
-  return {
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -191,8 +197,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       alignSelf: 'flex-start',
       marginLeft: Spacing.md,
-      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }), // Top positioning
-      marginBottom: 0, // No bottom margin needed
+      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
+      marginBottom: 0,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -206,8 +212,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     title: {
-      fontSize: Typography.sizes['5xl'],
-      fontWeight: Typography.weights.bold,
+      ...titleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -219,6 +224,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.lg,
     },
     input: {
+      ...inputFont,
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
@@ -226,9 +232,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: BorderRadius.md,
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
-      fontSize: Typography.sizes.base,
       color: colors.textDark,
-      fontWeight: Typography.weights.medium,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -246,26 +250,25 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.xl,
     },
     optionalText: {
-      fontSize: Typography.sizes.sm,
+      ...captionFont,
       fontStyle: "italic",
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       lineHeight: Typography.sizes.sm * 1.4,
     },
     linkText: {
+      ...buttonFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
-      fontWeight: Typography.weights.medium,
     },
     affirmation: {
+      ...affirmationFont,
       position: 'absolute',
       bottom: Platform.select({ ios: 120, android: 100 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontSize: Typography.sizes.lg,
       fontStyle: "italic",
-      fontWeight: Typography.weights.light,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       lineHeight: Typography.sizes.lg * 1.4,
     },
@@ -288,6 +291,20 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
         android: {
           elevation: 6,
+        },
+      }),
+    },
+    submitButtonDisabled: {
+      backgroundColor: colors.textMuted,
+      opacity: 0.6,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.textMuted,
+          shadowOpacity: 0.15,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 3,
         },
       }),
     },
@@ -317,14 +334,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     modalTitle: {
-      fontSize: Typography.sizes.xl,
-      fontWeight: Typography.weights.bold,
+      ...modalTitleFont,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      fontSize: Typography.sizes.base,
+      ...modalBodyFont,
       textAlign: "center",
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       lineHeight: Typography.sizes.base * 1.5,
@@ -338,12 +354,11 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       minWidth: 120,
     },
     modalCloseText: {
+      ...buttonFont,
       color: colors.background,
-      fontWeight: Typography.weights.semibold,
-      fontSize: Typography.sizes.base,
       textAlign: 'center',
     },
-  };
+  });
 };
 
 export default NameScreen;

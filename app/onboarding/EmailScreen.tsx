@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   useColorScheme,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
@@ -18,6 +19,7 @@ import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { useUserContext } from "../../context/UserContext";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 function EmailScreen() {
   const {
@@ -265,8 +267,9 @@ function EmailScreen() {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
+  const { titleFont, subtitleFont, inputFont, captionFont, affirmationFont, buttonFont, modalTitleFont, modalBodyFont } = useFont();
   
-  return {
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -298,8 +301,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     title: {
-      fontSize: Typography.sizes['5xl'],
-      fontWeight: Typography.weights.bold,
+      ...titleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -307,14 +309,14 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      fontSize: Typography.sizes.lg,
+      ...subtitleFont,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "left",
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-      fontWeight: Typography.weights.light,
     },
     input: {
+      ...inputFont,
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
@@ -323,9 +325,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: Spacing.lg,
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-      fontSize: Typography.sizes.base,
       color: colors.textDark,
-      fontWeight: Typography.weights.medium,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -352,7 +352,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: "flex-start",
     },
     toggleText: {
-      fontSize: Typography.sizes.sm,
+      ...captionFont,
       fontStyle: "italic",
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       marginLeft: Spacing.sm,
@@ -360,14 +360,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       lineHeight: Typography.sizes.sm * 1.4,
     },
     affirmation: {
+      ...affirmationFont,
       position: 'absolute',
       bottom: Platform.select({ ios: 120, android: 100 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontSize: Typography.sizes.lg,
       fontStyle: "italic",
-      fontWeight: Typography.weights.light,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       lineHeight: Typography.sizes.lg * 1.4,
     },
@@ -433,14 +432,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     modalTitle: {
-      fontSize: Typography.sizes['2xl'],
-      fontWeight: Typography.weights.bold,
+      ...modalTitleFont,
       color: colors.textDark,
       marginBottom: Spacing.sm,
       textAlign: "center",
     },
     modalSubtitle: {
-      fontSize: Typography.sizes.base,
+      ...modalBodyFont,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       marginBottom: Spacing.xl,
       textAlign: "center",
@@ -461,9 +459,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginRight: Spacing.md,
     },
     modalOptionText: {
-      fontSize: Typography.sizes.base,
+      ...buttonFont,
       color: colors.textDark,
-      fontWeight: Typography.weights.medium,
       flex: 1,
     },
     connectedOption: {
@@ -473,7 +470,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     connectedText: {
       color: colors.success,
     },
-  };
+  });
 };
 
 export default EmailScreen;

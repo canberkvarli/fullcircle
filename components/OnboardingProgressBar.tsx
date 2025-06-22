@@ -80,8 +80,8 @@ const OnboardingProgressBar = ({
             {isActive ? (
               <View style={styles.activeIconContainer}>
                 <IconComponent 
-                  name={name} 
-                  size={16} 
+                  name={name as any} 
+                    size={16} 
                   color={colors.primary} 
                 />
               </View>
