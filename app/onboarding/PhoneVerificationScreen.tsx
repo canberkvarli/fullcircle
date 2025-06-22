@@ -8,12 +8,14 @@ import {
   TextInput,
   ActivityIndicator,
   useColorScheme,
-  Platform
+  Platform,
+  StyleSheet
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 const PhoneVerificationScreen = () => {
   const [verificationCode, setVerificationCode] = useState<string[]>(
@@ -28,7 +30,8 @@ const PhoneVerificationScreen = () => {
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const styles = createStyles(colorScheme);
+  const fonts = useFont();
+  const styles = createStyles(colorScheme, fonts);
 
   const handleVerifyCode = async () => {
     const code = verificationCode.join("");
@@ -162,10 +165,10 @@ const PhoneVerificationScreen = () => {
   );
 };
 
-const createStyles = (colorScheme: 'light' | 'dark') => {
+const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof useFont>) => {
   const colors = Colors[colorScheme];
   
-  return {
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -198,6 +201,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     title: {
       fontSize: Typography.sizes['4xl'],
       fontWeight: Typography.weights.bold,
+      fontFamily: Typography.fonts.bold,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.xl,
@@ -212,6 +216,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     subtitle: {
       fontSize: Typography.sizes.lg,
+      fontFamily: Typography.fonts.light,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "left",
       fontWeight: Typography.weights.light,
@@ -232,6 +237,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       height: 56,
       fontSize: Typography.sizes['2xl'],
       fontWeight: Typography.weights.medium,
+      fontFamily: Typography.fonts.medium,
       textAlign: "center",
       color: colors.textDark,
       ...Platform.select({
@@ -256,6 +262,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     loadingText: {
       fontSize: Typography.sizes.base,
+      fontFamily: Typography.fonts.medium,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       marginTop: Spacing.sm,
       fontWeight: Typography.weights.medium,
@@ -266,6 +273,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     changeNumberLink: {
       fontSize: Typography.sizes.base,
+      fontFamily: Typography.fonts.medium,
       color: colors.primary,
       fontWeight: Typography.weights.medium,
       textDecorationLine: "underline",
@@ -278,12 +286,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       right: Spacing.lg,
       textAlign: "center",
       fontSize: Typography.sizes.lg,
+      fontFamily: Typography.fonts.spiritualLight,
       fontStyle: "italic",
       fontWeight: Typography.weights.light,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       lineHeight: Typography.sizes.lg * 1.4,
     },
-  };
+  });
 };
 
 export default PhoneVerificationScreen;

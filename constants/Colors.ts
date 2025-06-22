@@ -3,6 +3,8 @@
  * Inspired by earthy, calming tones for a spiritual dating app
  */
 
+import { TextStyle } from 'react-native';
+
 const tintColorLight = '#7B6B5C'; // Warm brown
 const tintColorDark = '#F5E6D3'; // Warm cream
 
@@ -84,6 +86,7 @@ export const Colors = {
     gradientEnd: '#7B6B5C',
   },
 };
+
 // Typography scale for consistent sizing
 export const Typography = {
   sizes: {
@@ -97,23 +100,35 @@ export const Typography = {
     '4xl': 36,
     '5xl': 48,
   },
+  // Use proper TypeScript types for font weights
   weights: {
-    light: '300',
-    regular: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
+    light: '300' as TextStyle['fontWeight'],
+    regular: '400' as TextStyle['fontWeight'],
+    medium: '500' as TextStyle['fontWeight'],
+    semibold: '600' as TextStyle['fontWeight'],
+    bold: '700' as TextStyle['fontWeight'],
   },
-  // Recommended fonts for spiritual/meditative feel:
-  // iOS: 'Avenir Next', 'Helvetica Neue'
-  // Android: 'Roboto', 'sans-serif'
-  // Or use custom fonts like 'Nunito', 'Montserrat', 'Poppins'
   fonts: {
-    light: 'System',
-    regular: 'System',
-    medium: 'System',
-    semibold: 'System',
-    bold: 'System',
+    // Main UI fonts (Nunito)
+    light: 'Nunito-Light',
+    regular: 'Nunito-Regular',
+    medium: 'Nunito-Medium',
+    semibold: 'Nunito-SemiBold',
+    bold: 'Nunito-Bold',
+    
+    // Spiritual fonts (Quicksand)
+    spiritualLight: 'Quicksand-Light',
+    spiritualRegular: 'Quicksand-Regular',
+    spiritualMedium: 'Quicksand-Medium',
+    spiritualSemiBold: 'Quicksand-SemiBold',
+    spiritualBold: 'Quicksand-Bold',
+    
+    // Elegant fonts (Raleway)
+    elegantLight: 'Raleway-Light',
+    elegantRegular: 'Raleway-Regular',
+    elegantMedium: 'Raleway-Medium',
+    elegantSemiBold: 'Raleway-SemiBold',
+    elegantBold: 'Raleway-Bold',
   }
 };
 

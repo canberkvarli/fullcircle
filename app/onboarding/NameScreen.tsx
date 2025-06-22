@@ -29,7 +29,8 @@ function NameScreen() {
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const styles = createStyles(colorScheme);
+  const fonts = useFont();
+  const styles = createStyles(colorScheme, fonts);
 
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
@@ -176,9 +177,8 @@ function NameScreen() {
   );
 }
 
-const createStyles = (colorScheme: 'light' | 'dark') => {
+const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof useFont>) => {
   const colors = Colors[colorScheme];
-  const { titleFont, inputFont, captionFont, affirmationFont, buttonFont, modalTitleFont, modalBodyFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -212,7 +212,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     title: {
-      ...titleFont,
+      ...fonts.titleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -224,7 +224,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.lg,
     },
     input: {
-      ...inputFont,
+      ...fonts.inputFont,
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
@@ -250,19 +250,19 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.xl,
     },
     optionalText: {
-      ...captionFont,
+      ...fonts.captionFont,
       fontStyle: "italic",
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       lineHeight: Typography.sizes.sm * 1.4,
     },
     linkText: {
-      ...buttonFont,
+      ...fonts.buttonFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
     },
     affirmation: {
-      ...affirmationFont,
+      ...fonts.affirmationFont,
       position: 'absolute',
       bottom: Platform.select({ ios: 120, android: 100 }),
       left: Spacing.lg,
@@ -334,13 +334,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     modalTitle: {
-      ...modalTitleFont,
+      ...fonts.modalTitleFont,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...modalBodyFont,
+      ...fonts.modalBodyFont,
       textAlign: "center",
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       lineHeight: Typography.sizes.base * 1.5,
@@ -354,7 +354,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       minWidth: 120,
     },
     modalCloseText: {
-      ...buttonFont,
+      ...fonts.buttonFont,
       color: colors.background,
       textAlign: 'center',
     },

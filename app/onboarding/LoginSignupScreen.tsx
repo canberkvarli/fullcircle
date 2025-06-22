@@ -126,8 +126,8 @@ function LoginSignupScreen(): JSX.Element {
           
           {/* Title Section */}
           <View style={styles.titleSection}>
-            <Text style={styles.title}>Circle</Text>
-            <Text style={styles.subTitle}>It starts with a swipe</Text>
+            <Text style={styles.title}>CIRCLE</Text>
+            <Text style={styles.subTitle}>Where intention meets connection</Text>
           </View>
           
           {/* Affirmation */}

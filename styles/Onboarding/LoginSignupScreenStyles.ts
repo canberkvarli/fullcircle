@@ -4,7 +4,7 @@ import { useFont } from '@/hooks/useFont';
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  const { titleFont, subtitleFont, affirmationFont, buttonFont, captionFont } = useFont();
+  const { affirmationFont, buttonFont, captionFont, logoFont, spiritualSubtitleFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -34,31 +34,31 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     logo: {
       width: 100,
       height: 100,
-      tintColor: colors.text,
+      tintColor: colors.background,
     },
     titleSection: {
       alignItems: 'center',
       marginTop: -50,
     },
     title: {
-      ...titleFont,
-      color: colors.text,
-      letterSpacing: 2,
+      ...logoFont, // ← Using spiritual font for "Circle"
+      color: colors.background,
+      letterSpacing: 3, // More spacing for spiritual feel
       marginBottom: Spacing.xs,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 2, height: 2 },
-      textShadowRadius: 4,
+      textShadowRadius: 1,
     },
     subTitle: {
-      ...subtitleFont,
-      color: colors.textLight,
+      ...spiritualSubtitleFont, // ← Light spiritual font
+      color: colors.text,
       fontStyle: "italic",
       textShadowColor: 'rgba(0, 0, 0, 0.6)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
     },
     affirmation: {
-      ...affirmationFont,
+      ...affirmationFont, // ← Quicksand for spiritual text
       color: colors.text,
       textAlign: "center",
       lineHeight: Typography.sizes.lg * 1.4,

@@ -17,17 +17,31 @@ export const useFont = () => {
   return {
     getFont,
     getFontStyle,
-    // Quick access to common combinations for your spiritual app
-    titleFont: getFontStyle('5xl', 'bold'),
+    
+    // Regular UI fonts (Nunito)
+    titleFont: getFontStyle('4xl', 'bold'),
     subtitleFont: getFontStyle('lg', 'light'),
     bodyFont: getFontStyle('base', 'regular'),
-    bodyMediumFont: getFontStyle('base', 'medium'),
-    captionFont: getFontStyle('sm', 'medium'),
-    smallFont: getFontStyle('xs', 'regular'),
-    affirmationFont: getFontStyle('lg', 'light'),
     buttonFont: getFontStyle('base', 'semibold'),
-    inputFont: getFontStyle('base', 'medium'),
-    modalTitleFont: getFontStyle('2xl', 'bold'),
+    captionFont: getFontStyle('sm', 'medium'),
+    inputFont: getFontStyle('base', 'regular'),
+    
+    // Spiritual fonts (Quicksand) - for affirmations, special text
+    spiritualTitleFont: getFontStyle('4xl', 'spiritualBold'),
+    spiritualSubtitleFont: getFontStyle('lg', 'spiritualLight'),
+    affirmationFont: getFontStyle('lg', 'spiritualLight'),
+    spiritualBodyFont: getFontStyle('base', 'spiritualRegular'),
+    
+    // Elegant fonts (Raleway) - for premium feel
+    elegantTitleFont: getFontStyle('4xl', 'elegantBold'),
+    elegantSubtitleFont: getFontStyle('lg', 'elegantLight'),
+    elegantBodyFont: getFontStyle('base', 'elegantRegular'),
+    
+    // Modal fonts
+    modalTitleFont: getFontStyle('xl', 'semibold'),
     modalBodyFont: getFontStyle('base', 'regular'),
+    
+    // Special logo font (for "Circle" title)
+    logoFont: getFontStyle('5xl', 'spiritualRegular'),
   };
 };
