@@ -15,6 +15,7 @@ export const Colors = {
     icon: '#8B7B6B',
     tabIconDefault: '#A09080',
     tabIconSelected: tintColorLight,
+    textDark: '#3D3B37', // Dark text for better readability
     
     // Primary palette - earthy & calming
     primary: '#7B6B5C', // Warm brown (main CTA)
