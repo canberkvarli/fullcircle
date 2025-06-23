@@ -29,7 +29,7 @@ function EmailScreen() {
     navigateToPreviousScreen,
     googleCredential,
   } = useUserContext();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(
     userData?.marketingRequested ?? true
   );
@@ -311,7 +311,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     subtitle: {
       ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      color: colors.textLight,
       textAlign: "left",
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
@@ -367,7 +367,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     toggleText: {
       ...fonts.spiritualBodyFont, // Using spiritual body font
       fontStyle: "italic",
-      color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
+      color: colors.textMuted,
       marginLeft: Spacing.sm,
       flex: 1,
       lineHeight: Typography.sizes.base * 1.5,
@@ -380,7 +380,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
-      color: colorScheme === 'light' ? '#8B7B6B' : '#C4A984', // Fixed color logic
+      color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
     },
@@ -456,7 +456,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     modalSubtitle: {
       ...fonts.spiritualBodyFont, // Using spiritual body font
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      color: colors.textLight,
       marginBottom: Spacing.xl,
       textAlign: "center",
       lineHeight: Typography.sizes.base * 1.6,

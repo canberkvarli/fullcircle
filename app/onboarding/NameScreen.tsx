@@ -135,7 +135,7 @@ function NameScreen() {
 
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        "Every name carries a unique vibration that calls to kindred spirits"
+        Every name carries a unique vibration that calls to kindred spirits
       </Text>
 
       {/* Submit Button */}
@@ -231,7 +231,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     subtitle: {
       ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
@@ -272,7 +272,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     optionalText: {
       ...fonts.spiritualBodyFont, // Using spiritual body font
       fontStyle: "italic",
-      color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
+      color: colors.textMuted,
       lineHeight: Typography.sizes.base * 1.5,
     },
     linkText: {
@@ -290,7 +290,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
-      color: colorScheme === 'light' ? '#8B7B6B' : '#C4A984', // Fixed color logic like PhoneVerificationScreen
+      color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3, // Slight letter spacing for elegance
     },
@@ -367,7 +367,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     modalText: {
       ...fonts.spiritualBodyFont, // Using spiritual body font
       textAlign: "center",
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
       marginBottom: Spacing.md,
       fontStyle: "italic",

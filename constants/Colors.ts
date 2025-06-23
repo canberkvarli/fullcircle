@@ -1,6 +1,7 @@
 /**
  * Spiritual & Meditative Color Palette
  * Inspired by earthy, calming tones for a spiritual dating app
+ * Updated with better contrast ratios for improved text visibility
  */
 
 import { TextStyle } from 'react-native';
@@ -39,9 +40,10 @@ export const Colors = {
     card: '#FFFFFF',
     overlay: 'rgba(0, 0, 0, 0.4)', // Lighter overlay for better text visibility
     
-    // Text variations
-    textLight: '#F5F5F5', // Very light for better readability
-    textMuted: '#E0E0E0', // Lighter muted text
+    // Text variations - IMPROVED FOR BETTER VISIBILITY
+    textLight: '#6B5B4F', // Much darker for better contrast against light backgrounds
+    textMuted: '#8B7B6B', // Darker muted text that's actually readable
+    textSubtle: '#A09080', // For very subtle text that still needs to be readable
     
     // Gradients (for special elements)
     gradientStart: '#7B6B5C',
@@ -50,7 +52,7 @@ export const Colors = {
   dark: {
     // Core colors
     text: '#F5E6D3', // Warm cream
-    textDark: '#2A2825', // Very dark for light backgrounds in dark mode
+    textDark: '#F5E6D3', // Light cream for dark backgrounds
     background: '#1A1815', // Deep charcoal
     tint: tintColorDark,
     icon: '#C4A984',
@@ -77,9 +79,10 @@ export const Colors = {
     card: '#252320',
     overlay: 'rgba(0, 0, 0, 0.6)', // Balanced overlay for dark mode
     
-    // Text variations
-    textLight: '#F0F0F0', // Brighter for better visibility
-    textMuted: '#D0D0D0', // Lighter muted text
+    // Text variations - IMPROVED FOR BETTER VISIBILITY
+    textLight: '#E5D4B1', // Much lighter for better contrast against dark backgrounds
+    textMuted: '#C4A984', // Lighter muted text that's actually readable
+    textSubtle: '#A09080', // For very subtle text that still needs to be readable
     
     // Gradients (for special elements)
     gradientStart: '#C4A984',
@@ -152,3 +155,20 @@ export const BorderRadius = {
   xl: 24,
   full: 9999,
 };
+
+// USAGE GUIDE FOR BETTER TEXT VISIBILITY:
+// 
+// For subtitles, descriptions, and secondary text:
+// - Use colors.textLight (now much more visible)
+//
+// For muted/helper text that still needs to be readable:
+// - Use colors.textMuted (now properly readable)
+//
+// For very subtle text that should be barely visible:
+// - Use colors.textSubtle (for disclaimers, etc.)
+//
+// For emphasis and important text:
+// - Use colors.primary (always has good contrast)
+//
+// For main content text:
+// - Use colors.textDark (optimal contrast)
