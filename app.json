@@ -18,6 +18,10 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "buildNumber": "1",
       "deploymentTarget": "13.4",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
+        },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
@@ -139,4 +143,4 @@
       }
     }
   }
-}
+}}
