@@ -28,7 +28,6 @@ export default function EditUserProfile() {
   useEffect(() => {
     const initialVisibility = {
       gender: !userData.hiddenFields?.gender,
-      sexualOrientation: !userData.hiddenFields?.sexualOrientation,
       datePreferences: !userData.hiddenFields?.datePreferences,
       jobLocation: !userData.hiddenFields?.jobLocation,
       jobTitle: !userData.hiddenFields?.jobTitle,
@@ -138,11 +137,6 @@ export default function EditUserProfile() {
       fieldName: "gender",
       title: "Gender",
       value: userData.gender,
-    },
-    {
-      fieldName: "sexualOrientation",
-      title: "Sexuality",
-      value: userData.sexualOrientation,
     },
     {
       fieldName: "datePreferences",

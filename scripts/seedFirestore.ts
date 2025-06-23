@@ -31,19 +31,6 @@ const genders = [
   "Other",
 ];
 
-const sexualOrientations = [
-  "Heterosexual (Straight)",
-  "Gay (Homosexual)",
-  "Lesbian",
-  "Bisexual",
-  "Pansexual",
-  "Asexual (Ace)",
-  "Demisexual",
-  "Queer",
-  "Polysexual",
-  "Questioning",
-];
-
 const datePreferencesArray = [
   "Men",
   "Women",
@@ -275,10 +262,6 @@ async function seedFirestore(numUsers: number) {
       jobLocation: faker.company.name(),
       ethnicities: faker.helpers.arrayElements(
         ethnicitiesArray,
-        faker.number.int({ min: 1, max: 3 })
-      ),
-      sexualOrientation: faker.helpers.arrayElements(
-        sexualOrientations,
         faker.number.int({ min: 1, max: 3 })
       ),
       spiritualPractices: faker.helpers.arrayElements(

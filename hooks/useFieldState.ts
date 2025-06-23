@@ -36,18 +36,6 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
           input: true,
         },
       ],
-      sexualOrientation: [
-        "Heterosexual (Straight)",
-        "Gay (Homosexual)",
-        "Lesbian",
-        "Bisexual",
-        "Pansexual",
-        "Asexual (Ace)",
-        "Demisexual",
-        "Queer",
-        "Polysexual",
-        "Questioning",
-      ],
       datePreferences: [
         "Men",
         "Women",
@@ -165,10 +153,6 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
           setCustomInput("");
         }
       }
-    } else if (fieldName === "sexualOrientation") {
-      setSelectedOrientations(
-        Array.isArray(currentFieldValue) ? currentFieldValue : []
-      );
     } else if (fieldName === "datePreferences") {
       // If stored value is "Open to All" or an array with only that value, convert to ["Everyone"] for the UI.
       if (typeof currentFieldValue === "string") {
@@ -224,19 +208,6 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
       onSelect: setSelectedGender,
       customInput: customInput,
       setCustomInput: setCustomInput,
-    },
-    sexualOrientation: {
-      title: "Sexuality",
-      options: OPTIONS.sexualOrientation,
-      selectedValue: selectedOrientations,
-      onSelect: (title: string) => {
-        setSelectedOrientations((prev) =>
-          prev.includes(title)
-            ? prev.filter((item) => item !== title)
-            : [...prev, title]
-        );
-      },
-      clearAll: () => setSelectedOrientations([]),
     },
     datePreferences: {
       title: "Date Preference",

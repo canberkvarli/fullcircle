@@ -200,10 +200,6 @@ const UserShow: React.FC = () => {
       content: userData?.ethnicities?.join(", ") ?? "N/A",
     },
     {
-      title: "Sexual Orientation",
-      content: userData?.sexualOrientation?.join(", ") ?? "N/A",
-    },
-    {
       title: "Date Preferences",
       content: userData?.matchPreferences?.datePreferences?.join(", ") ?? "N/A",
     },

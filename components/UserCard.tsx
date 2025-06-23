@@ -125,10 +125,6 @@ const UserCard: React.FC<UserCardProps> = ({
                 content: user.ethnicities?.join(", ") || "N/A",
               },
               {
-                title: "Sexual Orientation",
-                content: user.sexualOrientation?.join(", ") || "N/A",
-              },
-              {
                 title: "Date Preferences",
                 content:
                   user.matchPreferences.datePreferences?.join(", ") || "N/A",

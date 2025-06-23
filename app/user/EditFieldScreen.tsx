@@ -83,7 +83,6 @@ function EditFieldScreen() {
 
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
-    sexualOrientation: "Sexuality",
     datePreferences: "I'm interested in",
     childrenPreference: "Family Vision",
     jobLocation: "Work",
@@ -321,8 +320,6 @@ function EditFieldScreen() {
 
     if (fieldName === "gender") {
       isSelected = selectedGender.includes(title);
-    } else if (fieldName === "sexualOrientation") {
-      isSelected = selectedOrientations.includes(title);
     } else if (fieldName === "datePreferences") {
       isSelected = selectedDatePreferences.includes(title);
     } else if (fieldName === "educationDegree") {
@@ -348,12 +345,6 @@ function EditFieldScreen() {
             if (title === "Other" && !selectedGender.includes("Other")) {
               setCustomInput("");
             }
-          } else if (fieldName === "sexualOrientation") {
-            setSelectedOrientations((prev: string[]) =>
-              prev.includes(title)
-                ? prev.filter((orientation) => orientation !== title)
-                : [...prev, title]
-            );
           } else if (fieldName === "datePreferences") {
             handleDatePreferenceSelection(title);
           } else if (fieldName === "educationDegree") {

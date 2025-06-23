@@ -70,10 +70,6 @@ const PotentialMatch: React.FC<Props> = ({
         ? `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`
         : "Location not provided",
     },
-    {
-      title: "Sexual Orientation",
-      content: currentPotentialMatch.sexualOrientation?.join(", "),
-    },
   ];
 
   const infoStep = Math.ceil(infoSections.length / photoUrls.length);

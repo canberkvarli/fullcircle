@@ -69,7 +69,6 @@ export type UserDataType = {
   longitude?: number;
   latitude?: number;
   gender?: string[];
-  sexualOrientation?: string[];
   ethnicities?: string[];
   jobLocation?: string;
   jobTitle?: string;
@@ -276,7 +275,6 @@ const initialScreens = [
   "BirthdateScreen",
   "LocationScreen",
   "GenderScreen",
-  "SexualOrientationScreen",
   "DatePreferenceScreen",
   "HeightScreen",
   "EthnicityScreen",
