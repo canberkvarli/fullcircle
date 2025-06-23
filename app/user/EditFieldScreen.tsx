@@ -260,13 +260,6 @@ function EditFieldScreen() {
     router.back();
   };
 
-  const handleEthnicitySelection = (title: string) => {
-    const newEthnicities = selectedEthnicities.includes(title)
-      ? selectedEthnicities.filter((ethnicity) => ethnicity !== title)
-      : [...selectedEthnicities, title];
-    setSelectedEthnicities(newEthnicities);
-  };
-
   const handleDatePreferenceSelection = (title: string) => {
     if (title === "Everyone") {
       setSelectedDatePreferences(["Everyone"]);
@@ -349,8 +342,6 @@ function EditFieldScreen() {
             handleDatePreferenceSelection(title);
           } else if (fieldName === "educationDegree") {
             setSelectedEducation(title);
-          } else if (fieldName === "ethnicities") {
-            handleEthnicitySelection(title);
           } else if (fieldName === "childrenPreference") {
             setSelectedChildrenPreferences(title);
           } else if (fieldName === "spiritualPractices") {

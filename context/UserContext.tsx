@@ -277,7 +277,6 @@ const initialScreens = [
   "GenderScreen",
   "DatePreferenceScreen",
   "HeightScreen",
-  "EthnicityScreen",
   "FamilyVisionScreen",
   "JobLocationScreen",
   "JobTitleScreen",
@@ -987,12 +986,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (height?.min != null && height?.max != null) {
       constraints.push(where("height", ">=", height.min));
       constraints.push(where("height", "<=", height.max));
-    }
-
-    // --- Ethnicity ---
-    const ethnicities = matchPreferences?.preferredEthnicities;
-    if (ethnicities?.length && !ethnicities.includes("Open to All")) {
-      constraints.push(where("ethnicities", "array-contains-any", ethnicities));
     }
 
     // --- Distance Bounding Box ---

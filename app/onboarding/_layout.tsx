@@ -25,7 +25,6 @@ export default function OnboardingStackLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="HeightScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="EthnicityScreen" options={{ headerShown: false }} />
       <Stack.Screen
         name="FamilyVisionScreen"
         options={{ headerShown: false }}

@@ -16,7 +16,6 @@ const FIELD_TITLES: Record<string, string> = {
   location: "My neighborhood",
   preferredAgeRange: "Age Range",
   preferredDistance: "Maximum distance",
-  preferredEthnicities: "Ethnicity",
   desiredRelationship: "Relationship Type",
   preferredHeightRange: "Preferred Height Range",
   preferredSpiritualPractices: "Spiritual Practices",
@@ -223,29 +222,6 @@ export default function EditPreferenceField() {
               allowOverlap
             />
           </View>
-        );
-      }
-      case "preferredEthnicities": {
-        const ethnicityOptions: string[] = [
-          "American Indian",
-          "East Asian",
-          "Black/African Descent",
-          "Hispanic Latino",
-          "Middle Eastern",
-          "Native Hawaiian",
-          "Pacific Islander",
-          "South Asian",
-          "White/Caucasian",
-          "Open to All",
-        ];
-        return (
-          <CheckboxList
-            options={ethnicityOptions}
-            selected={value || []}
-            onToggle={(option) =>
-              handleCheckboxToggle(option, ethnicityOptions, "Open to All")
-            }
-          />
         );
       }
       case "desiredRelationship": {
