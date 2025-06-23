@@ -37,7 +37,8 @@ function EmailScreen() {
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const styles = createStyles(colorScheme);
+  const fonts = useFont();
+  const styles = createStyles(colorScheme, fonts);
 
   GoogleSignin.configure({
     webClientId:
@@ -55,12 +56,12 @@ function EmailScreen() {
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
-      Alert.alert("Error", "Email cannot be empty");
+      Alert.alert("Sacred Connection", "Please share your digital sanctuary address to stay connected");
       return;
     }
 
     if (!isValidEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
+      Alert.alert("Energy Alignment", "The cosmic address seems incomplete. Please check and try again");
       return;
     }
 
@@ -71,7 +72,7 @@ function EmailScreen() {
       });
       setModalVisible(true);
     } catch (error: any) {
-      Alert.alert("Error", "Failed to save email: " + error.message);
+      Alert.alert("Cosmic Interference", "The universe had trouble saving your information: " + error.message);
     }
   };
 
@@ -100,27 +101,27 @@ function EmailScreen() {
       }
     } catch (error) {
       console.error("Google sign-in error: ", error);
-      Alert.alert("Error", "Failed to link Google account: " + error);
+      Alert.alert("Divine Connection", "The cosmic bridge to Google couldn't be established: " + error);
     }
   };
 
   const handleModalOption = (option: number) => {
     switch (option) {
       case 1:
-        Alert.alert("Connect Apple Account", "Feature coming soon!");
+        Alert.alert("Sacred Apple Connection", "This divine pathway is being prepared for you!");
         break;
       case 2:
         if (googleCredential) {
           Alert.alert(
-            "Switch Google Account",
-            "Would you like to switch your Google account?",
+            "Switch Google Energy",
+            "Would you like to align with a different Google essence?",
             [
               {
-                text: "Cancel",
+                text: "Keep Current",
                 style: "cancel",
               },
               {
-                text: "Switch",
+                text: "Switch Energy",
                 onPress: () => {
                   GoogleSignin.signOut().then(() => handleGoogleSignIn());
                 },
@@ -152,15 +153,15 @@ function EmailScreen() {
       <OnboardingProgressBar currentScreen="EmailScreen" />
 
       {/* Title */}
-      <Text style={styles.title}>Stay Connected</Text>
+      <Text style={styles.title}>Open sacred channels</Text>
       
       {/* Subtitle */}
-      <Text style={styles.subtitle}>Enter your email address</Text>
+      <Text style={styles.subtitle}>Share your digital sanctuary address</Text>
       
       {/* Email Input */}
       <TextInput
         style={styles.input}
-        placeholder="email@example.com"
+        placeholder="your.essence@cosmos.com"
         placeholderTextColor={colors.textMuted}
         value={email}
         onChangeText={setEmail}
@@ -181,15 +182,14 @@ function EmailScreen() {
             color={colors.primary}
           />
           <Text style={styles.toggleText}>
-            I do not wish to receive marketing communications about Circle
-            products and services.
+            I prefer to receive only essential cosmic communications about my Circle journey
           </Text>
         </TouchableOpacity>
       </View>
       
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Open the channels of communication and connection
+        Communication flows effortlessly when hearts are aligned
       </Text>
       
       {/* Submit Button */}
@@ -210,7 +210,7 @@ function EmailScreen() {
 
       {/* Modal */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
@@ -219,14 +219,14 @@ function EmailScreen() {
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Connect your account?</Text>
+                <Text style={styles.modalTitle}>Strengthen your cosmic connection</Text>
                 <Text style={styles.modalSubtitle}>
-                  Linking your account makes it easier to connect.
+                  Linking your spiritual account creates deeper resonance and easier access to your Circle.
                 </Text>
                 {[
-                  { option: 1, text: "Connect your Apple account", icon: "logo-apple" },
-                  { option: 2, text: "Connect your Google account", icon: "logo-google" },
-                  { option: 3, text: "No thanks", icon: "close" },
+                  { option: 1, text: "Connect your Apple essence", icon: "logo-apple" },
+                  { option: 2, text: "Connect your Google energy", icon: "logo-google" },
+                  { option: 3, text: "Continue with current flow", icon: "checkmark-circle" },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.option}
@@ -265,9 +265,8 @@ function EmailScreen() {
   );
 }
 
-const createStyles = (colorScheme: 'light' | 'dark') => {
+const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof useFont>) => {
   const colors = Colors[colorScheme];
-  const { titleFont, subtitleFont, inputFont, captionFont, affirmationFont, buttonFont, modalTitleFont, modalBodyFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -288,6 +287,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginLeft: Spacing.md,
       marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
       marginBottom: 0,
+      borderWidth: 1,
+      borderColor: colors.border,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -301,26 +302,27 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     title: {
-      ...titleFont,
+      ...fonts.spiritualTitleFont, // Using spiritual fonts
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...subtitleFont,
+      ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "left",
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
+      fontStyle: "italic",
     },
     input: {
-      ...inputFont,
+      ...fonts.inputFont,
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
-      borderColor: colors.border,
+      borderColor: colors.primary + '20', // Subtle primary color border
       borderRadius: BorderRadius.md,
       paddingHorizontal: Spacing.lg,
       marginHorizontal: Spacing.lg,
@@ -329,12 +331,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
         },
         android: {
-          elevation: 1,
+          elevation: 2,
         },
       }),
     },
@@ -346,29 +348,41 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       padding: Spacing.lg,
       borderWidth: 1,
       borderColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
     },
     toggle: {
       flexDirection: "row",
       alignItems: "flex-start",
     },
     toggleText: {
-      ...captionFont,
+      ...fonts.spiritualBodyFont, // Using spiritual body font
       fontStyle: "italic",
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       marginLeft: Spacing.sm,
       flex: 1,
-      lineHeight: Typography.sizes.sm * 1.4,
+      lineHeight: Typography.sizes.base * 1.5,
     },
     affirmation: {
-      ...affirmationFont,
+      ...fonts.affirmationFont,
       position: 'absolute',
       bottom: Platform.select({ ios: 120, android: 100 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
-      lineHeight: Typography.sizes.lg * 1.4,
+      color: colorScheme === 'light' ? '#8B7B6B' : '#C4A984', // Fixed color logic
+      lineHeight: Typography.sizes.lg * 1.5,
+      letterSpacing: 0.3,
     },
     submitButton: {
       position: "absolute",
@@ -383,12 +397,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
         },
         android: {
-          elevation: 6,
+          elevation: 8,
         },
       }),
     },
@@ -410,39 +424,43 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: "rgba(0, 0, 0, 0.6)", // Darker overlay
     },
     modalContent: {
       backgroundColor: colors.card,
       padding: Spacing['2xl'],
       borderRadius: BorderRadius.xl,
-      width: "85%",
-      maxWidth: 400,
+      width: "88%",
+      maxWidth: 420,
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.primary + '20',
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.25,
-          shadowRadius: 20,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.3,
+          shadowRadius: 24,
         },
         android: {
-          elevation: 10,
+          elevation: 12,
         },
       }),
     },
     modalTitle: {
-      ...modalTitleFont,
+      ...fonts.spiritualTitleFont, // Using spiritual font
+      fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.sm,
       textAlign: "center",
     },
     modalSubtitle: {
-      ...modalBodyFont,
+      ...fonts.spiritualBodyFont, // Using spiritual body font
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       marginBottom: Spacing.xl,
       textAlign: "center",
-      lineHeight: Typography.sizes.base * 1.4,
+      lineHeight: Typography.sizes.base * 1.6,
+      fontStyle: "italic",
     },
     modalOption: {
       flexDirection: 'row',
@@ -459,7 +477,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginRight: Spacing.md,
     },
     modalOptionText: {
-      ...buttonFont,
+      ...fonts.buttonFont,
       color: colors.textDark,
       flex: 1,
     },

@@ -135,7 +135,7 @@ function NameScreen() {
 
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Every name carries a unique vibration that calls to kindred spirits
+        "Every name carries a unique vibration that calls to kindred spirits"
       </Text>
 
       {/* Submit Button */}
@@ -163,7 +163,7 @@ function NameScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>🌟 Sacred Name Sharing</Text>
+            <Text style={styles.modalTitle}>Sacred Name Sharing</Text>
             <Text style={styles.modalText}>
               In our sacred circle, your calling name creates the first vibration of connection. 
               Your family name remains protected in our cosmic vault, revealed only when hearts 
@@ -176,7 +176,7 @@ function NameScreen() {
               style={styles.modalCloseButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.modalCloseText}>I understand ✨</Text>
+              <Text style={styles.modalCloseText}>I understand</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -239,20 +239,20 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     inputContainer: {
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.md, // Reduced from Spacing.lg for tighter spacing
     },
     input: {
       ...fonts.inputFont,
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
-      // borderColor: colors.border,
+      borderColor: colors.border,
       borderRadius: BorderRadius.md,
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.sm,
       color: colors.textDark,
       // Enhanced focus styling
-      borderColor: colors.primary + '20',
+      // borderColor: colors.primary + '20',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -290,7 +290,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
-      color: colors.primary, // Using primary color for emphasis
+      color: colorScheme === 'light' ? '#8B7B6B' : '#C4A984', // Fixed color logic like PhoneVerificationScreen
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3, // Slight letter spacing for elegance
     },
