@@ -5,14 +5,18 @@ import {
   View,
   TouchableOpacity,
   Alert,
+  useColorScheme,
+  Platform,
+  StyleSheet,
 } from "react-native";
-import styles from "@/styles/Onboarding/HeightScreenStyles";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useUserContext } from "../../context/UserContext";
+import { useUserContext } from "@/context/UserContext";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import Checkbox from "expo-checkbox";
 import { RulerPicker } from "react-native-ruler-picker";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 // Helper to format a height (in feet as a float) into a feet/inches string.
 function formatHeight(height: number): string {
@@ -28,6 +32,11 @@ function HeightScreen() {
     navigateToNextScreen,
     navigateToPreviousScreen,
   } = useUserContext();
+
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
+  const styles = createStyles(colorScheme, fonts);
 
   // Initialize selectedHeight as a number (default to 6 if no value exists)
   const [selectedHeight, setSelectedHeight] = useState<number>(
@@ -50,7 +59,7 @@ function HeightScreen() {
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
-        Alert.alert("Error", "Invalid user ID");
+        Alert.alert("Sacred Dimensions", "Something mystical went wrong. Please try again.");
         return;
       }
       await updateUserData({
@@ -62,7 +71,7 @@ function HeightScreen() {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Error", "Failed to save height: " + error.message);
+      Alert.alert("Cosmic Interference", "The universe had trouble saving your height: " + error.message);
     }
   };
 
@@ -76,51 +85,234 @@ function HeightScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        <OnboardingProgressBar currentScreen="HeightScreen" />
+        {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
         >
-          <Icon name="chevron-left" size={24} color="black" />
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        <Text style={styles.title}>Stand Tall</Text>
 
+        {/* Progress Bar */}
+        <OnboardingProgressBar currentScreen="HeightScreen" />
+
+        {/* Title */}
+        <Text style={styles.title}>Stand tall</Text>
+
+        {/* Subtitle */}
+        <Text style={styles.subtitle}>What's your sacred stature?</Text>
+
+        {/* Height Input Container */}
         <View style={styles.heightInputs}>
-          <Text style={styles.subtitle}>What's your height?</Text>
-          <RulerPicker
-            min={3}
-            max={8}
-            step={0.1}
-            initialValue={selectedHeight}
-            onValueChange={(number) => setSelectedHeight(Number(number))}
-            unit="ft"
-            width={300}
-            height={300}
-            indicatorHeight={80}
-            indicatorColor="black"
-            valueTextStyle={styles.heightValue}
-          />
+          {/* Current Height Display */}
+          <View style={styles.heightDisplay}>
+            <Text style={styles.heightValue}>{formatHeight(selectedHeight)}</Text>
+            <Text style={styles.heightLabel}>Your height</Text>
+          </View>
+
+          {/* Ruler Picker */}
+          <View style={styles.rulerContainer}>
+            <RulerPicker
+              min={3}
+              max={8}
+              step={0.1}
+              initialValue={selectedHeight}
+              onValueChange={(number) => setSelectedHeight(Number(number))}
+              unit="ft"
+              width={320}
+              height={280}
+              indicatorHeight={80}
+              indicatorColor={colors.primary}
+              valueTextStyle={{
+                fontSize: 0, // Hide the built-in text since we're showing it above
+                color: 'transparent',
+              }}
+            />
+          </View>
         </View>
+
+        {/* Hidden Field Toggle */}
         <View style={styles.hiddenContainer}>
-          <Text style={styles.hiddenText}>Hide From Others</Text>
+          <Text style={styles.hiddenText}>Keep this private</Text>
           <Checkbox
             value={hiddenFields["height"] || false}
             onValueChange={() => toggleHidden("height")}
             style={styles.checkbox}
+            color={hiddenFields.height ? colors.primary : undefined}
           />
         </View>
+
+        {/* Affirmation */}
         <Text style={styles.affirmation}>
-          Every inch of you is perfectly designed
+          Every dimension of your being is perfectly designed by the universe
         </Text>
+
+        {/* Submit Button */}
         <TouchableOpacity
-          style={styles.nextButton}
+          style={styles.submitButton}
           onPress={handleHeightSubmit}
         >
-          <Icon name="chevron-right" size={24} />
+          <Ionicons name="chevron-forward" size={24} color={colors.background} />
         </TouchableOpacity>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
+
+const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>) => {
+  const colors = Colors[colorScheme];
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: Spacing.lg,
+      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+    },
+    backButton: {
+      backgroundColor: colors.card,
+      padding: Spacing.xs,
+      borderRadius: BorderRadius.full,
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      marginLeft: Spacing.md,
+      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
+      marginBottom: 0,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    title: {
+      ...fonts.spiritualTitleFont,
+      color: colors.textDark,
+      textAlign: "left",
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+    },
+    subtitle: {
+      ...fonts.spiritualSubtitleFont,
+      color: colors.textLight,
+      textAlign: "left",
+      marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.lg,
+      fontStyle: "italic",
+    },
+    heightInputs: {
+      alignItems: 'center',
+      marginBottom: Spacing['2xl'], // More space to prevent overlap
+      paddingHorizontal: Spacing.lg,
+    },
+    heightDisplay: {
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.xl,
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: colors.border,
+      minWidth: 180,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
+    },
+    heightValue: {
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes['4xl'],
+      color: colors.primary,
+      fontWeight: Typography.weights.bold,
+      marginBottom: Spacing.xs,
+    },
+    heightLabel: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textLight,
+      fontSize: Typography.sizes.base,
+      fontStyle: "italic",
+    },
+    rulerContainer: {
+      // Clean container with no borders or styling
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.xl,
+    },
+    hiddenContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: Spacing['2xl'],
+      marginHorizontal: Spacing.lg,
+      backgroundColor: colors.card,
+      padding: Spacing.lg,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    hiddenText: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textDark,
+      fontSize: Typography.sizes.base,
+      fontStyle: "italic",
+      marginRight: Spacing.md,
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+    },
+    affirmation: {
+      ...fonts.affirmationFont,
+      position: 'absolute',
+      bottom: Platform.select({ ios: 140, android: 120 }), // Moved higher to avoid overlap
+      left: Spacing.lg,
+      right: Spacing.lg,
+      textAlign: "center",
+      fontStyle: "italic",
+      color: colors.textLight,
+      lineHeight: Typography.sizes.lg * 1.5,
+      letterSpacing: 0.3,
+    },
+    submitButton: {
+      position: "absolute",
+      bottom: Platform.select({ ios: 50, android: 30 }),
+      right: Spacing.xl,
+      backgroundColor: colors.primary,
+      borderRadius: BorderRadius.full,
+      width: 56,
+      height: 56,
+      justifyContent: "center",
+      alignItems: "center",
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+  });
+};
 
 export default HeightScreen;
