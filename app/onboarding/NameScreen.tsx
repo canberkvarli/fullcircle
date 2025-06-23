@@ -51,12 +51,12 @@ function NameScreen() {
 
   const handleNameSubmit = async () => {
     if (firstName.trim() === "") {
-      Alert.alert("Error", "First name cannot be empty");
+      Alert.alert("Sacred Energy", "Please share your first name so we can honor your essence");
       return;
     }
 
     if (!userData.userId || typeof userData.userId !== "string") {
-      Alert.alert("Error", "Invalid user ID");
+      Alert.alert("Connection Error", "Something mystical went wrong. Please try again.");
       return;
     }
 
@@ -75,6 +75,7 @@ function NameScreen() {
       navigateToNextScreen();
     } catch (error) {
       console.error("Error submitting name:", error);
+      Alert.alert("Sacred Journey", "The universe needs a moment. Please try again.");
     }
   };
 
@@ -95,13 +96,18 @@ function NameScreen() {
       <OnboardingProgressBar currentScreen="NameScreen" />
 
       {/* Title */}
-      <Text style={styles.title}>What's your name?</Text>
+      <Text style={styles.title}>How shall we call you?</Text>
+
+      {/* Subtitle */}
+      <Text style={styles.subtitle}>
+        Share the sacred sounds that call to your soul
+      </Text>
 
       {/* Input Fields */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="First name"
+          placeholder="Your calling name"
           placeholderTextColor={colors.textMuted}
           value={firstName}
           onChangeText={(text) => handleInputChange(text, "firstName")}
@@ -109,7 +115,7 @@ function NameScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Last Name (optional)"
+          placeholder="Your family name (if you wish)"
           placeholderTextColor={colors.textMuted}
           value={lastName}
           onChangeText={(text) => handleInputChange(text, "lastName")}
@@ -122,14 +128,14 @@ function NameScreen() {
         onPress={() => setIsModalVisible(true)}
       >
         <Text style={styles.optionalText}>
-          Last name is optional and only shared with matches.{" "}
-          <Text style={styles.linkText}>Why?</Text>
+          Your family name remains sacred and private, shared only with your destined connections.{" "}
+          <Text style={styles.linkText}>Why this matters?</Text>
         </Text>
       </TouchableOpacity>
 
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Every name carries a unique vibration
+        Every name carries a unique vibration that calls to kindred spirits
       </Text>
 
       {/* Submit Button */}
@@ -151,24 +157,26 @@ function NameScreen() {
       {/* Modal */}
       <Modal
         transparent
-        animationType="slide"
+        animationType="fade"
         visible={isModalVisible}
         onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Why We Ask for Your Name</Text>
+            <Text style={styles.modalTitle}>🌟 Sacred Name Sharing</Text>
             <Text style={styles.modalText}>
-              Sharing your name creates a warm and authentic connection. Your
-              last name is optional and will only be shared with people you
-              match with, ensuring your privacy while allowing for a more
-              personal connection.
+              In our sacred circle, your calling name creates the first vibration of connection. 
+              Your family name remains protected in our cosmic vault, revealed only when hearts 
+              align and souls recognize each other through meaningful matches.
+            </Text>
+            <Text style={styles.modalSubText}>
+              This honors both authentic connection and your personal sovereignty.
             </Text>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.modalCloseText}>Got it!</Text>
+              <Text style={styles.modalCloseText}>I understand ✨</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -199,6 +207,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginLeft: Spacing.md,
       marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
       marginBottom: 0,
+      borderWidth: 1,
+      borderColor: colors.border,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -212,12 +222,20 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.titleFont,
+      ...fonts.spiritualTitleFont, // Using spiritual font for mystical feel
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
+      marginBottom: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+    },
+    subtitle: {
+      ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
+      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      textAlign: "left",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
+      fontStyle: "italic",
     },
     inputContainer: {
       paddingHorizontal: Spacing.lg,
@@ -228,20 +246,22 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
-      borderColor: colors.border,
+      // borderColor: colors.border,
       borderRadius: BorderRadius.md,
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
       color: colors.textDark,
+      // Enhanced focus styling
+      borderColor: colors.primary + '20',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
         },
         android: {
-          elevation: 1,
+          elevation: 2,
         },
       }),
     },
@@ -250,27 +270,29 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.xl,
     },
     optionalText: {
-      ...fonts.captionFont,
+      ...fonts.spiritualBodyFont, // Using spiritual body font
       fontStyle: "italic",
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
-      lineHeight: Typography.sizes.sm * 1.4,
+      lineHeight: Typography.sizes.base * 1.5,
     },
     linkText: {
       ...fonts.buttonFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
+      fontWeight: Typography.weights.semibold,
     },
     affirmation: {
       ...fonts.affirmationFont,
       position: 'absolute',
-      bottom: Platform.select({ ios: 120, android: 100 }),
+      bottom: Platform.select({ ios: 130, android: 110 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
-      lineHeight: Typography.sizes.lg * 1.4,
+      color: colors.primary, // Using primary color for emphasis
+      lineHeight: Typography.sizes.lg * 1.5,
+      letterSpacing: 0.3, // Slight letter spacing for elegance
     },
     submitButton: {
       position: "absolute",
@@ -285,12 +307,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
         },
         android: {
-          elevation: 6,
+          elevation: 8,
         },
       }),
     },
@@ -310,48 +332,71 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: "rgba(0, 0, 0, 0.6)", // Darker overlay for better focus
       justifyContent: "center",
       alignItems: "center",
     },
     modalContainer: {
-      width: "85%",
-      maxWidth: 400,
+      width: "88%",
+      maxWidth: 420,
       padding: Spacing['2xl'],
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
       alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.primary + '20',
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.25,
-          shadowRadius: 20,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.3,
+          shadowRadius: 24,
         },
         android: {
-          elevation: 10,
+          elevation: 12,
         },
       }),
     },
     modalTitle: {
-      ...fonts.modalTitleFont,
+      ...fonts.spiritualTitleFont, // Using spiritual font for modal title
+      fontSize: Typography.sizes.xl, // Slightly smaller than page title
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.modalBodyFont,
+      ...fonts.spiritualBodyFont, // Using spiritual body font
       textAlign: "center",
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
-      lineHeight: Typography.sizes.base * 1.5,
+      lineHeight: Typography.sizes.base * 1.6,
+      marginBottom: Spacing.md,
+      fontStyle: "italic",
+    },
+    modalSubText: {
+      ...fonts.captionFont,
+      textAlign: "center",
+      color: colors.primary,
       marginBottom: Spacing.xl,
+      fontStyle: "italic",
+      fontWeight: Typography.weights.medium,
     },
     modalCloseButton: {
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
-      minWidth: 120,
+      minWidth: 140,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
     },
     modalCloseText: {
       ...fonts.buttonFont,

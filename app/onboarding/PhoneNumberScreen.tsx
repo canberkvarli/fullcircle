@@ -34,7 +34,7 @@ function PhoneNumberScreen(): JSX.Element {
   const handleSubmit = async () => {
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     if (!phoneRegex.test(formattedPhoneNumber)) {
-      Alert.alert("Error", "Please enter a valid phone number.");
+      Alert.alert("Connection Issue", "Please share a valid number so we can find you in the cosmic network.");
       return;
     }
 
@@ -54,7 +54,7 @@ function PhoneNumberScreen(): JSX.Element {
       });
     } catch (error) {
       console.error("Failed to sign in with phone number: ", error);
-      Alert.alert("Error", "Failed to send verification code.");
+      Alert.alert("Sacred Connection", "The universe is having trouble connecting. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -71,10 +71,12 @@ function PhoneNumberScreen(): JSX.Element {
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         
-        <Text style={styles.title}>Your Journey Begins Here</Text>
+        <Text style={styles.title}>Your Sacred Journey Begins</Text>
         
         <View style={styles.mainContent}>
-          <Text style={styles.subtitle}>Enter your phone number to start.</Text>
+          <Text style={styles.subtitle}>
+            Share your phone number to join the circle of kindred souls
+          </Text>
           
           <View style={styles.phoneContainer}>
             <PhoneInput
@@ -98,20 +100,23 @@ function PhoneNumberScreen(): JSX.Element {
           </View>
           
           <Text style={styles.notificationText}>
-            We'll text you a code to verify you're really you. Message and data
-            rates may apply.
+            We'll text you a verification code to confirm your number. 
+            Message and data rates may apply.
           </Text>
         </View>
         
         <View style={styles.affirmationContainer}>
           <Text style={styles.affirmation}>
-            Step into a community of kindred spirits.
+            When souls are meant to connect, the universe conspires to make it happen
           </Text>
         </View>
         
         <View style={styles.bottomBar}>
           {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Connecting to the cosmic network...</Text>
+            </View>
           ) : (
             <TouchableOpacity 
               style={[
@@ -136,7 +141,7 @@ function PhoneNumberScreen(): JSX.Element {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  const { titleFont, subtitleFont, inputFont, captionFont, affirmationFont } = useFont();
+  const fonts = useFont();
   
   return StyleSheet.create({
     container: {
@@ -165,17 +170,17 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.xl,
       backgroundColor: colors.card,
       borderRadius: BorderRadius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
+      borderWidth: 2,
+      borderColor: colors.primary + '20', // Subtle primary color border
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
         },
         android: {
-          elevation: 2,
+          elevation: 4,
         },
       }),
     },
@@ -189,32 +194,33 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingVertical: Spacing.sm,
     },
     phoneInputText: {
-      ...inputFont,
+      ...fonts.inputFont,
       color: colors.textDark,
     },
     codeText: {
-      ...inputFont,
+      ...fonts.inputFont,
       color: colors.textDark,
     },
     countryPicker: {
       backgroundColor: 'transparent',
     },
     title: {
-      ...titleFont,
+      ...fonts.spiritualTitleFont, // Using spiritual font for more mystical feel
       color: colors.textDark,
       marginTop: Spacing.lg,
       marginLeft: Spacing.xl,
       textAlign: "left",
     },
     subtitle: {
-      ...subtitleFont,
+      ...fonts.spiritualSubtitleFont, // Using spiritual font
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "center",
       marginTop: Spacing.xl,
       marginBottom: Spacing.xl,
+      fontStyle: "italic",
     },
     notificationText: {
-      ...captionFont,
+      ...fonts.captionFont, // Back to regular caption font, less mystical
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       textAlign: "center",
       marginTop: Spacing.lg,
@@ -223,17 +229,30 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     affirmationContainer: {
       position: "absolute",
-      bottom: 100,
+      bottom: 120,
       left: 0,
       right: 0,
       paddingHorizontal: Spacing.lg,
     },
     affirmation: {
-      ...affirmationFont,
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      ...fonts.affirmationFont,
+      color: colors.primary, // Using primary color for emphasis
       textAlign: "center",
       fontStyle: "italic",
-      lineHeight: Typography.sizes.lg * 1.4,
+      lineHeight: Typography.sizes.lg * 1.5,
+      letterSpacing: 0.5, // Slight letter spacing for elegance
+    },
+    loadingContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      marginRight: Spacing.lg,
+    },
+    loadingText: {
+      ...fonts.spiritualBodyFont,
+      color: colors.primary,
+      marginLeft: Spacing.sm,
+      fontStyle: "italic",
     },
     nextButton: {
       backgroundColor: colors.primary,
@@ -246,12 +265,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
         },
         android: {
-          elevation: 6,
+          elevation: 8,
         },
       }),
     },
@@ -272,13 +291,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     backButton: {
       backgroundColor: colors.card,
       padding: Spacing.sm,
+      left: Spacing.lg,
       borderRadius: BorderRadius.full,
       width: 44,
       height: 44,
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: Spacing.xl,
-      marginLeft: Spacing.lg,
+      alignSelf: 'flex-start',
+      marginBottom: Spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,

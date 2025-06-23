@@ -43,7 +43,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     title: {
       ...logoFont, // ← Using spiritual font for "Circle"
       color: colors.background,
-      letterSpacing: 3, // More spacing for spiritual feel
+      letterSpacing: 1,
       marginBottom: Spacing.xs,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 2, height: 2 },
