@@ -22,11 +22,9 @@ const spiritualProgressBarIcons = {
   "GenderScreen": { "type": "MaterialCommunityIcons", "name": "human-male-female" },
   "DatePreferenceScreen": { "type": "MaterialCommunityIcons", "name": "heart-circle" },
   "HeightScreen": { "type": "MaterialCommunityIcons", "name": "human-handsup" },
-  "FamilyVisionScreen": { "type": "MaterialCommunityIcons", "name": "home-heart" },
-  "JobLocationScreen": { "type": "MaterialCommunityIcons", "name": "office-building-marker" },
-  "JobTitleScreen": { "type": "MaterialCommunityIcons", "name": "briefcase-variant" },
-  "EducationScreen": { "type": "MaterialCommunityIcons", "name": "school" },
-  "SpiritualScreen": { "type": "MaterialCommunityIcons", "name": "meditation" },
+  "SpiritualDrawsScreen": { "type": "MaterialCommunityIcons", "name": "human" },
+  "SpiritualPracticesScreen": { "type": "MaterialCommunityIcons", "name": "human" },
+  "HealingModalitiesScreen": { "type": "MaterialCommunityIcons", "name": "human" },
   "PhotosScreen": { "type": "MaterialCommunityIcons", "name": "camera-iris" }
 };
 
@@ -47,11 +45,9 @@ const OnboardingProgressBar = ({
     "GenderScreen",
     "DatePreferenceScreen",
     "HeightScreen",
-    "FamilyVisionScreen",
-    "JobLocationScreen",
-    "JobTitleScreen",
-    "EducationScreen",
-    "SpiritualScreen",
+    "SpiritualDrawsScreen",
+    "SpiritualPracticesScreen",
+    "HealingModalitiesScreen",
     "PhotosScreen",
   ];
 

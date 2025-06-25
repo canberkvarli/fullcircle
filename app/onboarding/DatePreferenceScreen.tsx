@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
-import Checkbox from "expo-checkbox";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -79,6 +78,32 @@ const DatePreferenceScreen = () => {
     }));
   };
 
+  // Helper function to get orb color based on option and state
+  const getOrbColor = (optionId: string) => {
+    if (selectedPreferences.includes("Everyone")) {
+      return '#FFD700'; // Divine yellow when "All Energies" is selected
+    }
+    
+    switch (optionId) {
+      case "Men":
+        return '#4A90E2'; // Blue for masculine energy
+      case "Women":
+        return '#E91E63'; // Pink for feminine energy
+      case "Non-Binary":
+        return '#9C27B0'; // Purple for non-binary
+      case "Everyone":
+        return '#FFD700'; // Golden for all energies
+      default:
+        return '#00BCD4'; // Teal for other options
+    }
+  };
+
+  // Helper function to get selection color based on option and state
+  const getSelectionColor = (optionId: string) => {
+    const orbColor = getOrbColor(optionId);
+    return orbColor + '15'; // Add transparency
+  };
+
   const togglePreference = (preference: string) => {
     setSelectedPreferences((prev: any) => {
       if (preference === "Everyone") {
@@ -125,9 +150,7 @@ const DatePreferenceScreen = () => {
       await updateUserData({
         matchPreferences: {
           datePreferences: selectedPreferences, // All preferences go here
-          preferredEthnicities: userData.matchPreferences?.preferredEthnicities || [],
           preferredDistance: userData.matchPreferences?.preferredDistance || 0,
-          desiredRelationship: userData.matchPreferences?.desiredRelationship || "",
           preferredAgeRange: userData.matchPreferences?.preferredAgeRange || { min: 18, max: 99 },
           preferredHeightRange: userData.matchPreferences?.preferredHeightRange || { min: 0, max: 300 },
         },
@@ -170,12 +193,6 @@ const DatePreferenceScreen = () => {
           <Text style={styles.subtitle}>
             Share how you approach love and connection
           </Text>
-
-          {/* Combined Options */}
-          <Text style={styles.sectionTitle}>Your dating preferences</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select all that apply - "All Energies" will select everything
-          </Text>
           
           {/* Main Options - Bigger Cards */}
           <View style={styles.mainOptionsContainer}>
@@ -184,27 +201,35 @@ const DatePreferenceScreen = () => {
                 key={option.id}
                 style={[
                   styles.mainOption,
-                  selectedPreferences.includes(option.id) && styles.optionSelected,
+                  selectedPreferences.includes(option.id) && {
+                    ...styles.optionSelected,
+                    backgroundColor: getSelectionColor(option.id),
+                    borderColor: getOrbColor(option.id),
+                  },
                 ]}
                 onPress={() => togglePreference(option.id)}
               >
-                <Text style={[
-                  styles.mainTitle,
-                  selectedPreferences.includes(option.id) && styles.selectedText
-                ]}>
-                  {option.label}
-                </Text>
-                <Text style={[
-                  styles.mainSubtitle,
-                  selectedPreferences.includes(option.id) && styles.selectedSubtext
-                ]}>
-                  {option.subtitle}
-                </Text>
-                {selectedPreferences.includes(option.id) && (
-                  <View style={styles.checkmarkOverlay}>
-                    <Ionicons name="checkmark" size={20} color={colors.primary} />
+                <View style={styles.optionContent}>
+                  <View style={styles.optionTextContainer}>
+                    <Text style={[
+                      styles.mainTitle,
+                      selectedPreferences.includes(option.id) && styles.selectedText
+                    ]}>
+                      {option.label}
+                    </Text>
+                    <Text style={[
+                      styles.mainSubtitle,
+                      selectedPreferences.includes(option.id) && styles.selectedSubtext
+                    ]}>
+                      {option.subtitle}
+                    </Text>
                   </View>
-                )}
+                  <View style={styles.orbSpace}>
+                    {selectedPreferences.includes(option.id) && (
+                      <View style={[styles.selectedOrb, { backgroundColor: getOrbColor(option.id) }]} />
+                    )}
+                  </View>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -214,27 +239,35 @@ const DatePreferenceScreen = () => {
             <TouchableOpacity
               style={[
                 styles.coreOption,
-                selectedPreferences.includes(allEnergyOption.id) && styles.optionSelected,
+                selectedPreferences.includes(allEnergyOption.id) && {
+                  ...styles.optionSelected,
+                  backgroundColor: getSelectionColor(allEnergyOption.id),
+                  borderColor: getOrbColor(allEnergyOption.id),
+                },
               ]}
               onPress={() => togglePreference(allEnergyOption.id)}
             >
-              <Text style={[
-                styles.coreTitle,
-                selectedPreferences.includes(allEnergyOption.id) && styles.selectedText
-              ]}>
-                {allEnergyOption.label}
-              </Text>
-              <Text style={[
-                styles.coreSubtitle,
-                selectedPreferences.includes(allEnergyOption.id) && styles.selectedSubtext
-              ]}>
-                {allEnergyOption.subtitle}
-              </Text>
-              {selectedPreferences.includes(allEnergyOption.id) && (
-                <View style={styles.checkmarkOverlay}>
-                  <Ionicons name="checkmark" size={16} color={colors.primary} />
+              <View style={styles.optionContent}>
+                <View style={styles.optionTextContainer}>
+                  <Text style={[
+                    styles.coreTitle,
+                    selectedPreferences.includes(allEnergyOption.id) && styles.selectedText
+                  ]}>
+                    {allEnergyOption.label}
+                  </Text>
+                  <Text style={[
+                    styles.coreSubtitle,
+                    selectedPreferences.includes(allEnergyOption.id) && styles.selectedSubtext
+                  ]}>
+                    {allEnergyOption.subtitle}
+                  </Text>
                 </View>
-              )}
+                <View style={styles.orbSpace}>
+                  {selectedPreferences.includes(allEnergyOption.id) && (
+                    <View style={[styles.selectedOrb, { backgroundColor: getOrbColor(allEnergyOption.id) }]} />
+                  )}
+                </View>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -250,7 +283,11 @@ const DatePreferenceScreen = () => {
                   key={optionId}
                   style={[
                     styles.pillButton,
-                    selectedPreferences.includes(optionId) && styles.pillSelected,
+                    selectedPreferences.includes(optionId) && {
+                      ...styles.pillSelected,
+                      backgroundColor: getSelectionColor(optionId),
+                      borderColor: getOrbColor(optionId),
+                    },
                   ]}
                   onPress={() => togglePreference(optionId)}
                 >
@@ -260,11 +297,11 @@ const DatePreferenceScreen = () => {
                   ]}>
                     {optionLabel}
                   </Text>
-                  {selectedPreferences.includes(optionId) && (
-                    <View style={styles.pillCheckmark}>
-                      <Ionicons name="checkmark" size={12} color={colors.background} />
-                    </View>
-                  )}
+                  <View style={styles.pillOrbSpace}>
+                    {selectedPreferences.includes(optionId) && (
+                      <View style={[styles.pillSelectedOrb, { backgroundColor: getOrbColor(optionId) }]} />
+                    )}
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -273,12 +310,16 @@ const DatePreferenceScreen = () => {
           {/* Hidden Field Toggle */}
           <View style={styles.hiddenContainer}>
             <Text style={styles.hiddenText}>Keep this private</Text>
-            <Checkbox
-              value={hiddenFields.datePreferences || false}
-              onValueChange={() => toggleHidden("datePreferences")}
-              style={styles.checkbox}
-              color={hiddenFields.datePreferences ? colors.primary : undefined}
-            />
+            <View style={styles.orbCheckboxContainer}>
+              <TouchableOpacity 
+                style={styles.orbCheckbox}
+                onPress={() => toggleHidden("datePreferences")}
+              >
+                {hiddenFields.datePreferences && (
+                  <View style={[styles.selectedOrb, { backgroundColor: '#FFD700' }]} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Affirmation */}
@@ -362,23 +403,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
     },
-    sectionTitle: {
-      ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.lg,
-      color: colors.textDark,
-      fontWeight: Typography.weights.medium,
-      marginBottom: Spacing.sm,
-      paddingHorizontal: Spacing.lg,
-      fontStyle: "italic",
-    },
-    sectionSubtitle: {
-      ...fonts.captionFont,
-      color: colors.primary,
-      textAlign: "left",
-      marginBottom: Spacing.lg,
-      paddingHorizontal: Spacing.lg,
-      fontStyle: "italic",
-    },
     coreOptionsContainer: {
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
@@ -404,8 +428,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       }),
     },
     optionSelected: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primary,
+      // borderColor and backgroundColor will be set dynamically
+    },
+    optionContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    optionTextContainer: {
+      flex: 1,
     },
     coreTitle: {
       ...fonts.spiritualBodyFont,
@@ -421,27 +452,38 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontStyle: "italic",
     },
     selectedText: {
-      color: colors.background,
+      color: colors.textDark,
     },
     selectedSubtext: {
-      color: colors.background,
-      opacity: 0.9,
+      color: colors.textLight,
     },
-    checkmarkOverlay: {
-      position: "absolute",
-      top: Spacing.md,
-      right: Spacing.md,
-      backgroundColor: colors.background,
-      borderRadius: BorderRadius.full,
-      width: 24,
-      height: 24,
-      justifyContent: "center",
-      alignItems: "center",
+    orbSpace: {
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: Spacing.md,
+    },
+    selectedOrb: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      // backgroundColor will be set dynamically
+      ...Platform.select({
+        ios: {
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.8,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
     pillsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
-      paddingHorizontal: Spacing.lg,
+      paddingHorizontal: Spacing.xs,
       marginBottom: Spacing.xl,
     },
     pillButton: {
@@ -455,6 +497,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderColor: colors.border,
       alignSelf: "flex-start",
       position: "relative",
+      flexDirection: 'row',
+      alignItems: 'center',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -468,8 +512,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       }),
     },
     pillSelected: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primary,
+      // borderColor and backgroundColor will be set dynamically
     },
     pillText: {
       ...fonts.spiritualBodyFont,
@@ -478,26 +521,36 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       textAlign: "center",
     },
     pillSelectedText: {
-      color: colors.background,
+      color: colors.textDark,
       fontWeight: Typography.weights.medium,
     },
-    pillCheckmark: {
-      position: "absolute",
-      top: -4,
-      right: -4,
-      backgroundColor: colors.primary,
-      borderRadius: BorderRadius.full,
-      width: 18,
-      height: 18,
-      justifyContent: "center",
-      alignItems: "center",
-      borderWidth: 2,
-      borderColor: colors.background,
+    pillOrbSpace: {
+      width: 12,
+      height: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: Spacing.xs,
+    },
+    pillSelectedOrb: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      // backgroundColor will be set dynamically
+      ...Platform.select({
+        ios: {
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.8,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
     },
     hiddenContainer: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "space-between",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
       backgroundColor: colors.card,
@@ -511,11 +564,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       color: colors.textDark,
       fontSize: Typography.sizes.base,
       fontStyle: "italic",
-      marginRight: Spacing.md,
     },
-    checkbox: {
-      width: 20,
-      height: 20,
+    orbCheckboxContainer: {
+      marginLeft: Spacing.md,
+    },
+    orbCheckbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     affirmation: {
       ...fonts.affirmationFont,

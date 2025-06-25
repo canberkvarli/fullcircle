@@ -25,14 +25,9 @@ export default function OnboardingStackLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="HeightScreen" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="FamilyVisionScreen"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen name="JobLocationScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="JobTitleScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="EducationScreen" options={{ headerShown: false }} />
-      <Stack.Screen name="SpiritualScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="SpiritualDrawsScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="SpiritualPracticesScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="HealingModalitiesScreen" options={{ headerShown: false }} />
       <Stack.Screen name="PhotosScreen" options={{ headerShown: false }} />
     </Stack>
   );

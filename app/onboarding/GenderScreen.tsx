@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
-import Checkbox from "expo-checkbox";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -147,18 +146,25 @@ function GenderScreen() {
               ]}
               onPress={() => toggleGender("Man")}
             >
-              <Text style={[
-                styles.mainOptionTitle,
-                selectedGender.includes("Man") && styles.selectedText
-              ]}>
-                Man
-              </Text>
-              <Text style={[
-                styles.mainOptionSubtitle,
-                selectedGender.includes("Man") && styles.selectedSubtext
-              ]}>
-                Radiate your masculine energy
-              </Text>
+              <View style={styles.optionContent}>
+                <View style={styles.optionTextContainer}>
+                  <Text style={[
+                    styles.mainOptionTitle,
+                    selectedGender.includes("Man") && styles.selectedText
+                  ]}>
+                    Man
+                  </Text>
+                  <Text style={[
+                    styles.mainOptionSubtitle,
+                    selectedGender.includes("Man") && styles.selectedSubtext
+                  ]}>
+                    Radiate your masculine energy
+                  </Text>
+                </View>
+                <View style={styles.orbSpace}>
+                  {selectedGender.includes("Man") && <View style={styles.selectedOrb} />}
+                </View>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -168,18 +174,25 @@ function GenderScreen() {
               ]}
               onPress={() => toggleGender("Woman")}
             >
-              <Text style={[
-                styles.mainOptionTitle,
-                selectedGender.includes("Woman") && styles.selectedText
-              ]}>
-                Woman
-              </Text>
-              <Text style={[
-                styles.mainOptionSubtitle,
-                selectedGender.includes("Woman") && styles.selectedSubtext
-              ]}>
-                Embrace your feminine essence
-              </Text>
+              <View style={styles.optionContent}>
+                <View style={styles.optionTextContainer}>
+                  <Text style={[
+                    styles.mainOptionTitle,
+                    selectedGender.includes("Woman") && styles.selectedText
+                  ]}>
+                    Woman
+                  </Text>
+                  <Text style={[
+                    styles.mainOptionSubtitle,
+                    selectedGender.includes("Woman") && styles.selectedSubtext
+                  ]}>
+                    Embrace your feminine essence
+                  </Text>
+                </View>
+                <View style={styles.orbSpace}>
+                  {selectedGender.includes("Woman") && <View style={styles.selectedOrb} />}
+                </View>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -210,20 +223,27 @@ function GenderScreen() {
                   ]}
                   onPress={() => toggleGender(option.title)}
                 >
-                  <Text style={[
-                    styles.dropdownOptionTitle,
-                    selectedGender.includes(option.title) && styles.selectedText
-                  ]}>
-                    {option.title}
-                  </Text>
-                  {option.subtitle && (
-                    <Text style={[
-                      styles.dropdownOptionSubtitle,
-                      selectedGender.includes(option.title) && styles.selectedSubtext
-                    ]}>
-                      {option.subtitle}
-                    </Text>
-                  )}
+                  <View style={styles.optionContent}>
+                    <View style={styles.optionTextContainer}>
+                      <Text style={[
+                        styles.dropdownOptionTitle,
+                        selectedGender.includes(option.title) && styles.selectedText
+                      ]}>
+                        {option.title}
+                      </Text>
+                      {option.subtitle && (
+                        <Text style={[
+                          styles.dropdownOptionSubtitle,
+                          selectedGender.includes(option.title) && styles.selectedSubtext
+                        ]}>
+                          {option.subtitle}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.orbSpace}>
+                      {selectedGender.includes(option.title) && <View style={styles.selectedOrb} />}
+                    </View>
+                  </View>
                   {option.input && selectedGender.includes("Other") && (
                     <TextInput
                       style={styles.customInput}
@@ -241,12 +261,14 @@ function GenderScreen() {
           {/* Hidden Field Toggle */}
           <View style={styles.hiddenContainer}>
             <Text style={styles.hiddenText}>Keep this private</Text>
-            <Checkbox
-              value={hiddenFields.gender || false}
-              onValueChange={() => toggleHidden("gender")}
-              style={styles.checkbox}
-              color={hiddenFields.gender ? colors.primary : undefined}
-            />
+            <View style={styles.orbCheckboxContainer}>
+              <TouchableOpacity 
+                style={styles.orbCheckbox}
+                onPress={() => toggleHidden("gender")}
+              >
+                {hiddenFields.gender && <View style={styles.selectedOrb} />}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Affirmation */}
@@ -343,8 +365,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       }),
     },
     optionSelected: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primary,
+      borderColor: '#FFD700',
+      backgroundColor: '#FFD700' + '15',
+    },
+    optionContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    optionTextContainer: {
+      flex: 1,
     },
     mainOptionTitle: {
       ...fonts.spiritualBodyFont,
@@ -360,11 +390,34 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontStyle: "italic",
     },
     selectedText: {
-      color: colors.background,
+      color: colors.textDark,
     },
     selectedSubtext: {
-      color: colors.background,
-      opacity: 0.9,
+      color: colors.textLight,
+    },
+    orbSpace: {
+      width: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: Spacing.md,
+    },
+    selectedOrb: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: '#FFD700',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.8,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
     dropdownButton: {
       backgroundColor: colors.card,
@@ -423,7 +476,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     hiddenContainer: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "space-between",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
       backgroundColor: colors.card,
@@ -437,11 +490,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       color: colors.textDark,
       fontSize: Typography.sizes.base,
       fontStyle: "italic",
-      marginRight: Spacing.md,
     },
-    checkbox: {
-      width: 20,
-      height: 20,
+    orbCheckboxContainer: {
+      marginLeft: Spacing.md,
+    },
+    orbCheckbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     affirmation: {
       ...fonts.affirmationFont,

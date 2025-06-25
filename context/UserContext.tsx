@@ -69,11 +69,6 @@ export type UserDataType = {
   longitude?: number;
   latitude?: number;
   gender?: string[];
-  ethnicities?: string[];
-  jobLocation?: string;
-  jobTitle?: string;
-  educationDegree?: string;
-  spiritualPractices?: string[];
   photos?: string[];
   hiddenFields?: { [key: string]: boolean };
   location?: {
@@ -88,12 +83,22 @@ export type UserDataType = {
     streetNumber?: string;
     subregion?: string;
   };
+  
+  // 🔮 Spiritual Profile Section
+  spiritualProfile?: {
+    draws?: string[];                  // From SpiritualDrawsScreen
+    practices?: string[];              // From SpiritualPracticesScreen
+    healingModalities?: string[];      // From HealingModalitiesScreen
+    partnershipStyle?: string;         // From SpiritualPartnershipScreen
+  };
+  
   fullCircleSubscription: boolean;
   likesGivenCount?: number;
   likesReceivedCount?: number;
   matches?: string[];
   onboardingCompleted?: boolean;
   onboardingCompletedAt?: any;
+  
   matchPreferences?: {
     preferredAgeRange?: {
       min: number;
@@ -103,13 +108,18 @@ export type UserDataType = {
       min: number;
       max: number;
     };
-    childrenPreference?: string;
-    preferredEthnicities?: string[];
     preferredDistance: number;
     datePreferences: string[];
-    desiredRelationship?: string;
-    preferredSpiritualPractices?: string[];
+    
+    // 🔮 Spiritual Matching Preferences (for later)
+    spiritualCompatibility?: {
+      spiritualDraws?: string[];
+      practices?: string[];
+      healingModalities?: string[];
+      partnershipStyle?: string[];
+    };
   };
+  
   settings?: UserSettings;
 };
 
@@ -277,11 +287,10 @@ const initialScreens = [
   "GenderScreen",
   "DatePreferenceScreen",
   "HeightScreen",
-  "FamilyVisionScreen",
-  "JobLocationScreen",
-  "JobTitleScreen",
-  "EducationScreen",
-  "SpiritualScreen",
+  "SpiritualDrawsScreen",        // Your current spiritual screen
+  "SpiritualPracticesScreen",    // New screen we just built
+  "HealingModalitiesScreen",     // Coming next
+  "SpiritualPartnershipScreen",  // Coming next
   "PhotosScreen",
 ];
 
@@ -313,11 +322,8 @@ const initialUserData: UserDataType = {
       min: 3,
       max: 8,
     },
-    preferredEthnicities: [],
     preferredDistance: 100,
     datePreferences: [],
-    desiredRelationship: "",
-    preferredSpiritualPractices: [],
   },
   settings: {
     isPaused: false,
