@@ -287,10 +287,10 @@ const initialScreens = [
   "GenderScreen",
   "DatePreferenceScreen",
   "HeightScreen",
-  "SpiritualDrawsScreen",        // Your current spiritual screen
-  "SpiritualPracticesScreen",    // New screen we just built
-  "HealingModalitiesScreen",     // Coming next
-  "SpiritualPartnershipScreen",  // Coming next
+  "SpiritualDrawsScreen",
+  "SpiritualPracticesScreen",
+  "HealingModalitiesScreen",
+  // "SpiritualPartnershipScreen",  // ??
   "PhotosScreen",
 ];
 
