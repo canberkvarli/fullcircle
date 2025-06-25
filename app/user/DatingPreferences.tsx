@@ -5,14 +5,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  useColorScheme,
+  Platform,
+  StatusBar,
 } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
-import { useRouter, Link } from "expo-router";
+import { useRouter } from "expo-router";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 export default function DatingPreferences() {
   const router = useRouter();
   const { userData } = useUserContext();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
 
   const fullCircleSubscription = userData?.fullCircleSubscription || false;
 
@@ -20,12 +28,11 @@ export default function DatingPreferences() {
     if (Array.isArray(value)) {
       return value.length === 0
         ? defaultValue
-        : value.join(", ").length > 40
-          ? `${value.join(", ").slice(0, 40)}...`
+        : value.length > 3
+          ? `${value.slice(0, 3).join(", ")} +${value.length - 3} more`
           : value.join(", ");
     }
 
-    // Check if the value contains a number followed by a unit (e.g., "miles", "km")
     if (typeof value === "string" && /[\d]+(\s*[\w]+)?/.test(value)) {
       const match = value.match(/[\d]+/);
       if (match) {
@@ -36,75 +43,88 @@ export default function DatingPreferences() {
     return value || defaultValue;
   };
 
+  // Updated preferences based on current UserDataType
   const preferences = [
     {
-      label: "I'm Interested In",
+      label: "Looking For",
       value: userData?.matchPreferences?.datePreferences,
       isSubscriberField: false,
       fieldName: "datePreferences",
+      icon: "heart-circle",
+      description: "Who you're interested in connecting with"
     },
     {
-      label: "Preferred Ethnicities",
-      value: userData?.matchPreferences?.preferredEthnicities,
-      isSubscriberField: false,
-      fieldName: "preferredEthnicities",
-    },
-    {
-      label: "Preferred Age Range",
+      label: "Age Range",
       value: userData?.matchPreferences?.preferredAgeRange
         ? `${userData.matchPreferences.preferredAgeRange.min || 18} - ${
             userData.matchPreferences.preferredAgeRange.max || 70
-          }`
-        : "18 - 70",
+          } years`
+        : "18 - 70 years",
       isSubscriberField: false,
       fieldName: "preferredAgeRange",
+      icon: "calendar",
+      description: "Preferred age range for connections"
     },
     {
       label: "Maximum Distance",
-      value: `${userData?.matchPreferences?.preferredDistance || 100}`,
+      value: `${userData?.matchPreferences?.preferredDistance || 100} miles`,
       isSubscriberField: false,
       fieldName: "preferredDistance",
+      icon: "location",
+      description: "How far you're willing to connect"
     },
+  ];
+
+  // Premium preferences for FullCircle subscribers
+  const premiumPreferences = [
     {
-      label: "Preferred Height Range",
+      label: "Height Range",
       value: userData?.matchPreferences?.preferredHeightRange
-        ? `${userData.matchPreferences.preferredHeightRange.min || 3} - ${
+        ? `${userData.matchPreferences.preferredHeightRange.min || 3}' - ${
             userData.matchPreferences.preferredHeightRange.max || 8
-          }`
-        : "3 - 8",
+          }' tall`
+        : "3' - 8' tall",
       isSubscriberField: true,
       fieldName: "preferredHeightRange",
+      icon: "resize",
+      description: "Preferred height range"
     },
     {
-      label: "Preferred Relationship",
-      value: userData?.matchPreferences?.desiredRelationship || "Open to All",
-      isSubscriberField: true,
-      fieldName: "desiredRelationship",
-    },
-    {
-      label: "Preferred Spiritual Practices",
-      value:
-        userData?.matchPreferences?.preferredSpiritualPractices ||
-        "Open to All",
+      label: "Spiritual Practices",
+      value: userData?.matchPreferences?.spiritualCompatibility?.practices || "Open to All",
       isSubscriberField: true,
       fieldName: "preferredSpiritualPractices",
+      icon: "sparkles",
+      description: "Preferred spiritual practices"
+    },
+    {
+      label: "Spiritual Draws",
+      value: userData?.matchPreferences?.spiritualCompatibility?.spiritualDraws || "Open to All",
+      isSubscriberField: true,
+      fieldName: "preferredSpiritualDraws",
+      icon: "leaf",
+      description: "Preferred spiritual draws"
+    },
+    {
+      label: "Healing Modalities",
+      value: userData?.matchPreferences?.spiritualCompatibility?.healingModalities || "Open to All",
+      isSubscriberField: true,
+      fieldName: "preferredHealingModalities",
+      icon: "heart",
+      description: "Preferred healing modalities"
     },
   ];
 
   const handleEditField = (fieldName: string, currentValue: any) => {
     if (fieldName === "preferredAgeRange" && typeof currentValue === "string") {
-      // Parse it into an object if it's a string
       currentValue = {
         min: parseInt(currentValue.split(" - ")[0], 10),
         max: parseInt(currentValue.split(" - ")[1], 10),
       };
-    } else if (
-      fieldName === "preferredDistance" &&
-      typeof currentValue === "string"
-    ) {
-      // Parse it into an object if it's a string
+    } else if (fieldName === "preferredDistance" && typeof currentValue === "string") {
       currentValue = parseInt(currentValue, 10);
     }
+    
     router.navigate({
       pathname: "/user/edit/EditPreferenceField",
       params: { fieldName, currentValue: JSON.stringify(currentValue) },
@@ -115,24 +135,57 @@ export default function DatingPreferences() {
     label: string,
     value: any,
     isSubscriberField: boolean,
-    fieldName: string
+    fieldName: string,
+    icon: string,
+    description: string
   ) => (
     <TouchableOpacity
-      style={styles.fieldContainer}
+      style={[styles.fieldContainer, { 
+        backgroundColor: colors.card,
+        borderColor: colors.border,
+        opacity: isSubscriberField && !fullCircleSubscription ? 0.6 : 1
+      }]}
       onPress={() =>
         isSubscriberField && !fullCircleSubscription
           ? router.navigate("/user/FullCircleSubscription")
           : handleEditField(fieldName, value)
       }
+      activeOpacity={0.7}
     >
       <View style={styles.fieldContent}>
-        <View>
-          <Text style={styles.fieldLabel}>{label}</Text>
-          <Text style={styles.fieldValue}>{formatValue(value)}</Text>
+        <View style={styles.fieldInfo}>
+          <View style={styles.fieldHeader}>
+            <Ionicons 
+              name={icon as any} 
+              size={20} 
+              color={colors.primary} 
+              style={styles.fieldIcon}
+            />
+            <Text style={[styles.fieldLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+              {label}
+            </Text>
+          </View>
+          <Text style={[styles.fieldDescription, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+            {description}
+          </Text>
+          <Text style={[styles.fieldValue, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            {formatValue(value)}
+          </Text>
         </View>
-        {isSubscriberField && !fullCircleSubscription && (
-          <Icon name="lock" size={18} color="black" />
-        )}
+        
+        <View style={styles.fieldActions}>
+          {isSubscriberField && !fullCircleSubscription && (
+            <View style={[styles.lockContainer, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="lock-closed" size={16} color={colors.primary} />
+            </View>
+          )}
+          <Ionicons 
+            name="chevron-forward" 
+            size={18} 
+            color={colors.textMuted}
+            style={styles.chevronIcon}
+          />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -141,141 +194,225 @@ export default function DatingPreferences() {
     router.back();
   };
 
+  const styles = createStyles(colors, fonts);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dating Preferences</Text>
-        <TouchableOpacity onPress={handleClose}>
-          <Icon name="close" size={22} color="black" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+      
+      {/* Minimal Header with Close */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <Text style={styles.mainTitle}>Member Preferences</Text>
-        <View style={styles.separator} />
-
-        {preferences
-          .filter((pref) => !pref.isSubscriberField)
-          .map(({ label, value, isSubscriberField, fieldName }) => (
+      <ScrollView 
+        contentContainerStyle={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Basic Preferences Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Connection Preferences
+          </Text>
+          <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Set your basic preferences for sacred connections
+          </Text>
+          
+          {preferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
             <React.Fragment key={fieldName}>
-              {renderPreferenceItem(label, value, isSubscriberField, fieldName)}
+              {renderPreferenceItem(label, value, isSubscriberField, fieldName, icon, description)}
             </React.Fragment>
           ))}
+        </View>
 
-        <Text style={styles.mainTitle}>Subscriber Preferences</Text>
-        <View style={styles.separator} />
-
-        {!fullCircleSubscription && (
-          <View style={styles.subscribeContainer}>
-            <Link
-              style={styles.subscribeButton}
-              href={{ pathname: "/user/FullCircleSubscription" }}
-            >
-              <Text style={styles.subscribeText}>Upgrade</Text>
-            </Link>
-            <Text style={styles.subscribeDescription}>
-              Fine-tune your preferences with FullCircle.
-            </Text>
+        {/* Premium Section */}
+        <View style={styles.section}>
+          <View style={styles.premiumHeader}>
+            <View style={styles.premiumTitleContainer}>
+              <Ionicons name="sparkles" size={24} color={colors.primary} />
+              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark, marginLeft: Spacing.sm }]}>
+                FullCircle Preferences
+              </Text>
+            </View>
+            
+            {!fullCircleSubscription && (
+              <TouchableOpacity
+                style={[styles.upgradeButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.navigate("/user/FullCircleSubscription")}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.upgradeText, fonts.spiritualBodyFont, { color: colors.card }]}>
+                  Upgrade
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-        )}
+          
+          <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            {fullCircleSubscription 
+              ? "Fine-tune your spiritual compatibility preferences"
+              : "Unlock deeper spiritual matching with FullCircle"
+            }
+          </Text>
 
-        {preferences
-          .filter((pref) => pref.isSubscriberField)
-          .map(({ label, value, isSubscriberField, fieldName }) => (
+          {premiumPreferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
             <React.Fragment key={fieldName}>
-              {renderPreferenceItem(label, value, isSubscriberField, fieldName)}
+              {renderPreferenceItem(label, value, isSubscriberField, fieldName, icon, description)}
             </React.Fragment>
           ))}
+        </View>
+
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    marginTop: 25,
   },
+  
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: Spacing.md,
   },
+  
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
+  },
+  
+  closeButton: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    alignSelf: 'flex-start',
+  },
+  
+  scrollView: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing['2xl'],
+  },
+  
+  section: {
+    marginBottom: Spacing['2xl'],
+  },
+  
+  sectionTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.3,
+  },
+  
+  sectionSubtitle: {
+    fontSize: Typography.sizes.sm,
+    marginBottom: Spacing.lg,
+    lineHeight: Typography.sizes.sm * 1.4,
+    fontStyle: 'italic',
+  },
+  
+  premiumHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  
+  premiumTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
-  scrollView: {
-    paddingBottom: 16,
+  
+  upgradeButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  mainTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "black",
-    marginVertical: 12,
+  
+  upgradeText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.5,
   },
-  separator: {
-    height: 1,
-    backgroundColor: "lightgray",
-    marginVertical: 8,
-  },
+  
   fieldContainer: {
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: "lightgray",
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    marginBottom: Spacing.md,
+    shadowColor: colors.textDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
+  
   fieldContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+  
+  fieldInfo: {
     flex: 1,
   },
+  
+  fieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  
+  fieldIcon: {
+    marginRight: Spacing.sm,
+  },
+  
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "black",
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.3,
   },
+  
+  fieldDescription: {
+    fontSize: Typography.sizes.xs,
+    marginBottom: Spacing.xs,
+    fontStyle: 'italic',
+  },
+  
   fieldValue: {
-    fontSize: 16,
-    color: "#4A4A4A",
-    marginTop: 4,
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
   },
-  subscribeContainer: {
-    backgroundColor: "#F9E3F8",
-    borderRadius: 8,
-    padding: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
+  
+  fieldActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
-  subscribeButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: "white",
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: "purple",
-    marginRight: 10,
+  
+  lockContainer: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.full,
   },
-  subscribeText: {
-    color: "purple",
-    fontSize: 16,
-    fontWeight: "bold",
+  
+  chevronIcon: {
+    opacity: 0.6,
   },
-  subscribeDescription: {
-    color: "black",
-    fontSize: 14,
-    maxWidth: "70%",
+  
+  bottomSpacing: {
+    height: Spacing.xl,
   },
 });
