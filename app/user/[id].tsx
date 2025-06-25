@@ -9,42 +9,44 @@ import {
   SafeAreaView,
   Animated,
   unstable_batchedUpdates,
+  useColorScheme,
+  Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Link } from "expo-router";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
 import LottieView from "lottie-react-native";
 import { useUserContext, UserDataType } from "@/context/UserContext";
-import leavesAnimation from "../../assets/animations/leaves.json";
-import loadingMandalaAnimation from "../../assets/animations/loading_mandala.json";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 import SlidingTabBar from "@/components/SlidingTabBar";
 
 const HEADER_HEIGHT = 120;
 const HEADER_FADE_START = 80;
 const HEADER_FADE_END = 120;
-const TAB_BAR_HEIGHT = 80;
+const TAB_BAR_HEIGHT = 90;
 
 const UserShow: React.FC = () => {
   const router = useRouter();
   const { user: userParam, source } = useLocalSearchParams();
   const isFromKindredSpirits = source === "KindredSpirits";
-  const isFromRadiantSouls = source === "RadiantSouls";
   const initialUser: UserDataType = JSON.parse(userParam as string);
+  
   const {
     getImageUrl,
-    orbLike,
-    fetchRadiantSouls,
     userData,
     likeMatch,
     subscribeToReceivedLikes,
   } = useUserContext();
+
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
 
   const [souls, setSouls] = useState<UserDataType[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentUser, setCurrentUser] = useState<UserDataType>(initialUser);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
-  const [showOrbAnim, setShowOrbAnim] = useState(false);
-  const [orbAnimFinished, setOrbAnimFinished] = useState(false);
   const lastLoadedPhotosFor = useRef<string | null>(null);
   const didSubscribe = useRef(false);
 
@@ -81,7 +83,7 @@ const UserShow: React.FC = () => {
   useEffect(() => {
     if (!isFromKindredSpirits || !userData.userId) return;
 
-    // track the last snapshot payload so we don’t re-render
+    // track the last snapshot payload so we don't re-render
     let lastSnapshot: string | null = null;
 
     const unsub = subscribeToReceivedLikes((users) => {
@@ -114,19 +116,9 @@ const UserShow: React.FC = () => {
   }, [isFromKindredSpirits, userData.userId]);
 
   useEffect(() => {
-    if (isFromRadiantSouls) {
-      fetchRadiantSouls().then((list) => {
-        setSouls(list);
-        const idx = list.findIndex((u) => u.userId === initialUser.userId);
-        setCurrentIndex(idx >= 0 ? idx : 0);
-      });
-    }
-  }, []);
-
-  useEffect(() => {
     const id = currentUser.userId;
     if (!id || id === lastLoadedPhotosFor.current) {
-      // same user → don’t reload
+      // same user → don't reload
       return;
     }
     lastLoadedPhotosFor.current = id;
@@ -151,31 +143,6 @@ const UserShow: React.FC = () => {
     };
   }, [currentUser.userId]);
 
-  useEffect(() => {
-    if (orbAnimFinished && !loadingPhotos) {
-      setShowOrbAnim(false);
-      setOrbAnimFinished(false);
-      const next = currentIndex + 1;
-      if (souls[next]) {
-        setCurrentIndex(next);
-        setCurrentUser(souls[next]);
-      } else {
-        router.back();
-      }
-    }
-  }, [orbAnimFinished, loadingPhotos]);
-
-  const handleOrbLike = async () => {
-    if ((userData.numOfOrbs ?? 0) < 1) return;
-    setShowOrbAnim(true);
-    setOrbAnimFinished(false);
-    try {
-      await orbLike(currentUser.userId);
-    } catch {
-      setShowOrbAnim(false);
-    }
-  };
-
   const handleHeartPress = async () => {
     const likedId = currentUser.userId;
     const nextSouls = souls.filter((u) => u.userId !== likedId);
@@ -192,29 +159,94 @@ const UserShow: React.FC = () => {
     await likeMatch(likedId);
   };
 
-  const details = [
-    { title: "Gender", content: userData?.gender?.join(", ") ?? "N/A" },
-    { title: "Height", content: `${userData?.height ?? "N/A"}` },
-    {
-      title: "Ethnicities",
-      content: userData?.ethnicities?.join(", ") ?? "N/A",
-    },
-    {
-      title: "Date Preferences",
-      content: userData?.matchPreferences?.datePreferences?.join(", ") ?? "N/A",
-    },
-    {
-      title: "Children Preferences",
-      content: userData?.matchPreferences?.childrenPreference ?? "N/A",
-    },
-    { title: "Education", content: userData?.educationDegree ?? "N/A" },
-  ];
+  // Helper function to get location string
+  const getLocation = (user: UserDataType) => {
+    if (user.location?.city && user.location?.region) {
+      return `${user.location.city}, ${user.location.region}`;
+    } else if (user.location?.city) {
+      return user.location.city;
+    } else if (user.regionName) {
+      return user.regionName;
+    } else if (user.location?.region) {
+      return user.location.region;
+    }
+    return 'Location not shared';
+  };
+
+  // Create meaningful details based on current user data
+  const getDetailsForPhoto = (index: number) => {
+    const detailOptions = [
+      {
+        title: "Basic Info",
+        content: `${currentUser.age || calculateAge(currentUser)} • ${getLocation(currentUser)}`,
+        icon: "person"
+      },
+      {
+        title: "Spiritual Practices",
+        content: currentUser?.spiritualProfile?.practices?.length 
+          ? currentUser.spiritualProfile.practices.slice(0, 3).join(", ")
+          : currentUser?.spiritualProfile?.practices?.length 
+            ? currentUser.spiritualProfile.practices.slice(0, 3).join(", ")
+            : 'Sacred practices not shared',
+        icon: "sparkles"
+      },
+      {
+        title: "Healing Modalities",
+        content: currentUser?.spiritualProfile?.healingModalities?.length
+          ? currentUser.spiritualProfile.healingModalities.slice(0, 3).join(", ")
+          : 'Healing path not shared',
+        icon: "heart"
+      },
+      {
+        title: "Physical Details",
+        content: currentUser.height ? `${currentUser.height} ft` : 'Height not shared',
+        icon: "resize"
+      },
+      {
+        title: "Sacred Connections",
+        content: currentUser.matchPreferences?.datePreferences?.length
+          ? currentUser.matchPreferences.datePreferences.join(", ")
+          : 'Open to divine connections',
+        icon: "heart-circle"
+      },
+      {
+        title: "Spiritual Draws",
+        content: currentUser?.spiritualProfile?.draws?.length
+          ? currentUser.spiritualProfile.draws.slice(0, 3).join(", ")
+          : 'Spiritual draws not shared',
+        icon: "leaf"
+      }
+    ];
+
+    return detailOptions[index] || detailOptions[0];
+  };
+  // Helper function to calculate age if not provided
+  const calculateAge = (user: UserDataType) => {
+    if (user.birthyear) {
+      return new Date().getFullYear() - parseInt(user.birthyear);
+    }
+    if (user.age) return user.age;
+    return 'Age unknown';
+  };
+
+  // Helper function to get array for pills display
+  const getPillsArray = (detail: any) => {
+    if (detail.title === "Spiritual Practices") {
+      return currentUser.spiritualProfile?.practices || currentUser?.spiritualProfile?.practices || [];
+    } else if (detail.title === "Healing Modalities") {
+      return currentUser.spiritualProfile?.healingModalities || [];
+    } else if (detail.title === "Spiritual Draws") {
+      return currentUser.spiritualProfile?.draws || [];
+    }
+    return [];
+  };
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [HEADER_FADE_START, HEADER_FADE_END],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
+  
   const leftNameOpacity = scrollY.interpolate({
     inputRange: [HEADER_FADE_START, HEADER_FADE_END],
     outputRange: [1, 0],
@@ -246,34 +278,25 @@ const UserShow: React.FC = () => {
     }
   );
 
-  return (
-    <SafeAreaView style={styles.wrapper}>
-      {showOrbAnim && (
-        <View style={styles.animOverlay}>
-          <LottieView
-            source={leavesAnimation}
-            autoPlay
-            loop={false}
-            onAnimationFinish={() => setOrbAnimFinished(true)}
-            style={styles.animation}
-          />
-        </View>
-      )}
+  const styles = createStyles(colors, fonts);
 
-      {loadingPhotos && !showOrbAnim && (
-        <View style={styles.loaderOverlay}>
+  return (
+    <SafeAreaView style={[styles.wrapper, { backgroundColor: colors.background }]}>
+      {loadingPhotos && (
+        <View style={[styles.loaderOverlay, { backgroundColor: colors.background }]}>
           <LottieView
-            source={loadingMandalaAnimation}
+            source={require("../../assets/animations/loading_mandala.json")}
             autoPlay
             loop
             style={styles.loaderAnimation}
           />
+          <Text style={[styles.loadingText, { color: colors.primary }]}>Loading Sacred Soul...</Text>
         </View>
       )}
 
-      {!loadingPhotos && !showOrbAnim && (
+      {!loadingPhotos && (
         <>
-          <View style={styles.headerOverlay}>
+          <View style={[styles.headerOverlay, { backgroundColor: colors.background }]}>
             <View style={styles.headerContainer}>
               <View style={styles.backSection}>
                 <Link href=".." asChild>
@@ -281,8 +304,8 @@ const UserShow: React.FC = () => {
                     hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                     style={styles.backInner}
                   >
-                    <Icon name="chevron-left" size={20} color="#7E7972" />
-                    <Text style={styles.backText}>Back</Text>
+                    <Ionicons name="chevron-back" size={20} color={colors.primary} />
+                    <Text style={[styles.backText, { color: colors.primary }]}>Back</Text>
                   </TouchableOpacity>
                 </Link>
               </View>
@@ -290,8 +313,9 @@ const UserShow: React.FC = () => {
               <Animated.Text
                 style={[
                   styles.nameCenter,
-                  { opacity: headerOpacity },
-                  !isFromRadiantSouls && {
+                  { 
+                    opacity: headerOpacity,
+                    color: colors.textDark,
                     position: "absolute",
                     left: 0,
                     right: 0,
@@ -301,15 +325,6 @@ const UserShow: React.FC = () => {
               >
                 {currentUser.firstName}
               </Animated.Text>
-
-              {isFromRadiantSouls && (
-                <TouchableOpacity style={styles.orbsButton}>
-                  <Icon name="pagelines" size={22} color="#D8BFAA" />
-                  <Text style={styles.orbsButtonText}>
-                    Orbs ({userData.numOfOrbs ?? 0})
-                  </Text>
-                </TouchableOpacity>
-              )}
             </View>
           </View>
 
@@ -323,83 +338,88 @@ const UserShow: React.FC = () => {
             scrollEventThrottle={16}
           >
             <Animated.Text
-              style={[styles.topName, { opacity: leftNameOpacity }]}
+              style={[styles.topName, { opacity: leftNameOpacity, color: colors.textDark }]}
             >
-              {currentUser.firstName}
+              {currentUser.firstName}, {calculateAge(currentUser)}
             </Animated.Text>
 
-            {photoUrls.map((uri, i) => (
-              <View key={i} style={styles.photoCard}>
-                <Image source={{ uri }} style={styles.photo} />
+            {photoUrls.map((uri, i) => {
+              const detail = getDetailsForPhoto(i);
+              const pillsArray = getPillsArray(detail);
+              
+              return (
+                <View key={i} style={styles.photoCard}>
+                  <Image source={{ uri }} style={styles.photo} />
 
-                {/* Radiant‐souls orb like */}
-                {isFromRadiantSouls && (
-                  <View style={styles.overlayIcons}>
-                    <TouchableOpacity
-                      disabled={(userData.numOfOrbs ?? 0) < 1}
-                      onPress={handleOrbLike}
-                      style={styles.orbActionBtn}
-                    >
-                      <Icon
-                        name="pagelines"
-                        size={28}
-                        color={
-                          (userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"
-                        }
-                      />
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {/* KindredSpirits heart like */}
-                {isFromKindredSpirits && (
-                  <View style={styles.overlayIcons}>
-                    <TouchableOpacity
-                      onPress={handleHeartPress}
-                      style={styles.heartActionBtn}
-                    >
-                      <Icon name="heart" size={28} color="#E0245E" />
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                <View style={styles.detailCard}>
-                  {/* Radiant‐souls orb detail */}
-                  {isFromRadiantSouls && (
-                    <View style={styles.overlayIconsDetail}>
-                      <TouchableOpacity
-                        disabled={(userData.numOfOrbs ?? 0) < 1}
-                        onPress={handleOrbLike}
-                        style={styles.orbDetailBtn}
-                      >
-                        <Icon
-                          name="pagelines"
-                          size={28}
-                          color={
-                            (userData.numOfOrbs ?? 0) > 0 ? "#D8BFAA" : "#ccc"
-                          }
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {/* KindredSpirits heart detail */}
+                  {/* KindredSpirits heart like on photo */}
                   {isFromKindredSpirits && (
-                    <View style={styles.overlayIconsDetail}>
+                    <View style={styles.overlayIcons}>
                       <TouchableOpacity
                         onPress={handleHeartPress}
-                        style={styles.heartDetailBtn}
+                        style={[styles.heartActionBtn, { backgroundColor: colors.card + 'CC' }]}
                       >
-                        <Icon name="heart" size={28} color="#E0245E" />
+                        <Ionicons name="heart" size={28} color={colors.primary} />
                       </TouchableOpacity>
                     </View>
                   )}
 
-                  <Text style={styles.detailTitle}>{details[i].title}:</Text>
-                  <Text style={styles.detailText}>{details[i].content}</Text>
+                  <View style={[styles.detailCard, { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border 
+                  }]}>
+                    {/* KindredSpirits heart like on detail card */}
+                    {isFromKindredSpirits && (
+                      <View style={styles.overlayIconsDetail}>
+                        <TouchableOpacity
+                          onPress={handleHeartPress}
+                          style={[styles.heartDetailBtn, { backgroundColor: colors.card + 'CC' }]}
+                        >
+                          <Ionicons name="heart" size={28} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    <View style={styles.detailHeader}>
+                      <Ionicons name={detail.icon as any} size={20} color={colors.primary} />
+                      <Text style={[styles.detailTitle, { color: colors.textDark }]}>
+                        {detail.title}
+                      </Text>
+                    </View>
+                    
+                    {/* Enhanced content display */}
+                    {(detail.title === "Spiritual Practices" || 
+                      detail.title === "Healing Modalities" || 
+                      detail.title === "Spiritual Draws") && pillsArray.length > 0 ? (
+                      <View style={styles.pillsContainer}>
+                        {pillsArray.slice(0, 4).map((item: string, pillIndex: number) => (
+                          <View key={pillIndex} style={[styles.pill, { 
+                            backgroundColor: colors.primary + '20',
+                            borderColor: colors.primary + '40'
+                          }]}>
+                            <Text style={[styles.pillText, { color: colors.primary }]}>{item}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={[styles.detailText, { 
+                        color: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
+                                                          detail.title === "Healing Modalities" || 
+                                                          detail.title === "Spiritual Draws") 
+                          ? colors.textLight 
+                          : colors.textLight,
+                        fontStyle: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
+                                                               detail.title === "Healing Modalities" || 
+                                                               detail.title === "Spiritual Draws") 
+                          ? 'italic' 
+                          : 'normal'
+                      }]}>
+                        {detail.content}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </Animated.ScrollView>
         </>
       )}
@@ -409,10 +429,9 @@ const UserShow: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: "#EDE9E3",
   },
   headerOverlay: {
     position: "absolute",
@@ -420,10 +439,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: HEADER_HEIGHT,
-    backgroundColor: "#EDE9E3",
-    paddingHorizontal: 16,
-    paddingTop: 45,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.select({ ios: 45, android: 35 }),
     zIndex: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border + '40',
   },
   headerContainer: {
     flexDirection: "row",
@@ -434,143 +454,123 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "flex-start",
   },
-
   backInner: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: Spacing.xs,
+    paddingRight: Spacing.sm,
   },
   backText: {
     marginLeft: 6,
-    fontSize: 16,
-    color: "#7E7972",
-  },
-
-  backNameText: {
-    marginTop: 4,
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#7E7972",
+    ...fonts.spiritualBodyFont,
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
   },
   nameCenter: {
-    position: "relative",
-    left: 25,
-    textAlign: "center",
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#7E7972",
+    ...fonts.spiritualTitleFont,
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
   },
   scrollView: {
     flex: 1,
     marginTop: HEADER_HEIGHT,
   },
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.lg,
   },
   topName: {
-    marginLeft: 16,
-    marginBottom: 8,
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#7E7972",
+    marginLeft: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...fonts.spiritualTitleFont,
+    fontSize: Typography.sizes['3xl'],
+    fontWeight: Typography.weights.bold,
   },
   photoCard: {
-    marginBottom: 14,
+    marginBottom: Spacing.lg,
   },
   photo: {
-    width: Dimensions.get("window").width - 32,
+    width: Dimensions.get("window").width - (Spacing.lg * 2),
     height: 400,
-    borderRadius: 20,
-    marginBottom: 12,
+    borderRadius: BorderRadius.xl,
+    marginBottom: Spacing.md,
   },
   overlayIcons: {
     width: "100%",
     alignItems: "flex-end",
-    marginTop: -48,
-    paddingRight: 16,
+    marginTop: -60,
+    paddingRight: Spacing.lg,
     zIndex: 10,
   },
-  orbActionBtn: {
-    backgroundColor: "rgba(255,255,255,0.8)",
-    borderRadius: 24,
-    padding: 12,
-    left: 8,
-    bottom: 26,
-  },
   heartActionBtn: {
-    backgroundColor: "rgba(255,255,255,0.8)",
-    borderRadius: 24,
-    padding: 12,
-    left: 8,
-    bottom: 26,
+    borderRadius: BorderRadius.full,
+    padding: Spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   detailCard: {
-    backgroundColor: "#f9f9f9",
-    borderRadius: 10,
-    padding: 40,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: "#ddd",
     position: "relative",
+    shadowColor: colors.textDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
   },
   overlayIconsDetail: {
     position: "absolute",
-    bottom: 16,
-    right: 16,
+    bottom: Spacing.lg,
+    right: Spacing.lg,
     zIndex: 10,
   },
-  orbDetailBtn: {
-    backgroundColor: "rgba(255,255,255,0.8)",
-    borderRadius: 24,
-    padding: 12,
-  },
   heartDetailBtn: {
-    backgroundColor: "rgba(255,255,255,0.8)",
-    borderRadius: 24,
-    padding: 12,
+    borderRadius: BorderRadius.full,
+    padding: Spacing.md,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   detailTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    ...fonts.spiritualBodyFont,
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    marginLeft: Spacing.sm,
   },
   detailText: {
-    fontSize: 16,
-    color: "gray",
-    marginTop: 8,
+    ...fonts.spiritualBodyFont,
+    fontSize: Typography.sizes.base,
+    lineHeight: Typography.sizes.base * 1.4,
   },
-  orbsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.9)",
-    paddingVertical: 6,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+  pillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
-  orbsButtonText: {
-    marginLeft: 8,
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#7E7972",
+  pill: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
   },
-  animOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: TAB_BAR_HEIGHT,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    zIndex: 20,
-    backgroundColor: "transparent",
-    pointerEvents: "none",
-    paddingBottom: 20,
-  },
-  animation: {
-    width: Dimensions.get("window").width * 1.3,
-    height: Dimensions.get("window").height * 0.6,
-    transform: [{ scale: 1.2 }],
+  pillText: {
+    ...fonts.spiritualBodyFont,
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.medium,
   },
   loaderOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#EDE9E3",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 20,
@@ -578,6 +578,12 @@ const styles = StyleSheet.create({
   loaderAnimation: {
     width: 120,
     height: 120,
+    marginBottom: Spacing.lg,
+  },
+  loadingText: {
+    ...fonts.spiritualBodyFont,
+    fontSize: Typography.sizes.lg,
+    fontStyle: 'italic',
   },
 });
 

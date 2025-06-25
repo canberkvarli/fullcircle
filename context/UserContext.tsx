@@ -44,7 +44,6 @@ export type UserDataType = {
   createdAt: any;
   lastActive?: any;
   isSeedUser: boolean;
-  isRadiantSoul?: boolean;
   numOfOrbs?: number;
   lastOrbAssignedAt?: any;
   currentOnboardingScreen: string;
@@ -89,7 +88,6 @@ export type UserDataType = {
     draws?: string[];                  // From SpiritualDrawsScreen
     practices?: string[];              // From SpiritualPracticesScreen
     healingModalities?: string[];      // From HealingModalitiesScreen
-    partnershipStyle?: string;         // From SpiritualPartnershipScreen
   };
   
   fullCircleSubscription: boolean;
@@ -116,7 +114,6 @@ export type UserDataType = {
       spiritualDraws?: string[];
       practices?: string[];
       healingModalities?: string[];
-      partnershipStyle?: string[];
     };
   };
   
@@ -254,7 +251,6 @@ type UserContextType = {
   markChatAsRead: (chatId: string, userId: string) => Promise<void>;
   unreadMatchesCount: number;
   fetchChatMatches: (userId: string) => Promise<any[]>;
-  fetchRadiantSouls: () => Promise<any[]>;
   fetchPotentialMatches: () => void;
   resetPotentialMatches: () => void;
   getImageUrl: (imagePath: string) => Promise<string | null>;
@@ -1041,13 +1037,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const baseConstraints = [
       orderBy("likesReceivedCount", "desc"),
       limit(10),
-      where("isRadiantSoul", "==", false),
-      where("settings.isPaused", "!=", true),
-      ...buildQueryConstraints({
-        matchPreferences: userData.matchPreferences,
-        currentLat: userData.latitude,
-        currentLon: userData.longitude,
-      }),
+      // where("settings.isPaused", "!=", true),
+      // ...buildQueryConstraints({
+      //   matchPreferences: userData.matchPreferences,
+      //   currentLat: userData.latitude,
+      //   currentLon: userData.longitude,
+      // }),
     ];
 
     let fetched: any[] = [];
@@ -1071,7 +1066,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       const newBatch = snap.docs
         .map((d) => d.data())
-        .filter((u) => !excluded.has(u.userId) && !u.isRadiantSoul);
+        .filter((u) => !excluded.has(u.userId));
       if (!newBatch.length) {
         setNoMoreMatches(true);
         setLoadingNextBatch(false);
@@ -1089,50 +1084,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     setLoadingNextBatch(false);
     return fetched;
-  };
-
-  const fetchRadiantSouls = async (): Promise<UserDataType[]> => {
-    if (!userData.userId) return [];
-    console.log("fetching radiant souls...");
-
-    // 1) grab the top‑10 radiant souls
-    // IMPORTANT: comment out matchPreferences if you don't want the radiant souls to be affected by the user's preferences.
-    const soulsQuery = query(
-      collection(FIRESTORE, "users"),
-      where("isRadiantSoul", "==", true),
-      orderBy("likesReceivedCount", "desc"),
-      limit(10),
-      ...buildQueryConstraints({
-        // Removed the matchpreferences so that the radiant souls are not affected by the user's preferences.
-        // showing the most liked radiant souls always, in the radius of the user's preferences only.
-        // matchPreferences: userData.matchPreferences,
-        currentLat: userData.latitude,
-        currentLon: userData.longitude,
-      })
-    );
-    const soulsSnap = await getDocs(soulsQuery);
-    const souls = soulsSnap.docs.map((d) => ({
-      userId: d.id,
-      ...(d.data() as Omit<UserDataType, "userId">),
-    }));
-
-    // 2) load your likes‑given and dislikes‑given
-    const [likesGivenSnap, dislikesGivenSnap] = await Promise.all([
-      getDocs(collection(FIRESTORE, "users", userData.userId, "likesGiven")),
-      getDocs(collection(FIRESTORE, "users", userData.userId, "dislikesGiven")),
-    ]);
-
-    // 3) build an exclusion set that also includes receivedLikes & existing matches
-    const excluded = new Set<string>([
-      userData.userId,
-      ...likesGivenSnap.docs.map((d) => d.id),
-      ...dislikesGivenSnap.docs.map((d) => d.id),
-      ...Array.from(receivedLikes), // ← anyone who’s liked you
-      ...(userData.matches ?? []), // ← any existing mutual matches
-    ]);
-
-    // 4) filter out excluded users
-    return souls.filter((u) => !excluded.has(u.userId));
   };
 
   const resetPotentialMatches = () => {
@@ -1314,9 +1265,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         likesGivenCount: (prev.likesGivenCount ?? 0) + 1,
       }));
     }
-
-    // Don't refresh radiant souls here - it's too expensive to do on every like
-    // refreshRadiantSouls();
   };
 
   const recordDislike = async (
@@ -1351,75 +1299,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     });
   };
-
-  const refreshRadiantSouls = useCallback(async () => {
-    // Don't refresh during onboarding
-    if (!userData.onboardingCompleted) {
-      console.log("Skipping radiant souls refresh - onboarding not completed");
-      return;
-    }
-
-    console.log("Refreshing Radiant Souls...");
-    const db = FIRESTORE;
-    const usersCol = collection(db, "users");
-    const TOP_N = 10;
-
-    // a) grab current flagged radiant souls
-    const prevSnap = await query(
-      usersCol,
-      where("isRadiantSoul", "==", true)
-    ).get();
-
-    // b) grab the new top N by likesReceivedCount
-    const topSnap = await query(
-      usersCol,
-      orderBy("likesReceivedCount", "desc"),
-      limit(TOP_N)
-    ).get();
-
-    const batch = writeBatch(db);
-    const newTopIds = new Set(topSnap.docs.map((d) => d.id));
-
-    // c) clear anyone who's no longer top N
-    prevSnap.docs.forEach((docSnap) => {
-      if (!newTopIds.has(docSnap.id)) {
-        batch.update(docSnap.ref, { isRadiantSoul: false });
-      }
-    });
-
-    // d) flag the new top N
-    topSnap.docs.forEach((docSnap) => {
-      if (!docSnap.data().isRadiantSoul) {
-        batch.update(docSnap.ref, { isRadiantSoul: true });
-      }
-    });
-
-    await batch.commit();
-    console.log("Radiant Souls refreshed");
-  }, [userData.onboardingCompleted]);
-
-  useEffect(() => {
-    // Don't run during onboarding
-    if (!userData.onboardingCompleted) return;
-
-    // run once at mount
-    refreshRadiantSouls();
-
-    // on foreground
-    const foregroundSub = AppState.addEventListener("change", (state) => {
-      if (userData.onboardingCompleted && state === "active") {
-        refreshRadiantSouls();
-      }
-    });
-
-    // every 24 hours
-    const every24h = setInterval(refreshRadiantSouls, 1000 * 60 * 60 * 24);
-
-    return () => {
-      foregroundSub.remove();
-      clearInterval(every24h);
-    };
-  }, [refreshRadiantSouls, userData.onboardingCompleted]);
 
   const getReceivedLikesDetailed = async (): Promise<
     Array<any & { viaOrb: boolean; likedAt: Date }>
@@ -2113,7 +1992,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     subscribeToReceivedLikes,
     sendMessage,
     markChatAsRead,
-    fetchRadiantSouls,
     fetchPotentialMatches,
     resetPotentialMatches,
     getImageUrl,

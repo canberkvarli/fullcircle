@@ -271,7 +271,6 @@ function PhotosScreen() {
         )}
       </Animated.View>
     );
-
   };
   const photoCount = selectedPhotos.filter(photo => photo && photo !== "").length;
   const progressWidth = progressAnim.interpolate({

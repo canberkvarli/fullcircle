@@ -3,34 +3,139 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Dimensions,
   ImageBackground,
+  useColorScheme,
 } from "react-native";
 import InfoCard from "@/components/InfoCard";
-import { useUserContext } from "@/context/UserContext";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { useUserContext, UserDataType } from "@/context/UserContext";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 const { width: screenWidth } = Dimensions.get("window");
-const IMAGE_MARGIN = 32;
+const IMAGE_MARGIN = Spacing.xl;
 const MAX_PHOTO_SIZE = screenWidth - IMAGE_MARGIN;
 
 type Props = {
-  currentPotentialMatch: any;
+  currentPotentialMatch: UserDataType;
   isMatched?: boolean;
-  onLike: (userId: string) => void;
-  disableInteractions: boolean;
   onPhotosLoaded?: () => void;
+};
+
+// Helper function to calculate age
+const calculateAge = (user: UserDataType) => {
+  if (user.birthyear) {
+    return new Date().getFullYear() - parseInt(user.birthyear);
+  }
+  if (user.age) return user.age;
+  return null;
+};
+
+// Helper function to get location string
+const getLocation = (user: UserDataType) => {
+  if (user.location?.city && user.location?.region) {
+    return `${user.location.city}, ${user.location.region}`;
+  } else if (user.location?.city) {
+    return user.location.city;
+  } else if (user.regionName) {
+    return user.regionName;
+  } else if (user.location?.region) {
+    return user.location.region;
+  }
+  return null;
+};
+
+// Generate info cards data for a user
+const generateInfoCards = (user: UserDataType) => {
+  const cards = [];
+
+  // Basic Info Card
+  const age = calculateAge(user);
+  const location = getLocation(user);
+  const basicInfo = [age && `${age} years old`, location].filter(Boolean).join(" • ");
+  
+  if (basicInfo) {
+    cards.push({
+      title: "About",
+      content: basicInfo,
+      icon: "person-circle",
+      pillsData: [],
+    });
+  }
+
+  // Spiritual Practices
+  if (user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
+    cards.push({
+      title: "Spiritual Practices",
+      content: user.spiritualProfile.practices.slice(0, 3).join(", "),
+      icon: "sparkles",
+      pillsData: user.spiritualProfile.practices,
+    });
+  }
+
+  // Healing Modalities
+  if (user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
+    cards.push({
+      title: "Healing Modalities",
+      content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
+      icon: "heart",
+      pillsData: user.spiritualProfile.healingModalities,
+    });
+  }
+
+  // Spiritual Draws
+  if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
+    cards.push({
+      title: "Spiritual Draws",
+      content: user.spiritualProfile.draws.slice(0, 3).join(", "),
+      icon: "leaf",
+      pillsData: user.spiritualProfile.draws,
+    });
+  }
+
+  // Physical Details
+  if (user.height) {
+    cards.push({
+      title: "Physical",
+      content: `${user.height} ft tall`,
+      icon: "resize",
+      pillsData: [],
+    });
+  }
+
+  // Connection Preferences
+  if (user.matchPreferences?.datePreferences && user.matchPreferences.datePreferences.length > 0) {
+    cards.push({
+      title: "Looking For",
+      content: user.matchPreferences.datePreferences.join(", "),
+      icon: "heart-circle",
+      pillsData: user.matchPreferences.datePreferences,
+    });
+  }
+
+  // Gender Identity
+  if (user.gender && user.gender?.length > 0) {
+    cards.push({
+      title: "Identity",
+      content: user.gender.join(", "),
+      icon: "person",
+      pillsData: user.gender,
+    });
+  }
+
+  return cards;
 };
 
 const PotentialMatch: React.FC<Props> = ({
   currentPotentialMatch,
   isMatched = false,
-  onLike,
-  disableInteractions,
   onPhotosLoaded,
 }) => {
   const { getImageUrl } = useUserContext();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
+  
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [isPhotoLoading, setIsPhotoLoading] = useState(true);
 
@@ -50,111 +155,121 @@ const PotentialMatch: React.FC<Props> = ({
 
   if (isPhotoLoading) return null;
 
-  const infoSections = [
-    {
-      title: "Children Preference",
-      content: currentPotentialMatch.childrenPreference,
-    },
-    {
-      title: "Education Level",
-      content: currentPotentialMatch.educationDegree,
-    },
-    {
-      title: "Ethnicities",
-      content: currentPotentialMatch.ethnicities?.join(", "),
-    },
-    { title: "Height", content: currentPotentialMatch.height },
-    {
-      title: "Location",
-      content: currentPotentialMatch.location?.city
-        ? `${currentPotentialMatch.location.city}, ${currentPotentialMatch.location.country}`
-        : "Location not provided",
-    },
-  ];
-
-  const infoStep = Math.ceil(infoSections.length / photoUrls.length);
+  const infoCards = generateInfoCards(currentPotentialMatch);
+  const age = calculateAge(currentPotentialMatch);
+  
+  const styles = createStyles(colors, fonts);
 
   return (
     <View style={styles.container}>
+      {/* User Name Header */}
       {!isMatched && (
-        <Text style={styles.userName}>
-          {currentPotentialMatch.firstName}, {currentPotentialMatch.age}
-        </Text>
+        <View style={styles.headerContainer}>
+          <Text style={styles.userName}>
+            {currentPotentialMatch.firstName}
+            {age && `, ${age}`}
+          </Text>
+          <View style={styles.headerDivider} />
+        </View>
       )}
 
-      {photoUrls.map((url, i) => (
-        <View key={i} style={styles.photoContainer}>
-          <ImageBackground
-            source={{ uri: url }}
-            style={styles.photoBackground}
-            imageStyle={styles.photo}
-          >
-            {!isMatched && (
-              <TouchableOpacity
-                onPress={() =>
-                  !disableInteractions && onLike(currentPotentialMatch.userId)
-                }
-                disabled={disableInteractions}
-                style={styles.heartWrapper}
-              >
-                <Icon
-                  name="heart"
-                  size={40}
-                  color={disableInteractions ? "#ccc" : "red"}
-                />
-              </TouchableOpacity>
-            )}
-          </ImageBackground>
+      {/* Photos and Info Cards */}
+      {photoUrls.map((url, photoIndex) => {
+        // Get the info card for this photo (cycling through available cards)
+        const cardIndex = photoIndex % infoCards.length;
+        const currentCard = infoCards[cardIndex];
 
-          {infoSections
-            .slice(i * infoStep, (i + 1) * infoStep)
-            .map((info, idx) => (
+        return (
+          <View key={photoIndex} style={styles.photoSection}>
+            {/* Clean Photo Display */}
+            <View style={styles.photoContainer}>
+              <ImageBackground
+                source={{ uri: url }}
+                style={styles.photoBackground}
+                imageStyle={styles.photo}
+              >
+                {/* Subtle gradient overlay for depth */}
+                <View style={styles.photoOverlay} />
+              </ImageBackground>
+            </View>
+
+            {/* Info Card below photo */}
+            {currentCard && (
               <InfoCard
-                key={idx}
-                title={info.title}
-                content={info.content}
-                currentPotentialMatch={currentPotentialMatch}
-                isMatched={isMatched}
-                onLike={onLike}
-                disableInteractions={disableInteractions}
+                title={currentCard.title}
+                content={currentCard.content}
+                icon={currentCard.icon}
+                pillsData={currentCard.pillsData}
               />
-            ))}
-        </View>
-      ))}
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   container: {
-    padding: 16,
-    marginBottom: 20,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
     alignItems: "center",
   },
-  userName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
+  
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+    width: "100%",
   },
+  
+  userName: {
+    ...fonts.spiritualTitleFont,
+    fontSize: Typography.sizes['3xl'],
+    fontWeight: Typography.weights.bold,
+    color: colors.textDark,
+    textAlign: "center",
+    marginBottom: Spacing.md,
+  },
+  
+  headerDivider: {
+    width: 60,
+    height: 2,
+    backgroundColor: colors.primary,
+    borderRadius: BorderRadius.full,
+  },
+  
+  photoSection: {
+    marginBottom: Spacing.xl,
+    alignItems: "center",
+    width: "100%",
+  },
+  
   photoContainer: {
     position: "relative",
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
     alignItems: "center",
     width: MAX_PHOTO_SIZE,
+    shadowColor: colors.textDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
+  
   photoBackground: {
     width: MAX_PHOTO_SIZE,
-    height: MAX_PHOTO_SIZE,
+    height: MAX_PHOTO_SIZE * 1.2, // Slightly taller for better proportions
     overflow: "hidden",
-    justifyContent: "flex-end",
-    alignItems: "flex-end",
-    marginVertical: 10,
   },
+  
   photo: {
-    borderRadius: 30,
+    borderRadius: BorderRadius.xl,
   },
-  heartWrapper: {
-    padding: 12,
+  
+  photoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.05)', // Very subtle overlay for depth
+    borderRadius: BorderRadius.xl,
   },
 });
 

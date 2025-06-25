@@ -44,7 +44,7 @@ function PhoneNumberScreen(): JSX.Element {
       const confirmation = await FIREBASE_AUTH.verifyPhoneNumber(
         formattedPhoneNumber
       );
-
+      console.log("Phone number verification initiated:", confirmation);
       router.replace({
         pathname: "onboarding/PhoneVerificationScreen" as any,
         params: {

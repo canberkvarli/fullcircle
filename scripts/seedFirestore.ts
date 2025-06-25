@@ -17,23 +17,11 @@ admin.initializeApp({
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
-// --- Dummy Data Arrays ---
+// --- Updated Data Arrays to Match ACTUAL Schema ---
+
 const genders = [
   "Woman",
-  "Man",
-  "Trans Woman",
-  "Trans Man",
-  "Non-binary",
-  "Genderqueer",
-  "Agender",
-  "Two-Spirit",
-  "Genderfluid",
-  "Other",
-];
-
-const datePreferencesArray = [
-  "Men",
-  "Women",
+  "Man", 
   "Non-binary",
   "Genderqueer",
   "Agender",
@@ -43,112 +31,197 @@ const datePreferencesArray = [
   "Two-Spirit",
   "Bigender",
   "Intersex",
+  "Other",
+];
+
+const datePreferencesArray = [
+  "Men",
+  "Women",
+  "Non-Binary",
+  "Twin Flame Seeker",
+  "Soul Mate Guided",
+  "Tantric Connection",
+  "Heart-Centered",
+  "Consciousness Explorer",
+  "Polyamorous Soul",
+  "Monogamous Journey",
+  "Spiritual Partnership",
+  "Sacred Union",
+  "Love Without Labels",
   "Everyone",
 ];
 
-const educationDegrees = [
-  "High School",
-  "Associate Degree",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "Doctorate",
-  "Professional Certification",
-];
-
-const childrenPreferences = [
-  "Don’t have children",
-  "Have children",
-  "Open to children",
-  "Want Children",
-];
-
-const ethnicitiesArray = [
-  "American Indian",
-  "East Asian",
-  "Black/African Descent",
-  "Middle Eastern",
-  "Hispanic Latino",
-  "South Asian",
-  "Pacific Islander",
-  "White/Caucasian",
+// 🔮 Spiritual Data Arrays (EXACT from your screens)
+const spiritualDrawsArray = [
+  "healing",     // Healing & Restoration
+  "growth",      // Personal Growth
+  "connection",  // Sacred Connection
+  "awakening",   // Spiritual Awakening
 ];
 
 const spiritualPracticesArray = [
-  "Hatha/Vinyasa Yoga",
-  "Kundalini Yoga",
-  "Yin Yoga",
-  "Tantric Practices",
-  "Mindfulness Meditation",
-  "Breathwork",
-  "Reiki (Energy Work)",
-  "Chakra Healing",
-  "Qi Gong",
-  "Ayurveda",
-  "Astrology (Western)",
-  "Astrology (Vedic)",
-  "Chinese Astrology",
-  "Human Design & Numerology",
-  "Tarot/Oracle Cards",
-  "Cacao Ceremony",
-  "Ayahuasca & Plant Medicine",
+  "Meditation",
+  "Yoga", 
+  "Prayer",
+  "Journaling",
+  "Energy Healing",
+  "Crystal Work",
+  "Tarot & Oracle",
+  "Astrology",
+  "Nature Rituals",
   "Sound Healing",
-  "Ecstatic Dance",
-  "Crystal Healing",
+  "Breathwork",
+  "Sacred Dance",
+  "Plant Medicine",
+  "Shamanic Journey",
+  "Martial Arts",
+  "Fasting",
 ];
 
-// --- Helper: Fetch Unsplash images ---
+const healingModalitiesArray = [
+  "Reiki",
+  "Acupuncture",
+  "Sound Therapy",
+  "Crystal Healing",
+  "Aromatherapy",
+  "Light Therapy",
+  "Massage Therapy",
+  "Hypnotherapy",
+  "Homeopathy",
+  "Herbalism",
+  "Ayahuasca",
+  "Kambo",
+];
+
+const partnershipStylesArray = [
+  "Monogamous Journey",
+  "Polyamorous Soul",
+  "Sacred Union",
+  "Spiritual Partnership",
+  "Heart-Centered Connection",
+  "Twin Flame Journey",
+  "Tantric Partnership",
+  "Open Sacred Love",
+];
+
+// --- Helper: Fetch Unsplash images with rate limiting ---
 const fetchUnsplashImages = async (
   query: string,
   count: number,
   page: number
 ): Promise<string[]> => {
-  const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY!;
-  const res = await fetch(
-    `https://api.unsplash.com/search/photos?page=${page}&query=${encodeURIComponent(
-      query
-    )}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
-  );
-  if (!res.ok) throw new Error("Failed to fetch Unsplash images");
-  const data = await res.json();
-  return data.results.map((img: any) => img.urls.small);
+  try {
+    const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
+    if (!UNSPLASH_ACCESS_KEY) {
+      console.warn("No Unsplash API key found, using placeholder images");
+      return Array(count).fill("https://via.placeholder.com/400x400");
+    }
+
+    // Add delay to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const res = await fetch(
+      `https://api.unsplash.com/search/photos?page=${page}&query=${encodeURIComponent(
+        query
+      )}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
+    );
+    
+    if (res.status === 403) {
+      console.warn("Unsplash rate limit exceeded, using placeholder images");
+      return Array(count).fill("https://via.placeholder.com/400x400");
+    }
+    
+    if (!res.ok) {
+      console.warn(`Unsplash API failed (${res.status}), using placeholder images`);
+      return Array(count).fill("https://via.placeholder.com/400x400");
+    }
+    
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) {
+      console.warn("No Unsplash results found, using placeholder images");
+      return Array(count).fill("https://via.placeholder.com/400x400");
+    }
+    
+    return data.results.map((img: any) => img.urls.small);
+  } catch (error) {
+    console.warn(`Unsplash fetch failed: ${error}, using placeholder images`);
+    return Array(count).fill("https://via.placeholder.com/400x400");
+  }
 };
 
-// --- Helper: Gender-specific photo queries ---
+// --- Helper: Gender-specific photo queries (rate-limit friendly) ---
 const getGenderSpecificPhotos = async (
-  gender: string,
+  gender: string[],
   count: number,
   page: number
 ): Promise<string[]> => {
-  const lower = gender.toLowerCase();
+  // // For now, just use diverse placeholder images to avoid API limits
+  // const placeholderColors = [
+  //   "FF6B6B/FFFFFF", // Red
+  //   "4ECDC4/FFFFFF", // Teal  
+  //   "45B7D1/FFFFFF", // Blue
+  //   "96CEB4/FFFFFF", // Green
+  //   "FFEAA7/333333", // Yellow
+  //   "DDA0DD/FFFFFF", // Plum
+  //   "98D8C8/333333", // Mint
+  //   "F7DC6F/333333", // Gold
+  // ];
+  
+  // const primaryGender = gender[0] || "Person";
+  
+  // // Create diverse placeholder photos
+  // const photos = Array(count).fill(null).map((_, index) => {
+  //   const colorCombo = placeholderColors[index % placeholderColors.length];
+  //   return `https://via.placeholder.com/400x400/${colorCombo}?text=${encodeURIComponent(primaryGender)}+${index + 1}`;
+  // });
+  
+  // return photos;
+  
+  // COMMENTED OUT: Enable this when you want to use real Unsplash photos
+  const primaryGender = gender[0]?.toLowerCase() || "";
   let query = "portrait";
-  if (lower === "woman" || lower === "trans woman") query = "beautiful woman";
-  else if (lower === "man" || lower === "trans man") query = "handsome man";
-  else if (
+  
+  if (primaryGender === "woman" || primaryGender === "trans woman") {
+    query = "beautiful woman";
+  } else if (primaryGender === "man" || primaryGender === "trans man") {
+    query = "handsome man";
+  } else if (
     [
       "non-binary",
-      "genderqueer",
+      "genderqueer", 
       "agender",
       "two-spirit",
       "genderfluid",
       "other",
-    ].includes(lower)
-  )
+    ].includes(primaryGender)
+  ) {
     query = "non-binary model";
+  }
 
   let photos = await fetchUnsplashImages(query, count, page);
-  if (photos.length === 0)
-    photos = await fetchUnsplashImages("portrait", count, page);
-  return photos.length
-    ? photos
-    : Array(count).fill("https://via.placeholder.com/150");
+  
+  // Always return the requested number of photos, even if some are placeholders
+  if (photos.length < count) {
+    const needed = count - photos.length;
+    const placeholders = Array(needed).fill("https://via.placeholder.com/400x400");
+    photos = [...photos, ...placeholders];
+  }
+  
+  return photos.slice(0, count); // Ensure we don't exceed the requested count
+  
 };
 
-// --- Helper: Upload to Storage ---
+// --- Helper: Upload to Storage (with fallback) ---
 const uploadPhotoToStorage = async (
   photoUrl: string,
   userId: string,
   index: number
 ): Promise<string> => {
+  // If it's already a placeholder, just return it
+  if (photoUrl.includes("placeholder.com")) {
+    return photoUrl;
+  }
+
   try {
     const res = await fetch(photoUrl);
     if (!res.ok) throw new Error(`Failed to fetch ${photoUrl}`);
@@ -156,160 +229,267 @@ const uploadPhotoToStorage = async (
     const filePath = `users/photos/${userId}/photo_${index}.jpg`;
     const file = bucket.file(filePath);
     await file.save(buffer, {
-      metadata: { contentType: res.headers.get("content-type")! },
+      metadata: { contentType: res.headers.get("content-type") || "image/jpeg" },
     });
     return filePath;
   } catch (e) {
-    console.warn("Upload failed, using original URL:", e);
-    return photoUrl;
+    console.warn(`Upload failed for ${photoUrl}, using placeholder:`, e);
+    return `https://via.placeholder.com/400x400/cccccc/666666?text=Photo+${index + 1}`;
   }
 };
 
-// --- Seed Script ---
+// --- Generate Height in feet format ---
+const generateHeight = (): number => {
+  const feet = faker.number.int({ min: 4, max: 7 });
+  const inches = faker.number.int({ min: 0, max: 11 });
+  return parseFloat(`${feet}.${inches}`);
+};
+
+// --- Generate Phone Number Components (FIXED) ---
+const generatePhoneComponents = () => {
+  const areaCode = faker.string.numeric(3);
+  const number = faker.string.numeric(7);
+  const fullNumber = areaCode + number;
+  return {
+    countryCode: "1", // US country code
+    areaCode: areaCode,
+    number: number,
+    phoneNumber: `+1${fullNumber}`,
+  };
+};
+
+// --- Main Seed Function ---
 async function seedFirestore(numUsers: number) {
-  console.group("🔥 Starting Firestore seeding");
+  console.group("🔥 Starting Firestore seeding with updated schema");
   console.info(`Target number of users: ${numUsers}`);
 
   const usersCol = db.collection("users");
   const userIds: string[] = [];
   const userDataList: Record<string, any> = {};
 
-  console.group("1) Generating base user docs");
+  console.group("1) Generating base user documents");
   for (let i = 0; i < numUsers; i++) {
     const userId = uuidv4();
     userIds.push(userId);
     console.info(`  -> Creating user #${i + 1}/${numUsers}: ${userId}`);
 
-    // Birth info
-    const birthDate = faker.date.birthdate({ min: 18, max: 70, mode: "age" });
-    const birthFormatted = birthDate.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+    // Birth info and age calculation
+    const birthDate = faker.date.birthdate({ min: 18, max: 65, mode: "age" });
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - birthDate.getFullYear();
+    
+    // Format birth components
+    const birthday = birthDate.getDate().toString().padStart(2, '0');
+    const birthmonth = (birthDate.getMonth() + 1).toString().padStart(2, '0');
+    const birthyear = birthDate.getFullYear().toString();
 
-    // Gender & name
-    const gender = faker.helpers.arrayElement(genders);
+    // Gender selection (now array format)
+    const primaryGender = faker.helpers.arrayElement(genders);
+    const gender = [primaryGender];
+    
+    // Sometimes add additional gender identities
+    if (faker.datatype.boolean(0.1)) {
+      const additionalGender = faker.helpers.arrayElement(
+        genders.filter(g => g !== primaryGender)
+      );
+      gender.push(additionalGender);
+    }
+
+    // Name generation based on primary gender
     let firstName = faker.person.firstName();
     let lastName = faker.person.lastName();
-    if (/man$/i.test(gender) && !/trans/i.test(gender)) {
+    if (primaryGender.toLowerCase().includes("man") && !primaryGender.toLowerCase().includes("trans")) {
       firstName = faker.person.firstName("male");
       lastName = faker.person.lastName("male");
-    } else if (/woman$/i.test(gender) && !/trans/i.test(gender)) {
+    } else if (primaryGender.toLowerCase().includes("woman") && !primaryGender.toLowerCase().includes("trans")) {
       firstName = faker.person.firstName("female");
       lastName = faker.person.lastName("female");
     }
 
-    // Photos
-    const unsplash = await getGenderSpecificPhotos(
+    // Photos generation
+    const unsplashPhotos = await getGenderSpecificPhotos(
       gender,
-      6,
+      faker.number.int({ min: 3, max: 6 }),
       faker.number.int({ min: 1, max: 10 })
     );
     const photos = await Promise.all(
-      unsplash.map((url, j) => uploadPhotoToStorage(url, userId, j))
+      unsplashPhotos.map((url, j) => uploadPhotoToStorage(url, userId, j))
     );
 
-    // Location & coords
+    // Location generation (SF Bay Area focused)
     const latitude = faker.number.float({ min: 36.5, max: 38.5 });
     const longitude = faker.number.float({ min: -123.5, max: -120.5 });
     const location = {
       city: faker.location.city(),
-      country: faker.location.country(),
+      country: "United States",
       formattedAddress: faker.location.streetAddress(),
-      isoCountryCode: faker.location.countryCode(),
+      isoCountryCode: "US",
       name: faker.location.street(),
       postalCode: faker.location.zipCode(),
       region: faker.location.state(),
+      street: faker.location.street(),
+      streetNumber: faker.number.int({ min: 1, max: 5000 }).toString(),
       subregion: faker.location.county(),
-      streetNumber: faker.helpers.arrayElement([
-        "Unknown",
-        faker.number.int({ min: 1, max: 5000 }).toString(),
-      ]),
     };
 
-    // generate a random signup date in the past 30 days
-    const randomSignupDate = faker.date.recent({ days: 30 });
-    const createdAtTimestamp =
-      admin.firestore.Timestamp.fromDate(randomSignupDate);
-    const onboardingOffsetMs = faker.number.int({
-      min: 0,
-      max: 6 * 60 * 60 * 1000,
-    });
-    const onboardingDate = new Date(
-      randomSignupDate.getTime() + onboardingOffsetMs
-    );
-    const onboardingCreatedAtTimestamp =
-      admin.firestore.Timestamp.fromDate(onboardingDate);
+    // Phone number generation
+    const phoneComponents = generatePhoneComponents();
 
-    // Assemble doc
-    userDataList[userId] = {
-      userId,
-      isSeedUser: true,
-      isRadiantSoul: false,
-      fullCircleSubscription: faker.datatype.boolean(),
-      onboardingCompleted: true,
-      // Profile
-      firstName,
-      lastName,
-      gender,
-      birthdate: birthFormatted,
-      age: new Date().getFullYear() - birthDate.getFullYear(),
-      countryCode: faker.phone.number(),
-      areaCode: faker.location.zipCode(),
-      email: faker.internet.email(),
-      jobTitle: faker.person.jobTitle(),
-      jobLocation: faker.company.name(),
-      ethnicities: faker.helpers.arrayElements(
-        ethnicitiesArray,
-        faker.number.int({ min: 1, max: 3 })
+    // 🔮 Spiritual Profile Generation
+    const spiritualProfile = {
+      draws: faker.helpers.arrayElements(
+        spiritualDrawsArray,
+        faker.number.int({ min: 1, max: 4 })
       ),
-      spiritualPractices: faker.helpers.arrayElements(
+      practices: faker.helpers.arrayElements(
         spiritualPracticesArray,
-        faker.number.int({ min: 1, max: 3 })
+        faker.number.int({ min: 2, max: 6 })
       ),
-      educationDegree: faker.helpers.arrayElement(educationDegrees),
-      childrenPreference: faker.helpers.arrayElement(childrenPreferences),
+      healingModalities: faker.helpers.arrayElements(
+        healingModalitiesArray,
+        faker.number.int({ min: 1, max: 5 })
+      ),
+      partnershipStyle: faker.helpers.arrayElement(partnershipStylesArray),
+    };
+
+    // Match Preferences Generation (FIXED - NO MORE MATH ERRORS)
+    const matchPreferences = {
+      preferredAgeRange: {
+        min: 18,
+        max: 65,
+      },
+      preferredHeightRange: {
+        min: 4.0,
+        max: 7.0,
+      },
+      preferredDistance: faker.number.int({ min: 5, max: 100 }),
       datePreferences: faker.helpers.arrayElements(
         datePreferencesArray,
-        faker.number.int({ min: 1, max: 2 })
+        faker.number.int({ min: 1, max: 3 })
       ),
-      height: parseFloat(
-        `${faker.number.int({ min: 4, max: 7 })}.${faker.number.int({
-          min: 0,
-          max: 11,
-        })}`
-      ),
-      latitude,
-      longitude,
-      location,
-      photos,
+      spiritualCompatibility: {
+        spiritualDraws: faker.helpers.arrayElements(
+          spiritualDrawsArray,
+          faker.number.int({ min: 0, max: 2 })
+        ),
+        practices: faker.helpers.arrayElements(
+          spiritualPracticesArray,
+          faker.number.int({ min: 0, max: 4 })
+        ),
+        healingModalities: faker.helpers.arrayElements(
+          healingModalitiesArray,
+          faker.number.int({ min: 0, max: 3 })
+        ),
+        partnershipStyle: faker.helpers.arrayElements(
+          partnershipStylesArray,
+          faker.number.int({ min: 0, max: 2 })
+        ),
+      },
+    };
 
-      // New counters
+    // Settings generation
+    const settings = {
+      isPaused: faker.datatype.boolean(0.05),
+      showLastActiveStatus: faker.datatype.boolean(0.8),
+      isSelfieVerified: faker.datatype.boolean(0.3),
+      selfieVerificationDate: faker.datatype.boolean(0.3) ? 
+        admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 30 })) : null,
+      pushNotifications: {
+        enableAll: faker.datatype.boolean(0.7),
+        muteAll: faker.datatype.boolean(0.1),
+        newLikes: faker.datatype.boolean(0.8),
+        newMatches: faker.datatype.boolean(0.9),
+        newMessages: faker.datatype.boolean(0.9),
+        promotions: faker.datatype.boolean(0.4),
+        announcements: faker.datatype.boolean(0.6),
+      },
+      connectedAccounts: {
+        google: faker.datatype.boolean(0.4),
+        apple: faker.datatype.boolean(0.2),
+      },
+    };
+
+    // Hidden fields generation (ONLY for fields that actually exist)
+    const hiddenFields: { [key: string]: boolean } = {};
+    const fieldsToHide = ['gender', 'spiritualProfile', 'height', 'datePreferences'];
+    fieldsToHide.forEach(field => {
+      hiddenFields[field] = faker.datatype.boolean(0.2); // 20% chance to hide each field
+    });
+
+    // Timestamps
+    const signupDate = faker.date.recent({ days: 60 });
+    const createdAt = admin.firestore.Timestamp.fromDate(signupDate);
+    const lastActive = admin.firestore.Timestamp.fromDate(
+      faker.date.recent({ days: 7 })
+    );
+
+    // Orb system data
+    const numOfOrbs = faker.number.int({ min: 5, max: 50 });
+    const lastOrbAssignedAt = numOfOrbs > 0 ? 
+      admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 7 })) : null;
+
+    // Assemble complete user document
+    userDataList[userId] = {
+      // Core Identity
+      userId,
+      createdAt,
+      lastActive,
+      isSeedUser: true,
+      numOfOrbs,
+      lastOrbAssignedAt,
+      currentOnboardingScreen: "",
+      
+      // Contact Info
+      phoneNumber: phoneComponents.phoneNumber,
+      countryCode: phoneComponents.countryCode,
+      areaCode: phoneComponents.areaCode, 
+      number: phoneComponents.number,
+      email: faker.internet.email(),
+      GoogleSSOEnabled: faker.datatype.boolean(0.3),
+      marketingRequested: faker.datatype.boolean(0.6),
+
+      // Personal Info (ONLY fields that exist in your schema)
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      birthdate: `${birthmonth}/${birthday}/${birthyear}`,
+      birthday,
+      birthmonth,
+      birthyear,
+      age,
+      height: generateHeight(),
+      regionName: location.region,
+      longitude,
+      latitude,
+      gender,
+      photos,
+      hiddenFields,
+      location,
+
+      // 🔮 Spiritual Profile Section
+      spiritualProfile,
+
+      // Subscription & Engagement (ONLY fields that exist)
+      fullCircleSubscription: faker.datatype.boolean(0.25),
       likesGivenCount: 0,
       likesReceivedCount: 0,
-      dislikesGivenCount: 0,
-      dislikesReceivedCount: 0,
-
-      // Matches placeholder
       matches: [],
+      onboardingCompleted: true,
+      onboardingCompletedAt: admin.firestore.Timestamp.fromDate(
+        new Date(signupDate.getTime() + faker.number.int({ min: 300000, max: 7200000 }))
+      ),
 
-      // ← ADDED createdAt!
-      createdAt: createdAtTimestamp,
-      onboardingCreatedAt: onboardingCreatedAtTimestamp,
+      // Match Preferences
+      matchPreferences,
+      
+      // Settings
+      settings,
     };
   }
   console.groupEnd();
 
-  // mark some as radiant souls
-  const radiantCount = Math.min(20, userIds.length);
-  const radiantSample = faker.helpers.arrayElements(userIds, radiantCount);
-  console.info(`⭐️ Marking ${radiantCount} users as isRadiantSoul`);
-  radiantSample.forEach((uid) => {
-    userDataList[uid].isRadiantSoul = true;
-  });
-
-  console.group("2) Writing user docs to Firestore");
+  // Mark some users as radiant souls (already done above, but logging)
+  console.group("2) Writing user documents to Firestore");
   for (const [id, data] of Object.entries(userDataList)) {
     console.info(`  ↳ Writing user ${id} to Firestore`);
     await db.collection("users").doc(id).set(data);
@@ -322,12 +502,15 @@ async function seedFirestore(numUsers: number) {
     console.log(
       `  -> Seeding likes for user ${fromUserId} (${i + 1}/${userIds.length})`
     );
+    
+    // Generate likes (fewer for more realistic data)
+    const likeCount = faker.number.int({ min: 0, max: 12 });
     const liked = faker.helpers.arrayElements(
       userIds.filter((u) => u !== fromUserId),
-      5
+      likeCount
     );
 
-    // bump counter
+    // Update counters (ONLY for fields that exist)
     await db
       .collection("users")
       .doc(fromUserId)
@@ -337,6 +520,8 @@ async function seedFirestore(numUsers: number) {
 
     for (const toUserId of liked) {
       console.debug(`     • ${fromUserId} likes ${toUserId}`);
+      
+      // Create like records
       await db
         .collection("users")
         .doc(fromUserId)
@@ -344,15 +529,17 @@ async function seedFirestore(numUsers: number) {
         .doc(toUserId)
         .set({
           matchId: toUserId,
-          viaOrb: false,
+          viaOrb: faker.datatype.boolean(0.1), // 10% via orb
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
+        
       await db
         .collection("users")
         .doc(toUserId)
         .update({
           likesReceivedCount: admin.firestore.FieldValue.increment(1),
         });
+        
       await db
         .collection("users")
         .doc(toUserId)
@@ -360,20 +547,21 @@ async function seedFirestore(numUsers: number) {
         .doc(fromUserId)
         .set({
           matchId: fromUserId,
-          viaOrb: false,
+          viaOrb: faker.datatype.boolean(0.1),
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
     }
   }
   console.groupEnd();
 
-  console.log("✅ Seed complete: all users and like-records created.");
+  console.log("✅ Seed complete: all users with updated schema created!");
   console.groupEnd();
 }
 
+// Run the seeding
 seedFirestore(50)
   .then(() => {
-    console.log("🎉 Done seeding Firestore.");
+    console.log("🎉 Done seeding Firestore with updated spiritual schema.");
     process.exit(0);
   })
   .catch((err) => {
