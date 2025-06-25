@@ -219,11 +219,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     heightDisplay: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.xl,
+      padding: Spacing.md,
       alignItems: 'center',
       borderWidth: 2,
       borderColor: colors.border,
-      minWidth: 180,
+      minWidth: 150,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -253,13 +253,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       // Clean container with no borders or styling
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: Spacing.xl,
     },
     hiddenContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: Spacing['2xl'],
       marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
@@ -281,7 +279,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     affirmation: {
       ...fonts.affirmationFont,
       position: 'absolute',
-      bottom: Platform.select({ ios: 140, android: 120 }), // Moved higher to avoid overlap
+      bottom: Platform.select({ ios: 220, android: 160 }), // Moved higher to avoid overlap
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
@@ -292,7 +290,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     submitButton: {
       position: "absolute",
-      bottom: Platform.select({ ios: 50, android: 30 }),
+      bottom: Platform.select({ ios: 40, android: 20 }),
       right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,

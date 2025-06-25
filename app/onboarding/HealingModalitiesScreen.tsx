@@ -27,11 +27,9 @@ const healingModalities = [
   { name: "Sound Therapy", icon: "🎼", color: "#F1C40F" },
   { name: "Crystal Healing", icon: "💎", color: "#2ECC71" },
   { name: "Aromatherapy", icon: "🌸", color: "#3498DB" },
-  { name: "Chakra Balancing", icon: "🌈", color: "#9B59B6" },
   { name: "Light Therapy", icon: "✨", color: "#E91E63" },
   { name: "Massage Therapy", icon: "💆", color: "#FF5722" },
   { name: "Hypnotherapy", icon: "🌀", color: "#607D8B" },
-  { name: "Bach Flowers", icon: "🌺", color: "#795548" },
   { name: "Homeopathy", icon: "💧", color: "#009688" },
   { name: "Herbalism", icon: "🌿", color: "#4CAF50" },
   { name: "Ayahuasca", icon: "🍄", color: "#8E24AA" },
@@ -167,8 +165,8 @@ function HealingModalitiesScreen() {
     const angle = (index * 2 * Math.PI) / totalItems - Math.PI / 2; // Start from top
     
     return {
-      left: centerX + radius * Math.cos(angle) - 30, // -30 for half the orb container width
-      top: centerY + radius * Math.sin(angle) - 30,   // -30 for half the orb container height
+      left: centerX + radius * Math.cos(angle) - 35, // -35 for half the orb container width (70/2)
+      top: centerY + radius * Math.sin(angle) - 35,   // -35 for half the orb container height (70/2)
     };
   };
 
@@ -233,10 +231,10 @@ function HealingModalitiesScreen() {
     const isSelected = selectedModalities.includes(modality.name);
     const allSelected = selectedModalities.length === healingModalities.length;
     const orbColor = getOrbColor(modality.color);
-    const containerSize = 450; // Even larger container for more spacing
+    const containerSize = 440; // Increased container size for more spacing
     const centerX = containerSize / 2;
     const centerY = containerSize / 2;
-    const radius = 180; // Increased radius for more spacing
+    const radius = 175; // Increased radius to spread modalities further apart
     
     const position = getCirclePosition(index, healingModalities.length, radius, centerX, centerY);
     const animation = modalityAnimations[index];
@@ -339,11 +337,6 @@ function HealingModalitiesScreen() {
             {healingModalities.map((modality, index) => renderModalityOrb(modality, index))}
           </View>
 
-          {/* Instructions */}
-          <Text style={styles.instructions}>
-            Tap the healing orbs that call to your soul. Tap the inner divine core to select all modalities.
-          </Text>
-
           {/* Hide Option */}
           <View style={styles.hiddenContainer}>
             <Text style={styles.hiddenText}>Keep my healing modalities private</Text>
@@ -440,15 +433,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "center",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.xs,
       paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
     },
     selectedCountSpace: {
-      height: 60, // Reserved space for the selected count
+      height: 45,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.xs,
     },
     selectedContainer: {
       alignItems: 'center',
@@ -458,7 +451,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.primary,
       fontSize: Typography.sizes.base,
       fontStyle: 'italic',
-      marginBottom: Spacing.sm,
+      marginBottom: Spacing.xs,
     },
     selectedDots: {
       flexDirection: 'row',
@@ -486,16 +479,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       alignItems: 'center',
     },
     healingCircleContainer: {
-      width: 450,
-      height: 450,
+      width: 440, // Increased container width
+      height: 440, // Increased container height
       position: 'relative',
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.xs,
       alignSelf: 'center',
     },
     centerContainer: {
       position: 'absolute',
-      left: 225 - 50, // Perfect center horizontally (450/2 - 50)
-      top: 225 - 50,  // Perfect center vertically (450/2 - 50)
+      left: 220 - 50, // Perfect center horizontally (440/2 - 50)
+      top: 220 - 50,  // Perfect center vertically (440/2 - 50)
       alignItems: 'center',
       justifyContent: 'center',
       width: 100,
@@ -505,7 +498,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       width: 100,
       height: 100,
       borderRadius: 50,
-      backgroundColor: '#FFD700' + '30', // Divine yellow with transparency
+      backgroundColor: '#FFD700' + '30',
       borderWidth: 3,
       borderColor: '#FFD700',
       justifyContent: 'center',
@@ -538,7 +531,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       width: 70,
       height: 70,
       borderRadius: 35,
-      backgroundColor: '#FFD700', // Pure divine yellow light
+      backgroundColor: '#FFD700',
       ...Platform.select({
         ios: {
           shadowColor: '#FFD700',
@@ -596,7 +589,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     modalityOrb: {
       position: 'absolute',
       alignItems: 'center',
-      width: 60,
+      width: 70, // Increased width for better label spacing
       height: 90,
     },
     orbTouchable: {
@@ -639,23 +632,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.xs,
       textAlign: 'center',
-      maxWidth: 60,
+      maxWidth: 70, // Increased to match container width
       fontWeight: Typography.weights.medium,
-    },
-    instructions: {
-      ...fonts.spiritualBodyFont,
-      color: colors.textLight,
-      textAlign: 'center',
-      fontStyle: 'italic',
-      marginBottom: Spacing.xl,
-      lineHeight: Typography.sizes.base * 1.5,
     },
     hiddenContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginTop: Spacing.xl,
-      marginBottom: Spacing.lg,
+      marginTop: Spacing["3xl"],
+      marginBottom: Spacing.xs,
       backgroundColor: colors.card,
       padding: Spacing.lg,
       borderRadius: BorderRadius.md,
@@ -705,8 +690,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
-      marginTop: Spacing.lg,
-      marginBottom: Spacing.xl,
+      marginTop: Spacing.sm,
       paddingHorizontal: Spacing.md,
     },
     submitButton: {
