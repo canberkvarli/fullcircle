@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
-import LottieView from "lottie-react-native";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
@@ -50,6 +49,7 @@ const UserShow: React.FC = () => {
   const lastLoadedPhotosFor = useRef<string | null>(null);
   const didSubscribe = useRef(false);
 
+  // Use consistent animation drivers - all useNativeDriver: true
   const scrollY = useRef(new Animated.Value(0)).current;
   const tabTranslateY = useRef(new Animated.Value(TAB_BAR_HEIGHT)).current;
   const lastY = useRef(0);
@@ -159,6 +159,21 @@ const UserShow: React.FC = () => {
     await likeMatch(likedId);
   };
 
+  const handleDislikePress = () => {
+    const dislikedId = currentUser.userId;
+    const nextSouls = souls.filter((u) => u.userId !== dislikedId);
+
+    if (nextSouls.length) {
+      // show the next one right away
+      setSouls(nextSouls);
+      setCurrentIndex(0);
+      setCurrentUser(nextSouls[0]);
+    } else {
+      router.back();
+    }
+    // Note: No API call needed for dislike, just remove from list
+  };
+
   // Helper function to get location string
   const getLocation = (user: UserDataType) => {
     if (user.location?.city && user.location?.region) {
@@ -185,9 +200,7 @@ const UserShow: React.FC = () => {
         title: "Spiritual Practices",
         content: currentUser?.spiritualProfile?.practices?.length 
           ? currentUser.spiritualProfile.practices.slice(0, 3).join(", ")
-          : currentUser?.spiritualProfile?.practices?.length 
-            ? currentUser.spiritualProfile.practices.slice(0, 3).join(", ")
-            : 'Sacred practices not shared',
+          : 'Sacred practices not shared',
         icon: "sparkles"
       },
       {
@@ -220,6 +233,7 @@ const UserShow: React.FC = () => {
 
     return detailOptions[index] || detailOptions[0];
   };
+
   // Helper function to calculate age if not provided
   const calculateAge = (user: UserDataType) => {
     if (user.birthyear) {
@@ -232,7 +246,7 @@ const UserShow: React.FC = () => {
   // Helper function to get array for pills display
   const getPillsArray = (detail: any) => {
     if (detail.title === "Spiritual Practices") {
-      return currentUser.spiritualProfile?.practices || currentUser?.spiritualProfile?.practices || [];
+      return currentUser.spiritualProfile?.practices || [];
     } else if (detail.title === "Healing Modalities") {
       return currentUser.spiritualProfile?.healingModalities || [];
     } else if (detail.title === "Spiritual Draws") {
@@ -256,7 +270,7 @@ const UserShow: React.FC = () => {
   const onScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     {
-      useNativeDriver: false,
+      useNativeDriver: true, // Use native driver consistently
       listener: (e: any) => {
         const y = e.nativeEvent.contentOffset.y;
         const dy = y - lastY.current;
@@ -284,13 +298,12 @@ const UserShow: React.FC = () => {
     <SafeAreaView style={[styles.wrapper, { backgroundColor: colors.background }]}>
       {loadingPhotos && (
         <View style={[styles.loaderOverlay, { backgroundColor: colors.background }]}>
-          <LottieView
-            source={require("../../assets/animations/loading_mandala.json")}
-            autoPlay
-            loop
-            style={styles.loaderAnimation}
-          />
-          <Text style={[styles.loadingText, { color: colors.primary }]}>Loading Sacred Soul...</Text>
+          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
+            <Ionicons name="heart" size={40} color="#8B4513" />
+          </View>
+          <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+            Loading Sacred Soul...
+          </Text>
         </View>
       )}
 
@@ -304,8 +317,8 @@ const UserShow: React.FC = () => {
                     hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                     style={styles.backInner}
                   >
-                    <Ionicons name="chevron-back" size={20} color={colors.primary} />
-                    <Text style={[styles.backText, { color: colors.primary }]}>Back</Text>
+                    <Ionicons name="chevron-back" size={20} color="#8B4513" />
+                    <Text style={[styles.backText, fonts.spiritualBodyFont, { color: "#8B4513" }]}>Back</Text>
                   </TouchableOpacity>
                 </Link>
               </View>
@@ -313,6 +326,7 @@ const UserShow: React.FC = () => {
               <Animated.Text
                 style={[
                   styles.nameCenter,
+                  fonts.spiritualTitleFont,
                   { 
                     opacity: headerOpacity,
                     color: colors.textDark,
@@ -338,7 +352,11 @@ const UserShow: React.FC = () => {
             scrollEventThrottle={16}
           >
             <Animated.Text
-              style={[styles.topName, { opacity: leftNameOpacity, color: colors.textDark }]}
+              style={[
+                styles.topName, 
+                fonts.spiritualTitleFont,
+                { opacity: leftNameOpacity, color: colors.textDark }
+              ]}
             >
               {currentUser.firstName}, {calculateAge(currentUser)}
             </Animated.Text>
@@ -351,14 +369,27 @@ const UserShow: React.FC = () => {
                 <View key={i} style={styles.photoCard}>
                   <Image source={{ uri }} style={styles.photo} />
 
-                  {/* KindredSpirits heart like on photo */}
+                  {/* KindredSpirits action buttons on photo */}
                   {isFromKindredSpirits && (
                     <View style={styles.overlayIcons}>
                       <TouchableOpacity
-                        onPress={handleHeartPress}
-                        style={[styles.heartActionBtn, { backgroundColor: colors.card + 'CC' }]}
+                        onPress={handleDislikePress}
+                        style={[styles.dislikeActionBtn, { 
+                          backgroundColor: colors.card + 'CC',
+                          shadowColor: '#8B95A7'
+                        }]}
                       >
-                        <Ionicons name="heart" size={28} color={colors.primary} />
+                        <Ionicons name="close" size={24} color="#8B95A7" />
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        onPress={handleHeartPress}
+                        style={[styles.heartActionBtn, { 
+                          backgroundColor: colors.card + 'CC',
+                          shadowColor: '#8B4513'
+                        }]}
+                      >
+                        <Ionicons name="heart" size={24} color="#8B4513" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -367,21 +398,34 @@ const UserShow: React.FC = () => {
                     backgroundColor: colors.card, 
                     borderColor: colors.border 
                   }]}>
-                    {/* KindredSpirits heart like on detail card */}
+                    {/* KindredSpirits action buttons on detail card */}
                     {isFromKindredSpirits && (
                       <View style={styles.overlayIconsDetail}>
                         <TouchableOpacity
-                          onPress={handleHeartPress}
-                          style={[styles.heartDetailBtn, { backgroundColor: colors.card + 'CC' }]}
+                          onPress={handleDislikePress}
+                          style={[styles.dislikeDetailBtn, { 
+                            backgroundColor: colors.card + 'CC',
+                            shadowColor: '#8B95A7'
+                          }]}
                         >
-                          <Ionicons name="heart" size={28} color={colors.primary} />
+                          <Ionicons name="close" size={24} color="#8B95A7" />
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                          onPress={handleHeartPress}
+                          style={[styles.heartDetailBtn, { 
+                            backgroundColor: colors.card + 'CC',
+                            shadowColor: '#8B4513'
+                          }]}
+                        >
+                          <Ionicons name="heart" size={24} color="#8B4513" />
                         </TouchableOpacity>
                       </View>
                     )}
 
                     <View style={styles.detailHeader}>
-                      <Ionicons name={detail.icon as any} size={20} color={colors.primary} />
-                      <Text style={[styles.detailTitle, { color: colors.textDark }]}>
+                      <Ionicons name={detail.icon as any} size={20} color="#8B4513" />
+                      <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                         {detail.title}
                       </Text>
                     </View>
@@ -393,15 +437,17 @@ const UserShow: React.FC = () => {
                       <View style={styles.pillsContainer}>
                         {pillsArray.slice(0, 4).map((item: string, pillIndex: number) => (
                           <View key={pillIndex} style={[styles.pill, { 
-                            backgroundColor: colors.primary + '20',
-                            borderColor: colors.primary + '40'
+                            backgroundColor: '#8B4513' + '20',
+                            borderColor: '#8B4513' + '40'
                           }]}>
-                            <Text style={[styles.pillText, { color: colors.primary }]}>{item}</Text>
+                            <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                              {item}
+                            </Text>
                           </View>
                         ))}
                       </View>
                     ) : (
-                      <Text style={[styles.detailText, { 
+                      <Text style={[styles.detailText, fonts.spiritualBodyFont, { 
                         color: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
                                                           detail.title === "Healing Modalities" || 
                                                           detail.title === "Spiritual Draws") 
@@ -462,12 +508,10 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   },
   backText: {
     marginLeft: 6,
-    ...fonts.spiritualBodyFont,
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
   },
   nameCenter: {
-    ...fonts.spiritualTitleFont,
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
   },
@@ -481,7 +525,6 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   topName: {
     marginLeft: Spacing.lg,
     marginBottom: Spacing.md,
-    ...fonts.spiritualTitleFont,
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
   },
@@ -491,31 +534,40 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   photo: {
     width: Dimensions.get("window").width - (Spacing.lg * 2),
     height: 400,
-    borderRadius: BorderRadius.xl,
+    borderRadius: 16,
     marginBottom: Spacing.md,
   },
   overlayIcons: {
     width: "100%",
-    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: -60,
-    paddingRight: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
     zIndex: 10,
   },
-  heartActionBtn: {
-    borderRadius: BorderRadius.full,
+  dislikeActionBtn: {
+    borderRadius: 30,
     padding: Spacing.md,
-    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  heartActionBtn: {
+    borderRadius: 30,
+    padding: Spacing.md,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   detailCard: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: 12,
     padding: Spacing.xl,
     borderWidth: 1,
     position: "relative",
-    shadowColor: colors.textDark,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -530,25 +582,32 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     position: "absolute",
     bottom: Spacing.lg,
     right: Spacing.lg,
+    flexDirection: "row",
+    gap: Spacing.sm,
     zIndex: 10,
   },
-  heartDetailBtn: {
-    borderRadius: BorderRadius.full,
+  dislikeDetailBtn: {
+    borderRadius: 30,
     padding: Spacing.md,
-    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  heartDetailBtn: {
+    borderRadius: 30,
+    padding: Spacing.md,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
   detailTitle: {
-    ...fonts.spiritualBodyFont,
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
     marginLeft: Spacing.sm,
   },
   detailText: {
-    ...fonts.spiritualBodyFont,
     fontSize: Typography.sizes.base,
     lineHeight: Typography.sizes.base * 1.4,
   },
@@ -561,11 +620,10 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   pill: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+    borderRadius: 20,
     borderWidth: 1,
   },
   pillText: {
-    ...fonts.spiritualBodyFont,
     fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
   },
@@ -575,13 +633,15 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     alignItems: "center",
     zIndex: 20,
   },
-  loaderAnimation: {
+  loadingMandala: {
     width: 120,
     height: 120,
+    borderRadius: 60,
     marginBottom: Spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
-    ...fonts.spiritualBodyFont,
     fontSize: Typography.sizes.lg,
     fontStyle: 'italic',
   },
