@@ -3,7 +3,7 @@ import { View, Image, Platform, useColorScheme } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
-import { HeartIconWithBadge } from "@/components/HeartIconWithBadge";
+import {LikedByIconWithBadge} from "@/components/LikedByIconWithBadge";
 import { MatchesIconWithBadge } from "@/components/MatchesIconWithBadge";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
@@ -147,11 +147,9 @@ export default function TabsLayout() {
               justifyContent: 'center',
               paddingVertical: 2,
             }}>
-              <SpiritualIcon 
-                iconName="people" 
-                color={color} 
-                size={size} 
-                focused={focused}
+              <LikedByIconWithBadge 
+                color={focused ? '#8B4513' : color} 
+                size={focused ? size + 2 : size} 
               />
             </View>
           ),

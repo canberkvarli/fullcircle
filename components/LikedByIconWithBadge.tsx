@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
 
 interface Props {
@@ -8,14 +8,14 @@ interface Props {
   size: number;
 }
 
-export const HeartIconWithBadge: React.FC<Props> = ({ color, size }) => {
+export const LikedByIconWithBadge: React.FC<Props> = ({ color, size }) => {
   const { userData } = useUserContext();
   const count = userData.likesReceivedCount ?? 0;
   const display = count > 50 ? "50+" : String(count);
 
   return (
-    <View style={{ width: size, height: size }}>
-      <Icon name="heart" color={color} size={size} />
+    <View style={{ width: size, height: size, position: 'relative' }}>
+      <Ionicons name="heart" color={color} size={size} />
       {count > 0 && (
         <View style={styles.badgeContainer}>
           <Text style={styles.badgeText}>{display}</Text>
@@ -28,19 +28,27 @@ export const HeartIconWithBadge: React.FC<Props> = ({ color, size }) => {
 const styles = StyleSheet.create({
   badgeContainer: {
     position: "absolute",
-    right: -6,
-    top: -3,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "purple",
+    right: -8,
+    top: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#8B4513", // Sacred brown instead of purple
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
   },
   badgeText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 10,
     fontWeight: "bold",
+    letterSpacing: 0.2,
   },
 });
