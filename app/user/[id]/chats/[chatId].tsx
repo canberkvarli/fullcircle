@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
-  Animated,
   Dimensions,
   ScrollView,
+  useColorScheme,
+  Animated,
 } from "react-native";
 import {
   GiftedChat,
@@ -20,11 +21,13 @@ import {
   User as GCUser,
   Send,
 } from "react-native-gifted-chat";
+import { Ionicons } from '@expo/vector-icons';
 import ChatOptionsModal from "@/components/modals/ChatOptionsModal";
-import Icon from "react-native-vector-icons/FontAwesome";
 import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
+import { Colors, Typography, Spacing } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 import PotentialMatch from "@/components/PotentialMatch";
 import ReportModal from "@/components/modals/ReportModal";
 
@@ -45,6 +48,10 @@ const Chat: React.FC = () => {
     unmatchUser,
   } = useUserContext();
 
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
+
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,8 +62,8 @@ const Chat: React.FC = () => {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isUnmatching, setIsUnmatching] = useState(false);
-
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  // Animation for smooth sliding between tabs
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Parse matchUser and fetch full data
@@ -77,6 +84,7 @@ const Chat: React.FC = () => {
       }
     }
   }, [matchUser, otherUserId]);
+
   // Create/fetch chatId and get match date
   useEffect(() => {
     let mounted = true;
@@ -90,19 +98,13 @@ const Chat: React.FC = () => {
         setChatId(id);
         setMatchDate(new Date());
         setIsLoading(false);
-
-        // Fade in animation
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
       }
     })();
     return () => {
       mounted = false;
     };
   }, [userData.userId, otherUserId, createOrFetchChat, isUnmatching]);
+
   // Subscribe to messages
   useEffect(() => {
     if (!chatId || !matchDate) return;
@@ -111,12 +113,12 @@ const Chat: React.FC = () => {
       // Create the match message
       const matchMessage: IMessage = {
         _id: "match-indicator",
-        text: `You matched with ${otherUserData?.firstName || "them"}!`,
+        text: `Your souls have aligned in divine harmony with ${otherUserData?.firstName || "this sacred being"}! ✨ The universe has blessed this connection. 🌟`,
         createdAt: matchDate,
-        system: true, // This makes it a system message
+        system: true,
         user: {
           _id: "system",
-          name: "System",
+          name: "Universe",
         },
       };
 
@@ -141,7 +143,6 @@ const Chat: React.FC = () => {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
       // Combine match message with chat messages
-      // The match message will always be at the beginning (oldest)
       const allMessages = [...chatMessages, matchMessage];
       setMessages(allMessages);
 
@@ -165,12 +166,12 @@ const Chat: React.FC = () => {
     matchDate,
   ]);
 
-  // Handle tab change with swipe-like animation
+  // Handle tab change with smooth sliding animation
   const handleTabChange = (tab: "chat" | "profile") => {
     setActiveTab(tab);
-
+    
     const toValue = tab === "chat" ? 0 : -screenWidth;
-
+    
     Animated.spring(slideAnim, {
       toValue,
       tension: 100,
@@ -191,22 +192,23 @@ const Chat: React.FC = () => {
     [chatId, sendMessage, userData.userId, otherUserId]
   );
 
-  // Add a custom system message renderer for the match indicator:
+  // Spiritual system message renderer
   const renderSystemMessage = (props: any) => {
     return (
-      <View style={styles.systemMessageContainer}>
-        <View style={styles.systemMessage}>
-          <Icon
-            name="heart"
-            size={16}
-            color="#D8BFAA"
-            style={styles.systemHeartIcon}
-          />
-          <Text style={styles.systemMessageText}>
+      <View style={[styles.systemMessageContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.systemMessage, { 
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          shadowColor: '#8B4513'
+        }]}>
+          <View style={[styles.systemIconContainer, { backgroundColor: '#8B4513' + '15' }]}>
+            <Ionicons name="sparkles" size={20} color="#8B4513" />
+          </View>
+          <Text style={[styles.systemMessageText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
             {props.currentMessage.text}
           </Text>
-          <Text style={styles.systemMessageDate}>
-            {props.currentMessage.createdAt.toLocaleDateString("en-US", {
+          <Text style={[styles.systemMessageDate, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Sacred Connection • {props.currentMessage.createdAt.toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",
               year: "numeric",
@@ -216,81 +218,104 @@ const Chat: React.FC = () => {
       </View>
     );
   };
-  // Custom bubble renderer with better styling
+
+  // Spiritual bubble renderer
   const renderBubble = (props: any) => (
     <Bubble
       {...props}
       wrapperStyle={{
         right: {
-          backgroundColor: "#D8BFAA",
-          marginRight: 8,
-          marginVertical: 2,
+          backgroundColor: "#8B4513",
+          marginRight: Spacing.md,
+          marginVertical: Spacing.xs,
+          borderRadius: 24,
+          paddingHorizontal: Spacing.sm,
+          shadowColor: '#8B4513',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
+          elevation: 3,
         },
         left: {
-          backgroundColor: "#B8C1B2",
-          marginLeft: 8,
-          marginVertical: 2,
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderWidth: 1.5,
+          marginLeft: Spacing.md,
+          marginVertical: Spacing.xs,
+          borderRadius: 24,
+          paddingHorizontal: Spacing.sm,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+          elevation: 2,
         },
       }}
       textStyle={{
-        right: { color: "#fff", fontSize: 16 },
-        left: { color: "#fff", fontSize: 16 },
+        right: { 
+          color: "#FFFFFF", 
+          fontSize: Typography.sizes.base,
+          fontFamily: fonts.spiritualBodyFont?.fontFamily,
+          lineHeight: Typography.sizes.base * 1.3,
+          letterSpacing: 0.3,
+        },
+        left: { 
+          color: colors.textDark, 
+          fontSize: Typography.sizes.base,
+          fontFamily: fonts.spiritualBodyFont?.fontFamily,
+          lineHeight: Typography.sizes.base * 1.3,
+          letterSpacing: 0.3,
+        },
       }}
     />
   );
 
-  // Custom input toolbar with larger text input
+  // Spiritual input toolbar
   const renderInputToolbar = (props: any) => (
     <InputToolbar
       {...props}
-      containerStyle={styles.inputToolbar}
+      containerStyle={[styles.inputToolbar, { 
+        backgroundColor: colors.card,
+        borderTopColor: colors.border,
+        shadowColor: '#8B4513'
+      }]}
       primaryStyle={styles.inputPrimary}
     />
   );
 
-  // Custom send button
+  // Spiritual send button with clean styling
   const renderSend = (props: any) => (
-    <Send {...props}>
-      <View style={styles.sendButton}>
-        <Icon name="send" size={18} color="#fff" />
+    <Send 
+      {...props}
+      containerStyle={{
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 0,
+        marginBottom: 10,
+        marginLeft: 0,
+        marginTop: 0,
+      }}
+      textStyle={{ display: 'none' }}
+    >
+      <View style={[styles.sendButton, { backgroundColor: "#8B4513" }]}>
+        <Ionicons name="paper-plane" size={18} color="#FFFFFF" />
       </View>
     </Send>
   );
 
-  // Render match indicator - only show when no messages
-  const renderMatchIndicator = () => {
-    if (messages.length > 0) return null;
-
-    return (
-      <View style={styles.matchIndicatorContainer}>
-        <View style={styles.matchIndicator}>
-          <Icon
-            name="heart"
-            size={16}
-            color="#D8BFAA"
-            style={styles.heartIcon}
-          />
-          <Text style={styles.matchText}>
-            You matched with {otherUserData?.firstName || "them"}!
-          </Text>
-          <Text style={styles.matchDate}>
-            {matchDate?.toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loader}>
-          <ActivityIndicator size="large" color="#D8BFAA" />
-          <Text style={styles.loadingText}>Loading conversation...</Text>
+          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
+            <Ionicons name="heart" size={40} color="#8B4513" />
+          </View>
+          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
+            Connecting Sacred Souls...
+          </Text>
+          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            The universe is preparing your divine conversation
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -303,12 +328,8 @@ const Chat: React.FC = () => {
         onClose={() => setOptionsVisible(false)}
         onUnmatch={async () => {
           setOptionsVisible(false);
-          setIsUnmatching(true); // Set flag to prevent operations
-
-          // Navigate immediately
+          setIsUnmatching(true);
           router.replace("/(tabs)/SoulChats");
-
-          // Perform unmatch after navigation
           await unmatchUser(otherUserId);
         }}
         onReport={() => {
@@ -321,79 +342,93 @@ const Chat: React.FC = () => {
         onClose={() => setShowReportModal(false)}
         userName={otherUserData?.firstName || "this user"}
         onSubmit={async (reason, details) => {
-          setShowReportModal(false); // Close modal immediately
-
-          // Navigate away first
+          setShowReportModal(false);
           router.replace("/(tabs)/SoulChats");
-
-          // Then submit report in background
           setTimeout(async () => {
             const success = await reportUser(otherUserId, reason, details);
             if (success) {
-              // Optionally show a toast or notification that report was submitted
               console.log("Report submitted successfully");
             } else {
-              // You might want to show an error notification here
               console.error("Failed to submit report");
             }
           }, 300);
         }}
       />
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Spiritual Header */}
+        <View style={[styles.header, { 
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border
+        }]}>
           <View style={styles.headerTop}>
             <View style={styles.backAndTitle}>
               <TouchableOpacity
                 onPress={() => router.back()}
                 style={styles.backButton}
               >
-                <Icon name="chevron-left" size={24} color="#7E7972" />
+                <Ionicons name="chevron-back" size={24} color="#8B4513" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>
-                {otherUserData?.firstName || "Chat"}
-              </Text>
+              <View style={styles.titleContainer}>
+                <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  {otherUserData?.firstName || "Sacred Soul"}
+                </Text>
+                <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                  Divine Connection ✨
+                </Text>
+              </View>
             </View>
             <TouchableOpacity
               onPress={() => setOptionsVisible(true)}
               style={styles.moreButton}
             >
-              <Icon name="ellipsis-v" size={20} color="#7E7972" />
+              <Ionicons name="ellipsis-vertical" size={20} color="#8B4513" />
             </TouchableOpacity>
           </View>
 
-          {/* Tabs */}
+          {/* Spiritual Tabs */}
           <View style={styles.tabsContainer}>
             <TouchableOpacity
               style={[styles.tab, activeTab === "chat" && styles.activeTab]}
               onPress={() => handleTabChange("chat")}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === "chat" && styles.activeTabText,
-                ]}
-              >
-                Chat
+              <Ionicons 
+                name="chatbubble-ellipses" 
+                size={16} 
+                color={activeTab === "chat" ? "#8B4513" : colors.textLight}
+                style={styles.tabIcon}
+              />
+              <Text style={[
+                styles.tabText, 
+                fonts.spiritualBodyFont,
+                { color: activeTab === "chat" ? "#8B4513" : colors.textLight },
+                activeTab === "chat" && styles.activeTabText
+              ]}>
+                Sacred Exchange
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === "profile" && styles.activeTab]}
               onPress={() => handleTabChange("profile")}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === "profile" && styles.activeTabText,
-                ]}
-              >
-                Profile
+              <Ionicons 
+                name="person-circle" 
+                size={16} 
+                color={activeTab === "profile" ? "#8B4513" : colors.textLight}
+                style={styles.tabIcon}
+              />
+              <Text style={[
+                styles.tabText, 
+                fonts.spiritualBodyFont,
+                { color: activeTab === "profile" ? "#8B4513" : colors.textLight },
+                activeTab === "profile" && styles.activeTabText
+              ]}>
+                Soul Essence
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Content Container with swipe animation */}
+        {/* Content with Smooth Sliding Animation */}
         <View style={styles.contentWrapper}>
           <Animated.View
             style={[
@@ -410,58 +445,74 @@ const Chat: React.FC = () => {
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
               >
-                <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
-                  <GiftedChat
-                    messages={messages}
-                    onSend={handleSend}
-                    user={{
-                      _id: userData.userId,
-                      name: userData.firstName,
-                      avatar: userData.photos?.[0],
-                    }}
-                    placeholder="Type a message…"
-                    showUserAvatar={false}
-                    renderBubble={renderBubble}
-                    renderInputToolbar={renderInputToolbar}
-                    renderSend={renderSend}
-                    renderSystemMessage={renderSystemMessage} // Add this
-                    alwaysShowSend
-                    scrollToBottomStyle={styles.scrollToBottom}
-                    minInputToolbarHeight={56}
-                    bottomOffset={Platform.OS === "ios" ? 20 : 0}
-                    keyboardShouldPersistTaps="never"
-                    textInputProps={{
-                      style: styles.textInput,
-                      placeholder: "Type a message…",
-                      placeholderTextColor: "#999",
-                      multiline: true,
-                      maxLength: 1000,
-                    }}
-                  />
-                </Animated.View>
+                <GiftedChat
+                  messages={messages}
+                  onSend={handleSend}
+                  user={{
+                    _id: userData.userId,
+                    name: userData.firstName,
+                    avatar: userData.photos?.[0],
+                  }}
+                  placeholder="Send a message..."
+                  showUserAvatar={false}
+                  renderBubble={renderBubble}
+                  renderInputToolbar={renderInputToolbar}
+                  renderSend={renderSend}
+                  renderSystemMessage={renderSystemMessage}
+                  alwaysShowSend
+                  minInputToolbarHeight={72}
+                  bottomOffset={Platform.OS === "ios" ? 20 : 0}
+                  keyboardShouldPersistTaps="never"
+                  messagesContainerStyle={{ backgroundColor: colors.background }}
+                  renderChatEmpty={() => <View />}
+                  renderChatFooter={() => null}
+                  scrollToBottom={false}
+                  scrollToBottomComponent={() => null}
+                  loadEarlier={false}
+                  infiniteScroll={false}
+                  isLoadingEarlier={false}
+                  renderLoadEarlier={() => null}
+                  listViewProps={{
+                    scrollEventThrottle: 400,
+                    removeClippedSubviews: false,
+                  }}
+                  textInputProps={{
+                    style: [styles.textInput, { 
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.textDark,
+                      fontFamily: fonts.spiritualBodyFont?.fontFamily,
+                    }],
+                    placeholder: "Send a message...",
+                    placeholderTextColor: colors.textLight,
+                    multiline: true,
+                    maxLength: 1000,
+                    underlineColorAndroid: 'transparent',
+                  }}
+                />
               </KeyboardAvoidingView>
             </View>
 
-            {/* Profile View using PotentialMatch component */}
+            {/* Profile View */}
             <View style={styles.tabContent}>
               {fullUserData ? (
                 <ScrollView
-                  style={styles.profileScrollView}
-                  contentContainerStyle={styles.profileContent}
+                  style={[{ flex: 1 }, { backgroundColor: colors.background }]}
+                  contentContainerStyle={{ paddingBottom: 20 }}
                   showsVerticalScrollIndicator={false}
                 >
                   <PotentialMatch
                     currentPotentialMatch={fullUserData}
                     isMatched={true}
-                    onLike={() => {}}
-                    disableInteractions={true}
                   />
                 </ScrollView>
               ) : (
                 <View style={styles.profileLoader}>
-                  <ActivityIndicator size="large" color="#D8BFAA" />
-                  <Text style={styles.profileLoadingText}>
-                    Loading profile...
+                  <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
+                    <Ionicons name="person" size={40} color="#8B4513" />
+                  </View>
+                  <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                    Unveiling Sacred Soul Essence...
                   </Text>
                 </View>
               )}
@@ -476,59 +527,81 @@ const Chat: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EDE9E3",
   },
   header: {
-    backgroundColor: "#EDE9E3",
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? Spacing.sm : Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   headerTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    padding: Spacing.sm,
+    marginLeft: -Spacing.sm,
+    borderRadius: 20,
   },
   backAndTitle: {
     flexDirection: "row",
     alignItems: "center",
   },
+  titleContainer: {
+    marginLeft: Spacing.sm,
+  },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#7E7972",
-    marginLeft: 8,
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    opacity: 0.8,
+    letterSpacing: 0.3,
+    marginTop: 2,
   },
   moreButton: {
-    padding: 8,
-    marginRight: -8,
+    padding: Spacing.sm,
+    marginRight: -Spacing.sm,
+    borderRadius: 20,
   },
   tabsContainer: {
     flexDirection: "row",
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    flexDirection: "row",
+    paddingVertical: Spacing.md,
     alignItems: "center",
-    borderBottomWidth: 2,
+    justifyContent: "center",
+    borderBottomWidth: 3,
     borderBottomColor: "transparent",
+    borderRadius: 8,
   },
   activeTab: {
-    borderBottomColor: "#D8BFAA",
+    borderBottomColor: "#8B4513",
+    backgroundColor: '#8B4513' + '08',
+  },
+  tabIcon: {
+    marginRight: Spacing.xs,
   },
   tabText: {
-    fontSize: 16,
-    color: "#B8C1B2",
-    fontWeight: "500",
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.3,
   },
   activeTabText: {
-    color: "#7E7972",
-    fontWeight: "bold",
+    fontWeight: Typography.weights.semibold,
   },
   contentWrapper: {
     flex: 1,
@@ -547,27 +620,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+  },
+  loadingMandala: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: Spacing.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#7E7972",
-    fontStyle: "italic",
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   inputToolbar: {
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-    backgroundColor: "#fff",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minHeight: 56,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -1,
-    },
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.lg,
+    minHeight: 72,
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 3,
   },
   inputPrimary: {
@@ -576,134 +659,80 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   textInput: {
-    fontSize: 16,
-    lineHeight: 20,
-    marginTop: 4,
-    marginBottom: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: "#F8F8F8",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E8E8E8",
+    fontSize: Typography.sizes.base,
+    lineHeight: Typography.sizes.base * 1.4,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: 28,
+    borderWidth: 1.5,
     maxHeight: 100,
-    minHeight: 40,
+    minHeight: 48,
     flex: 1,
-    marginRight: 8,
+    marginRight: Spacing.md,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#D8BFAA",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  scrollToBottom: {
-    backgroundColor: "#D8BFAA",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-  },
-  matchIndicatorContainer: {
-    alignItems: "center",
-    marginVertical: 20,
-    paddingHorizontal: 20,
-  },
-  matchIndicator: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
+  },
+  systemMessageContainer: {
+    alignItems: "center",
+    marginVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+  },
+  systemMessage: {
+    borderRadius: 24,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: "center",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    maxWidth: "90%",
   },
-  heartIcon: {
-    marginBottom: 8,
+  systemIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.md,
   },
-  matchText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#7E7972",
+  systemMessageText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.3,
+    lineHeight: Typography.sizes.base * 1.4,
   },
-  matchDate: {
-    fontSize: 14,
-    color: "#B8C1B2",
-  },
-  profileScrollView: {
-    flex: 1,
-    backgroundColor: "#EDE9E3",
-  },
-  profileContent: {
-    paddingBottom: 20,
+  systemMessageDate: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+    textAlign: "center",
   },
   profileLoader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  profileLoadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#7E7972",
-    fontStyle: "italic",
-  },
-  systemMessageContainer: {
-    alignItems: "center",
-    marginVertical: 15,
-    paddingHorizontal: 20,
-  },
-  systemMessage: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#F5F5F5",
-    maxWidth: "80%",
-  },
-  systemHeartIcon: {
-    marginBottom: 6,
-  },
-  systemMessageText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#7E7972",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  systemMessageDate: {
-    fontSize: 13,
-    color: "#B8C1B2",
-    fontStyle: "italic",
+    paddingHorizontal: Spacing.xl,
   },
 });
 

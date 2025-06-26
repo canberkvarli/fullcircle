@@ -54,7 +54,7 @@ const SoulChats: React.FC = () => {
   const handleChatPress = async (match: any) => {
     const chatId = [userData.userId, match.userId].sort().join("_");
     await createOrFetchChat(userData.userId, match.userId);
-    router.push(`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`);
+    router.navigate(`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`);
   };
 
   if (isLoading) {
