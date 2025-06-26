@@ -50,36 +50,6 @@ const KindredSpirits: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
-        
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Kindred Spirits
-          </Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Souls who resonate with you
-          </Text>
-        </View>
-        
-        <View style={styles.loadingContainer}>
-          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-            <Ionicons name="heart" size={40} color="#8B4513" />
-          </View>
-          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            Gathering Sacred Connections
-          </Text>
-          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            The universe is revealing who appreciates your energy
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   if (likedByUsers.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
