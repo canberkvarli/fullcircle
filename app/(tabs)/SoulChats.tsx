@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   
   bottomSpacing: {
-    height: Spacing['2xl'],
+    height: Spacing['3xl'],
   },
 });
 
