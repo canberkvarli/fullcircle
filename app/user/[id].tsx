@@ -19,7 +19,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import SlidingTabBar from "@/components/SlidingTabBar";
 
-const HEADER_HEIGHT = 120;
+const HEADER_HEIGHT = 100; // Reduced from 120
 const HEADER_FADE_START = 80;
 const HEADER_FADE_END = 120;
 const TAB_BAR_HEIGHT = 90;
@@ -311,38 +311,41 @@ const UserShow: React.FC = () => {
 
       {!loadingPhotos && (
         <>
-          <View style={[styles.headerOverlay, { backgroundColor: colors.background }]}>
-            <View style={styles.headerContainer}>
-              <View style={styles.backSection}>
-                <Link href=".." asChild>
-                  <TouchableOpacity
-                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                    style={styles.backInner}
-                  >
-                    <Ionicons name="chevron-back" size={20} color="#8B4513" />
-                    <Text style={[styles.backText, fonts.spiritualBodyFont, { color: "#8B4513" }]}>Back</Text>
-                  </TouchableOpacity>
-                </Link>
-              </View>
+          <Animated.View style={[
+            styles.headerOverlay, 
+            { backgroundColor: colors.background }
+          ]}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={styles.backButton}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              >
+                <Ionicons name="chevron-back" size={24} color="#8B4513" />
+                <Text style={[styles.backText, fonts.spiritualBodyFont, { color: "#8B4513" }]}>
+                  Back
+                </Text>
+              </TouchableOpacity>
 
-              <Animated.Text
+              {/* Centered name that appears on scroll */}
+              <Animated.View 
                 style={[
-                  styles.nameCenter,
-                  fonts.spiritualTitleFont,
-                  { 
-                    opacity: headerOpacity,
-                    color: colors.textDark,
-                    position: "absolute",
-                    left: 0,
-                    right: 0,
-                    textAlign: "center",
-                  },
+                  styles.centerNameContainer,
+                  { opacity: headerOpacity }
                 ]}
               >
-                {currentUser.firstName}
-              </Animated.Text>
+                <Text
+                  style={[
+                    styles.centerName,
+                    fonts.spiritualTitleFont,
+                    { color: colors.textDark }
+                  ]}
+                >
+                  {currentUser.firstName}
+                </Text>
+              </Animated.View>
             </View>
-          </View>
+          </Animated.View>
 
           <Animated.ScrollView
             style={styles.scrollView}
@@ -420,7 +423,6 @@ const UserShow: React.FC = () => {
             })}
           </Animated.ScrollView>
 
-
           <View style={styles.floatingButtons}>
             {/* Dislike Button - Left */}
             <TouchableOpacity 
@@ -462,39 +464,48 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   },
   headerOverlay: {
     position: "absolute",
-    top: 0,
+    top: 50,
     left: 0,
     right: 0,
     height: HEADER_HEIGHT,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Platform.select({ ios: 45, android: 35 }),
-    zIndex: 10,
+    zIndex: 1000, // Higher z-index to ensure it's on top
     borderBottomWidth: 1,
     borderBottomColor: colors.border + '40',
   },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  backSection: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-  },
-  backInner: {
+  headerContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.xs,
-    paddingRight: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.select({ 
+      ios: 10, // Reduced from 45
+      android: 8 // Reduced from 35
+    }),
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+    paddingRight: Spacing.md,
+    zIndex: 1001, // Even higher z-index for the back button
   },
   backText: {
-    marginLeft: 6,
+    marginLeft: 4,
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
   },
-  nameCenter: {
-    fontSize: Typography.sizes.xl,
+  centerNameContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999, // Lower than back button
+  },
+  centerName: {
+    fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.bold,
+    textAlign: "center",
   },
   scrollView: {
     flex: 1,
@@ -504,8 +515,9 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   topName: {
-    marginLeft: Spacing.lg,
+    marginLeft: Spacing.sm, // Reduced margin
     marginBottom: Spacing.md,
+    marginTop: Spacing.sm, // Added top margin
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
   },
@@ -526,6 +538,7 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 80,
+    zIndex: 100, // Lower than header
   },
   
   floatingAction: {
@@ -597,7 +610,7 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 20,
+    zIndex: 2000, // Highest z-index for loading overlay
   },
   loadingMandala: {
     width: 120,
