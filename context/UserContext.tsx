@@ -1028,10 +1028,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const excluded = new Set<string>([
       userData.userId,
-      // ...excludedLikes,
-      // ...excludedDislikes,
-      // ...(receivedLikes ?? []),
-      // ...(userData.matches ?? []),
+      ...excludedLikes,
+      ...excludedDislikes,
+      ...(receivedLikes ?? []),
+      ...(userData.matches ?? []),
     ]);
 
     const baseConstraints = [
@@ -1268,36 +1268,63 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const recordDislike = async (
-    fromUserId: string,
-    toUserId: string
+  fromUserId: string,
+  toUserId: string
   ): Promise<void> => {
-    const fromRef = doc(FIRESTORE, "users", fromUserId);
-    const toRef = doc(FIRESTORE, "users", toUserId);
-    const givenRef = doc(collection(fromRef, "dislikesGiven"), toUserId);
-    const receivedRef = doc(collection(toRef, "dislikesReceived"), fromUserId);
+  const fromRef = doc(FIRESTORE, "users", fromUserId);
+  const toRef = doc(FIRESTORE, "users", toUserId);
+  const givenRef = doc(collection(fromRef, "dislikesGiven"), toUserId);
+  const receivedRef = doc(collection(toRef, "dislikesReceived"), fromUserId);
 
-    await runTransaction(FIRESTORE, async (tx) => {
-      // 1) bump the “given” counter
-      const fromSnap = await tx.get(fromRef);
-      const fromData = fromSnap.data()!;
-      tx.update(fromRef, {
-        dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
-      });
+  // Check if the target user had liked us - if so, we need to remove that like
+  const incomingLikeRef = doc(collection(fromRef, "likesReceived"), toUserId);
 
-      // 2) bump the “received” counter
-      const toSnap = await tx.get(toRef);
-      const toData = toSnap.data()!;
-      tx.update(toRef, {
-        dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
-      });
+  await runTransaction(FIRESTORE, async (tx) => {
+    // Check if they had liked us
+    const incomingLikeSnap = await tx.get(incomingLikeRef);
+    const hadLikedUs = incomingLikeSnap.exists;
 
-      // 3) write the records
-      tx.set(givenRef, { matchId: toUserId, timestamp: serverTimestamp() });
-      tx.set(receivedRef, {
-        matchId: fromUserId,
-        timestamp: serverTimestamp(),
-      });
+    // 1) bump the "given" counter
+    const fromSnap = await tx.get(fromRef);
+    const fromData = fromSnap.data()!;
+    
+    const fromUpdates: any = {
+      dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
+    };
+
+    // If they had liked us, remove that incoming like record and decrement our received counter
+    if (hadLikedUs) {
+      tx.delete(incomingLikeRef);
+      fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
+    }
+
+    tx.update(fromRef, fromUpdates);
+
+    // 2) bump the "received" counter on the target user
+    const toSnap = await tx.get(toRef);
+    const toData = toSnap.data()!;
+    tx.update(toRef, {
+      dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
     });
+
+    // 3) write the dislike records
+    tx.set(givenRef, { matchId: toUserId, timestamp: serverTimestamp() });
+    tx.set(receivedRef, {
+      matchId: fromUserId,
+      timestamp: serverTimestamp(),
+    });
+
+    // 4) If they had liked us, also remove our like record from their likesGiven collection
+    if (hadLikedUs) {
+      const theirLikeGivenRef = doc(collection(toRef, "likesGiven"), fromUserId);
+      tx.delete(theirLikeGivenRef);
+      
+      // Update their likesGivenCount
+      tx.update(toRef, {
+        likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1),
+      });
+    }
+  });
   };
 
   const getReceivedLikesDetailed = async (): Promise<

@@ -1,16 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  StatusBar,
+  Platform,
+  useColorScheme,
+} from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
-import { Link } from "expo-router";
-import LottieView from "lottie-react-native";
-import loadingMandalaAnimation from "../../assets/animations/loading_mandala.json";
+import { Link, useRouter } from "expo-router";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 const SoulChats: React.FC = () => {
-  const { userData, createOrFetchChat, subscribeToChatMatches, getImageUrl } =
-    useUserContext();
+  const {
+    userData,
+    createOrFetchChat,
+    subscribeToChatMatches,
+    getImageUrl
+  } = useUserContext();
 
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
 
   useEffect(() => {
     const unsubscribe = subscribeToChatMatches(
@@ -31,182 +51,415 @@ const SoulChats: React.FC = () => {
     return unsubscribe;
   }, [userData.userId, subscribeToChatMatches, getImageUrl]);
 
+  const handleChatPress = async (match: any) => {
+    const chatId = [userData.userId, match.userId].sort().join("_");
+    await createOrFetchChat(userData.userId, match.userId);
+    router.push(`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`);
+  };
+
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <LottieView
-          source={loadingMandalaAnimation}
-          autoPlay
-          loop
-          style={styles.loaderAnimation}
-        />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+        
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Soul Chats
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Sacred conversations with kindred souls
+          </Text>
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
+            <Ionicons name="chatbubbles" size={40} color="#8B4513" />
+          </View>
+          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
+            Preparing Sacred Conversations
+          </Text>
+          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            The universe is aligning your soul connections
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (!matches.length) {
     return (
-      <View style={styles.noMatchesContainer}>
-        <Text style={styles.noMatchesText}>No matches yet!</Text>
-        <Text style={styles.noMatchesText}>
-          Discover more profiles and connect with people who share your
-          interests.
-        </Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+        
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Soul Chats
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Sacred conversations with kindred souls
+          </Text>
+        </View>
+
+        <View style={styles.noMatchesContainer}>
+          <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
+            <Ionicons name="chatbubbles-outline" size={60} color="#8B4513" />
+          </View>
+          
+          <Text style={[styles.noMatchesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Your Sacred Conversations Await
+          </Text>
+          
+          <Text style={[styles.noMatchesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Connect with kindred spirits and let your souls dance in meaningful conversation. Like profiles to create divine matches and begin sacred dialogues.
+          </Text>
+          
+          <TouchableOpacity
+            style={[styles.connectButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}
+            onPress={() => router.push('/Connect')}
+          >
+            <Ionicons name="sparkles" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+            <Text style={[styles.connectButtonText, fonts.spiritualBodyFont]}>
+              Discover Soul Connections ✨
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <Text style={styles.title}>Matches</Text>
-      {matches.map((match) => {
-        const chatId = [userData.userId, match.userId].sort().join("_");
-        // Show as unread if:
-        // 1. There's a message and it's from the other user, OR
-        // 2. It's a new match with no messages (empty lastMessage)
-        const isUnread = match.lastMessage
-          ? match.lastMessageSender !== userData.userId
-          : true;
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+      
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          Soul Chats
+        </Text>
+        <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+          {matches.length} sacred conversation{matches.length !== 1 ? 's' : ''}
+        </Text>
+      </View>
+      
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {matches.map((match) => {
+          // Show as unread if:
+          // 1. There's a message and it's from the other user, OR
+          // 2. It's a new match with no messages (empty lastMessage)
+          const isUnread = match.lastMessage
+            ? match.lastMessageSender !== userData.userId
+            : true;
 
-        return (
-          <Link
-            key={match.userId}
-            href={`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(
-              JSON.stringify(match)
-            )}`}
-            onPress={async () => {
-              await createOrFetchChat(userData.userId, match.userId);
-            }}
-          >
-            <View style={styles.matchRow}>
+          return (
+            <TouchableOpacity
+              key={match.userId}
+              style={[styles.matchRow, { borderBottomColor: colors.border }]}
+              onPress={() => handleChatPress(match)}
+              activeOpacity={0.7}
+            >
               <View style={styles.avatarWrapper}>
-                <View style={styles.avatarContainer}>
+                <View style={[
+                  styles.avatarContainer, 
+                  { 
+                    backgroundColor: colors.border,
+                    borderColor: isUnread ? '#FFD700' : '#8B4513' + '20',
+                    borderWidth: isUnread ? 2.5 : 2,
+                    shadowColor: isUnread ? '#FFD700' : 'transparent',
+                    shadowOpacity: isUnread ? 0.4 : 0,
+                    shadowRadius: isUnread ? 4 : 0,
+                    elevation: isUnread ? 4 : 0,
+                  }
+                ]}>
                   {match.photos[0] ? (
                     <Image
                       source={{ uri: match.photos[0] }}
                       style={styles.photo}
                     />
                   ) : (
-                    <Text>No Image</Text>
+                    <Ionicons name="person" size={32} color={colors.textMuted} />
                   )}
                 </View>
-                {isUnread && <View style={styles.unreadDot} />}
               </View>
+              
               <View style={styles.matchInfo}>
-                <Text style={[styles.matchName, isUnread && styles.unreadText]}>
-                  {match.firstName}
-                </Text>
+                <View style={styles.matchHeader}>
+                  <Text style={[
+                    styles.matchName, 
+                    fonts.spiritualBodyFont,
+                    { color: colors.textDark },
+                    isUnread && styles.unreadText
+                  ]}>
+                    {match.firstName}
+                  </Text>
+                  {match.lastMessageTimestamp && (
+                    <Text style={[styles.timeText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                      {formatTime(match.lastMessageTimestamp)}
+                    </Text>
+                  )}
+                </View>
+                
                 <Text
                   style={[
                     styles.conversationText,
-                    isUnread && styles.unreadText,
+                    fonts.spiritualBodyFont,
+                    { color: colors.textMuted },
+                    isUnread && styles.unreadMessageText
                   ]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
                   {match.lastMessage
-                    ? match.lastMessage.length > 40
-                      ? `${match.lastMessage.slice(0, 35)}...`
+                    ? match.lastMessage.length > 35
+                      ? `${match.lastMessage.slice(0, 32)}...`
                       : match.lastMessage
-                    : `Start the chat with ${match.firstName}`}
+                    : `Begin your sacred conversation with ${match.firstName}`}
                 </Text>
               </View>
-            </View>
-          </Link>
-        );
-      })}
-    </ScrollView>
+              
+              <View style={styles.chatIcon}>
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={16} 
+                  color={colors.textMuted} 
+                />
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+        
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </View>
   );
 };
 
+// Helper function to format timestamp
+const formatTime = (timestamp: any) => {
+  if (!timestamp) return '';
+  
+  const now = new Date();
+  const messageTime = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const diffInMs = now.getTime() - messageTime.getTime();
+  const diffInHours = diffInMs / (1000 * 60 * 60);
+  const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+  
+  if (diffInHours < 1) {
+    return 'Now';
+  } else if (diffInHours < 24) {
+    return `${Math.floor(diffInHours)}h`;
+  } else if (diffInDays < 7) {
+    return `${Math.floor(diffInDays)}d`;
+  } else {
+    return messageTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+};
+
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 16,
-    backgroundColor: "#EDE9E3",
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "#7E7972",
-  },
-  loaderContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#EDE9E3",
   },
-  loaderAnimation: {
+  
+  header: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  
+  headerTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.5,
+  },
+  
+  headerSubtitle: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    opacity: 0.8,
+    letterSpacing: 0.3,
+  },
+  
+  scrollContainer: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+  },
+  
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  
+  loadingMandala: {
     width: 120,
     height: 120,
+    borderRadius: 60,
+    marginBottom: Spacing.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  
+  loadingText: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  
+  loadingSubtext: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  
   noMatchesContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#EDE9E3",
-    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
   },
-  noMatchesText: {
-    fontSize: 18,
-    textAlign: "center",
-    marginVertical: 10,
-    color: "#7E7972",
+  
+  cosmicSymbol: {
+    marginBottom: Spacing.xl,
+    padding: Spacing.xl,
+    borderRadius: 60,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
+  
+  noMatchesTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    letterSpacing: 0.5,
+  },
+  
+  noMatchesSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Spacing['2xl'],
+    letterSpacing: 0.3,
+    fontStyle: 'italic',
+  },
+  
+  connectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  
+  connectButtonText: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  
+  buttonIcon: {
+    marginRight: Spacing.sm,
+  },
+  
   matchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: "#D3C6BA",
-    paddingRight: 16,
+    marginBottom: Spacing.sm,
   },
+  
   avatarWrapper: {
-    position: "relative",
-    marginRight: 16,
+    position: 'relative',
+    marginRight: Spacing.lg,
   },
+  
   avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
+  
   photo: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
+  
   unreadDot: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#3B82F6",
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
+  
   matchInfo: {
     flex: 1,
-    paddingRight: 8,
+    paddingRight: Spacing.sm,
   },
+  
+  matchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  
   matchName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#7E7972",
-    marginBottom: 4,
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.3,
   },
+  
+  timeText: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
+  },
+  
   conversationText: {
-    fontSize: 15,
-    color: "#666",
-    lineHeight: 20,
+    fontSize: Typography.sizes.sm,
+    lineHeight: Typography.sizes.sm * 1.3,
+    letterSpacing: 0.2,
   },
+  
   unreadText: {
-    fontWeight: "bold",
-    color: "#000",
+    fontWeight: Typography.weights.bold,
+  },
+  
+  unreadMessageText: {
+    fontWeight: Typography.weights.semibold,
+  },
+  
+  chatIcon: {
+    padding: Spacing.xs,
+  },
+  
+  bottomSpacing: {
+    height: Spacing['2xl'],
   },
 });
 

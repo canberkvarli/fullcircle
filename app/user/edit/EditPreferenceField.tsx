@@ -240,9 +240,6 @@ const handleCheckboxToggle = (
   const renderField = () => {
     switch (fieldName) {
       case "datePreferences": {
-
-
-
         const mainOptions = ["Men", "Women"];
         const otherOptionsWithId = ["Non-Binary"];
         const otherStringOptions = [
@@ -256,12 +253,9 @@ const handleCheckboxToggle = (
           "Spiritual Partnership",
           "Sacred Union",
           "Love Without Labels",
-
-
         ];
         const allEnergyOption = ["Everyone"];
         
-
         const datePreferenceOptions = [
           ...mainOptions,
           ...otherOptionsWithId,

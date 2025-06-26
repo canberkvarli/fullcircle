@@ -26,14 +26,14 @@ const TAB_BAR_HEIGHT = 90;
 
 const UserShow: React.FC = () => {
   const router = useRouter();
-  const { user: userParam, source } = useLocalSearchParams();
-  const isFromKindredSpirits = source === "KindredSpirits";
+  const { user: userParam } = useLocalSearchParams();
   const initialUser: UserDataType = JSON.parse(userParam as string);
   
   const {
     getImageUrl,
     userData,
     likeMatch,
+    dislikeMatch,
     subscribeToReceivedLikes,
   } = useUserContext();
 
@@ -55,7 +55,7 @@ const UserShow: React.FC = () => {
   const lastY = useRef(0);
 
   useEffect(() => {
-    if (!isFromKindredSpirits || !userData.userId) return;
+    if (!userData.userId) return;
 
     const unsub = subscribeToReceivedLikes((users) => {
       // swallow the first callback so we don't overwrite our nav param
@@ -78,10 +78,10 @@ const UserShow: React.FC = () => {
     });
 
     return () => unsub();
-  }, [isFromKindredSpirits, userData.userId]);
+  }, [userData.userId]);
 
   useEffect(() => {
-    if (!isFromKindredSpirits || !userData.userId) return;
+    if (!userData.userId) return;
 
     // track the last snapshot payload so we don't re-render
     let lastSnapshot: string | null = null;
@@ -113,7 +113,7 @@ const UserShow: React.FC = () => {
     });
 
     return () => unsub();
-  }, [isFromKindredSpirits, userData.userId]);
+  }, [userData.userId]);
 
   useEffect(() => {
     const id = currentUser.userId;
@@ -159,7 +159,7 @@ const UserShow: React.FC = () => {
     await likeMatch(likedId);
   };
 
-  const handleDislikePress = () => {
+  const handleDislikePress = async () => {
     const dislikedId = currentUser.userId;
     const nextSouls = souls.filter((u) => u.userId !== dislikedId);
 
@@ -171,7 +171,9 @@ const UserShow: React.FC = () => {
     } else {
       router.back();
     }
-    // Note: No API call needed for dislike, just remove from list
+    
+    // Call dislikeMatch to remove from backend
+    await dislikeMatch(dislikedId);
   };
 
   // Helper function to get location string
@@ -369,60 +371,10 @@ const UserShow: React.FC = () => {
                 <View key={i} style={styles.photoCard}>
                   <Image source={{ uri }} style={styles.photo} />
 
-                  {/* KindredSpirits action buttons on photo */}
-                  {isFromKindredSpirits && (
-                    <View style={styles.overlayIcons}>
-                      <TouchableOpacity
-                        onPress={handleDislikePress}
-                        style={[styles.dislikeActionBtn, { 
-                          backgroundColor: colors.card + 'CC',
-                          shadowColor: '#8B95A7'
-                        }]}
-                      >
-                        <Ionicons name="close" size={24} color="#8B95A7" />
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        onPress={handleHeartPress}
-                        style={[styles.heartActionBtn, { 
-                          backgroundColor: colors.card + 'CC',
-                          shadowColor: '#8B4513'
-                        }]}
-                      >
-                        <Ionicons name="heart" size={24} color="#8B4513" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
                   <View style={[styles.detailCard, { 
                     backgroundColor: colors.card, 
                     borderColor: colors.border 
                   }]}>
-                    {/* KindredSpirits action buttons on detail card */}
-                    {isFromKindredSpirits && (
-                      <View style={styles.overlayIconsDetail}>
-                        <TouchableOpacity
-                          onPress={handleDislikePress}
-                          style={[styles.dislikeDetailBtn, { 
-                            backgroundColor: colors.card + 'CC',
-                            shadowColor: '#8B95A7'
-                          }]}
-                        >
-                          <Ionicons name="close" size={24} color="#8B95A7" />
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                          onPress={handleHeartPress}
-                          style={[styles.heartDetailBtn, { 
-                            backgroundColor: colors.card + 'CC',
-                            shadowColor: '#8B4513'
-                          }]}
-                        >
-                          <Ionicons name="heart" size={24} color="#8B4513" />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-
                     <View style={styles.detailHeader}>
                       <Ionicons name={detail.icon as any} size={20} color="#8B4513" />
                       <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
@@ -467,6 +419,35 @@ const UserShow: React.FC = () => {
               );
             })}
           </Animated.ScrollView>
+
+
+          <View style={styles.floatingButtons}>
+            {/* Dislike Button - Left */}
+            <TouchableOpacity 
+              style={[
+                styles.floatingAction, 
+                styles.leftAction,
+                { backgroundColor: colors.card, borderColor: colors.border }
+              ]}
+              onPress={handleDislikePress}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close" size={20} color="#8B95A7" />
+            </TouchableOpacity>
+
+            {/* Like Button - Right */}
+            <TouchableOpacity 
+              style={[
+                styles.floatingAction, 
+                styles.rightAction,
+                { backgroundColor: colors.card, borderColor: colors.border }
+              ]}
+              onPress={handleHeartPress}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="heart" size={20} color="#8B4513" />
+            </TouchableOpacity>
+          </View>
         </>
       )}
 
@@ -537,30 +518,39 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     borderRadius: 16,
     marginBottom: Spacing.md,
   },
-  overlayIcons: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: -60,
-    paddingHorizontal: Spacing.lg,
-    zIndex: 10,
+  
+  // Floating Action Buttons (like Connect screen)
+  floatingButtons: {
+    position: 'absolute',
+    bottom: TAB_BAR_HEIGHT + 20, // Above the sliding tab bar
+    left: 0,
+    right: 0,
+    height: 80,
   },
-  dislikeActionBtn: {
-    borderRadius: 30,
-    padding: Spacing.md,
+  
+  floatingAction: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 6,
+    borderWidth: 1,
   },
-  heartActionBtn: {
-    borderRadius: 30,
-    padding: Spacing.md,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  
+  leftAction: {
+    bottom: 20,
+    left: Spacing.xl,
+  },
+  
+  rightAction: {
+    bottom: 20,
+    right: Spacing.xl,
   },
   detailCard: {
     borderRadius: 12,
@@ -577,30 +567,6 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.sm,
-  },
-  overlayIconsDetail: {
-    position: "absolute",
-    bottom: Spacing.lg,
-    right: Spacing.lg,
-    flexDirection: "row",
-    gap: Spacing.sm,
-    zIndex: 10,
-  },
-  dislikeDetailBtn: {
-    borderRadius: 30,
-    padding: Spacing.md,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  heartDetailBtn: {
-    borderRadius: 30,
-    padding: Spacing.md,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
   detailTitle: {
     fontSize: Typography.sizes.lg,
