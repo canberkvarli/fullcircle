@@ -1028,10 +1028,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const excluded = new Set<string>([
       userData.userId,
-      ...excludedLikes,
-      ...excludedDislikes,
-      ...(receivedLikes ?? []),
-      ...(userData.matches ?? []),
+      // ...excludedLikes,
+      // ...excludedDislikes,
+      // ...(receivedLikes ?? []),
+      // ...(userData.matches ?? []),
     ]);
 
     const baseConstraints = [
