@@ -5,96 +5,70 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
 import { HeartIconWithBadge } from "@/components/HeartIconWithBadge";
 import { MatchesIconWithBadge } from "@/components/MatchesIconWithBadge";
-import { Colors } from "@/constants/Colors";
+import { Colors, Typography, Spacing } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
-// Custom icon component for spiritual glow effect
+// Simple spiritual icon component
 const SpiritualIcon = ({ 
   iconName, 
   color, 
   size, 
-  focused,
-  colors
+  focused
 }: { 
   iconName: string; 
   color: string; 
   size: number; 
   focused: boolean;
-  colors: any;
 }) => (
   <View style={{
-    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 2,
   }}>
-    {/* Spiritual glow for active state */}
-    {focused && (
-      <View style={{
-        position: 'absolute',
-        width: size + 16,
-        height: size + 16,
-        borderRadius: (size + 16) / 2,
-        backgroundColor: colors.primary,
-        opacity: 0.2,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 8,
-        elevation: 8,
-      }} />
-    )}
-    <Ionicons name={iconName as any} color={color} size={size} />
+    <Ionicons 
+      name={iconName as any} 
+      color={focused ? '#8B4513' : color} 
+      size={focused ? size + 2 : size} 
+    />
   </View>
 );
 
-// Custom avatar component with spiritual glow
+// Simple spiritual avatar component
 const SpiritualAvatar = ({ 
   photoUri, 
   color, 
   size, 
-  focused,
-  colors
+  focused
 }: { 
   photoUri?: string; 
   color: string; 
   size: number; 
   focused: boolean;
-  colors: any;
 }) => {
   if (!photoUri) {
-    return <SpiritualIcon iconName="person" color={color} size={size} focused={focused} colors={colors} />;
+    return (
+      <SpiritualIcon 
+        iconName="person-circle" 
+        color={color} 
+        size={size} 
+        focused={focused} 
+      />
+    );
   }
 
   return (
     <View style={{
-      position: 'relative',
       alignItems: 'center',
       justifyContent: 'center',
     }}>
-      {/* Spiritual glow for active avatar */}
-      {focused && (
-        <View style={{
-          position: 'absolute',
-          width: size + 12,
-          height: size + 12,
-          borderRadius: (size + 12) / 2,
-          backgroundColor: colors.primary,
-          opacity: 0.3,
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.7,
-          shadowRadius: 10,
-          elevation: 10,
-        }} />
-      )}
-      
       <View style={{
         width: size + 4,
         height: size + 4,
         borderRadius: (size + 4) / 2,
         overflow: "hidden",
         borderWidth: focused ? 2 : 1,
-        borderColor: focused ? colors.primary : colors.primary + '60',
-        backgroundColor: colors.primary + '10',
+        borderColor: focused ? '#8B4513' : '#8B4513' + '40',
+        backgroundColor: '#8B4513' + '10',
       }}>
         <Image
           source={{ uri: photoUri }}
@@ -114,34 +88,37 @@ export default function TabsLayout() {
   const { userData } = useUserContext();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const fonts = useFont();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          height: 90,
+          height: Platform.OS === 'ios' ? 85 : 70,
           backgroundColor: colors.background,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 12,
-          paddingTop: 12,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          paddingTop: 8,
+          paddingHorizontal: Spacing.md,
           position: 'absolute',
-          shadowColor: colors.textDark,
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+          elevation: 8,
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: '#8B4513', // Sacred brown
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-          marginTop: 4,
+          fontSize: Typography.sizes.xs,
+          fontWeight: Typography.weights.medium,
+          marginTop: 3,
+          letterSpacing: 0.2,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 2,
         },
       }}
     >
@@ -151,11 +128,10 @@ export default function TabsLayout() {
           tabBarLabel: "Connect",
           tabBarIcon: ({ color, size, focused }) => (
             <SpiritualIcon 
-              iconName="search" 
+              iconName="sparkles" 
               color={color} 
               size={size} 
               focused={focused}
-              colors={colors}
             />
           ),
         }}
@@ -164,30 +140,19 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="KindredSpirits"
         options={{
-          tabBarLabel: "Kindred Spirits",
+          tabBarLabel: "Spirits",
           tabBarIcon: ({ color, size, focused }) => (
             <View style={{
-              position: 'relative',
               alignItems: 'center',
               justifyContent: 'center',
+              paddingVertical: 2,
             }}>
-              {/* Spiritual glow for active state */}
-              {focused && (
-                <View style={{
-                  position: 'absolute',
-                  width: size + 16,
-                  height: size + 16,
-                  borderRadius: (size + 16) / 2,
-                  backgroundColor: colors.primary,
-                  opacity: 0.2,
-                  shadowColor: colors.primary,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.6,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }} />
-              )}
-              <HeartIconWithBadge color={color} size={size} />
+              <SpiritualIcon 
+                iconName="people" 
+                color={color} 
+                size={size} 
+                focused={focused}
+              />
             </View>
           ),
         }}
@@ -196,30 +161,17 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="SoulChats"
         options={{
-          tabBarLabel: "Soul Chats",
+          tabBarLabel: "Chats",
           tabBarIcon: ({ color, size, focused }) => (
             <View style={{
-              position: 'relative',
               alignItems: 'center',
               justifyContent: 'center',
+              paddingVertical: 2,
             }}>
-              {/* Spiritual glow for active state */}
-              {focused && (
-                <View style={{
-                  position: 'absolute',
-                  width: size + 16,
-                  height: size + 16,
-                  borderRadius: (size + 16) / 2,
-                  backgroundColor: colors.primary,
-                  opacity: 0.2,
-                  shadowColor: colors.primary,
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.6,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }} />
-              )}
-              <MatchesIconWithBadge color={color} size={size} />
+              <MatchesIconWithBadge 
+                color={focused ? '#8B4513' : color} 
+                size={focused ? size + 2 : size} 
+              />
             </View>
           ),
         }}
@@ -228,14 +180,13 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="SacredSelf"
         options={{
-          tabBarLabel: "Sacred Self",
+          tabBarLabel: "Self",
           tabBarIcon: ({ color, size, focused }) => (
             <SpiritualAvatar
               photoUri={userData?.photos?.[0]}
               color={color}
               size={size}
               focused={focused}
-              colors={colors}
             />
           ),
         }}

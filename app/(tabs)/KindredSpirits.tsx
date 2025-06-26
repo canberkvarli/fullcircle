@@ -6,12 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  StatusBar,
+  Platform,
+  useColorScheme,
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
-import LottieView from "lottie-react-native";
-import loadingMandalaAnimation from "../../assets/animations/loading_mandala.json";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -20,6 +24,10 @@ const KindredSpirits: React.FC = () => {
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
 
   useEffect(() => {
     if (!userData.userId) return;
@@ -44,41 +52,84 @@ const KindredSpirits: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.loaderContainer}>
-        <LottieView
-          source={loadingMandalaAnimation}
-          autoPlay
-          loop
-          style={styles.loaderAnimation}
-        />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+        
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Kindred Spirits
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Souls who resonate with you
+          </Text>
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
+            <Ionicons name="heart" size={40} color="#8B4513" />
+          </View>
+          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
+            Gathering Sacred Connections
+          </Text>
+          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            The universe is revealing who appreciates your energy
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (likedByUsers.length === 0) {
     return (
-      <View style={styles.noLikesContainer}>
-        <Text style={styles.noLikesTitle}>No one’s vibing with you… yet.</Text>
-        <Text style={styles.noLikesSubtitle}>
-          Radiate more love by upgrading to FullCircle for unlimited visibility,
-          or send a one-time Boost to soar to the top of the feed.
-        </Text>
-        <TouchableOpacity
-          style={styles.upgradeButton}
-          onPress={() =>
-            router.navigate({ pathname: "/user/FullCircleSubscription" })
-          }
-        >
-          <Text style={styles.upgradeButtonText}>Upgrade to FullCircle ✨</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.boostButton}
-          onPress={() =>
-            router.navigate({ pathname: "/user/FullCircleSubscription" })
-          }
-        >
-          <Text style={styles.boostButtonText}>Send a Boost ❤️‍🔥</Text>
-        </TouchableOpacity>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+        
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Kindred Spirits
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Souls who resonate with you
+          </Text>
+        </View>
+
+        <View style={styles.noLikesContainer}>
+          <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
+            <Ionicons name="heart-outline" size={60} color="#8B4513" />
+          </View>
+          
+          <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Your Energy Awaits Discovery
+          </Text>
+          
+          <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Sacred souls are still discovering your divine light. Amplify your spiritual presence and connect with kindred spirits seeking your energy.
+          </Text>
+          
+          <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}
+              onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+            >
+              <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+              <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                Embrace Full Circle ✨
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: '#8B4513' }]}
+              onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+            >
+              <Ionicons name="flash" size={18} color="#8B4513" style={styles.buttonIcon} />
+              <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                Send Sacred Boost 🔥
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   }
@@ -86,123 +137,318 @@ const KindredSpirits: React.FC = () => {
   const [firstUser, ...rest] = likedByUsers;
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={styles.likesText}>Likes you</Text>
-
-      <TouchableOpacity onPress={() => handleCardPress(firstUser, true)}>
-        <UserCard
-          user={firstUser}
-          variant="default"
-          isBlurred={false}
-          style={styles.largeCard}
-          isOrbLike={firstUser.viaOrb}
-        />
-      </TouchableOpacity>
-
-      <View style={styles.gridContainer}>
-        {rest.map((user) => (
-          <View key={user.userId} style={styles.userCardContainer}>
-            <TouchableOpacity onPress={() => handleCardPress(user, false)}>
-              <UserCard
-                user={user}
-                variant="default"
-                isBlurred={!userData.fullCircleSubscription}
-                style={styles.smallCard}
-                isOrbLike={user.viaOrb}
-              />
-            </TouchableOpacity>
-          </View>
-        ))}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+      
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          Kindred Spirits
+        </Text>
+        <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+          {likedByUsers.length} soul{likedByUsers.length !== 1 ? 's' : ''} resonating with your energy
+        </Text>
       </View>
-    </ScrollView>
+      
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Featured Connection */}
+        <View style={styles.featuredSection}>
+          <View style={styles.featuredHeader}>
+            <Ionicons name="star" size={20} color="#FFD700" />
+            <Text style={[styles.featuredLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+              Latest Sacred Connection
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            onPress={() => handleCardPress(firstUser, true)}
+            activeOpacity={0.9}
+          >
+            <UserCard
+              user={firstUser}
+              variant="default"
+              isBlurred={false}
+              style={styles.largeCard}
+              isOrbLike={firstUser.viaOrb}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Other Connections */}
+        {rest.length > 0 && (
+          <View style={styles.othersSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="people" size={20} color="#8B4513" />
+              <Text style={[styles.sectionTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                Other Sacred Souls ({rest.length})
+              </Text>
+            </View>
+            
+            {!userData.fullCircleSubscription && (
+              <View style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
+                <Ionicons name="lock-closed" size={16} color="#B8860B" />
+                <Text style={[styles.unlockText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                  Unlock Full Circle to see all souls who appreciate your energy
+                </Text>
+              </View>
+            )}
+            
+            <View style={styles.gridContainer}>
+              {rest.map((user) => (
+                <View key={user.userId} style={styles.userCardContainer}>
+                  <TouchableOpacity 
+                    onPress={() => handleCardPress(user, false)}
+                    activeOpacity={0.9}
+                  >
+                    <UserCard
+                      user={user}
+                      variant="default"
+                      isBlurred={!userData.fullCircleSubscription}
+                      style={styles.smallCard}
+                      isOrbLike={user.viaOrb}
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+        
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    backgroundColor: "#EDE9E3",
-    padding: 16,
-    paddingBottom: 20,
-    paddingTop: 36,
-  },
-  likesText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    paddingTop: 14,
-  },
-  loaderContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#EDE9E3",
   },
-  loaderAnimation: {
+  
+  header: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  
+  headerTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.5,
+  },
+  
+  headerSubtitle: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    opacity: 0.8,
+    letterSpacing: 0.3,
+  },
+  
+  scrollContainer: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+  },
+  
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  
+  loadingMandala: {
     width: 120,
     height: 120,
+    borderRadius: 60,
+    marginBottom: Spacing.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  
+  loadingText: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  
+  loadingSubtext: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  
   noLikesContainer: {
     flex: 1,
-    padding: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#EDE9E3",
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
   },
-  noLikesTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  noLikesSubtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  upgradeButton: {
-    backgroundColor: "#7E7972",
-    padding: 14,
-    borderRadius: 24,
-    marginBottom: 12,
-  },
-  upgradeButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  boostButton: {
-    borderColor: "#7E7972",
+  
+  cosmicSymbol: {
+    marginBottom: Spacing.xl,
+    padding: Spacing.xl,
+    borderRadius: 60,
     borderWidth: 1,
-    padding: 12,
-    borderRadius: 24,
+    borderColor: 'transparent',
   },
-  boostButtonText: {
-    color: "#7E7972",
-    fontSize: 16,
-    fontWeight: "600",
+  
+  noLikesTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    letterSpacing: 0.5,
   },
+  
+  noLikesSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Spacing['2xl'],
+    letterSpacing: 0.3,
+    fontStyle: 'italic',
+  },
+  
+  actionContainer: {
+    width: '100%',
+    gap: Spacing.lg,
+  },
+  
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  
+  primaryButtonText: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  
+  secondaryButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.3,
+  },
+  
+  buttonIcon: {
+    marginRight: Spacing.sm,
+  },
+  
+  featuredSection: {
+    marginBottom: Spacing['2xl'],
+  },
+  
+  featuredHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  
+  featuredLabel: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    marginLeft: Spacing.sm,
+    letterSpacing: 0.3,
+  },
+  
+  othersSection: {
+    marginBottom: Spacing.xl,
+  },
+  
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  
+  sectionTitle: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    marginLeft: Spacing.sm,
+    letterSpacing: 0.3,
+  },
+  
+  unlockBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+  },
+  
+  unlockText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.sm,
+    flex: 1,
+    letterSpacing: 0.3,
+  },
+  
   largeCard: {
-    width: screenWidth - 32,
+    width: screenWidth - (Spacing.xl * 2),
     height: screenHeight * 0.52,
-    marginBottom: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
+  
   gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
+  
   userCardContainer: {
-    flexBasis: "48%",
-    marginBottom: 16,
+    width: '48%',
+    marginBottom: Spacing.lg,
   },
+  
   smallCard: {
-    width: 180,
-    height: 220,
+    width: '100%',
+    height: 240,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  
+  bottomSpacing: {
+    height: Spacing['2xl'],
   },
 });
 
