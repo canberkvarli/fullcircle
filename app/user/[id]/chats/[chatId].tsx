@@ -227,7 +227,7 @@ const Chat: React.FC = () => {
         right: {
           backgroundColor: "#8B4513",
           marginRight: Spacing.md,
-          marginVertical: Spacing.xs,
+          marginVertical: Spacing.md,
           borderRadius: 24,
           paddingHorizontal: Spacing.sm,
           shadowColor: '#8B4513',

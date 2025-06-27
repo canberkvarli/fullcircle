@@ -6,212 +6,741 @@ import {
   Image,
   SafeAreaView,
   Animated,
+  ScrollView,
+  useColorScheme,
+  Platform,
+  StatusBar,
+  Dimensions,
+  StyleSheet,
 } from "react-native";
-import styles from "@/styles/Main/SacredSelfStyles";
-import Icon from "react-native-vector-icons/FontAwesome";
-import { Link } from "expo-router";
+import { Ionicons } from '@expo/vector-icons';
+import { Link, useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
+import { Colors, Typography, Spacing } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function SacredSelf() {
   const { userData } = useUserContext();
-  const [activeTab, setActiveTab] = useState("Get more");
-  const [verified, setVerified] = useState(false);
-  const [showHeader, setShowHeader] = useState(false); // State to control header visibility
+  const [activeTab, setActiveTab] = useState("discover");
+  const [verified, setVerified] = useState(userData.settings?.isSelfieVerified || false);
+  const router = useRouter();
+  
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
+
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const avatarHeight = 150; // Approximate height of avatar + padding
+  // Animated header opacity based on scroll
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [160, 290],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   const handleTabSwitch = (tab: string) => {
     setActiveTab(tab);
   };
 
   const handleVerify = () => {
-    setVerified(true);
-    console.log("Verification requested");
+    setVerified(!verified);
+    console.log("Verification toggled");
   };
 
-  // Monitor the scroll position and set the header visibility
-  scrollY.addListener(({ value }) => {
-    if (value > avatarHeight && !showHeader) {
-      setShowHeader(true);
-    } else if (value <= avatarHeight && showHeader) {
-      setShowHeader(false);
+  const calculateAge = () => {
+    if (userData.birthyear) {
+      return new Date().getFullYear() - parseInt(userData.birthyear);
     }
-  });
+    return userData.age || 'Unknown';
+  };
+
+  const getLocation = () => {
+    if (userData.location?.city && userData.location?.region) {
+      return `${userData.location.city}, ${userData.location.region}`;
+    } else if (userData.location?.city) {
+      return userData.location.city;
+    } else if (userData.regionName) {
+      return userData.regionName;
+    }
+    return 'Location not shared';
+  };
+
+  const isFullCircle = userData.fullCircleSubscription;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Circle</Text>
-        <View style={styles.icons}>
-          <Link
-            href={{ pathname: "/user/DatingPreferences" as any }}
-            style={styles.sliderIcon}
-          >
-            <Icon
-              name="sliders"
-              size={24}
-              color="black"
-              style={styles.preferencesIcon}
-            />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+      
+      {/* Fixed Header with Animated Name */}
+      <View style={[styles.header, { 
+        backgroundColor: colors.background,
+        borderBottomColor: colors.border 
+      }]}>
+        <View style={styles.headerLeft} />
+        
+        {/* Animated Name in Center */}
+        <Animated.Text style={[
+          styles.animatedHeaderTitle, 
+          fonts.spiritualTitleFont, 
+          { 
+            color: colors.textDark,
+            opacity: headerOpacity 
+          }
+        ]}>
+          {userData.firstName}
+        </Animated.Text>
+        
+        <View style={styles.headerIcons}>
+          <Link href={{ pathname: "/user/DatingPreferences" as any }} asChild>
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="options" size={22} color="#8B4513" />
+            </TouchableOpacity>
           </Link>
-          <Link href="/user/UserSettings">
-            <Icon
-              name="cog"
-              size={24}
-              color="black"
-              style={styles.iconSpacing}
-            />
+          <Link href="/user/UserSettings" asChild>
+            <TouchableOpacity style={styles.iconButton}>
+              <Ionicons name="settings" size={22} color="#8B4513" />
+            </TouchableOpacity>
           </Link>
         </View>
       </View>
 
-      {/* Conditional rendering for user name and verification icon */}
-      {showHeader && (
-        <View style={styles.animatedHeader}>
-          <Text style={styles.animatedUserName}>{userData.firstName}</Text>
-          <Icon
-            name="check-circle"
-            size={20}
-            color={verified ? "green" : "black"}
-            style={styles.verifyIcon}
-          />
-        </View>
-      )}
-
-      <Animated.ScrollView
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
         )}
         scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
       >
+        {/* Profile Section */}
         <View style={styles.profileSection}>
-          <Link href={"/user/EditUserProfile" as any}>
-            <View style={styles.profileImageContainer}>
-              <Image
-                source={{ uri: userData.photos?.[0] }}
-                style={styles.profileImage}
-              />
-              <Icon
-                name="pencil"
-                size={16}
-                color="white"
-                style={styles.editIconContainer}
-              />
-            </View>
-          </Link>
-          <View style={styles.userNameContainer}>
-            <Text style={styles.userName}>{userData.firstName}</Text>
-            <TouchableOpacity onPress={handleVerify}>
-              <Icon
-                name={verified ? "check-circle" : "check"}
-                size={20}
-                color={verified ? "green" : "black"}
-                style={styles.verifyIcon}
-              />
+          <Link href={"/user/EditUserProfile" as any} asChild>
+            <TouchableOpacity style={styles.profileImageContainer} activeOpacity={0.8}>
+              <View style={[styles.profileImageWrapper, { borderColor: verified ? '#FFD700' : colors.border }]}>
+                {userData.photos?.[0] ? (
+                  <Image
+                    source={{ uri: userData.photos[0] }}
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <View style={[styles.placeholderImage, { backgroundColor: colors.border }]}>
+                    <Ionicons name="person" size={40} color={colors.textMuted} />
+                  </View>
+                )}
+                <View style={[styles.editIconContainer, { backgroundColor: '#8B4513' }]}>
+                  <Ionicons name="camera" size={16} color="#FFFFFF" />
+                </View>
+              </View>
             </TouchableOpacity>
+          </Link>
+
+          <View style={styles.userInfoContainer}>
+            <View style={styles.nameVerificationRow}>
+              <Text style={[styles.userName, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                {userData.firstName}, {calculateAge()}
+              </Text>
+              <TouchableOpacity 
+                style={[styles.verifyButton, { 
+                  backgroundColor: verified ? '#FFD700' + '20' : colors.card,
+                  borderColor: verified ? '#FFD700' : colors.border
+                }]} 
+                onPress={handleVerify}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name={verified ? "checkmark-circle" : "shield-checkmark-outline"} 
+                  size={16} 
+                  color={verified ? '#FFD700' : '#8B4513'} 
+                />
+                <Text style={[
+                  styles.verifyText, 
+                  fonts.spiritualBodyFont,
+                  { color: verified ? '#FFD700' : '#8B4513' }
+                ]}>
+                  {verified ? 'Verified' : 'Verify'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.locationRow}>
+              <Ionicons name="location" size={14} color={colors.textMuted} />
+              <Text style={[styles.locationText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                {getLocation()}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.tabsContainer}>
+        {/* Hinge-style Tab Navigation */}
+        <View style={[styles.hingeTabsContainer, { backgroundColor: colors.background }]}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "Get more" && styles.activeTab]}
-            onPress={() => handleTabSwitch("Get more")}
+            style={[
+              styles.hingeTab, 
+              { borderBottomColor: activeTab === "discover" ? "#8B4513" : 'transparent' }
+            ]}
+            onPress={() => handleTabSwitch("discover")}
+            activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "Get more" && styles.activeTabText,
-              ]}
-            >
-              Get more
+            <Text style={[
+              styles.hingeTabText,
+              fonts.spiritualBodyFont,
+              { color: activeTab === "discover" ? "#8B4513" : colors.textMuted },
+              activeTab === "discover" && styles.activeHingeTabText
+            ]}>
+              Discover
             </Text>
           </TouchableOpacity>
+          
           <TouchableOpacity
-            style={[styles.tab, activeTab === "My Circle" && styles.activeTab]}
-            onPress={() => handleTabSwitch("My Circle")}
+            style={[
+              styles.hingeTab,
+              { borderBottomColor: activeTab === "circle" ? "#8B4513" : 'transparent' }
+            ]}
+            onPress={() => handleTabSwitch("circle")}
+            activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "My Circle" && styles.activeTabText,
-              ]}
-            >
+            <Text style={[
+              styles.hingeTabText,
+              fonts.spiritualBodyFont,
+              { color: activeTab === "circle" ? "#8B4513" : colors.textMuted },
+              activeTab === "circle" && styles.activeHingeTabText
+            ]}>
               My Circle
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* Tab Content */}
         <View style={styles.tabContent}>
-          {activeTab === "Get more" ? (
+          {activeTab === "discover" ? (
             <>
-              <View style={styles.fullCircleImageContainer}>
-                <Image
-                  source={require("../../assets/images/fullcircle-couple.jpg")} // Replace with actual image URI
-                  style={styles.fullCircleImage}
-                />
-                <View style={styles.fullCircleTextContainer}>
-                  <Text style={styles.fullCircleText}>FullCircle</Text>
-                  <Text style={styles.subText}>
-                    Get seen sooner and go on 3x as many dates
-                  </Text>
-                  <Link
-                    style={styles.upgradeButton}
-                    href={{ pathname: "user/FullCircleSubscription" as any }}
-                  >
-                    <Text style={styles.upgradeButtonText}>Upgrade</Text>
-                  </Link>
+              {/* Full Circle Status Card */}
+              {isFullCircle ? (
+                <View style={[styles.fullCircleActiveCard, { 
+                  backgroundColor: '#8B4513' + '10',
+                  borderColor: '#8B4513' + '30'
+                }]}>
+                  <View style={styles.fullCircleHeader}>
+                    <View style={[styles.fullCircleIcon, { backgroundColor: '#8B4513' + '20' }]}>
+                      <Ionicons name="infinite" size={28} color="#8B4513" />
+                    </View>
+                    <View style={styles.fullCircleInfo}>
+                      <Text style={[styles.fullCircleActiveTitle, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
+                        Full Circle Active ∞
+                      </Text>
+                      <Text style={[styles.fullCircleActiveSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                        Your spiritual journey is enhanced
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Full Circle Perks */}
+                  <View style={styles.perksContainer}>
+                    <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
+                      <Ionicons name="flash" size={20} color="#FFD700" />
+                      <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        Unlimited Boosts
+                      </Text>
+                    </View>
+                    <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
+                      <Ionicons name="sparkles" size={20} color="#8B4513" />
+                      <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        {userData.numOfOrbs || 0} Sacred Orbs
+                      </Text>
+                    </View>
+                    <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
+                      <Ionicons name="eye" size={20} color="#9D4EDD" />
+                      <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        See Who Likes You
+                      </Text>
+                    </View>
+                    <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
+                      <Ionicons name="heart-circle" size={20} color="#FF6B6B" />
+                      <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        Unlimited Likes
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
+              ) : (
+                <View style={[styles.fullCircleCard, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border 
+                }]}>
+                  <View style={styles.fullCircleContent}>
+                    <View style={[styles.fullCircleIcon, { backgroundColor: '#8B4513' + '15' }]}>
+                      <Ionicons name="infinite" size={32} color="#8B4513" />
+                    </View>
+                    <View style={styles.fullCircleTextContent}>
+                      <Text style={[styles.fullCircleTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                        Full Circle ∞
+                      </Text>
+                      <Text style={[styles.fullCircleSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                        Unlock your divine potential and connect with 3x more souls
+                      </Text>
+                      <Link href={{ pathname: "user/FullCircleSubscription" as any }} asChild>
+                        <TouchableOpacity 
+                          style={[styles.upgradeButton, { backgroundColor: '#8B4513' }]}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="arrow-up-circle" size={18} color="#FFFFFF" style={styles.upgradeIcon} />
+                          <Text style={[styles.upgradeButtonText, fonts.spiritualBodyFont]}>
+                            Embrace Full Circle
+                          </Text>
+                        </TouchableOpacity>
+                      </Link>
+                    </View>
+                  </View>
+                </View>
+              )}
 
-              <View style={styles.iconButtonsContainer}>
+              {/* Sacred Tools - Available to all users */}
+              <View style={styles.toolsContainer}>
+                <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  Sacred Tools
+                </Text>
+                
                 <TouchableOpacity
-                  style={styles.iconButton}
+                  style={[styles.toolItem, { backgroundColor: colors.card, borderColor: colors.border }]}
                   onPress={() => console.log("Day Pass clicked")}
+                  activeOpacity={0.7}
                 >
-                  <Icon name="sun-o" size={24} color="black" />
-                  <View style={styles.iconButtonTextContainer}>
-                    <Text style={styles.iconButtonTitle}>Day Pass</Text>
-                    <Text style={styles.iconButtonSubtitle}>
-                      Unlock divine potential for 24 hours
+                  <View style={[styles.toolIcon, { backgroundColor: '#FFD700' + '20' }]}>
+                    <Ionicons name="sunny" size={24} color="#FFD700" />
+                  </View>
+                  <View style={styles.toolContent}>
+                    <Text style={[styles.toolTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                      Day Pass
+                    </Text>
+                    <Text style={[styles.toolSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                      Unlock divine potential for 24 sacred hours
                     </Text>
                   </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={() => console.log("Boost clicked")}
-                >
-                  <Icon name="bolt" size={24} color="black" />
-                  <View style={styles.iconButtonTextContainer}>
-                    <Text style={styles.iconButtonTitle}>Amplify</Text>
-                    <Text style={styles.iconButtonSubtitle}>
-                      Shine your light to 11x more souls
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                {!isFullCircle && (
+                  <TouchableOpacity
+                    style={[styles.toolItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => console.log("Boost clicked")}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.toolIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
+                      <Ionicons name="flash" size={24} color="#FF6B6B" />
+                    </View>
+                    <View style={styles.toolContent}>
+                      <Text style={[styles.toolTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        Sacred Amplify
+                      </Text>
+                      <Text style={[styles.toolSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                        Shine your light to 11x more souls
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={() => console.log("Roses clicked")}
+                  style={[styles.toolItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => console.log("Sacred Offering clicked")}
+                  activeOpacity={0.7}
                 >
-                  <Icon name="pagelines" size={24} color="black" />
-                  <View style={styles.iconButtonTextContainer}>
-                    <Text style={styles.iconButtonTitle}>Sacred Offering</Text>
-                    <Text style={styles.iconButtonSubtitle}>
-                      Double the chance of a sacred connection
+                  <View style={[styles.toolIcon, { backgroundColor: '#9D4EDD' + '20' }]}>
+                    <Ionicons name="flower" size={24} color="#9D4EDD" />
+                  </View>
+                  <View style={styles.toolContent}>
+                    <Text style={[styles.toolTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                      Sacred Offering
+                    </Text>
+                    <Text style={[styles.toolSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                      Double your chance of divine connection
                     </Text>
                   </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
             </>
           ) : (
-            <Text>My Circle content goes here...</Text>
+            <View style={styles.circleContent}>
+              <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.emptyIcon, { backgroundColor: '#8B4513' + '15' }]}>
+                  <Ionicons name="people-circle-outline" size={48} color="#8B4513" />
+                </View>
+                <Text style={[styles.emptyTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  Your Sacred Circle
+                </Text>
+                <Text style={[styles.emptySubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                  Here you'll see your closest connections, favorite souls, and meaningful conversations that transcend the ordinary.
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.connectButton, { backgroundColor: '#8B4513' }]}
+                  onPress={() => router.push('/Connect')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="heart" size={18} color="#FFFFFF" style={styles.connectIcon} />
+                  <Text style={[styles.connectButtonText, fonts.spiritualBodyFont]}>
+                    Start Connecting
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
-      </Animated.ScrollView>
+
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Platform.OS === 'ios' ? Spacing.md : Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  animatedHeaderTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  iconButton: {
+    padding: Spacing.sm,
+    borderRadius: 20,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.xl,
+  },
+  profileSection: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+  },
+  profileImageContainer: {
+    marginBottom: Spacing.lg,
+  },
+  profileImageWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    padding: 3,
+    position: 'relative',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 57,
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 57,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  userInfoContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  nameVerificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  userName: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: Spacing.xs,
+  },
+  verifyText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  locationText: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+  },
+  // Hinge-style tabs
+  hingeTabsContainer: {
+    flexDirection: 'row',
+    marginBottom: Spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  hingeTab: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 3,
+    alignItems: 'center',
+  },
+  hingeTabText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
+  },
+  activeHingeTabText: {
+    fontWeight: Typography.weights.bold,
+  },
+  tabContent: {
+    flex: 1,
+  },
+  // Full Circle Active Card
+  fullCircleActiveCard: {
+    borderRadius: 20,
+    padding: Spacing.xl,
+    marginBottom: Spacing.xl,
+    borderWidth: 2,
+  },
+  fullCircleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  fullCircleIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  fullCircleInfo: {
+    flex: 1,
+  },
+  fullCircleActiveTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.5,
+  },
+  fullCircleActiveSubtitle: {
+    fontSize: Typography.sizes.sm,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
+  },
+  perksContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  perkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    gap: Spacing.xs,
+    minWidth: '45%',
+    justifyContent: 'center',
+  },
+  perkText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
+  },
+  // Original Full Circle Card (for non-subscribers)
+  fullCircleCard: {
+    borderRadius: 20,
+    padding: Spacing.xl,
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  fullCircleContent: {
+    alignItems: 'center',
+  },
+  fullCircleTextContent: {
+    alignItems: 'center',
+  },
+  fullCircleTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+  },
+  fullCircleSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    lineHeight: Typography.sizes.base * 1.4,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  upgradeIcon: {
+    marginRight: Spacing.sm,
+  },
+  upgradeButtonText: {
+    color: '#FFFFFF',
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.3,
+  },
+  toolsContainer: {
+    marginBottom: Spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.lg,
+    letterSpacing: 0.5,
+  },
+  toolItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderRadius: 16,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  toolIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  toolContent: {
+    flex: 1,
+  },
+  toolTitle: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.2,
+  },
+  toolSubtitle: {
+    fontSize: Typography.sizes.sm,
+    lineHeight: Typography.sizes.sm * 1.3,
+    letterSpacing: 0.1,
+  },
+  circleContent: {
+    flex: 1,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: Spacing.xl,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+    lineHeight: Typography.sizes.base * 1.4,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
+  },
+  connectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  connectIcon: {
+    marginRight: Spacing.sm,
+  },
+  connectButtonText: {
+    color: '#FFFFFF',
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.3,
+  },
+  bottomSpacing: {
+    height: Spacing['3xl'],
+  },
+});
