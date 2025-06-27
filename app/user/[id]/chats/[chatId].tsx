@@ -113,12 +113,12 @@ const Chat: React.FC = () => {
       // Create the match message
       const matchMessage: IMessage = {
         _id: "match-indicator",
-        text: `Your souls have aligned in divine harmony with ${otherUserData?.firstName || "this sacred being"}! ✨ The universe has blessed this connection. 🌟`,
+        text: `You matched with ${otherUserData?.firstName || "them"}! 💫`,
         createdAt: matchDate,
         system: true,
         user: {
           _id: "system",
-          name: "Universe",
+          name: "System",
         },
       };
 
