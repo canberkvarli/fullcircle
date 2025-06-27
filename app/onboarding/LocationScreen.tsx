@@ -19,7 +19,6 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-
 const DEFAULT_LOCATION = {
   latitude: 37.8715,
   longitude: -122.273,
@@ -71,7 +70,7 @@ const LocationScreen = () => {
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.01, // More zoomed in for better precision
+        latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       };
       setRegion(newRegion);
@@ -99,7 +98,6 @@ const LocationScreen = () => {
     }
     
     try {
-      // Get more accurate location with higher accuracy
       let location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High
       });
@@ -107,7 +105,7 @@ const LocationScreen = () => {
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.01, // Smaller delta for more zoomed in view
+        latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       };
       setLocation(location);
@@ -171,17 +169,19 @@ const LocationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigateToPreviousScreen()}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-        </TouchableOpacity>
+      {/* Back Button */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigateToPreviousScreen()}
+      >
+        <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+      </TouchableOpacity>
 
-        {/* Progress Bar */}
-        <OnboardingProgressBar currentScreen="LocationScreen" />
+      {/* Progress Bar */}
+      <OnboardingProgressBar currentScreen="LocationScreen" />
 
+      {/* Content Container - prevents content from going behind buttons */}
+      <View style={styles.contentContainer}>
         {/* Title */}
         <Text style={styles.title}>Where are you rooted?</Text>
 
@@ -249,15 +249,16 @@ const LocationScreen = () => {
         <Text style={styles.affirmation}>
           Ground yourself in the present moment and sacred space
         </Text>
+      </View>
 
-        {/* Continue Button */}
-        <TouchableOpacity
-          style={styles.continueButton}
-          onPress={handleContinue}
-        >
-          <Ionicons name="chevron-forward" size={24} color={colors.background} />
-        </TouchableOpacity>
-      </SafeAreaView>
+      {/* Continue Button */}
+      <TouchableOpacity
+        style={styles.continueButton}
+        onPress={handleContinue}
+      >
+        <Ionicons name="chevron-forward" size={24} color={colors.background} />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
@@ -297,6 +298,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
+    contentContainer: {
+      flex: 1,
+      paddingBottom: 100, // Space for continue button and affirmation
+    },
     title: {
       ...fonts.spiritualTitleFont,
       color: colors.textDark,
@@ -323,12 +328,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontWeight: Typography.weights.medium,
     },
     mapContainer: {
-      width: "100%",
-      height: 350, // Increased from 300
+      height: 300, // Reduced height to leave more room for affirmation
       borderRadius: BorderRadius.xl,
       overflow: "hidden",
       marginBottom: Spacing.xl,
-      marginHorizontal: Spacing.md, // Add horizontal margin
+      marginHorizontal: 0, // Removed horizontal margin
       position: "relative",
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -411,15 +415,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     affirmation: {
       ...fonts.affirmationFont,
-      position: 'absolute',
-      bottom: Platform.select({ ios: 130, android: 110 }),
-      left: Spacing.lg,
-      right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
+      paddingHorizontal: Spacing.lg,
+      marginTop: 'auto', // Push to bottom of content container
     },
     continueButton: {
       position: "absolute",
