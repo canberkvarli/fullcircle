@@ -24,7 +24,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 export default function SacredSelf() {
   const { userData } = useUserContext();
   const [activeTab, setActiveTab] = useState("discover");
-  const [verified, setVerified] = useState(userData.settings?.isSelfieVerified || false);
+  const [verified, _] = useState(userData.settings?.isSelfieVerified || false);
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -45,8 +45,7 @@ export default function SacredSelf() {
   };
 
   const handleVerify = () => {
-    setVerified(!verified);
-    console.log("Verification toggled");
+    router.navigate("/user/SelfieVerificationScreen");
   };
 
   const calculateAge = () => {

@@ -262,7 +262,7 @@ export default function UserSettings() {
           
           <TouchableOpacity 
             style={styles.row}
-            onPress={() => router.navigate("/user/SelfieVerification" as any)}
+            onPress={() => router.navigate("/user/SelfieVerificationScreen" as any)}
           >
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
