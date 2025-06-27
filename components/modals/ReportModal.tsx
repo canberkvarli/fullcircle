@@ -10,8 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  useColorScheme,
 } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Spacing } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 interface ReportModalProps {
   visible: boolean;
@@ -21,13 +24,13 @@ interface ReportModalProps {
 }
 
 const reportReasons = [
-  { id: "inappropriate_photos", label: "Inappropriate photos" },
-  { id: "fake_profile", label: "Fake profile" },
-  { id: "harassment", label: "Harassment or offensive messages" },
-  { id: "spam", label: "Spam or solicitation" },
-  { id: "underage", label: "User appears to be under 18" },
-  { id: "threatening", label: "Threatening or violent behavior" },
-  { id: "other", label: "Other" },
+  { id: "inappropriate_photos", label: "Inappropriate photos", icon: "image-outline" },
+  { id: "fake_profile", label: "Fake profile", icon: "person-remove-outline" },
+  { id: "harassment", label: "Harassment or offensive messages", icon: "warning-outline" },
+  { id: "spam", label: "Spam or solicitation", icon: "mail-unread-outline" },
+  { id: "underage", label: "User appears to be under 18", icon: "shield-outline" },
+  { id: "threatening", label: "Threatening or violent behavior", icon: "alert-circle-outline" },
+  { id: "other", label: "Other", icon: "ellipsis-horizontal-outline" },
 ];
 
 const ReportModal: React.FC<ReportModalProps> = ({
@@ -40,6 +43,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
   const [additionalDetails, setAdditionalDetails] = useState<string>("");
   const [showDetails, setShowDetails] = useState(false);
 
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
+
   const handleReasonSelect = (reasonId: string) => {
     setSelectedReason(reasonId);
     setShowDetails(true);
@@ -49,7 +56,9 @@ const ReportModal: React.FC<ReportModalProps> = ({
     if (!selectedReason) {
       Alert.alert(
         "Please select a reason",
-        "You must select a reason for reporting."
+        "You must select a reason for reporting.",
+        [{ text: "OK", style: "default" }],
+        { cancelable: true }
       );
       return;
     }
@@ -63,8 +72,9 @@ const ReportModal: React.FC<ReportModalProps> = ({
 
     Alert.alert(
       "Report Submitted",
-      "Thank you for helping keep our community safe. We'll review this report and take appropriate action.",
-      [{ text: "OK", onPress: onClose }]
+      "Thank you for helping keep our sacred community safe. We'll review this report and take appropriate action.",
+      [{ text: "OK", onPress: onClose, style: "default" }],
+      { cancelable: false }
     );
   };
 
@@ -75,89 +85,145 @@ const ReportModal: React.FC<ReportModalProps> = ({
     onClose();
   };
 
+  const styles = createStyles(colors, fonts);
+
   return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent={true}
       onRequestClose={handleClose}
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Icon name="times" size={24} color="#7E7972" />
+              <Ionicons name="close" size={24} color="#8B4513" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Report {userName}</Text>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              Report {userName}
+            </Text>
             <View style={styles.placeholder} />
           </View>
 
           {!showDetails ? (
             <>
-              <Text style={styles.subtitle}>
-                Help us understand what's happening
-              </Text>
+              <View style={styles.introSection}>
+                <View style={[styles.warningIcon, { backgroundColor: '#8B4513' + '15' }]}>
+                  <Ionicons name="shield-checkmark" size={32} color="#8B4513" />
+                </View>
+                <Text style={[styles.subtitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                  Help us maintain our sacred community
+                </Text>
+                <Text style={[styles.description, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                  Your report helps protect all souls in our community. Please select the reason that best describes the issue.
+                </Text>
+              </View>
 
-              <ScrollView style={styles.reasonsList}>
-                {reportReasons.map((reason) => (
+              <ScrollView 
+                style={styles.reasonsList}
+                showsVerticalScrollIndicator={false}
+              >
+                {reportReasons.map((reason, index) => (
                   <TouchableOpacity
                     key={reason.id}
-                    style={styles.reasonItem}
+                    style={[
+                      styles.reasonItem, 
+                      { 
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        marginBottom: index === reportReasons.length - 1 ? Spacing.xl : Spacing.md
+                      }
+                    ]}
                     onPress={() => handleReasonSelect(reason.id)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.reasonText}>{reason.label}</Text>
-                    <Icon name="chevron-right" size={16} color="#B8C1B2" />
+                    <View style={styles.reasonContent}>
+                      <View style={[styles.reasonIconContainer, { backgroundColor: '#8B4513' + '10' }]}>
+                        <Ionicons name={reason.icon as any} size={20} color="#8B4513" />
+                      </View>
+                      <Text style={[styles.reasonText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        {reason.label}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </>
           ) : (
-            <>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.detailsContainer}
+            >
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => setShowDetails(false)}
+                activeOpacity={0.7}
               >
-                <Icon name="chevron-left" size={20} color="#7E7972" />
-                <Text style={styles.backText}>Back</Text>
+                <Ionicons name="chevron-back" size={20} color="#8B4513" />
+                <Text style={[styles.backText, fonts.spiritualBodyFont, { color: "#8B4513" }]}>
+                  Back
+                </Text>
               </TouchableOpacity>
 
-              <Text style={styles.detailsTitle}>
-                {reportReasons.find((r) => r.id === selectedReason)?.label}
-              </Text>
+              <View style={styles.detailsHeader}>
+                <View style={[styles.selectedReasonIcon, { backgroundColor: '#8B4513' + '15' }]}>
+                  <Ionicons 
+                    name={reportReasons.find((r) => r.id === selectedReason)?.icon as any} 
+                    size={28} 
+                    color="#8B4513" 
+                  />
+                </View>
+                <Text style={[styles.detailsTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  {reportReasons.find((r) => r.id === selectedReason)?.label}
+                </Text>
+              </View>
 
-              <Text style={styles.detailsSubtitle}>
-                Please provide any additional details that might help us
-                (optional)
+              <Text style={[styles.detailsSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                Please provide any additional details that might help us understand the situation better (optional)
               </Text>
 
               <TextInput
-                style={styles.textInput}
-                placeholder="Add more context..."
-                placeholderTextColor="#B8C1B2"
+                style={[styles.textInput, { 
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.textDark,
+                  fontFamily: fonts.spiritualBodyFont?.fontFamily,
+                }]}
+                placeholder="Share more context to help us understand..."
+                placeholderTextColor={colors.textMuted}
                 multiline
                 numberOfLines={4}
                 value={additionalDetails}
                 onChangeText={setAdditionalDetails}
                 textAlignVertical="top"
+                maxLength={500}
               />
 
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, { backgroundColor: "#8B4513" }]}
                 onPress={handleSubmit}
+                activeOpacity={0.8}
               >
-                <Text style={styles.submitButtonText}>Submit Report</Text>
+                <Ionicons name="paper-plane" size={18} color="#FFFFFF" style={styles.submitIcon} />
+                <Text style={[styles.submitButtonText, fonts.spiritualBodyFont]}>
+                  Submit Report
+                </Text>
               </TouchableOpacity>
 
-              <Text style={styles.disclaimer}>
-                Reports are anonymous. We'll review this within 24 hours and
-                take appropriate action if our community guidelines have been
-                violated.
-              </Text>
-            </>
+              <View style={[styles.disclaimerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="information-circle" size={16} color={colors.textMuted} style={styles.disclaimerIcon} />
+                <Text style={[styles.disclaimer, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                  Reports are anonymous and confidential. We'll review this within 24 hours and take appropriate action if our community guidelines have been violated.
+                </Text>
+              </View>
+            </ScrollView>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -165,114 +231,199 @@ const ReportModal: React.FC<ReportModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#EDE9E3",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: "85%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.xl,
+    maxHeight: "90%",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+    marginBottom: Spacing.lg,
   },
   closeButton: {
-    padding: 8,
+    padding: Spacing.sm,
+    borderRadius: 20,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#7E7972",
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
   },
   placeholder: {
     width: 40,
   },
+  introSection: {
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.xl,
+  },
+  warningIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
   subtitle: {
-    fontSize: 16,
-    color: "#7E7972",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.3,
+  },
+  description: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+    lineHeight: Typography.sizes.sm * 1.4,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
   reasonsList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.xl,
+    maxHeight: 400,
   },
   reasonItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#D3C6BA",
+    padding: Spacing.lg,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  reasonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  reasonIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
   },
   reasonText: {
-    fontSize: 16,
-    color: "#7E7972",
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    flex: 1,
+    letterSpacing: 0.2,
+  },
+  detailsContainer: {
+    paddingHorizontal: Spacing.xl,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
+    padding: Spacing.sm,
+    alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: 16,
-    color: "#7E7972",
-    marginLeft: 8,
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.xs,
+    letterSpacing: 0.3,
+  },
+  detailsHeader: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  selectedReasonIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
   },
   detailsTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#7E7972",
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   detailsSubtitle: {
-    fontSize: 14,
-    color: "#7E7972",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    fontSize: Typography.sizes.sm,
+    lineHeight: Typography.sizes.sm * 1.4,
+    marginBottom: Spacing.xl,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
   textInput: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    fontSize: 16,
-    color: "#7E7972",
-    minHeight: 100,
+    borderRadius: 16,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+    fontSize: Typography.sizes.base,
+    minHeight: 120,
     borderWidth: 1,
-    borderColor: "#D3C6BA",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   submitButton: {
-    backgroundColor: "#D8BFAA",
-    borderRadius: 25,
-    paddingVertical: 14,
-    marginHorizontal: 20,
-    alignItems: "center",
-    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.xl,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  submitIcon: {
+    marginRight: Spacing.sm,
   },
   submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.5,
+  },
+  disclaimerContainer: {
+    flexDirection: 'row',
+    padding: Spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  disclaimerIcon: {
+    marginRight: Spacing.sm,
+    marginTop: 2,
   },
   disclaimer: {
-    fontSize: 12,
-    color: "#B8C1B2",
-    paddingHorizontal: 20,
-    textAlign: "center",
-    lineHeight: 18,
+    fontSize: Typography.sizes.xs,
+    lineHeight: Typography.sizes.xs * 1.4,
+    flex: 1,
+    letterSpacing: 0.2,
   },
 });
 
