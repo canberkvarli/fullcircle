@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.md,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
