@@ -1,4 +1,4 @@
-framework module RNFBStorage {
+module RNFBStorage {
   umbrella header "RNFBStorage-umbrella.h"
 
   export *

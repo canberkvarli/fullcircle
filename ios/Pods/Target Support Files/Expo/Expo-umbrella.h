@@ -10,8 +10,8 @@
 #endif
 #endif
 
-#import "EXAppDefinesLoader.h"
-#import "Expo.h"
+#import "Expo/EXAppDefinesLoader.h"
+#import "Expo/Expo.h"
 
 FOUNDATION_EXPORT double ExpoVersionNumber;
 FOUNDATION_EXPORT const unsigned char ExpoVersionString[];

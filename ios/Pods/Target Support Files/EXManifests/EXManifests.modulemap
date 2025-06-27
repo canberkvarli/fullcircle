@@ -1,4 +1,4 @@
-framework module EXManifests {
+module EXManifests {
   umbrella header "EXManifests-umbrella.h"
 
   export *

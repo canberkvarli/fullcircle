@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "5A39A65B8CCFB9D3D883462C9DACC484"
-               BuildableName = "SDWebImageAVIFCoder.framework"
+               BuildableName = "libSDWebImageAVIFCoder.a"
                BlueprintName = "SDWebImageAVIFCoder"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

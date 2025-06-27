@@ -16,7 +16,6 @@ import ExpoImage
 import ExpoImageManipulator
 import ExpoImagePicker
 import ExpoKeepAwake
-import ExpoLinearGradient
 import ExpoHead
 import ExpoSystemUI
 import ExpoWebBrowser
@@ -39,7 +38,6 @@ public class ExpoModulesProvider: ModulesProvider {
       ImageManipulatorModule.self,
       ImagePickerModule.self,
       KeepAwakeModule.self,
-      LinearGradientModule.self,
       ExpoHeadModule.self,
       ExpoSystemUIModule.self,
       WebBrowserModule.self,
@@ -62,7 +60,6 @@ public class ExpoModulesProvider: ModulesProvider {
       ImageManipulatorModule.self,
       ImagePickerModule.self,
       KeepAwakeModule.self,
-      LinearGradientModule.self,
       ExpoHeadModule.self,
       ExpoSystemUIModule.self,
       WebBrowserModule.self

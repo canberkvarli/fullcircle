@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "5476F82C9430F9DD7EC76D0150754254"
-               BuildableName = "RNGoogleSignin.framework"
+               BuildableName = "libRNGoogleSignin.a"
                BlueprintName = "RNGoogleSignin"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

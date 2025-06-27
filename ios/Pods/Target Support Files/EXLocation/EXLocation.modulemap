@@ -1,4 +1,4 @@
-framework module EXLocation {
+module EXLocation {
   umbrella header "EXLocation-umbrella.h"
 
   export *

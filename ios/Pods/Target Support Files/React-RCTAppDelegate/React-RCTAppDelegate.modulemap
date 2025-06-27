@@ -1,4 +1,4 @@
-framework module React_RCTAppDelegate {
+module React_RCTAppDelegate {
   umbrella header "React-RCTAppDelegate-umbrella.h"
 
   export *

@@ -10,7 +10,7 @@
 #endif
 #endif
 
-#import "react_native_log.h"
+#import "logger/react_native_log.h"
 
 FOUNDATION_EXPORT double loggerVersionNumber;
 FOUNDATION_EXPORT const unsigned char loggerVersionString[];

@@ -1,4 +1,4 @@
-framework module ExpoImage {
+module ExpoImage {
   umbrella header "ExpoImage-umbrella.h"
 
   export *

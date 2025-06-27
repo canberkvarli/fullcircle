@@ -1,4 +1,4 @@
-framework module RNGestureHandler {
+module RNGestureHandler {
   umbrella header "RNGestureHandler-umbrella.h"
 
   export *

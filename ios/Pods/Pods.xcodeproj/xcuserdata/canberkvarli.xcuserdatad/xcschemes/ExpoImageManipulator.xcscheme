@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "546D2CA20C815661A4A23CACE4BC3A85"
-               BuildableName = "ExpoImageManipulator.framework"
+               BuildableName = "libExpoImageManipulator.a"
                BlueprintName = "ExpoImageManipulator"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

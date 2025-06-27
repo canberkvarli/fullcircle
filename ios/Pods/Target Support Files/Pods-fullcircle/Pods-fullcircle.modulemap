@@ -1,4 +1,4 @@
-framework module Pods_fullcircle {
+module Pods_fullcircle {
   umbrella header "Pods-fullcircle-umbrella.h"
 
   export *

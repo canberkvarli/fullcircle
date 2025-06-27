@@ -1,4 +1,4 @@
-framework module React_Fabric {
+module React_Fabric {
   umbrella header "React-Fabric-umbrella.h"
 
   export *

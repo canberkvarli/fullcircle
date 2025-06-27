@@ -1,4 +1,4 @@
-framework module ExpoAdapterGoogleSignIn {
+module ExpoAdapterGoogleSignIn {
   umbrella header "ExpoAdapterGoogleSignIn-umbrella.h"
 
   export *

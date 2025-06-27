@@ -1,4 +1,4 @@
-framework module SDWebImageAVIFCoder {
+module SDWebImageAVIFCoder {
   umbrella header "SDWebImageAVIFCoder-umbrella.h"
 
   export *

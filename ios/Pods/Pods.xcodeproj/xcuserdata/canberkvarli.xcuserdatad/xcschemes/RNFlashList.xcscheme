@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "5EDB6F06D3F9CFD759868DCF5FEC8AB9"
-               BuildableName = "RNFlashList.framework"
+               BuildableName = "libRNFlashList.a"
                BlueprintName = "RNFlashList"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

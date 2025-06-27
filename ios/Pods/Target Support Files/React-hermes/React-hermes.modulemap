@@ -1,4 +1,4 @@
-framework module reacthermes {
+module reacthermes {
   umbrella header "React-hermes-umbrella.h"
 
   export *

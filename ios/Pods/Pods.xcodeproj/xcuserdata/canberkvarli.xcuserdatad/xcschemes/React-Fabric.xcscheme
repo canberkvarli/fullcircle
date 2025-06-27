@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "50DBAF155FAFB994E067BA8820221EDF"
-               BuildableName = "React_Fabric.framework"
+               BuildableName = "libReact-Fabric.a"
                BlueprintName = "React-Fabric"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

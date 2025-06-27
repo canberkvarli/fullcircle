@@ -47,4 +47,4 @@ with_node \
   generate-modules-provider  \
   --target "/Users/canberkvarli/Development/fullcircle/ios/Pods/Target Support Files/Pods-fullcircle/ExpoModulesProvider.swift" \
   --platform "apple" \
-  --packages "@react-native-google-signin/google-signin" "expo-asset" "expo-av" "expo-constants" "expo-dev-launcher" "expo-dev-menu" "expo-file-system" "expo-font" "expo-image" "expo-image-manipulator" "expo-image-picker" "expo-keep-awake" "expo-linear-gradient" "expo-router" "expo-system-ui" "expo-web-browser"
+  --packages "@react-native-google-signin/google-signin" "expo-asset" "expo-av" "expo-constants" "expo-dev-launcher" "expo-dev-menu" "expo-file-system" "expo-font" "expo-image" "expo-image-manipulator" "expo-image-picker" "expo-keep-awake" "expo-router" "expo-system-ui" "expo-web-browser"

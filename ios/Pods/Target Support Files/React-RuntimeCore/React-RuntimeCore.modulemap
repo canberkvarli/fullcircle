@@ -1,4 +1,4 @@
-framework module React_RuntimeCore {
+module react_runtime {
   umbrella header "React-RuntimeCore-umbrella.h"
 
   export *

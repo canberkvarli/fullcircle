@@ -18,8 +18,8 @@
 #import "react/runtime/PlatformTimerRegistry.h"
 #import "react/runtime/ReactInstance.h"
 #import "react/runtime/TimerManager.h"
-#import "react/runtime/nativeviewconfig/LegacyUIManagerConstantsProviderBinding.h"
+#import "react/runtime/LegacyUIManagerConstantsProviderBinding.h"
 
-FOUNDATION_EXPORT double React_RuntimeCoreVersionNumber;
-FOUNDATION_EXPORT const unsigned char React_RuntimeCoreVersionString[];
+FOUNDATION_EXPORT double react_runtimeVersionNumber;
+FOUNDATION_EXPORT const unsigned char react_runtimeVersionString[];
 

@@ -1,4 +1,4 @@
-framework module ExpoImageManipulator {
+module ExpoImageManipulator {
   umbrella header "ExpoImageManipulator-umbrella.h"
 
   export *

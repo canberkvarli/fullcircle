@@ -10,7 +10,7 @@
 #endif
 #endif
 
-#import "HermesExecutorFactory.h"
+#import "reacthermes/HermesExecutorFactory.h"
 
 FOUNDATION_EXPORT double reacthermesVersionNumber;
 FOUNDATION_EXPORT const unsigned char reacthermesVersionString[];

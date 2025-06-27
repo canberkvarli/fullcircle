@@ -1,4 +1,4 @@
-framework module RNFlashList {
+module RNFlashList {
   umbrella header "RNFlashList-umbrella.h"
 
   export *

@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "C1A1C02FAD3999B6DAC48835EC954521"
-               BuildableName = "react_native_maps.framework"
+               BuildableName = "libreact-native-maps.a"
                BlueprintName = "react-native-maps"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

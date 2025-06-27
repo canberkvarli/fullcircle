@@ -10,10 +10,10 @@
 #endif
 #endif
 
-#import "RCTBlobCollector.h"
-#import "RCTBlobManager.h"
-#import "RCTBlobPlugins.h"
-#import "RCTFileReaderModule.h"
+#import "RCTBlob/RCTBlobCollector.h"
+#import "RCTBlob/RCTBlobManager.h"
+#import "RCTBlob/RCTBlobPlugins.h"
+#import "RCTBlob/RCTFileReaderModule.h"
 
 FOUNDATION_EXPORT double RCTBlobVersionNumber;
 FOUNDATION_EXPORT const unsigned char RCTBlobVersionString[];

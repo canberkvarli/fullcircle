@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2151114095D82600F66E9DA69EDDEAB3"
-               BuildableName = "Pods_fullcircle.framework"
+               BuildableName = "libPods-fullcircle.a"
                BlueprintName = "Pods-fullcircle"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

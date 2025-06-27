@@ -1,4 +1,4 @@
-framework module FirebaseCoreExtension {
+module FirebaseCoreExtension {
   umbrella header "FirebaseCoreExtension-umbrella.h"
 
   export *

@@ -1,4 +1,4 @@
-framework module SDWebImageSVGCoder {
+module SDWebImageSVGCoder {
   umbrella header "SDWebImageSVGCoder.h"
 
   export *

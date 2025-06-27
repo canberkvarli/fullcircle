@@ -1,4 +1,4 @@
-framework module folly {
+module folly {
   umbrella header "RCT-Folly-umbrella.h"
 
   export *

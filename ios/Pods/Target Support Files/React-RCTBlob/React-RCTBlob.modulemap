@@ -1,4 +1,4 @@
-framework module RCTBlob {
+module RCTBlob {
   umbrella header "React-RCTBlob-umbrella.h"
 
   export *

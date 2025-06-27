@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6198F4A00D2F03684C21DEE5666E1A1E"
-               BuildableName = "libdav1d.framework"
+               BuildableName = "liblibdav1d.a"
                BlueprintName = "libdav1d"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

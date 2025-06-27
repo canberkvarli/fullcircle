@@ -1,4 +1,4 @@
-framework module ExpoKeepAwake {
+module ExpoKeepAwake {
   umbrella header "ExpoKeepAwake-umbrella.h"
 
   export *

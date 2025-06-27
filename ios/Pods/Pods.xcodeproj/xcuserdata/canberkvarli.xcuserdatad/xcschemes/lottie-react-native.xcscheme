@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D0A4E77DD13672F3E2E1D9593F999DBA"
-               BuildableName = "lottie_react_native.framework"
+               BuildableName = "liblottie-react-native.a"
                BlueprintName = "lottie-react-native"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

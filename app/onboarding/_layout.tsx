@@ -10,14 +10,9 @@ export default function OnboardingStackLayout() {
         name="PhoneVerificationScreen"
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="WelcomeScreen" options={{ headerShown: false }} />
       <Stack.Screen name="NameScreen" options={{ headerShown: false }} />
       <Stack.Screen name="EmailScreen" options={{ headerShown: false }} />
       <Stack.Screen name="BirthdateScreen" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="AddBasicInfoScreen"
-        options={{ headerShown: false }}
-      />
       <Stack.Screen name="LocationScreen" options={{ headerShown: false }} />
       <Stack.Screen name="GenderScreen" options={{ headerShown: false }} />
       <Stack.Screen

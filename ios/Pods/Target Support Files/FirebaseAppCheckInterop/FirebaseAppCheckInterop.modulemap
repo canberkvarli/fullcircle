@@ -1,4 +1,4 @@
-framework module FirebaseAppCheckInterop {
+module FirebaseAppCheckInterop {
   umbrella header "FirebaseAppCheckInterop-umbrella.h"
 
   export *

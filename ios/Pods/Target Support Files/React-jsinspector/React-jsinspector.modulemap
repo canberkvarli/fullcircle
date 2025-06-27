@@ -1,4 +1,4 @@
-framework module jsinspector_modern {
+module jsinspector_modern {
   umbrella header "React-jsinspector-umbrella.h"
 
   export *

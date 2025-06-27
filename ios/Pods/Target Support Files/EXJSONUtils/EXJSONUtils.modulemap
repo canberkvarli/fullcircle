@@ -1,4 +1,4 @@
-framework module EXJSONUtils {
+module EXJSONUtils {
   umbrella header "EXJSONUtils-umbrella.h"
 
   export *

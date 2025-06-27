@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8D9D57B9C797E46391FD9101B7AEAE86"
-               BuildableName = "react_native_keyboard_controller.framework"
+               BuildableName = "libreact-native-keyboard-controller.a"
                BlueprintName = "react-native-keyboard-controller"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

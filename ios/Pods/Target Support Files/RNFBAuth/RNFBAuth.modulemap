@@ -1,4 +1,4 @@
-framework module RNFBAuth {
+module RNFBAuth {
   umbrella header "RNFBAuth-umbrella.h"
 
   export *

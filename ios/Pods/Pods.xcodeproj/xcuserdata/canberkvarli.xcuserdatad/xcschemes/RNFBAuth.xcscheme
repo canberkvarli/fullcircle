@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "40074CA5658FB2002FAF3C521C19ADF9"
-               BuildableName = "RNFBAuth.framework"
+               BuildableName = "libRNFBAuth.a"
                BlueprintName = "RNFBAuth"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

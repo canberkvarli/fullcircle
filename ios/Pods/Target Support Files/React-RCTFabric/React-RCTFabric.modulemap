@@ -1,4 +1,4 @@
-framework module RCTFabric {
+module RCTFabric {
   umbrella header "React-RCTFabric-umbrella.h"
 
   export *

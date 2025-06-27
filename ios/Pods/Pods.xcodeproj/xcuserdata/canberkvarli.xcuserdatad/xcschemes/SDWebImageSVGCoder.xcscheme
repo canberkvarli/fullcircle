@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "B856BA85F30B9CB0BFFCDB44F4FB316F"
-               BuildableName = "SDWebImageSVGCoder.framework"
+               BuildableName = "libSDWebImageSVGCoder.a"
                BlueprintName = "SDWebImageSVGCoder"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

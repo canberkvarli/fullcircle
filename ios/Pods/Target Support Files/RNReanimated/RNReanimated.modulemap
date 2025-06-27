@@ -1,4 +1,4 @@
-framework module RNReanimated {
+module RNReanimated {
   umbrella header "RNReanimated-umbrella.h"
 
   export *

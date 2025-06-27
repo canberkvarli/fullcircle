@@ -1,4 +1,4 @@
-framework module RNScreens {
+module RNScreens {
   umbrella header "RNScreens-umbrella.h"
 
   export *

@@ -17,8 +17,7 @@
   "header_dir": "yoga",
   "requires_arc": false,
   "pod_target_xcconfig": {
-    "DEFINES_MODULE": "YES",
-    "HEADER_SEARCH_PATHS": "\"$(PODS_TARGET_SRCROOT)\""
+    "DEFINES_MODULE": "YES"
   },
   "compiler_flags": [
     "-fno-omit-frame-pointer",

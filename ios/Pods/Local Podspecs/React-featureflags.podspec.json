@@ -16,9 +16,7 @@
   "header_dir": "react/featureflags",
   "pod_target_xcconfig": {
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
-    "HEADER_SEARCH_PATHS": "\"$(PODS_TARGET_SRCROOT)/../..\"",
+    "HEADER_SEARCH_PATHS": "",
     "DEFINES_MODULE": "YES"
-  },
-  "module_name": "React_featureflags",
-  "header_mappings_dir": "../.."
+  }
 }

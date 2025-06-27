@@ -1,4 +1,4 @@
-framework module RNVectorIcons {
+module RNVectorIcons {
   umbrella header "RNVectorIcons-umbrella.h"
 
   export *

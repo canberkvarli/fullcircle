@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "916430883E8FAAED8BDB3A117ECC879B"
-               BuildableName = "EXJSONUtils.framework"
+               BuildableName = "libEXJSONUtils.a"
                BlueprintName = "EXJSONUtils"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

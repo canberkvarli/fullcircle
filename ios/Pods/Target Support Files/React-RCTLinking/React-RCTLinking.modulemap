@@ -1,4 +1,4 @@
-framework module RCTLinking {
+module RCTLinking {
   umbrella header "React-RCTLinking-umbrella.h"
 
   export *

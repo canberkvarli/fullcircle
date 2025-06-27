@@ -22,26 +22,27 @@
         "googleMaps": {
           "apiKey": "AIzaSyCjHACigiDWxd6l8iZuwH6kyx5jbF3TKbg"
         },
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
-        "NSPhotoLibraryUsageDescription": "Allow Circle to access your photo library to share your photos.",
-        "NSCameraUsageDescription": "Allow Circle to access your camera to take photos.",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLName": "com.fullcircle.app",
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft"
-            ]
-          },
-          {
-            "CFBundleURLName": "com.fullcircle.app",
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft"
-            ]
-          }
-        ],
-        "ITSAppUsesNonExemptEncryption": false
+        "infoPlist": {
+          "NSLocationWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
+          "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow FullCircle to use your location to find nearby matches.",
+          "NSPhotoLibraryUsageDescription": "Allow Circle to access your photo library to share your photos.",
+          "NSCameraUsageDescription": "Allow Circle to access your camera to take photos.",
+          "CFBundleURLTypes": [
+            {
+              "CFBundleURLName": "com.fullcircle.app",
+              "CFBundleURLSchemes": [
+                "com.googleusercontent.apps.856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft"
+              ]
+            },
+            {
+              "CFBundleURLName": "com.fullcircle.app",
+              "CFBundleURLSchemes": [
+                "com.googleusercontent.apps.856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft"
+              ]
+            }
+          ],
+          "ITSAppUsesNonExemptEncryption": false
+        }
       }
     },
     "android": {
@@ -86,7 +87,8 @@
         "@react-native-firebase/app",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "useModularHeaders": true
           }
         }
       ],
@@ -121,7 +123,8 @@
             "useFrameworks": "static",
             "deploymentTarget": "13.4",
             "newArchEnabled": false,
-            "flipper": false
+            "flipper": false,
+            "useModularHeaders": true
           },
           "android": {
             "kotlinVersion": "1.9.25",
@@ -142,5 +145,10 @@
         "projectId": "5e864641-186b-4d06-99f9-b7ad85439ff4"
       }
     }
+  },
+  "extra": {
+    "eas": {
+      "projectId": "5e864641-186b-4d06-99f9-b7ad85439ff4"
+    }
   }
-}}
+}

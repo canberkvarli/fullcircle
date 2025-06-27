@@ -1,4 +1,4 @@
-framework module ExpoWebBrowser {
+module ExpoWebBrowser {
   umbrella header "ExpoWebBrowser-umbrella.h"
 
   export *

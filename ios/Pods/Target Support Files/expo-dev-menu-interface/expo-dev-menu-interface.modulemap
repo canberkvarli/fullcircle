@@ -1,4 +1,4 @@
-framework module EXDevMenuInterface {
+module EXDevMenuInterface {
   umbrella header "expo-dev-menu-interface-umbrella.h"
 
   export *

@@ -1,4 +1,4 @@
-framework module ExpoFileSystem {
+module ExpoFileSystem {
   umbrella header "ExpoFileSystem-umbrella.h"
 
   export *

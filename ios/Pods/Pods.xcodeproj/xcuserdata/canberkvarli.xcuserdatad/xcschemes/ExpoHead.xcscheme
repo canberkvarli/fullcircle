@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "1F7B1148E4F705C70D8AACF25D272A02"
-               BuildableName = "ExpoHead.framework"
+               BuildableName = "libExpoHead.a"
                BlueprintName = "ExpoHead"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

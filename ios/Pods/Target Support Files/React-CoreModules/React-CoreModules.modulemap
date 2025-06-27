@@ -1,4 +1,4 @@
-framework module CoreModules {
+module CoreModules {
   umbrella header "React-CoreModules-umbrella.h"
 
   export *

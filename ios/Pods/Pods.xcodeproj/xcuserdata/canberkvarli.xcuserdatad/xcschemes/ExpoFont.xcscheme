@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "105765E503515FDF1EFEBEFA6F166225"
-               BuildableName = "ExpoFont.framework"
+               BuildableName = "libExpoFont.a"
                BlueprintName = "ExpoFont"
                ReferencedContainer = "container:Pods.xcodeproj">
             </BuildableReference>

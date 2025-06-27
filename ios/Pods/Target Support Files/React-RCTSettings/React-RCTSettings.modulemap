@@ -1,4 +1,4 @@
-framework module RCTSettings {
+module RCTSettings {
   umbrella header "React-RCTSettings-umbrella.h"
 
   export *

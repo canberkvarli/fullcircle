@@ -12,6 +12,6 @@
 
 #import "react/config/ReactNativeConfig.h"
 
-FOUNDATION_EXPORT double React_nativeconfigVersionNumber;
-FOUNDATION_EXPORT const unsigned char React_nativeconfigVersionString[];
+FOUNDATION_EXPORT double react_configVersionNumber;
+FOUNDATION_EXPORT const unsigned char react_configVersionString[];
 
