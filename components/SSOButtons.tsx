@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useUserContext } from "@/context/UserContext";
 import { useFont } from "@/hooks/useFont";
@@ -53,6 +54,7 @@ function SSOButtons(): JSX.Element {
           onPress={onGoogleSignIn}
           disabled={isInProgress}
         >
+          <Ionicons name="logo-google" size={20} color={colors.text} style={styles.buttonIcon} />
           <Text style={styles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
         
@@ -61,7 +63,8 @@ function SSOButtons(): JSX.Element {
           onPress={handleSignInWithApple}
           disabled={isInProgress}
         >
-          <Text style={styles.buttonText}>Continue with Apple</Text>
+          <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+          <Text style={styles.appleButtonText}>Continue with Apple</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -69,6 +72,7 @@ function SSOButtons(): JSX.Element {
           onPress={handleSignInWithPhoneNumber}
           disabled={isInProgress}
         >
+          <Ionicons name="call-outline" size={20} color="#FFFFFF" style={styles.buttonIcon} />
           <Text style={styles.phoneButtonText}>Continue with Phone</Text>
         </TouchableOpacity>
       </View>
@@ -103,6 +107,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderRadius: BorderRadius.full,
       alignItems: "center",
       justifyContent: "center",
+      flexDirection: "row",
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -115,6 +120,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
       }),
     },
+    buttonIcon: {
+      marginRight: Spacing.sm,
+    },
     googleButton: {
       backgroundColor: colors.primary,
     },
@@ -122,17 +130,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: '#000000',
     },
     phoneButton: {
-      backgroundColor: 'transparent',
+      backgroundColor: 'rgba(255, 255, 255, 0.15)', // Semi-transparent white background
       borderWidth: 2,
       borderColor: colors.primary,
-    },
-    buttonText: {
-      ...buttonFont,
-      color: colors.text,
-      letterSpacing: 0.5,
-      textShadowColor: 'rgba(0, 0, 0, 0.3)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 2,
     },
     googleButtonText: {
       ...buttonFont,
@@ -142,13 +142,22 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
-    phoneButtonText: {
+    appleButtonText: {
       ...buttonFont,
-      color: colors.text,
+      color: '#FFFFFF',
       letterSpacing: 0.5,
-      textShadowColor: 'rgba(0, 0, 0, 0.4)',
+      textShadowColor: 'rgba(0, 0, 0, 0.3)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
+    },
+    phoneButtonText: {
+      ...buttonFont,
+      color: '#FFFFFF', // White text for better visibility
+      letterSpacing: 0.5,
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3,
+      fontWeight: '600',
     },
     logoutButton: {
       marginTop: Spacing.md,

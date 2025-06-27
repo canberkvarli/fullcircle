@@ -28,6 +28,7 @@ function EmailScreen() {
     navigateToNextScreen,
     navigateToPreviousScreen,
     googleCredential,
+    setGoogleCredential,
   } = useUserContext();
   const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(
@@ -53,6 +54,13 @@ function EmailScreen() {
     });
     return unsubscribe;
   }, []);
+
+  // Helper function to check if Google is connected
+  const isGoogleConnected = () => {
+    return userData?.settings?.connectedAccounts?.google === true || 
+           FIREBASE_AUTH.currentUser?.providerData?.some(provider => provider.providerId === 'google.com') ||
+           googleCredential !== null;
+  };
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
@@ -84,24 +92,58 @@ function EmailScreen() {
     try {
       await GoogleSignin.hasPlayServices();
       const { idToken } = await GoogleSignin.signIn();
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const { user } =
-        await FIREBASE_AUTH.signInWithCredential(googleCredential);
-      const userId = await user.getIdToken();
-      console.log("userID from Google Sign-In:", userId);
-
-      await updateUserData({
-        userId,
-        GoogleSSOEnabled: true,
-      });
-
-      if (!user.emailVerified) {
-        await user.sendEmailVerification();
-        navigateToNextScreen();
+      const newGoogleCredential = auth.GoogleAuthProvider.credential(idToken);
+      
+      // Check if there's a current user (phone user)
+      if (!FIREBASE_AUTH.currentUser) {
+        Alert.alert("Error", "No user session found. Please sign in with phone first.");
+        return;
       }
-    } catch (error) {
+
+      // Link the Google credential to the existing phone user
+      await FIREBASE_AUTH.currentUser.linkWithCredential(newGoogleCredential);
+      
+      // Get Google user info for updating profile
+      const googleUser = await GoogleSignin.getCurrentUser();
+      
+      // Update user data with Google info but keep existing data
+      await updateUserData({
+        email: googleUser?.user.email || email,
+        GoogleSSOEnabled: true,
+        firstName: googleUser?.user.givenName || userData.firstName,
+        lastName: googleUser?.user.familyName || userData.lastName,
+        fullName: googleUser?.user.name || userData.fullName,
+        settings: {
+          ...userData.settings,
+          connectedAccounts: {
+            ...userData.settings?.connectedAccounts,
+            google: true,
+          },
+        },
+      });
+      
+      // Set the googleCredential in context so the UI updates
+      setGoogleCredential(newGoogleCredential);
+      
+      console.log("Successfully linked Google account to phone user");
+      Alert.alert("Divine Connection", "Your Google energy has been successfully linked! ✨");
+      
+    } catch (error: any) {
       console.error("Google sign-in error: ", error);
-      Alert.alert("Divine Connection", "The cosmic bridge to Google couldn't be established: " + error);
+      
+      if (error.code === 'auth/credential-already-in-use') {
+        Alert.alert(
+          "Account Already Used",
+          "This Google account is already linked to another account."
+        );
+      } else if (error.code === 'auth/provider-already-linked') {
+        Alert.alert(
+          "Already Linked",
+          "Your account is already connected to Google."
+        );
+      } else {
+        Alert.alert("Error", "Failed to link Google account: " + error.message);
+      }
     }
   };
 
@@ -111,10 +153,10 @@ function EmailScreen() {
         Alert.alert("Sacred Apple Connection", "This divine pathway is being prepared for you!");
         break;
       case 2:
-        if (googleCredential) {
+        if (isGoogleConnected()) {
           Alert.alert(
-            "Switch Google Energy",
-            "Would you like to align with a different Google essence?",
+            "Google Energy Connected",
+            "Your Google account is already linked to your sacred journey. Would you like to switch to a different Google account?",
             [
               {
                 text: "Keep Current",
@@ -122,8 +164,13 @@ function EmailScreen() {
               },
               {
                 text: "Switch Energy",
-                onPress: () => {
-                  GoogleSignin.signOut().then(() => handleGoogleSignIn());
+                onPress: async () => {
+                  try {
+                    await GoogleSignin.signOut();
+                    handleGoogleSignIn();
+                  } catch (error) {
+                    console.error("Error signing out from Google:", error);
+                  }
                 },
               },
             ]
@@ -224,35 +271,36 @@ function EmailScreen() {
                   Linking your spiritual account creates deeper resonance and easier access to your Circle.
                 </Text>
                 {[
-                  { option: 1, text: "Connect your Apple essence", icon: "logo-apple" },
-                  { option: 2, text: "Connect your Google energy", icon: "logo-google" },
-                  { option: 3, text: "Continue with current flow", icon: "checkmark-circle" },
+                  { option: 1, text: "Connect your Apple essence", icon: "logo-apple", connected: false },
+                  { 
+                    option: 2, 
+                    text: "Connect your Google energy", 
+                    icon: "logo-google", 
+                    connected: isGoogleConnected() 
+                  },
+                  { option: 3, text: "Continue with current flow", icon: "checkmark-circle", connected: false },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.option}
                     style={[
                       styles.modalOption,
-                      item.option === 2 && googleCredential
-                        ? styles.connectedOption
-                        : null,
+                      item.connected ? styles.connectedOption : null,
                     ]}
                     onPress={() => handleModalOption(item.option)}
                   >
                     <Ionicons 
                       name={item.icon as any} 
                       size={20} 
-                      color={item.option === 2 && googleCredential ? colors.success : colors.textDark}
+                      color={item.connected ? colors.success : colors.textDark}
                       style={styles.modalOptionIcon}
                     />
                     <Text
                       style={[
                         styles.modalOptionText,
-                        item.option === 2 && googleCredential
-                          ? styles.connectedText
-                          : null,
+                        item.connected ? styles.connectedText : null,
                       ]}
                     >
-                      {item.text}
+                      {item.connected && item.option === 2 ? "Google energy connected ✨" : item.text}
                     </Text>
                   </TouchableOpacity>
                 ))}

@@ -174,19 +174,19 @@ function LoginSignupScreen(): JSX.Element {
             )}
           </Animated.View>
           
-          {/* Terms and Conditions */}
-          <View style={styles.termsContainer}>
-            <Text style={styles.infoText}>
+          {/* Terms and Conditions - Enhanced visibility */}
+          <View style={[styles.termsContainer, styles.enhancedTermsContainer]}>
+            <Text style={[styles.infoText, styles.enhancedInfoText]}>
               By signing up for Circle, you agree to our{" "}
-              <Text style={styles.link} onPress={() => console.log("pressed")}>
+              <Text style={[styles.link, styles.enhancedLink]} onPress={() => console.log("pressed")}>
                 Terms of Service
               </Text>
               . Learn how we process your data in our{" "}
-              <Text style={styles.link} onPress={() => console.log("pressed")}>
+              <Text style={[styles.link, styles.enhancedLink]} onPress={() => console.log("pressed")}>
                 Privacy Policy
               </Text>
               {" "}and{" "}
-              <Text style={styles.link} onPress={() => console.log("pressed")}>
+              <Text style={[styles.link, styles.enhancedLink]} onPress={() => console.log("pressed")}>
                 Cookies Policy
               </Text>
               .
@@ -197,5 +197,6 @@ function LoginSignupScreen(): JSX.Element {
     </View>
   );
 }
+
 
 export default LoginSignupScreen;

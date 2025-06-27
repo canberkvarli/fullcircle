@@ -161,6 +161,43 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
       }),
     },
+    // Enhanced styles for better terms visibility
+    enhancedTermsContainer: {
+      backgroundColor: 'rgba(0, 0, 0, 0.7)', // Darker background for better contrast
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+      marginHorizontal: Spacing.md,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
+    },
+    enhancedInfoText: {
+      color: '#FFFFFF', // White text for maximum contrast
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 2,
+    },
+    enhancedLink: {
+      color: '#87CEEB', // Light blue for links
+      textDecorationLine: 'underline',
+      fontWeight: '600',
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 2,
+    },
   });
 };
 
