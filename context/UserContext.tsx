@@ -797,40 +797,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const docRef = doc(FIRESTORE, "users", userIdToUpdate);
-      const docSnapshot = await getDoc(docRef);
-      let existingData: any;
-      if (docSnapshot.exists) {
-        existingData = docSnapshot.data();
-      }
+      
+      // Instead of fetching and spreading existingData, use merge: true
+      // This will only update the fields you specify without overwriting others
+      await setDoc(docRef, data, { merge: true });
 
-      // Merge hiddenFields
-      let updatedHiddenFields = existingData?.hiddenFields || {};
+      // For hiddenFields specifically, handle merging manually if needed
       if (data.hiddenFields) {
-        updatedHiddenFields = {
-          ...updatedHiddenFields,
-          ...data.hiddenFields,
-        };
+        const docSnapshot = await getDoc(docRef);
+        if (docSnapshot.exists) {
+          const existingData = docSnapshot.data();
+          const mergedHiddenFields = {
+            ...(existingData?.hiddenFields || {}),
+            ...data.hiddenFields,
+          };
+          
+          await setDoc(docRef, { hiddenFields: mergedHiddenFields }, { merge: true });
+          
+          // Update local state with merged hiddenFields
+          setUserData((prevData) => ({
+            ...prevData,
+            ...data,
+            hiddenFields: mergedHiddenFields,
+          }));
+          return;
+        }
       }
 
-      const updatedData = {
-        ...existingData,
+      // Update local state - only merge the fields you're updating
+      setUserData((prevData) => ({
+        ...prevData,
         ...data,
-        hiddenFields: updatedHiddenFields,
-      };
+      }));
 
-      await setDoc(docRef, updatedData, { merge: true });
-
-      // Update local state
-      setUserData((prevData) => {
-        const newData = { ...prevData, ...data };
-        newData.hiddenFields = updatedHiddenFields;
-        return newData;
-      });
-      // userDataRef.current = {
-      //   ...userDataRef.current,
-      //   ...data,
-      //   hiddenFields: updatedHiddenFields,
-      // };
     } catch (error) {
       console.error("Failed to update user data: ", error);
     }
