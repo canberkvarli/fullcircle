@@ -1,6 +1,6 @@
 {
   "name": "React-featureflags",
-  "version": "0.74.5",
+  "version": "0.75.4",
   "summary": "React Native internal feature flags",
   "homepage": "https://reactnative.dev/",
   "license": "MIT",
@@ -10,13 +10,15 @@
   },
   "source": {
     "git": "https://github.com/facebook/react-native.git",
-    "tag": "v0.74.5"
+    "tag": "v0.75.4"
   },
   "source_files": "*.{cpp,h}",
   "header_dir": "react/featureflags",
   "pod_target_xcconfig": {
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
-    "HEADER_SEARCH_PATHS": "",
+    "HEADER_SEARCH_PATHS": "\"$(PODS_TARGET_SRCROOT)/../..\"",
     "DEFINES_MODULE": "YES"
-  }
+  },
+  "module_name": "React_featureflags",
+  "header_mappings_dir": "../.."
 }

@@ -1,6 +1,6 @@
 {
   "name": "React-debug",
-  "version": "0.74.5",
+  "version": "0.75.4",
   "summary": "-",
   "homepage": "https://reactnative.dev/",
   "license": "MIT",
@@ -10,12 +10,14 @@
   },
   "source": {
     "git": "https://github.com/facebook/react-native.git",
-    "tag": "v0.74.5"
+    "tag": "v0.75.4"
   },
   "source_files": "**/*.{cpp,h}",
   "header_dir": "react/debug",
   "pod_target_xcconfig": {
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
     "DEFINES_MODULE": "YES"
-  }
+  },
+  "module_name": "React_debug",
+  "header_mappings_dir": "../.."
 }

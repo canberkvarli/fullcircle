@@ -49,11 +49,14 @@ protected:
     : TurboModule(std::string{NativeGoogleSigninCxxSpec::kModuleName}, jsInvoker),
       delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
 
+
 private:
   class Delegate : public NativeGoogleSigninCxxSpecJSI {
   public:
     Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
-      NativeGoogleSigninCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
+      NativeGoogleSigninCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {
+
+    }
 
     jsi::Value signIn(jsi::Runtime &rt, jsi::Object params) override {
       static_assert(
@@ -153,6 +156,7 @@ private:
     }
 
   private:
+    friend class NativeGoogleSigninCxxSpec;
     T *instance_;
   };
 

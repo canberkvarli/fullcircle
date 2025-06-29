@@ -19,7 +19,7 @@ static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_getConstants
 static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_setInputMode(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->setInputMode(
     rt,
-    args[0].asNumber()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asNumber()
   );
   return jsi::Value::undefined();
 }
@@ -32,28 +32,28 @@ static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_setDefaultMo
 static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_dismiss(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->dismiss(
     rt,
-    args[0].asBool()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asBool()
   );
   return jsi::Value::undefined();
 }
 static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_setFocusTo(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->setFocusTo(
     rt,
-    args[0].asString(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asString(rt)
   );
   return jsi::Value::undefined();
 }
 static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_addListener(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->addListener(
     rt,
-    args[0].asString(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asString(rt)
   );
   return jsi::Value::undefined();
 }
 static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_removeListeners(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->removeListeners(
     rt,
-    args[0].asNumber()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asNumber()
   );
   return jsi::Value::undefined();
 }
@@ -76,29 +76,29 @@ static jsi::Value __hostFunction_NativeStatusBarManagerCompatCxxSpecJSI_getConst
 static jsi::Value __hostFunction_NativeStatusBarManagerCompatCxxSpecJSI_setHidden(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeStatusBarManagerCompatCxxSpecJSI *>(&turboModule)->setHidden(
     rt,
-    args[0].asBool()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asBool()
   );
   return jsi::Value::undefined();
 }
 static jsi::Value __hostFunction_NativeStatusBarManagerCompatCxxSpecJSI_setColor(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeStatusBarManagerCompatCxxSpecJSI *>(&turboModule)->setColor(
     rt,
-    args[0].asNumber(),
-    args[1].asBool()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asNumber(),
+    count <= 1 ? throw jsi::JSError(rt, "Expected argument in position 1 to be passed") : args[1].asBool()
   );
   return jsi::Value::undefined();
 }
 static jsi::Value __hostFunction_NativeStatusBarManagerCompatCxxSpecJSI_setTranslucent(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeStatusBarManagerCompatCxxSpecJSI *>(&turboModule)->setTranslucent(
     rt,
-    args[0].asBool()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asBool()
   );
   return jsi::Value::undefined();
 }
 static jsi::Value __hostFunction_NativeStatusBarManagerCompatCxxSpecJSI_setStyle(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeStatusBarManagerCompatCxxSpecJSI *>(&turboModule)->setStyle(
     rt,
-    args[0].asString(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asString(rt)
   );
   return jsi::Value::undefined();
 }

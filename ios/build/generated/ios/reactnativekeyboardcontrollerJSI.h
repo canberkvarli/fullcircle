@@ -44,11 +44,14 @@ protected:
     : TurboModule(std::string{NativeKeyboardControllerCxxSpec::kModuleName}, jsInvoker),
       delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
 
+
 private:
   class Delegate : public NativeKeyboardControllerCxxSpecJSI {
   public:
     Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
-      NativeKeyboardControllerCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
+      NativeKeyboardControllerCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {
+
+    }
 
     jsi::Object getConstants(jsi::Runtime &rt) override {
       static_assert(
@@ -108,6 +111,7 @@ private:
     }
 
   private:
+    friend class NativeKeyboardControllerCxxSpec;
     T *instance_;
   };
 
@@ -142,11 +146,14 @@ protected:
     : TurboModule(std::string{NativeStatusBarManagerCompatCxxSpec::kModuleName}, jsInvoker),
       delegate_(reinterpret_cast<T*>(this), jsInvoker) {}
 
+
 private:
   class Delegate : public NativeStatusBarManagerCompatCxxSpecJSI {
   public:
     Delegate(T *instance, std::shared_ptr<CallInvoker> jsInvoker) :
-      NativeStatusBarManagerCompatCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {}
+      NativeStatusBarManagerCompatCxxSpecJSI(std::move(jsInvoker)), instance_(instance) {
+
+    }
 
     jsi::Object getConstants(jsi::Runtime &rt) override {
       static_assert(
@@ -190,6 +197,7 @@ private:
     }
 
   private:
+    friend class NativeStatusBarManagerCompatCxxSpec;
     T *instance_;
   };
 

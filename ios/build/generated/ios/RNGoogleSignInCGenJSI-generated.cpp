@@ -14,25 +14,25 @@ namespace facebook::react {
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_signIn(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   return static_cast<NativeGoogleSigninCxxSpecJSI *>(&turboModule)->signIn(
     rt,
-    args[0].asObject(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asObject(rt)
   );
 }
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_configure(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   return static_cast<NativeGoogleSigninCxxSpecJSI *>(&turboModule)->configure(
     rt,
-    args[0].asObject(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asObject(rt)
   );
 }
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_addScopes(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   return static_cast<NativeGoogleSigninCxxSpecJSI *>(&turboModule)->addScopes(
     rt,
-    args[0].asObject(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asObject(rt)
   );
 }
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_playServicesAvailable(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   return static_cast<NativeGoogleSigninCxxSpecJSI *>(&turboModule)->playServicesAvailable(
     rt,
-    args[0].asBool()
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asBool()
   );
 }
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_signInSilently(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
@@ -53,7 +53,7 @@ static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_revokeAccess(jsi::
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_clearCachedAccessToken(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   return static_cast<NativeGoogleSigninCxxSpecJSI *>(&turboModule)->clearCachedAccessToken(
     rt,
-    args[0].asString(rt)
+    count <= 0 ? throw jsi::JSError(rt, "Expected argument in position 0 to be passed") : args[0].asString(rt)
   );
 }
 static jsi::Value __hostFunction_NativeGoogleSigninCxxSpecJSI_hasPreviousSignIn(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {

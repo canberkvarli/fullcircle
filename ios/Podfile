@@ -7,11 +7,18 @@ podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties
 ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
-use_autolinking_method_symbol = ('use' + '_native' + '_modules!').to_sym
-origin_autolinking_method = self.method(use_autolinking_method_symbol)
-self.define_singleton_method(use_autolinking_method_symbol) do |*args|
-  if ENV['EXPO_UNSTABLE_CORE_AUTOLINKING'] == '1'
-    Pod::UI.puts('Using expo-modules-autolinking as core autolinking source'.green)
+platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+install! 'cocoapods',
+  :deterministic_uuids => false
+
+prepare_react_native_project!
+
+target 'fullcircle' do
+  use_expo_modules!
+
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
     config_command = [
       'node',
       '--no-warnings',
@@ -22,33 +29,9 @@ self.define_singleton_method(use_autolinking_method_symbol) do |*args|
       '--platform',
       'ios'
     ]
-    origin_autolinking_method.call(config_command)
-  else
-    origin_autolinking_method.call()
   end
-end
 
-platform :ios, podfile_properties['ios.deploymentTarget'] || '13.4'
-install! 'cocoapods',
-  :deterministic_uuids => false
-
-# Required for Firebase with static frameworks
-use_modular_headers!
-
-prepare_react_native_project!
-
-target 'fullcircle' do
-  # Force Firebase v10.x to match react-native-firebase v20.x
-  pod 'Firebase/Core', '~> 10.29.0'
-  pod 'Firebase/Auth', '~> 10.29.0'
-  pod 'Firebase/Firestore', '~> 10.29.0'
-  pod 'Firebase/Storage', '~> 10.29.0'
-  pod 'gRPC-Core', '1.44.0'
-  pod 'gRPC-C++', '1.44.0'
-  pod 'BoringSSL-GRPC', '0.0.24'
-
-  use_expo_modules!
-  config = use_native_modules!
+  config = use_native_modules!(config_command)
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
   use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
@@ -71,85 +54,13 @@ target 'fullcircle' do
 
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
-    installer.target_installation_results.pod_target_installation_results.each do |pod_name, target_installation_result|
+    installer.target_installation_results.pod_target_installation_results
+      .each do |pod_name, target_installation_result|
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
         resource_bundle_target.build_configurations.each do |config|
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
-    end
-
-    # Comprehensive gRPC and Firebase fixes for newer Xcode
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # General fixes for all targets
-        config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        
-        # Comprehensive gRPC fixes
-        if target.name.include?('gRPC') || target.name.include?('grpc')
-          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= []
-          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GRPC_IOS_EVENT_ENGINE_CLIENT=1'
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-          config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
-          config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-          config.build_settings['CLANG_WARN_STRICT_PROTOTYPES'] = 'NO'
-          config.build_settings['CLANG_WARN_COMMA'] = 'NO'
-          config.build_settings['CLANG_WARN_RANGE_LOOP_ANALYSIS'] = 'NO'
-          config.build_settings['CLANG_WARN_SUSPICIOUS_MOVE'] = 'NO'
-          config.build_settings['CLANG_WARN_UNREACHABLE_CODE'] = 'NO'
-          
-          # Comprehensive header search paths
-          config.build_settings['HEADER_SEARCH_PATHS'] ||= []
-          config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/gRPC-Core/include'
-          config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/gRPC-Core/src'
-          config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/gRPC-Core'
-          config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/BoringSSL-GRPC/src/include'
-          config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/BoringSSL-GRPC/src'
-          config.build_settings['HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/abseil/absl'
-          
-          # User header search paths
-          config.build_settings['USER_HEADER_SEARCH_PATHS'] ||= []
-          config.build_settings['USER_HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/gRPC-Core/include'
-          config.build_settings['USER_HEADER_SEARCH_PATHS'] << '$(PODS_ROOT)/gRPC-Core/src'
-          
-          # Additional C++ flags
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] ||= []
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-missing-template-arg-list-after-template-kw'
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-c++20-extensions'
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-error'
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-shorten-64-to-32'
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-comma'
-          
-          # Additional C flags
-          config.build_settings['OTHER_CFLAGS'] ||= []
-          config.build_settings['OTHER_CFLAGS'] << '-Wno-shorten-64-to-32'
-          config.build_settings['OTHER_CFLAGS'] << '-Wno-comma'
-          config.build_settings['OTHER_CFLAGS'] << '-Wno-unreachable-code'
-        end
-
-        # Firebase specific fixes
-        if target.name.include?('Firebase')
-          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-          config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-          config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-        end
-        
-        # BoringSSL fixes
-        if target.name.include?('BoringSSL')
-          config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-          config.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
-        end
-      end
-    end
-  end
-
-  post_integrate do |installer|
-    begin
-      expo_patch_react_imports!(installer)
-    rescue => e
-      Pod::UI.warn e
     end
   end
 end

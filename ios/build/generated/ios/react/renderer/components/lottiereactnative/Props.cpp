@@ -31,6 +31,7 @@ LottieAnimationViewProps::LottieAnimationViewProps(
     loop(convertRawProp(context, rawProps, "loop", sourceProps.loop, {false})),
     autoPlay(convertRawProp(context, rawProps, "autoPlay", sourceProps.autoPlay, {false})),
     enableMergePathsAndroidForKitKatAndAbove(convertRawProp(context, rawProps, "enableMergePathsAndroidForKitKatAndAbove", sourceProps.enableMergePathsAndroidForKitKatAndAbove, {false})),
+    enableSafeModeAndroid(convertRawProp(context, rawProps, "enableSafeModeAndroid", sourceProps.enableSafeModeAndroid, {false})),
     hardwareAccelerationAndroid(convertRawProp(context, rawProps, "hardwareAccelerationAndroid", sourceProps.hardwareAccelerationAndroid, {false})),
     cacheComposition(convertRawProp(context, rawProps, "cacheComposition", sourceProps.cacheComposition, {false})),
     colorFilters(convertRawProp(context, rawProps, "colorFilters", sourceProps.colorFilters, {})),

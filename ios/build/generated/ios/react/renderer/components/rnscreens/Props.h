@@ -191,6 +191,7 @@ class RNSModalScreenProps final : public ViewProps {
   bool sheetExpandsWhenScrolledToEdge{false};
   bool customAnimationOnSwipe{false};
   bool fullScreenSwipeEnabled{false};
+  bool fullScreenSwipeShadowEnabled{false};
   bool homeIndicatorHidden{false};
   bool preventNativeDismiss{false};
   bool gestureEnabled{true};
@@ -209,6 +210,7 @@ class RNSModalScreenProps final : public ViewProps {
   bool hideKeyboardOnSwipe{false};
   Float activityState{-1.0};
   SharedColor navigationBarColor{};
+  bool navigationBarTranslucent{false};
   bool navigationBarHidden{false};
   bool nativeBackButtonDismissalEnabled{false};
 };
@@ -282,7 +284,7 @@ static inline std::string toString(const RNSScreenStackPresentation &value) {
     case RNSScreenStackPresentation::ContainedTransparentModal: return "containedTransparentModal";
   }
 }
-enum class RNSScreenStackAnimation { Default, Flip, Simple_push, None, Fade, Slide_from_right, Slide_from_left, Slide_from_bottom, Fade_from_bottom, Ios };
+enum class RNSScreenStackAnimation { Default, Flip, Simple_push, None, Fade, Slide_from_right, Slide_from_left, Slide_from_bottom, Fade_from_bottom, Ios, Ios_from_right, Ios_from_left };
 
 static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenStackAnimation &result) {
   auto string = (std::string)value;
@@ -296,6 +298,8 @@ static inline void fromRawValue(const PropsParserContext& context, const RawValu
   if (string == "slide_from_bottom") { result = RNSScreenStackAnimation::Slide_from_bottom; return; }
   if (string == "fade_from_bottom") { result = RNSScreenStackAnimation::Fade_from_bottom; return; }
   if (string == "ios") { result = RNSScreenStackAnimation::Ios; return; }
+  if (string == "ios_from_right") { result = RNSScreenStackAnimation::Ios_from_right; return; }
+  if (string == "ios_from_left") { result = RNSScreenStackAnimation::Ios_from_left; return; }
   abort();
 }
 
@@ -311,6 +315,8 @@ static inline std::string toString(const RNSScreenStackAnimation &value) {
     case RNSScreenStackAnimation::Slide_from_bottom: return "slide_from_bottom";
     case RNSScreenStackAnimation::Fade_from_bottom: return "fade_from_bottom";
     case RNSScreenStackAnimation::Ios: return "ios";
+    case RNSScreenStackAnimation::Ios_from_right: return "ios_from_right";
+    case RNSScreenStackAnimation::Ios_from_left: return "ios_from_left";
   }
 }
 enum class RNSScreenReplaceAnimation { Pop, Push };
@@ -388,6 +394,7 @@ class RNSScreenProps final : public ViewProps {
   bool sheetExpandsWhenScrolledToEdge{false};
   bool customAnimationOnSwipe{false};
   bool fullScreenSwipeEnabled{false};
+  bool fullScreenSwipeShadowEnabled{false};
   bool homeIndicatorHidden{false};
   bool preventNativeDismiss{false};
   bool gestureEnabled{true};
@@ -406,6 +413,7 @@ class RNSScreenProps final : public ViewProps {
   bool hideKeyboardOnSwipe{false};
   Float activityState{-1.0};
   SharedColor navigationBarColor{};
+  bool navigationBarTranslucent{false};
   bool navigationBarHidden{false};
   bool nativeBackButtonDismissalEnabled{false};
 };
@@ -433,6 +441,76 @@ static inline std::string toString(const RNSScreenStackHeaderConfigDirection &va
   switch (value) {
     case RNSScreenStackHeaderConfigDirection::Rtl: return "rtl";
     case RNSScreenStackHeaderConfigDirection::Ltr: return "ltr";
+  }
+}
+enum class RNSScreenStackHeaderConfigBackButtonDisplayMode { Minimal, Default, Generic };
+
+static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenStackHeaderConfigBackButtonDisplayMode &result) {
+  auto string = (std::string)value;
+  if (string == "minimal") { result = RNSScreenStackHeaderConfigBackButtonDisplayMode::Minimal; return; }
+  if (string == "default") { result = RNSScreenStackHeaderConfigBackButtonDisplayMode::Default; return; }
+  if (string == "generic") { result = RNSScreenStackHeaderConfigBackButtonDisplayMode::Generic; return; }
+  abort();
+}
+
+static inline std::string toString(const RNSScreenStackHeaderConfigBackButtonDisplayMode &value) {
+  switch (value) {
+    case RNSScreenStackHeaderConfigBackButtonDisplayMode::Minimal: return "minimal";
+    case RNSScreenStackHeaderConfigBackButtonDisplayMode::Default: return "default";
+    case RNSScreenStackHeaderConfigBackButtonDisplayMode::Generic: return "generic";
+  }
+}
+enum class RNSScreenStackHeaderConfigBlurEffect { None, ExtraLight, Light, Dark, Regular, Prominent, SystemUltraThinMaterial, SystemThinMaterial, SystemMaterial, SystemThickMaterial, SystemChromeMaterial, SystemUltraThinMaterialLight, SystemThinMaterialLight, SystemMaterialLight, SystemThickMaterialLight, SystemChromeMaterialLight, SystemUltraThinMaterialDark, SystemThinMaterialDark, SystemMaterialDark, SystemThickMaterialDark, SystemChromeMaterialDark };
+
+static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenStackHeaderConfigBlurEffect &result) {
+  auto string = (std::string)value;
+  if (string == "none") { result = RNSScreenStackHeaderConfigBlurEffect::None; return; }
+  if (string == "extraLight") { result = RNSScreenStackHeaderConfigBlurEffect::ExtraLight; return; }
+  if (string == "light") { result = RNSScreenStackHeaderConfigBlurEffect::Light; return; }
+  if (string == "dark") { result = RNSScreenStackHeaderConfigBlurEffect::Dark; return; }
+  if (string == "regular") { result = RNSScreenStackHeaderConfigBlurEffect::Regular; return; }
+  if (string == "prominent") { result = RNSScreenStackHeaderConfigBlurEffect::Prominent; return; }
+  if (string == "systemUltraThinMaterial") { result = RNSScreenStackHeaderConfigBlurEffect::SystemUltraThinMaterial; return; }
+  if (string == "systemThinMaterial") { result = RNSScreenStackHeaderConfigBlurEffect::SystemThinMaterial; return; }
+  if (string == "systemMaterial") { result = RNSScreenStackHeaderConfigBlurEffect::SystemMaterial; return; }
+  if (string == "systemThickMaterial") { result = RNSScreenStackHeaderConfigBlurEffect::SystemThickMaterial; return; }
+  if (string == "systemChromeMaterial") { result = RNSScreenStackHeaderConfigBlurEffect::SystemChromeMaterial; return; }
+  if (string == "systemUltraThinMaterialLight") { result = RNSScreenStackHeaderConfigBlurEffect::SystemUltraThinMaterialLight; return; }
+  if (string == "systemThinMaterialLight") { result = RNSScreenStackHeaderConfigBlurEffect::SystemThinMaterialLight; return; }
+  if (string == "systemMaterialLight") { result = RNSScreenStackHeaderConfigBlurEffect::SystemMaterialLight; return; }
+  if (string == "systemThickMaterialLight") { result = RNSScreenStackHeaderConfigBlurEffect::SystemThickMaterialLight; return; }
+  if (string == "systemChromeMaterialLight") { result = RNSScreenStackHeaderConfigBlurEffect::SystemChromeMaterialLight; return; }
+  if (string == "systemUltraThinMaterialDark") { result = RNSScreenStackHeaderConfigBlurEffect::SystemUltraThinMaterialDark; return; }
+  if (string == "systemThinMaterialDark") { result = RNSScreenStackHeaderConfigBlurEffect::SystemThinMaterialDark; return; }
+  if (string == "systemMaterialDark") { result = RNSScreenStackHeaderConfigBlurEffect::SystemMaterialDark; return; }
+  if (string == "systemThickMaterialDark") { result = RNSScreenStackHeaderConfigBlurEffect::SystemThickMaterialDark; return; }
+  if (string == "systemChromeMaterialDark") { result = RNSScreenStackHeaderConfigBlurEffect::SystemChromeMaterialDark; return; }
+  abort();
+}
+
+static inline std::string toString(const RNSScreenStackHeaderConfigBlurEffect &value) {
+  switch (value) {
+    case RNSScreenStackHeaderConfigBlurEffect::None: return "none";
+    case RNSScreenStackHeaderConfigBlurEffect::ExtraLight: return "extraLight";
+    case RNSScreenStackHeaderConfigBlurEffect::Light: return "light";
+    case RNSScreenStackHeaderConfigBlurEffect::Dark: return "dark";
+    case RNSScreenStackHeaderConfigBlurEffect::Regular: return "regular";
+    case RNSScreenStackHeaderConfigBlurEffect::Prominent: return "prominent";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemUltraThinMaterial: return "systemUltraThinMaterial";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemThinMaterial: return "systemThinMaterial";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemMaterial: return "systemMaterial";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemThickMaterial: return "systemThickMaterial";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemChromeMaterial: return "systemChromeMaterial";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemUltraThinMaterialLight: return "systemUltraThinMaterialLight";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemThinMaterialLight: return "systemThinMaterialLight";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemMaterialLight: return "systemMaterialLight";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemThickMaterialLight: return "systemThickMaterialLight";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemChromeMaterialLight: return "systemChromeMaterialLight";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemUltraThinMaterialDark: return "systemUltraThinMaterialDark";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemThinMaterialDark: return "systemThinMaterialDark";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemMaterialDark: return "systemMaterialDark";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemThickMaterialDark: return "systemThickMaterialDark";
+    case RNSScreenStackHeaderConfigBlurEffect::SystemChromeMaterialDark: return "systemChromeMaterialDark";
   }
 }
 
@@ -466,8 +544,10 @@ class RNSScreenStackHeaderConfigProps final : public ViewProps {
   std::string titleFontWeight{};
   SharedColor titleColor{};
   bool disableBackButtonMenu{false};
+  RNSScreenStackHeaderConfigBackButtonDisplayMode backButtonDisplayMode{RNSScreenStackHeaderConfigBackButtonDisplayMode::Default};
   bool hideBackButton{false};
   bool backButtonInCustomView{false};
+  RNSScreenStackHeaderConfigBlurEffect blurEffect{RNSScreenStackHeaderConfigBlurEffect::None};
   bool topInsetEnabled{false};
 };
 

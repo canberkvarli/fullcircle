@@ -1,18 +1,18 @@
 {
   "name": "expo-dev-launcher",
-  "version": "4.0.29",
+  "version": "5.0.35",
   "summary": "Pre-release version of the Expo development launcher package for testing.",
   "description": "Pre-release version of the Expo development launcher package for testing.",
   "license": "MIT",
   "authors": "650 Industries, Inc.",
   "homepage": "https://docs.expo.dev",
   "platforms": {
-    "ios": "13.4"
+    "ios": "15.1"
   },
   "swift_versions": "5.2",
   "source": {
     "git": "https://github.com/github_account/expo-development-client.git",
-    "tag": "4.0.29"
+    "tag": "5.0.35"
   },
   "static_framework": true,
   "source_files": "ios/**/*.{h,m,mm,swift,cpp}",
@@ -31,14 +31,14 @@
     ]
   },
   "xcconfig": {
-    "GCC_PREPROCESSOR_DEFINITIONS": "EX_DEV_LAUNCHER_VERSION=4.0.29",
-    "OTHER_CFLAGS": "$(inherited) -DREACT_NATIVE_TARGET_VERSION=74 -DUSE_HERMES"
+    "GCC_PREPROCESSOR_DEFINITIONS": "EX_DEV_LAUNCHER_VERSION=5.0.35",
+    "OTHER_CFLAGS": "$(inherited) -DREACT_NATIVE_TARGET_VERSION=75 -DUSE_HERMES"
   },
   "pod_target_xcconfig": {
     "DEFINES_MODULE": "YES",
-    "OTHER_CFLAGS[config=Debug]": "$(inherited) -DREACT_NATIVE_TARGET_VERSION=74 -DUSE_HERMES",
-    "OTHER_SWIFT_FLAGS[config=Debug]": "$(inherited) -DEX_DEV_CLIENT_NETWORK_INSPECTOR",
-    "HEADER_SEARCH_PATHS": "\"$(PODS_ROOT)/Headers/Private/React-Core\" \"${PODS_ROOT}/Headers/Public/RNReanimated\" \"$(PODS_CONFIGURATION_BUILD_DIR)/EXManifests/Swift Compatibility Header\" \"$(PODS_CONFIGURATION_BUILD_DIR)/EXUpdatesInterface/Swift Compatibility Header\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-jsinspector/jsinspector_modern.framework/Headers\" \"$(PODS_ROOT)/boost\" \"$(PODS_ROOT)/Headers/Private/Yoga\"",
+    "OTHER_CFLAGS[config=*Debug*]": "$(inherited) -DREACT_NATIVE_TARGET_VERSION=75 -DUSE_HERMES",
+    "OTHER_SWIFT_FLAGS[config=*Debug*]": "$(inherited) -DEX_DEV_CLIENT_NETWORK_INSPECTOR",
+    "HEADER_SEARCH_PATHS": "\"$(PODS_ROOT)/Headers/Private/React-Core\" \"${PODS_ROOT}/Headers/Public/RNReanimated\" \"$(PODS_CONFIGURATION_BUILD_DIR)/EXManifests/Swift Compatibility Header\" \"$(PODS_CONFIGURATION_BUILD_DIR)/EXUpdatesInterface/Swift Compatibility Header\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-jsinspector/jsinspector_modern.framework/Headers\" \"$(PODS_ROOT)/boost\" \"$(PODS_ROOT)/Headers/Private/Yoga\" \"$(PODS_ROOT)/DoubleConversion\" \"$(PODS_ROOT)/fmt/include\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-FabricImage/React_FabricImage.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-RCTFabric/RCTFabric.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-utils/React_utils.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-featureflags/React_featureflags.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-debug/React_debug.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-ImageManager/React_ImageManager.framework/Headers\" \"${PODS_CONFIGURATION_BUILD_DIR}/React-rendererdebug/React_rendererdebug.framework/Headers\"",
     "FRAMEWORK_SEARCH_PATHS": "\"${PODS_CONFIGURATION_BUILD_DIR}/RNReanimated\"",
     "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
     "OTHER_CPLUSPLUSFLAGS": "$(inherited) -DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32"
@@ -60,7 +60,7 @@
     ],
     "glog": [],
     "React-RCTFabric": [],
-    "React-Codegen": [],
+    "ReactCodegen": [],
     "RCTRequired": [],
     "RCTTypeSafety": [],
     "ReactCommon/turbomodule/bridging": [],

@@ -148,6 +148,7 @@ class LottieAnimationViewProps final : public ViewProps {
   bool loop{false};
   bool autoPlay{false};
   bool enableMergePathsAndroidForKitKatAndAbove{false};
+  bool enableSafeModeAndroid{false};
   bool hardwareAccelerationAndroid{false};
   bool cacheComposition{false};
   std::vector<LottieAnimationViewColorFiltersStruct> colorFilters{};
