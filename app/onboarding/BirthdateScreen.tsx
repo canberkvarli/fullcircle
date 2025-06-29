@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   SafeAreaView,
   Text,
   View,
   Alert,
   TouchableOpacity,
+  ScrollView,
+  Modal,
+  FlatList,
   useColorScheme,
   Platform,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
@@ -15,7 +19,46 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
-import DateTimePicker from "@react-native-community/datetimepicker";
+
+const months = [
+  { short: "Jan", full: "January", number: 1 },
+  { short: "Feb", full: "February", number: 2 },
+  { short: "Mar", full: "March", number: 3 },
+  { short: "Apr", full: "April", number: 4 },
+  { short: "May", full: "May", number: 5 },
+  { short: "Jun", full: "June", number: 6 },
+  { short: "Jul", full: "July", number: 7 },
+  { short: "Aug", full: "August", number: 8 },
+  { short: "Sep", full: "September", number: 9 },
+  { short: "Oct", full: "October", number: 10 },
+  { short: "Nov", full: "November", number: 11 },
+  { short: "Dec", full: "December", number: 12 },
+];
+
+const generateDays = (month: number, year: number) => {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => i + 1);
+};
+
+export default BirthdateScreen;
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1930 + 1 }, (_, i) => currentYear - i).reverse();
+
+// Smart defaults - set to reasonable age (25 years old)
+const getSmartDefaults = () => {
+  const today = new Date();
+  const defaultAge = 25;
+  const defaultYear = today.getFullYear() - defaultAge;
+  const defaultMonth = today.getMonth() + 1; // Current month
+  const defaultDay = Math.min(today.getDate(), 15); // 15th or current day if earlier
+  
+  return {
+    month: months.find(m => m.number === defaultMonth) || months[0],
+    day: defaultDay,
+    year: defaultYear,
+  };
+};
 
 function BirthdateScreen() {
   const {
@@ -30,30 +73,23 @@ function BirthdateScreen() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
-  // Set a reasonable default date (25 years ago)
-  const getDefaultDate = () => {
-    const today = new Date();
-    const defaultAge = 25;
-    return new Date(today.getFullYear() - defaultAge, today.getMonth(), today.getDate());
-  };
+  const smartDefaults = getSmartDefaults();
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    if (userData?.birthmonth && userData?.birthday && userData?.birthyear) {
-      const monthIndex = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        .indexOf(userData.birthmonth);
-      return new Date(parseInt(userData.birthyear), monthIndex, parseInt(userData.birthday));
-    }
-    return getDefaultDate();
+  const [birthdate, setBirthdate] = useState({
+    month: userData?.birthmonth ? months.find(m => m.short === userData.birthmonth) || smartDefaults.month : smartDefaults.month,
+    day: userData?.birthday ? parseInt(userData.birthday) : smartDefaults.day,
+    year: userData?.birthyear ? parseInt(userData.birthyear) : smartDefaults.year,
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [age, setAge] = useState(0);
+  const [age, setAge] = useState(userData?.age || 0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activeSelector, setActiveSelector] = useState<'month' | 'day' | 'year'>('month');
 
-  // Calculate age whenever date changes
+  // Calculate age whenever birthdate changes
   useEffect(() => {
     const calculateAge = () => {
       const today = new Date();
-      const birthDate = selectedDate;
+      const birthDate = new Date(birthdate.year, birthdate.month.number - 1, birthdate.day);
 
       if (birthDate > today) {
         setAge(0);
@@ -61,7 +97,7 @@ function BirthdateScreen() {
       }
 
       let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const monthDiff = today.getMonth() - (birthdate.month.number - 1);
 
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         calculatedAge--;
@@ -71,14 +107,7 @@ function BirthdateScreen() {
     };
 
     calculateAge();
-  }, [selectedDate]);
-
-  const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS, close on Android
-    if (date) {
-      setSelectedDate(date);
-    }
-  };
+  }, [birthdate]);
 
   const handleBirthdateSubmit = async () => {
     if (age < 18) {
@@ -98,16 +127,11 @@ function BirthdateScreen() {
         return;
       }
 
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const month = months[selectedDate.getMonth()];
-      const day = selectedDate.getDate();
-      const year = selectedDate.getFullYear();
-
       await updateUserData({
-        birthmonth: month,
-        birthday: day.toString(),
-        birthyear: year.toString(),
-        birthdate: `${month} ${day}, ${year}`,
+        birthmonth: birthdate.month.short,
+        birthday: birthdate.day.toString(),
+        birthyear: birthdate.year.toString(),
+        birthdate: `${birthdate.month.short} ${birthdate.day}, ${birthdate.year}`,
         age: age,
       });
       navigateToNextScreen();
@@ -116,10 +140,124 @@ function BirthdateScreen() {
     }
   };
 
-  const formatDisplayDate = (date: Date) => {
-    const months = ["January", "February", "March", "April", "May", "June", 
-                   "July", "August", "September", "October", "November", "December"];
-    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  const openSelector = (type: 'month' | 'day' | 'year') => {
+    setActiveSelector(type);
+    setModalVisible(true);
+  };
+
+  const renderSelectorModal = () => {
+    let data: any[] = [];
+    let currentValue: any = null;
+
+    if (activeSelector === 'month') {
+      data = months;
+      currentValue = birthdate.month;
+    } else if (activeSelector === 'day') {
+      data = generateDays(birthdate.month.number, birthdate.year).map(d => ({ value: d, label: d.toString() }));
+      currentValue = { value: birthdate.day, label: birthdate.day.toString() };
+    } else if (activeSelector === 'year') {
+      data = years.map(y => ({ value: y, label: y.toString() }));
+      currentValue = { value: birthdate.year, label: birthdate.year.toString() };
+    }
+
+    return (
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>
+                Select {activeSelector === 'month' ? 'Month' : activeSelector === 'day' ? 'Day' : 'Year'}
+              </Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalDoneText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={data}
+              keyExtractor={(item) => (activeSelector === 'month' ? item.short : item.value.toString())}
+              renderItem={({ item }) => {
+                const isSelected = activeSelector === 'month' 
+                  ? item.short === currentValue?.short
+                  : item.value === currentValue?.value;
+                
+                return (
+                  <TouchableOpacity
+                    style={[styles.selectorItem, isSelected && styles.selectorItemSelected]}
+                    onPress={() => {
+                      if (activeSelector === 'month') {
+                        setBirthdate(prev => ({ ...prev, month: item }));
+                      } else if (activeSelector === 'day') {
+                        setBirthdate(prev => ({ ...prev, day: item.value }));
+                      } else if (activeSelector === 'year') {
+                        setBirthdate(prev => ({ ...prev, year: item.value }));
+                      }
+                      setModalVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.selectorItemText, isSelected && styles.selectorItemTextSelected]}>
+                      {activeSelector === 'month' ? item.full : item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+              style={styles.selectorList}
+              getItemLayout={(data, index) => ({
+                length: 60,
+                offset: 60 * index,
+                index,
+              })}
+              initialScrollIndex={activeSelector === 'month' 
+                ? months.findIndex(m => m.short === currentValue?.short)
+                : activeSelector === 'year' 
+                ? Math.max(0, years.findIndex(y => y === currentValue?.value))
+                : Math.max(0, birthdate.day - 1)
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // Quick age selector buttons for common ages
+  const QuickAgeSelector = () => {
+    const quickAges = [21, 25, 30, 35, 40];
+    
+    return (
+      <View style={styles.quickAgeContainer}>
+        <Text style={styles.quickAgeLabel}>Quick select age:</Text>
+        <View style={styles.quickAgeButtons}>
+          {quickAges.map(quickAge => (
+            <TouchableOpacity
+              key={quickAge}
+              style={[styles.quickAgeButton, age === quickAge && styles.quickAgeButtonSelected]}
+              onPress={() => {
+                const today = new Date();
+                const targetYear = today.getFullYear() - quickAge;
+                setBirthdate(prev => ({
+                  ...prev,
+                  year: targetYear,
+                }));
+              }}
+            >
+              <Text style={[styles.quickAgeButtonText, age === quickAge && styles.quickAgeButtonTextSelected]}>
+                {quickAge}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -136,60 +274,65 @@ function BirthdateScreen() {
         {/* Progress Bar */}
         <OnboardingProgressBar currentScreen="BirthdateScreen" />
         
-        {/* Title */}
-        <Text style={styles.title}>Celebrate your cosmic arrival</Text>
-        
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>When did your soul choose to enter this realm?</Text>
-        
-        {/* Date Display and Picker */}
-        <View style={styles.dateContainer}>
-          <TouchableOpacity 
-            style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Ionicons name="calendar-outline" size={24} color={colors.primary} style={styles.calendarIcon} />
-            <View style={styles.dateTextContainer}>
-              <Text style={styles.dateText}>{formatDisplayDate(selectedDate)}</Text>
-              <Text style={styles.tapToChangeText}>Tap to change</Text>
-            </View>
-            <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Title */}
+          <Text style={styles.title}>Celebrate your cosmic arrival</Text>
+          
+          {/* Subtitle */}
+          <Text style={styles.subtitle}>When did your soul choose to enter this realm?</Text>
+          
+          {/* Quick Age Selector */}
+          <QuickAgeSelector />
+          
+          {/* Date Selectors */}
+          <View style={styles.dateInputs}>
+            <TouchableOpacity 
+              style={styles.dateSelector}
+              onPress={() => openSelector('month')}
+            >
+              <Text style={styles.dateSelectorLabel}>Month</Text>
+              <Text style={styles.dateSelectorValue}>{birthdate.month.full}</Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
 
-        {/* Expo Date Picker */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-            maximumDate={new Date()}
-            minimumDate={new Date(1930, 0, 1)}
-            accentColor={colors.primary}
-            textColor={colors.textDark}
-            style={styles.datePicker}
-          />
-        )}
-        
-        {/* Age Display */}
-        <View style={styles.ageContainer}>
-          <Text style={styles.ageText}>Your cosmic age: {age}</Text>
-          {age < 18 && (
-            <Text style={styles.ageWarning}>You must be 18 or older to join our sacred circle</Text>
-          )}
-          {age > 100 && (
-            <Text style={styles.ageWarning}>Please verify your birthdate for cosmic accuracy</Text>
-          )}
-        </View>
-        
-        {/* Warning */}
-        <Text style={styles.warning}>This sacred information becomes permanent once set</Text>
-        
-        {/* Affirmation */}
-        <Text style={styles.affirmation}>
-          Every soul chooses the perfect moment to begin their earthly journey
-        </Text>
+            <TouchableOpacity 
+              style={styles.dateSelector}
+              onPress={() => openSelector('day')}
+            >
+              <Text style={styles.dateSelectorLabel}>Day</Text>
+              <Text style={styles.dateSelectorValue}>{birthdate.day}</Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.dateSelector}
+              onPress={() => openSelector('year')}
+            >
+              <Text style={styles.dateSelectorLabel}>Year</Text>
+              <Text style={styles.dateSelectorValue}>{birthdate.year}</Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Age Display */}
+          <View style={styles.ageContainer}>
+            <Text style={styles.ageText}>Your cosmic age: {age}</Text>
+            {age < 18 && (
+              <Text style={styles.ageWarning}>You must be 18 or older to join our sacred circle</Text>
+            )}
+            {age > 100 && (
+              <Text style={styles.ageWarning}>Please verify your birthdate for cosmic accuracy</Text>
+            )}
+          </View>
+          
+          {/* Warning */}
+          <Text style={styles.warning}>This sacred information becomes permanent once set</Text>
+          
+          {/* Affirmation */}
+          <Text style={styles.affirmation}>
+            Every soul chooses the perfect moment to begin their earthly journey
+          </Text>
+        </ScrollView>
         
         {/* Submit Button */}
         <TouchableOpacity
@@ -206,6 +349,8 @@ function BirthdateScreen() {
             color={colors.background} 
           />
         </TouchableOpacity>
+
+        {renderSelectorModal()}
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -213,13 +358,16 @@ function BirthdateScreen() {
 
 const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
   const colors = Colors[colorScheme];
+  const { width } = Dimensions.get('window');
   
   return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    scrollContent: {
       padding: Spacing.lg,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+      paddingBottom: 100, // Space for submit button
     },
     backButton: {
       backgroundColor: colors.card,
@@ -230,9 +378,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      marginLeft: Spacing.md,
+      marginLeft: Spacing.lg,
       marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
-      marginBottom: 0,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -242,57 +389,82 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       textAlign: "left",
       marginTop: Spacing.sm,
       marginBottom: Spacing.md,
-      paddingHorizontal: Spacing.lg,
     },
     subtitle: {
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
     },
-    dateContainer: {
+    quickAgeContainer: {
       marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.lg,
     },
-    dateButton: {
+    quickAgeLabel: {
+      ...fonts.captionFont,
+      color: colors.textMuted,
+      marginBottom: Spacing.sm,
+      textAlign: 'center',
+    },
+    quickAgeButtons: {
       flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.card,
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.lg,
+      justifyContent: 'space-around',
+      marginHorizontal: Spacing.lg,
+    },
+    quickAgeButton: {
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      borderRadius: BorderRadius.md,
       borderWidth: 1,
       borderColor: colors.border,
-      minHeight: 70,
+      backgroundColor: colors.card,
     },
-    calendarIcon: {
-      marginRight: Spacing.md,
+    quickAgeButtonSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primary + '20',
     },
-    dateTextContainer: {
-      flex: 1,
-    },
-    dateText: {
+    quickAgeButtonText: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.lg,
       color: colors.textDark,
+      fontSize: Typography.sizes.sm,
+    },
+    quickAgeButtonTextSelected: {
+      color: colors.primary,
       fontWeight: Typography.weights.medium,
     },
-    tapToChangeText: {
+    dateInputs: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: Spacing.xl,
+      gap: Spacing.sm,
+    },
+    dateSelector: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      minHeight: 80,
+      justifyContent: 'space-between',
+    },
+    dateSelectorLabel: {
       ...fonts.captionFont,
       color: colors.textMuted,
       fontSize: Typography.sizes.xs,
-      marginTop: Spacing.xs,
-      fontStyle: 'italic',
+      marginBottom: Spacing.xs,
     },
-    datePicker: {
-      alignSelf: 'center',
-      marginBottom: Spacing.lg,
+    dateSelectorValue: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textDark,
+      fontSize: Typography.sizes.base,
+      fontWeight: Typography.weights.medium,
+      textAlign: 'center',
     },
     ageContainer: {
       alignItems: 'center',
       marginBottom: Spacing.lg,
-      paddingHorizontal: Spacing.lg,
     },
     ageText: {
       ...fonts.spiritualBodyFont,
@@ -313,19 +485,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       textAlign: "center",
       marginBottom: Spacing.xl,
       fontStyle: "italic",
-      paddingHorizontal: Spacing.lg,
     },
     affirmation: {
       ...fonts.affirmationFont,
-      position: 'absolute',
-      bottom: Platform.select({ ios: 130, android: 110 }),
-      left: Spacing.lg,
-      right: Spacing.lg,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
+      marginBottom: Spacing.xl,
     },
     submitButton: {
       position: "absolute",
@@ -342,7 +510,63 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       backgroundColor: colors.textMuted,
       opacity: 0.6,
     },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "flex-end",
+    },
+    modalContent: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: BorderRadius.xl,
+      borderTopRightRadius: BorderRadius.xl,
+      maxHeight: '70%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.medium,
+      color: colors.textDark,
+    },
+    modalCancelText: {
+      ...fonts.buttonFont,
+      color: colors.textMuted,
+    },
+    modalDoneText: {
+      ...fonts.buttonFont,
+      color: colors.primary,
+      fontWeight: Typography.weights.medium,
+    },
+    selectorList: {
+      flex: 1,
+    },
+    selectorItem: {
+      paddingVertical: Spacing.lg,
+      paddingHorizontal: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      height: 60,
+      justifyContent: 'center',
+    },
+    selectorItemSelected: {
+      backgroundColor: colors.primary + '10',
+    },
+    selectorItemText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+      textAlign: 'center',
+    },
+    selectorItemTextSelected: {
+      color: colors.primary,
+      fontWeight: Typography.weights.medium,
+    },
   });
 };
-
-export default BirthdateScreen;

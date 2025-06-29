@@ -20,7 +20,7 @@
   @_exported import FirebaseFirestoreInternal
 #endif // SWIFT_PACKAGE
 
-@_implementationOnly import FirebaseCoreExtension
+internal import FirebaseCoreExtension
 import FirebaseSharedSwift
 
 extension CodingUserInfoKey {
@@ -127,7 +127,7 @@ public struct DocumentID<Value: DocumentIDWrappable & Codable>:
   private func logIgnoredValueWarning(value: Value) {
     FirebaseLogger.log(
       level: .warning,
-      service: "[FirebaseFirestoreSwift]",
+      service: "[FirebaseFirestore]",
       code: "I-FST000002",
       message: """
       Attempting to initialize or set a @DocumentID property with a non-nil \

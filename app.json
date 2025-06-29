@@ -87,7 +87,7 @@
         "@react-native-firebase/app",
         {
           "ios": {
-            "useFrameworks": "static",
+            "useFrameworks": "dynamic",
             "useModularHeaders": true
           }
         }
@@ -116,22 +116,22 @@
           ]
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static",
-            "deploymentTarget": "13.4",
-            "newArchEnabled": false,
-            "flipper": false,
-            "useModularHeaders": true
-          },
-          "android": {
-            "kotlinVersion": "1.9.25",
-            "gradleVersion": "8.8"
-          }
+     [
+      "expo-build-properties",
+      {
+        "ios": {
+          "useFrameworks": "dynamic",
+          "deploymentTarget": "13.4",
+          "newArchEnabled": false,
+          "flipper": false,
+          "useModularHeaders": true
+        },
+        "android": {
+          "kotlinVersion": "1.9.25",
+          "gradleVersion": "8.8"
         }
-      ]
+      }
+    ]
     ],
     "experiments": {
       "typedRoutes": true
