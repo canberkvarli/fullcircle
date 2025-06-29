@@ -97,6 +97,16 @@ namespace JS {
 - (facebook::react::ModuleConstants<JS::NativeGoogleSignin::Constants::Builder>)getConstants;
 
 @end
+
+@interface NativeGoogleSigninSpecBase : NSObject {
+@protected
+facebook::react::EventEmitterCallback _eventEmitterCallback;
+}
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper;
+
+
+@end
+
 namespace facebook::react {
   /**
    * ObjC++ class for module 'NativeGoogleSignin'

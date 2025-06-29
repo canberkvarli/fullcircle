@@ -14,6 +14,16 @@
 #import "reactnativekeyboardcontroller.h"
 
 
+@implementation NativeKeyboardControllerSpecBase
+
+
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper
+{
+  _eventEmitterCallback = std::move(eventEmitterCallbackWrapper->_eventEmitterCallback);
+}
+@end
+
+
 namespace facebook::react {
   
     static facebook::jsi::Value __hostFunction_NativeKeyboardControllerSpecJSI_setInputMode(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
@@ -62,6 +72,16 @@ namespace facebook::react {
         
   }
 } // namespace facebook::react
+
+@implementation NativeStatusBarManagerCompatSpecBase
+
+
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper
+{
+  _eventEmitterCallback = std::move(eventEmitterCallbackWrapper->_eventEmitterCallback);
+}
+@end
+
 
 namespace facebook::react {
   

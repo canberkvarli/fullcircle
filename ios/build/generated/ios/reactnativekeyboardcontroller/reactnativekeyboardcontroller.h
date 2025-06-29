@@ -41,6 +41,16 @@
 - (void)removeListeners:(double)count;
 
 @end
+
+@interface NativeKeyboardControllerSpecBase : NSObject {
+@protected
+facebook::react::EventEmitterCallback _eventEmitterCallback;
+}
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper;
+
+
+@end
+
 namespace facebook::react {
   /**
    * ObjC++ class for module 'NativeKeyboardController'
@@ -60,6 +70,16 @@ namespace facebook::react {
 - (void)setStyle:(NSString *)style;
 
 @end
+
+@interface NativeStatusBarManagerCompatSpecBase : NSObject {
+@protected
+facebook::react::EventEmitterCallback _eventEmitterCallback;
+}
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper;
+
+
+@end
+
 namespace facebook::react {
   /**
    * ObjC++ class for module 'NativeStatusBarManagerCompat'

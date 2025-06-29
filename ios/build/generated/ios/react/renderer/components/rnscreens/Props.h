@@ -13,6 +13,7 @@
 #include <react/renderer/core/PropsParserContext.h>
 #include <react/renderer/core/propsConversions.h>
 #include <react/renderer/graphics/Color.h>
+#include <vector>
 
 namespace facebook::react {
 
@@ -26,40 +27,6 @@ class RNSFullWindowOverlayProps final : public ViewProps {
   
 };
 
-enum class RNSModalScreenSheetAllowedDetents { Large, Medium, All };
-
-static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSModalScreenSheetAllowedDetents &result) {
-  auto string = (std::string)value;
-  if (string == "large") { result = RNSModalScreenSheetAllowedDetents::Large; return; }
-  if (string == "medium") { result = RNSModalScreenSheetAllowedDetents::Medium; return; }
-  if (string == "all") { result = RNSModalScreenSheetAllowedDetents::All; return; }
-  abort();
-}
-
-static inline std::string toString(const RNSModalScreenSheetAllowedDetents &value) {
-  switch (value) {
-    case RNSModalScreenSheetAllowedDetents::Large: return "large";
-    case RNSModalScreenSheetAllowedDetents::Medium: return "medium";
-    case RNSModalScreenSheetAllowedDetents::All: return "all";
-  }
-}
-enum class RNSModalScreenSheetLargestUndimmedDetent { Large, Medium, All };
-
-static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSModalScreenSheetLargestUndimmedDetent &result) {
-  auto string = (std::string)value;
-  if (string == "large") { result = RNSModalScreenSheetLargestUndimmedDetent::Large; return; }
-  if (string == "medium") { result = RNSModalScreenSheetLargestUndimmedDetent::Medium; return; }
-  if (string == "all") { result = RNSModalScreenSheetLargestUndimmedDetent::All; return; }
-  abort();
-}
-
-static inline std::string toString(const RNSModalScreenSheetLargestUndimmedDetent &value) {
-  switch (value) {
-    case RNSModalScreenSheetLargestUndimmedDetent::Large: return "large";
-    case RNSModalScreenSheetLargestUndimmedDetent::Medium: return "medium";
-    case RNSModalScreenSheetLargestUndimmedDetent::All: return "all";
-  }
-}
 enum class RNSModalScreenStackPresentation { Push, Modal, TransparentModal, FullScreenModal, FormSheet, ContainedModal, ContainedTransparentModal };
 
 static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSModalScreenStackPresentation &result) {
@@ -85,7 +52,7 @@ static inline std::string toString(const RNSModalScreenStackPresentation &value)
     case RNSModalScreenStackPresentation::ContainedTransparentModal: return "containedTransparentModal";
   }
 }
-enum class RNSModalScreenStackAnimation { Default, Flip, Simple_push, None, Fade, Slide_from_right, Slide_from_left, Slide_from_bottom, Fade_from_bottom, Ios };
+enum class RNSModalScreenStackAnimation { Default, Flip, Simple_push, None, Fade, Slide_from_right, Slide_from_left, Slide_from_bottom, Fade_from_bottom, Ios_from_right, Ios_from_left };
 
 static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSModalScreenStackAnimation &result) {
   auto string = (std::string)value;
@@ -98,7 +65,8 @@ static inline void fromRawValue(const PropsParserContext& context, const RawValu
   if (string == "slide_from_left") { result = RNSModalScreenStackAnimation::Slide_from_left; return; }
   if (string == "slide_from_bottom") { result = RNSModalScreenStackAnimation::Slide_from_bottom; return; }
   if (string == "fade_from_bottom") { result = RNSModalScreenStackAnimation::Fade_from_bottom; return; }
-  if (string == "ios") { result = RNSModalScreenStackAnimation::Ios; return; }
+  if (string == "ios_from_right") { result = RNSModalScreenStackAnimation::Ios_from_right; return; }
+  if (string == "ios_from_left") { result = RNSModalScreenStackAnimation::Ios_from_left; return; }
   abort();
 }
 
@@ -113,7 +81,8 @@ static inline std::string toString(const RNSModalScreenStackAnimation &value) {
     case RNSModalScreenStackAnimation::Slide_from_left: return "slide_from_left";
     case RNSModalScreenStackAnimation::Slide_from_bottom: return "slide_from_bottom";
     case RNSModalScreenStackAnimation::Fade_from_bottom: return "fade_from_bottom";
-    case RNSModalScreenStackAnimation::Ios: return "ios";
+    case RNSModalScreenStackAnimation::Ios_from_right: return "ios_from_right";
+    case RNSModalScreenStackAnimation::Ios_from_left: return "ios_from_left";
   }
 }
 enum class RNSModalScreenReplaceAnimation { Pop, Push };
@@ -184,14 +153,16 @@ class RNSModalScreenProps final : public ViewProps {
 
 #pragma mark - Props
 
-  RNSModalScreenSheetAllowedDetents sheetAllowedDetents{RNSModalScreenSheetAllowedDetents::Large};
-  RNSModalScreenSheetLargestUndimmedDetent sheetLargestUndimmedDetent{RNSModalScreenSheetLargestUndimmedDetent::All};
+  std::vector<Float> sheetAllowedDetents{};
+  int sheetLargestUndimmedDetent{-1};
   bool sheetGrabberVisible{false};
   Float sheetCornerRadius{-1.0};
   bool sheetExpandsWhenScrolledToEdge{false};
+  int sheetInitialDetent{0};
+  int sheetElevation{24};
   bool customAnimationOnSwipe{false};
   bool fullScreenSwipeEnabled{false};
-  bool fullScreenSwipeShadowEnabled{false};
+  bool fullScreenSwipeShadowEnabled{true};
   bool homeIndicatorHidden{false};
   bool preventNativeDismiss{false};
   bool gestureEnabled{true};
@@ -204,7 +175,7 @@ class RNSModalScreenProps final : public ViewProps {
   RNSModalScreenGestureResponseDistanceStruct gestureResponseDistance{};
   RNSModalScreenStackPresentation stackPresentation{RNSModalScreenStackPresentation::Push};
   RNSModalScreenStackAnimation stackAnimation{RNSModalScreenStackAnimation::Default};
-  int transitionDuration{350};
+  int transitionDuration{500};
   RNSModalScreenReplaceAnimation replaceAnimation{RNSModalScreenReplaceAnimation::Pop};
   RNSModalScreenSwipeDirection swipeDirection{RNSModalScreenSwipeDirection::Horizontal};
   bool hideKeyboardOnSwipe{false};
@@ -225,40 +196,26 @@ class RNSScreenContainerProps final : public ViewProps {
   
 };
 
-enum class RNSScreenSheetAllowedDetents { Large, Medium, All };
+class RNSScreenContentWrapperProps final : public ViewProps {
+ public:
+  RNSScreenContentWrapperProps() = default;
+  RNSScreenContentWrapperProps(const PropsParserContext& context, const RNSScreenContentWrapperProps &sourceProps, const RawProps &rawProps);
 
-static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenSheetAllowedDetents &result) {
-  auto string = (std::string)value;
-  if (string == "large") { result = RNSScreenSheetAllowedDetents::Large; return; }
-  if (string == "medium") { result = RNSScreenSheetAllowedDetents::Medium; return; }
-  if (string == "all") { result = RNSScreenSheetAllowedDetents::All; return; }
-  abort();
-}
+#pragma mark - Props
 
-static inline std::string toString(const RNSScreenSheetAllowedDetents &value) {
-  switch (value) {
-    case RNSScreenSheetAllowedDetents::Large: return "large";
-    case RNSScreenSheetAllowedDetents::Medium: return "medium";
-    case RNSScreenSheetAllowedDetents::All: return "all";
-  }
-}
-enum class RNSScreenSheetLargestUndimmedDetent { Large, Medium, All };
+  
+};
 
-static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenSheetLargestUndimmedDetent &result) {
-  auto string = (std::string)value;
-  if (string == "large") { result = RNSScreenSheetLargestUndimmedDetent::Large; return; }
-  if (string == "medium") { result = RNSScreenSheetLargestUndimmedDetent::Medium; return; }
-  if (string == "all") { result = RNSScreenSheetLargestUndimmedDetent::All; return; }
-  abort();
-}
+class RNSScreenFooterProps final : public ViewProps {
+ public:
+  RNSScreenFooterProps() = default;
+  RNSScreenFooterProps(const PropsParserContext& context, const RNSScreenFooterProps &sourceProps, const RawProps &rawProps);
 
-static inline std::string toString(const RNSScreenSheetLargestUndimmedDetent &value) {
-  switch (value) {
-    case RNSScreenSheetLargestUndimmedDetent::Large: return "large";
-    case RNSScreenSheetLargestUndimmedDetent::Medium: return "medium";
-    case RNSScreenSheetLargestUndimmedDetent::All: return "all";
-  }
-}
+#pragma mark - Props
+
+  
+};
+
 enum class RNSScreenStackPresentation { Push, Modal, TransparentModal, FullScreenModal, FormSheet, ContainedModal, ContainedTransparentModal };
 
 static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenStackPresentation &result) {
@@ -284,7 +241,7 @@ static inline std::string toString(const RNSScreenStackPresentation &value) {
     case RNSScreenStackPresentation::ContainedTransparentModal: return "containedTransparentModal";
   }
 }
-enum class RNSScreenStackAnimation { Default, Flip, Simple_push, None, Fade, Slide_from_right, Slide_from_left, Slide_from_bottom, Fade_from_bottom, Ios, Ios_from_right, Ios_from_left };
+enum class RNSScreenStackAnimation { Default, Flip, Simple_push, None, Fade, Slide_from_right, Slide_from_left, Slide_from_bottom, Fade_from_bottom, Ios_from_right, Ios_from_left };
 
 static inline void fromRawValue(const PropsParserContext& context, const RawValue &value, RNSScreenStackAnimation &result) {
   auto string = (std::string)value;
@@ -297,7 +254,6 @@ static inline void fromRawValue(const PropsParserContext& context, const RawValu
   if (string == "slide_from_left") { result = RNSScreenStackAnimation::Slide_from_left; return; }
   if (string == "slide_from_bottom") { result = RNSScreenStackAnimation::Slide_from_bottom; return; }
   if (string == "fade_from_bottom") { result = RNSScreenStackAnimation::Fade_from_bottom; return; }
-  if (string == "ios") { result = RNSScreenStackAnimation::Ios; return; }
   if (string == "ios_from_right") { result = RNSScreenStackAnimation::Ios_from_right; return; }
   if (string == "ios_from_left") { result = RNSScreenStackAnimation::Ios_from_left; return; }
   abort();
@@ -314,7 +270,6 @@ static inline std::string toString(const RNSScreenStackAnimation &value) {
     case RNSScreenStackAnimation::Slide_from_left: return "slide_from_left";
     case RNSScreenStackAnimation::Slide_from_bottom: return "slide_from_bottom";
     case RNSScreenStackAnimation::Fade_from_bottom: return "fade_from_bottom";
-    case RNSScreenStackAnimation::Ios: return "ios";
     case RNSScreenStackAnimation::Ios_from_right: return "ios_from_right";
     case RNSScreenStackAnimation::Ios_from_left: return "ios_from_left";
   }
@@ -387,14 +342,16 @@ class RNSScreenProps final : public ViewProps {
 
 #pragma mark - Props
 
-  RNSScreenSheetAllowedDetents sheetAllowedDetents{RNSScreenSheetAllowedDetents::Large};
-  RNSScreenSheetLargestUndimmedDetent sheetLargestUndimmedDetent{RNSScreenSheetLargestUndimmedDetent::All};
+  std::vector<Float> sheetAllowedDetents{};
+  int sheetLargestUndimmedDetent{-1};
   bool sheetGrabberVisible{false};
   Float sheetCornerRadius{-1.0};
   bool sheetExpandsWhenScrolledToEdge{false};
+  int sheetInitialDetent{0};
+  int sheetElevation{24};
   bool customAnimationOnSwipe{false};
   bool fullScreenSwipeEnabled{false};
-  bool fullScreenSwipeShadowEnabled{false};
+  bool fullScreenSwipeShadowEnabled{true};
   bool homeIndicatorHidden{false};
   bool preventNativeDismiss{false};
   bool gestureEnabled{true};
@@ -407,7 +364,7 @@ class RNSScreenProps final : public ViewProps {
   RNSScreenGestureResponseDistanceStruct gestureResponseDistance{};
   RNSScreenStackPresentation stackPresentation{RNSScreenStackPresentation::Push};
   RNSScreenStackAnimation stackAnimation{RNSScreenStackAnimation::Default};
-  int transitionDuration{350};
+  int transitionDuration{500};
   RNSScreenReplaceAnimation replaceAnimation{RNSScreenReplaceAnimation::Pop};
   RNSScreenSwipeDirection swipeDirection{RNSScreenSwipeDirection::Horizontal};
   bool hideKeyboardOnSwipe{false};
