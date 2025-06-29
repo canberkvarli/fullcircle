@@ -1,6 +1,0 @@
-module Pods_fullcircle {
-  umbrella header "Pods-fullcircle-umbrella.h"
-
-  export *
-  module * { export * }
-}

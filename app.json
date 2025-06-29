@@ -87,7 +87,7 @@
         "@react-native-firebase/app",
         {
           "ios": {
-            "useFrameworks": "dynamic",
+            "useFrameworks": "static",
             "useModularHeaders": true
           }
         }
@@ -120,8 +120,8 @@
       "expo-build-properties",
       {
         "ios": {
-          "useFrameworks": "dynamic",
-          "deploymentTarget": "13.4",
+          "useFrameworks": "static",
+          "deploymentTarget": "13.4", 
           "newArchEnabled": false,
           "flipper": false,
           "useModularHeaders": true
