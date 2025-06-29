@@ -95,10 +95,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     buttonContainer: {
       width: '100%',
-      paddingHorizontal: Spacing.xl,
       gap: Spacing.sm,
       alignItems: 'center',
-      paddingTop: Spacing["4xl"],
+      // Removed the paddingTop that was causing spacing issues
     },
     ssoButton: {
       width: '100%',
@@ -130,7 +129,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: '#000000',
     },
     phoneButton: {
-      backgroundColor: 'rgba(255, 255, 255, 0.15)', // Semi-transparent white background
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
       borderWidth: 2,
       borderColor: colors.primary,
     },
@@ -152,7 +151,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     phoneButtonText: {
       ...buttonFont,
-      color: '#FFFFFF', // White text for better visibility
+      color: '#FFFFFF',
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 1, height: 1 },
