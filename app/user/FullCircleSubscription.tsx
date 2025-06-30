@@ -173,14 +173,14 @@ export default function FullCircleSubscription() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FullCircle</Text>
         <TouchableOpacity 
           style={styles.closeButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={24} color={colors.textDark} />
         </TouchableOpacity>
       </Animated.View>
 
@@ -322,7 +322,7 @@ const createFeatureCardStyles = (colorScheme: 'light' | 'dark', isHighlighted: b
   
   return StyleSheet.create({
     featureCard: {
-      backgroundColor: isHighlighted ? colors.primary + '15' : colors.background,
+      backgroundColor: isHighlighted ? colors.primary + '15' : colors.card,
       borderRadius: BorderRadius.lg,
       padding: Spacing.md,
       marginBottom: Spacing.sm,
@@ -357,13 +357,13 @@ const createFeatureCardStyles = (colorScheme: 'light' | 'dark', isHighlighted: b
     },
     featureTitle: {
       ...buttonFont,
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       marginBottom: Spacing.xs,
       fontWeight: '600',
     },
     featureDescription: {
       ...captionFont,
-      color: colors.textMuted,
+      color: colors.textMuted, // This was already correct
       lineHeight: Typography.sizes.sm * 1.3,
     },
     highlightBadge: {
@@ -407,20 +407,20 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       width: 40,
       height: 40,
       borderRadius: BorderRadius.full,
-      backgroundColor: colors.background,
+      backgroundColor: colors.card,
       justifyContent: 'center',
       alignItems: 'center',
     },
     headerTitle: {
       ...logoFont,
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       textAlign: 'center',
     },
     closeButton: {
       width: 40,
       height: 40,
       borderRadius: BorderRadius.full,
-      backgroundColor: colors.background,
+      backgroundColor: colors.card,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -447,13 +447,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     mainTitle: {
       ...logoFont,
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       textAlign: 'center',
       marginBottom: Spacing.sm,
     },
     subtitle: {
       ...spiritualSubtitleFont,
-      color: colors.textMuted,
+      color: colors.textLight, // FIXED: This was textMuted, now using the improved textLight
       textAlign: 'center',
       lineHeight: Typography.sizes.lg * 1.4,
       paddingHorizontal: Spacing.md,
@@ -465,7 +465,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     sectionTitle: {
       ...affirmationFont,
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       textAlign: 'center',
       marginBottom: Spacing.lg,
     },
@@ -483,7 +483,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     planOption: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: colors.card,
       borderRadius: BorderRadius.lg,
       padding: Spacing.lg,
       alignItems: 'center',
@@ -501,12 +501,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.xs,
     },
     planOptionTextSelected: {
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       fontWeight: '600',
     },
     planPrice: {
       ...logoFont,
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       fontSize: Typography.sizes.xl,
     },
     planPriceSelected: {
@@ -569,7 +569,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     ctaDescription: {
       ...spiritualSubtitleFont,
-      color: colors.textMuted,
+      color: colors.textLight, // FIXED: was textMuted, now using improved textLight
       textAlign: 'center',
       lineHeight: Typography.sizes.base * 1.4,
       marginBottom: Spacing.lg,
@@ -579,7 +579,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.sm,
-      backgroundColor: colors.background,
+      backgroundColor: colors.card,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
       borderRadius: BorderRadius.md,
@@ -592,7 +592,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     
     // Social Proof
     socialProofSection: {
-      backgroundColor: colors.background,
+      backgroundColor: colors.card,
       borderRadius: BorderRadius.lg,
       padding: Spacing.lg,
       alignItems: 'center',
@@ -601,7 +601,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     testimonialQuote: {
       ...spiritualSubtitleFont,
-      color: colors.text,
+      color: colors.textDark, // FIXED: was colors.text (pure white)
       textAlign: 'center',
       fontStyle: 'italic',
       marginBottom: Spacing.sm,
