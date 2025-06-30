@@ -48,6 +48,8 @@ export const Colors = {
     // Gradients (for special elements)
     gradientStart: '#7B6B5C',
     gradientEnd: '#C4A984',
+
+    shadow: 'rgba(0, 0, 0, 0.1)', // Slightly darker shadow for better contrast
   },
   dark: {
     // Core colors
@@ -87,6 +89,8 @@ export const Colors = {
     // Gradients (for special elements)
     gradientStart: '#C4A984',
     gradientEnd: '#7B6B5C',
+
+    shadow: 'rgba(255, 255, 255, 0.1)', // Slightly lighter shadow for better contrast
   },
 };
 

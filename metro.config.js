@@ -1,9 +1,8 @@
-// Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require("expo/metro-config");
+const { getDefaultConfig } = require('expo/metro-config');
 
-/** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-config.resolver.sourceExts = [...config.resolver.sourceExts, "cjs"];
+// Disable package.json exports resolution to fix Firebase import issues
+config.resolver.unstable_enablePackageExports = false;
 
 module.exports = config;

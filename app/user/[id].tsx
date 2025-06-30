@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+
 import {
   View,
   Text,
@@ -77,7 +78,7 @@ const UserShow: React.FC = () => {
       });
     });
 
-    return () => unsub();
+    return unsub;
   }, [userData.userId]);
 
   useEffect(() => {

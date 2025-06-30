@@ -23,7 +23,7 @@ import { useFont } from "@/hooks/useFont";
 
 export default function UserSettings() {
   const router = useRouter();
-  const { userData, updateUserSettings, signOut, deleteAccount, updateUserData } = useUserContext();
+  const { userData, updateUserSettings, signOut, updateUserData } = useUserContext();
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];

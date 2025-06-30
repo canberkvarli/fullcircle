@@ -1,6 +1,6 @@
 {
   "name": "React-Fabric",
-  "version": "0.76.3",
+  "version": "0.76.9",
   "summary": "Fabric for React Native.",
   "homepage": "https://reactnative.dev/",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "source": {
     "git": "https://github.com/facebook/react-native.git",
-    "tag": "v0.76.3"
+    "tag": "v0.76.9"
   },
   "source_files": "dummyFile.cpp",
   "pod_target_xcconfig": {
@@ -23,7 +23,7 @@
   "module_name": "React_Fabric",
   "dependencies": {
     "RCT-Folly/Fabric": [
-      "2024.01.01.00"
+      "2024.10.14.00"
     ],
     "React-jsiexecutor": [],
     "RCTRequired": [],
@@ -33,9 +33,8 @@
     "React-logger": [],
     "glog": [],
     "DoubleConversion": [],
-    "fmt": [
-      "9.1.0"
-    ],
+    "fast_float": [],
+    "fmt": [],
     "React-Core": [],
     "React-debug": [],
     "React-featureflags": [],
@@ -58,7 +57,7 @@
       "name": "animations",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -70,7 +69,7 @@
       "name": "attributedstring",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -82,7 +81,7 @@
       "name": "core",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32 -Wno-documentation",
@@ -97,7 +96,7 @@
       "name": "componentregistry",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -108,7 +107,7 @@
       "name": "componentregistrynative",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -122,7 +121,7 @@
           "name": "root",
           "dependencies": {
             "RCT-Folly/Fabric": [
-              "2024.01.01.00"
+              "2024.10.14.00"
             ]
           },
           "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -134,7 +133,7 @@
           "name": "view",
           "dependencies": {
             "RCT-Folly/Fabric": [
-              "2024.01.01.00"
+              "2024.10.14.00"
             ],
             "Yoga": []
           },
@@ -154,7 +153,7 @@
           "name": "legacyviewmanagerinterop",
           "dependencies": {
             "RCT-Folly/Fabric": [
-              "2024.01.01.00"
+              "2024.10.14.00"
             ]
           },
           "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -171,7 +170,7 @@
       "name": "dom",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ],
         "React-graphics": []
       },
@@ -184,7 +183,7 @@
       "name": "scheduler",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ],
         "React-performancetimeline": [],
         "React-Fabric/observers/events": []
@@ -197,7 +196,7 @@
       "name": "imagemanager",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -208,7 +207,7 @@
       "name": "mounting",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -223,7 +222,7 @@
           "name": "events",
           "dependencies": {
             "RCT-Folly/Fabric": [
-              "2024.01.01.00"
+              "2024.10.14.00"
             ]
           },
           "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -237,7 +236,7 @@
       "name": "templateprocessor",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -249,7 +248,7 @@
       "name": "telemetry",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -261,7 +260,7 @@
       "name": "uimanager",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ],
         "React-rendererconsistency": []
       },
@@ -273,7 +272,7 @@
           "name": "consistency",
           "dependencies": {
             "RCT-Folly/Fabric": [
-              "2024.01.01.00"
+              "2024.10.14.00"
             ]
           },
           "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",
@@ -286,7 +285,7 @@
       "name": "leakchecker",
       "dependencies": {
         "RCT-Folly/Fabric": [
-          "2024.01.01.00"
+          "2024.10.14.00"
         ]
       },
       "compiler_flags": "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -DFOLLY_HAVE_CLOCK_GETTIME=1 -Wno-comma -Wno-shorten-64-to-32",

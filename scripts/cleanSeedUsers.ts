@@ -14,7 +14,7 @@ const db = admin.firestore();
  * Recursively deletes a document and all of its subcollections.
  */
 async function deleteDocumentAndSubcollections(
-  docRef: FirebaseFirestore.DocumentReference
+  docRef: admin.firestore.DocumentReference
 ) {
   // 1) List all subcollections under this document
   const subcols = await docRef.listCollections();

@@ -1,6 +1,6 @@
 {
   "name": "React-RuntimeCore",
-  "version": "0.76.3",
+  "version": "0.76.9",
   "summary": "The React Native Runtime.",
   "homepage": "https://reactnative.dev/",
   "license": "MIT",
@@ -10,7 +10,7 @@
   },
   "source": {
     "git": "https://github.com/facebook/react-native.git",
-    "tag": "v0.76.3"
+    "tag": "v0.76.9"
   },
   "source_files": [
     "*.{cpp,h}",
@@ -32,7 +32,7 @@
   "module_name": "React_RuntimeCore",
   "dependencies": {
     "RCT-Folly/Fabric": [
-      "2024.01.01.00"
+      "2024.10.14.00"
     ],
     "React-jsiexecutor": [],
     "React-cxxreact": [],

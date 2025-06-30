@@ -16,28 +16,9 @@ import auth from "@react-native-firebase/auth";
 import * as Location from "expo-location";
 import { v4 as uuidv4 } from "uuid";
 
-import {
-  doc,
-  getDoc,
-  setDoc,
-  runTransaction,
-  serverTimestamp,
-  query,
-  collection,
-  where,
-  getDocs,
-  orderBy,
-  limit,
-  startAfter,
-  onSnapshot,
-  updateDoc,
-  arrayUnion,
-  Unsubscribe,
-  writeBatch,
-  addDoc,
+import firestore, { 
+  FirebaseFirestoreTypes 
 } from "@react-native-firebase/firestore";
-
-import firestore from "@react-native-firebase/firestore";
 
 export type UserDataType = {
   userId: string;
@@ -177,12 +158,12 @@ export interface MatchType {
 export interface LikeRecord {
   matchId: string;
   viaOrb: boolean;
-  timestamp: FirebaseFirestore.Timestamp;
+  timestamp: FirebaseFirestoreTypes.Timestamp;
 }
 
 export interface DislikeRecord {
   matchId: string;
-  timestamp: FirebaseFirestore.Timestamp;
+  timestamp: FirebaseFirestoreTypes.Timestamp;
 }
 
 type UserContextType = {
@@ -232,14 +213,14 @@ type UserContextType = {
   subscribeToChatMessages: (
     chatId: string,
     onMessageReceived: (messages: any[]) => void
-  ) => Unsubscribe;
+  ) => void;
   subscribeToChatMatches: (
     userId: string,
     onMatchReceived: (matches: any[]) => void
-  ) => Unsubscribe;
+  ) => void;
   subscribeToReceivedLikes: (
     onUpdate: (users: UserDataType[]) => void
-  ) => Unsubscribe;
+  ) => void;
   sendMessage: (
     chatId: string,
     messageText: string,
@@ -267,7 +248,6 @@ type UserContextType = {
   ) => any;
   unmatchUser: (userId: string) => any;
   updateUserSettings: (settings: Partial<UserSettings>) => Promise<void>;
-  deleteAccount: () => Promise<void>;
 };
 
 // Initial screens and initial user data
@@ -292,7 +272,7 @@ const initialScreens = [
 
 const initialUserData: UserDataType = {
   userId: "",
-  createdAt: serverTimestamp(),
+  createdAt: firestore.FieldValue.serverTimestamp(),
   lastActive: null,
   isSeedUser: false,
   numOfOrbs: 1,
@@ -480,9 +460,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     if (!currentUser) return;
-    const userDocRef = doc(FIRESTORE, "users", currentUser.uid);
-
-    const unsubscribe = onSnapshot(userDocRef, (snap) => {
+    
+    const userDocRef = FIRESTORE.collection("users").doc(currentUser.uid);
+    
+    const unsubscribe = userDocRef.onSnapshot((snap) => {
       if (!snap.exists) return;
 
       // grab only likesReceivedCount
@@ -500,12 +481,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   // Received likes from other users
   useEffect(() => {
     if (!currentUser) return;
-    const likesRef = collection(
-      doc(FIRESTORE, "users", currentUser.uid),
-      "likesReceived"
-    );
+    const likesRef = FIRESTORE
+      .collection("users")
+      .doc(currentUser.uid)
+      .collection("likesReceived");
 
-    const unsubscribe = onSnapshot(likesRef, (snap) => {
+    const unsubscribe = likesRef.onSnapshot((snap) => {
       const ids = new Set<string>(snap.docs.map((d) => d.id));
       setReceivedLikes(ids);
     });
@@ -516,7 +497,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const assignWeeklyOrb = useCallback(async () => {
     if (!userData.userId) return;
 
-    const userRef = doc(FIRESTORE, "users", userData.userId);
+    const userRef = FIRESTORE.collection("users").doc(userData.userId);
 
     // If they already have >=1 orb, or we assigned within the last week, bail out.
     const last = userData.lastOrbAssignedAt?.toMillis?.() ?? 0;
@@ -527,9 +508,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     // Give them one orb and update the timestamp.
-    await updateDoc(userRef, {
+    await userRef.update({
       numOfOrbs: 1,
-      lastOrbAssignedAt: serverTimestamp(),
+      lastOrbAssignedAt: firestore.FieldValue.serverTimestamp()
     });
 
     // Optimistically update local state:
@@ -553,18 +534,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (!userData.userId || !userData.onboardingCompleted) return;
 
-    const q = query(
-      collection(FIRESTORE, "chats"),
-      where("participants", "array-contains", userData.userId)
-    );
-    const unsub = onSnapshot(q, async (snap) => {
+    const q = FIRESTORE
+      .collection("chats")
+      .where("participants", "array-contains", userData.userId);
+    const unsub = q.onSnapshot(async (snap) => {
       const detailed: MatchType[] = await Promise.all(
         snap.docs.map(async (chatSnap) => {
           const data = chatSnap.data();
           const otherId = data.participants.find(
             (id: string) => id !== userData.userId
           )!;
-          const userSnap = await getDoc(doc(FIRESTORE, "users", otherId));
+          const userSnap = await FIRESTORE.collection("users").doc(otherId).get();
           const profile = userSnap.exists ? userSnap.data()! : {};
 
           const lastUpdated = data.lastUpdated?.toDate
@@ -642,18 +622,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentUser(user);
 
       if (user) {
-        const userDocRef = doc(FIRESTORE, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
+        const userDocRef = FIRESTORE.collection("users").doc(user.uid);
+        const docSnap = await userDocRef.get();
 
         const userFirstName = user.displayName?.split(" ")[0] || "";
         const userLastName = user.displayName?.split(" ")[1] || "";
         const userFullName = user.displayName || "";
 
-        // Default data for a new SSO user
         let userDataToUpdate: Partial<UserDataType> = {
           ...initialUserData,
           userId: user.uid,
-          createdAt: serverTimestamp(),
+          createdAt: firestore.FieldValue.serverTimestamp(),
           email: user.email || "",
           firstName: userFirstName,
           lastName: userLastName,
@@ -663,7 +642,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         };
 
         if (docSnap.exists) {
-          // User already exists; use their current onboarding screen if defined
           const existingUser = docSnap.data() as UserDataType;
           console.log("handleGoogleSignIn(): Existing user found");
 
@@ -691,8 +669,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             existingUser.currentOnboardingScreen || "NameScreen";
           await updateUserData(userDataToUpdate);
         } else {
-          // New user: create user document with default onboarding screen
-          await setDoc(userDocRef, userDataToUpdate);
+          await userDocRef.set(userDataToUpdate);
         }
       }
     } catch (error) {
@@ -714,7 +691,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       );
 
       if (googleCredential && FIREBASE_AUTH.currentUser) {
-        // For Google SSO users, link the phone credential directly
         setIsLinking(true);
         try {
           console.log(
@@ -727,11 +703,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             error
           );
           setIsLinking(false);
-          // Optionally handle specific error codes here (e.g., already-linked)
           return;
         }
 
-        // After successful linking, update the user data
         await updateUserData({
           ...initialUserData,
           userId: FIREBASE_AUTH.currentUser.uid,
@@ -748,12 +722,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log(
           "verifyPhoneAndSetUser(): Signing in with phone credential"
         );
-        // For phone-only sign in, sign in with the phone credential to create a new user session
         const userCredential =
           await FIREBASE_AUTH.signInWithCredential(phoneCredential);
         const { user } = userCredential;
-        const userDocRef = doc(FIRESTORE, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
+        const userDocRef = FIRESTORE.collection("users").doc(user.uid);
+        const docSnap = await userDocRef.get();
 
         if (!docSnap.exists) {
           console.log("New user, creating new user document");
@@ -768,20 +741,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           };
           await updateUserData(newUser);
         }
-        // else {
-        //   console.log(
-        //     "verifyPhoneAndSetUser(): User already exists, fetching user data..."
-        //   );
-        //   const existingUser = docSnap.data() as UserDataType;
-        //   const nextScreen = existingUser.onboardingCompleted
-        //     ? "/(tabs)/Connect"
-        //     : `onboarding/${
-        //         existingUser.currentOnboardingScreen || "NameScreen"
-        //       }`;
-
-        //   // await fetchUserData(user.uid);
-        //   // router.replace(nextScreen as any);
-        // }
       }
     } catch (error) {
       console.error("Error verifying phone number:", error);
@@ -796,15 +755,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error("User ID is required to update data");
       }
 
-      const docRef = doc(FIRESTORE, "users", userIdToUpdate);
+      const docRef = FIRESTORE.collection("users").doc(userIdToUpdate);
       
-      // Instead of fetching and spreading existingData, use merge: true
-      // This will only update the fields you specify without overwriting others
-      await setDoc(docRef, data, { merge: true });
+      await docRef.set(data, { merge: true });
 
-      // For hiddenFields specifically, handle merging manually if needed
       if (data.hiddenFields) {
-        const docSnapshot = await getDoc(docRef);
+        const docSnapshot = await docRef.get();
         if (docSnapshot.exists) {
           const existingData = docSnapshot.data();
           const mergedHiddenFields = {
@@ -812,9 +768,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             ...data.hiddenFields,
           };
           
-          await setDoc(docRef, { hiddenFields: mergedHiddenFields }, { merge: true });
+          await docRef.set({ hiddenFields: mergedHiddenFields }, { merge: true });
           
-          // Update local state with merged hiddenFields
           setUserData((prevData) => ({
             ...prevData,
             ...data,
@@ -824,7 +779,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Update local state - only merge the fields you're updating
       setUserData((prevData) => ({
         ...prevData,
         ...data,
@@ -854,7 +808,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchUserData = async (userId: string, isSSO: boolean) => {
     try {
       if (!userId) {
-        // If no userId is present, navigate to LandingPage
         console.log(
           "fetchUserData(): No user ID provided, returning EARLY landing page"
         );
@@ -865,16 +818,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       console.log("fetchUserData(): Fetching user data for:", userId);
 
-      // Fetching the user document from Firestore
-      const docRef = doc(FIRESTORE, "users", userId);
-      const docSnap = await getDoc(docRef);
+      const docRef = FIRESTORE.collection("users").doc(userId);
+      const docSnap = await docRef.get();
       const userDataFromFirestore = docSnap.data() as UserDataType;
+      
       if (docSnap.exists) {
         setUserData(userDataFromFirestore);
         userDataRef.current = userDataFromFirestore;
         if (userDataFromFirestore.onboardingCompleted) {
           console.log("fetchUserData(): onboarding completed");
-          // If onboarding is completed, navigate to the (tabs) app screen
           updateUserData({
             ...userDataFromFirestore,
             currentOnboardingScreen: "Connect",
@@ -884,7 +836,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         } else {
           console.log("fetchUserData(): onboarding not completed yet");
-          // Otherwise, navigate based on the current onboarding screen
           const userCurrentOnboardingScreen =
             userDataFromFirestore.currentOnboardingScreen ||
             "PhoneNumberScreen";
@@ -893,7 +844,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         }
       }
-      // if no user in firestore and they are phone sso, navgiate to namescreen, make sure they are not google/apple sso
       else if (!isSSO && !userDataFromFirestore) {
         console.log(
           "fetchUserData(): No user in firestore, navigating to NameScreen"
@@ -915,8 +865,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchUserById = async (userId: string) => {
     try {
-      const userDocRef = doc(FIRESTORE, "users", userId);
-      const userDoc = await getDoc(userDocRef);
+      const userDocRef = FIRESTORE.collection("users").doc(userId);
+      const userDoc = await userDocRef.get();
       if (userDoc.exists) {
         return { userId: userDoc.id, ...userDoc.data() };
       }
@@ -935,30 +885,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const userId = userData.userId;
       if (!userId) return;
-      await updateUserData({ lastActive: serverTimestamp() });
+      await updateUserData({ lastActive: firestore.FieldValue.serverTimestamp() });
       console.log("Last active updated successfully");
     } catch (error) {
       console.error("Error updating last active:", error);
     }
   };
 
-  const buildQueryConstraints = ({
-    matchPreferences,
-    currentLat,
-    currentLon,
-  }: {
-    matchPreferences?: typeof userData.matchPreferences;
-    currentLat?: number;
-    currentLon?: number;
-  }) => {
-    const constraints: any[] = [];
+  const buildQueryWithFilters = (
+    baseQuery: FirebaseFirestoreTypes.Query,
+    {
+      matchPreferences,
+      currentLat,
+      currentLon,
+    }: {
+      matchPreferences?: typeof userData.matchPreferences;
+      currentLat?: number;
+      currentLon?: number;
+    }
+  ): FirebaseFirestoreTypes.Query => {
+    let query = baseQuery;
 
     // --- Gender / datePreferences ---
     const prefs = matchPreferences?.datePreferences ?? [];
 
-    // If they picked “Everyone”, skip the gender filter completely
+    // If they picked "Everyone", skip the gender filter completely
     if (!prefs.includes("Everyone")) {
-      // Drop any stray “Everyone” if it ever appears alongside others
+      // Drop any stray "Everyone" if it ever appears alongside others
       const filtered = prefs.filter((p) => p !== "Everyone");
 
       const genderMap: Record<string, string> = {
@@ -969,24 +922,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const mapped = filtered.map((p) => genderMap[p] || p);
 
       if (mapped.length === 1) {
-        constraints.push(where("gender", "==", mapped[0]));
+        query = query.where("gender", "==", mapped[0]);
       } else if (mapped.length > 1) {
-        constraints.push(where("gender", "in", mapped));
+        query = query.where("gender", "in", mapped);
       }
     }
 
     // --- Age Range ---
     const age = matchPreferences?.preferredAgeRange;
     if (age?.min != null && age?.max != null) {
-      constraints.push(where("age", ">=", age.min));
-      constraints.push(where("age", "<=", age.max));
+      query = query.where("age", ">=", age.min).where("age", "<=", age.max);
     }
 
     // --- Height Range ---
     const height = matchPreferences?.preferredHeightRange;
     if (height?.min != null && height?.max != null) {
-      constraints.push(where("height", ">=", height.min));
-      constraints.push(where("height", "<=", height.max));
+      query = query.where("height", ">=", height.min).where("height", "<=", height.max);
     }
 
     // --- Distance Bounding Box ---
@@ -998,13 +949,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const maxDist = matchPreferences.preferredDistance;
       const latDelta = maxDist / 69;
       const lonDelta = maxDist / (69 * Math.cos((currentLat * Math.PI) / 180));
-      constraints.push(where("latitude", ">=", currentLat - latDelta));
-      constraints.push(where("latitude", "<=", currentLat + latDelta));
-      constraints.push(where("longitude", ">=", currentLon - lonDelta));
-      constraints.push(where("longitude", "<=", currentLon + lonDelta));
+      
+      query = query
+        .where("latitude", ">=", currentLat - latDelta)
+        .where("latitude", "<=", currentLat + latDelta)
+        .where("longitude", ">=", currentLon - lonDelta)
+        .where("longitude", "<=", currentLon + lonDelta);
     }
 
-    return constraints;
+    return query;
   };
 
   const fetchPotentialMatches = async () => {
@@ -1033,39 +986,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       ...(userData.matches ?? []),
     ]);
 
-    const baseConstraints = [
-      orderBy("likesReceivedCount", "desc"),
-      limit(10),
-      // where("settings.isPaused", "!=", true),
-      // ...buildQueryConstraints({
-      //   matchPreferences: userData.matchPreferences,
-      //   currentLat: userData.latitude,
-      //   currentLon: userData.longitude,
-      // }),
-    ];
-
     let fetched: any[] = [];
     let hasMore = true;
 
     while (fetched.length < 10 && hasMore) {
       console.log("fetching batch...");
-      const usersQ = lastVisibleMatch
-        ? query(
-            collection(FIRESTORE, "users"),
-            ...baseConstraints,
-            startAfter(lastVisibleMatch)
-          )
-        : query(collection(FIRESTORE, "users"), ...baseConstraints);
-      const snap = await getDocs(usersQ);
+      
+      // Start with base collection
+      let usersQuery = buildQueryWithFilters(
+        FIRESTORE.collection("users"),
+        {
+          matchPreferences: userData.matchPreferences,
+          currentLat: userData.latitude,
+          currentLon: userData.longitude,
+        }
+      );
+
+      // Add ordering and pagination
+      usersQuery = usersQuery
+        .orderBy("likesReceivedCount", "desc")
+        .limit(10);
+      
+      // Add startAfter if we have a last visible match
+      if (lastVisibleMatch) {
+        usersQuery = usersQuery.startAfter(lastVisibleMatch);
+      }
+      
+      const snap = await usersQuery.get();
+      
       if (snap.empty) {
         console.log("no more matches");
         setNoMoreMatches(true);
         setLoadingNextBatch(false);
         break;
       }
+      
       const newBatch = snap.docs
         .map((d) => d.data())
         .filter((u) => !excluded.has(u.userId));
+        
       if (!newBatch.length) {
         setNoMoreMatches(true);
         setLoadingNextBatch(false);
@@ -1267,91 +1226,97 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const recordDislike = async (
-  fromUserId: string,
-  toUserId: string
+    fromUserId: string,
+    toUserId: string
   ): Promise<void> => {
-  const fromRef = doc(FIRESTORE, "users", fromUserId);
-  const toRef = doc(FIRESTORE, "users", toUserId);
-  const givenRef = doc(collection(fromRef, "dislikesGiven"), toUserId);
-  const receivedRef = doc(collection(toRef, "dislikesReceived"), fromUserId);
+    const fromRef = FIRESTORE.collection("users").doc(fromUserId);
+    const toRef = FIRESTORE.collection("users").doc(toUserId);
+    const givenRef = fromRef.collection("dislikesGiven").doc(toUserId);
+    const receivedRef = toRef.collection("dislikesReceived").doc(fromUserId);
 
-  // Check if the target user had liked us - if so, we need to remove that like
-  const incomingLikeRef = doc(collection(fromRef, "likesReceived"), toUserId);
+    // Check if the target user had liked us - if so, we need to remove that like
+    const incomingLikeRef = fromRef.collection("likesReceived").doc(toUserId);
 
-  await runTransaction(FIRESTORE, async (tx) => {
-    // Check if they had liked us
-    const incomingLikeSnap = await tx.get(incomingLikeRef);
-    const hadLikedUs = incomingLikeSnap.exists;
+    await FIRESTORE.runTransaction(async (tx) => {
+      // Check if they had liked us
+      const incomingLikeSnap = await tx.get(incomingLikeRef);
+      const hadLikedUs = incomingLikeSnap.exists;
 
-    // 1) bump the "given" counter
-    const fromSnap = await tx.get(fromRef);
-    const fromData = fromSnap.data()!;
-    
-    const fromUpdates: any = {
-      dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
-    };
-
-    // If they had liked us, remove that incoming like record and decrement our received counter
-    if (hadLikedUs) {
-      tx.delete(incomingLikeRef);
-      fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
-    }
-
-    tx.update(fromRef, fromUpdates);
-
-    // 2) bump the "received" counter on the target user
-    const toSnap = await tx.get(toRef);
-    const toData = toSnap.data()!;
-    tx.update(toRef, {
-      dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
-    });
-
-    // 3) write the dislike records
-    tx.set(givenRef, { matchId: toUserId, timestamp: serverTimestamp() });
-    tx.set(receivedRef, {
-      matchId: fromUserId,
-      timestamp: serverTimestamp(),
-    });
-
-    // 4) If they had liked us, also remove our like record from their likesGiven collection
-    if (hadLikedUs) {
-      const theirLikeGivenRef = doc(collection(toRef, "likesGiven"), fromUserId);
-      tx.delete(theirLikeGivenRef);
+      // 1) bump the "given" counter
+      const fromSnap = await tx.get(fromRef);
+      const fromData = fromSnap.data()!;
       
-      // Update their likesGivenCount
+      const fromUpdates: any = {
+        dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
+      };
+
+      // If they had liked us, remove that incoming like record and decrement our received counter
+      if (hadLikedUs) {
+        tx.delete(incomingLikeRef);
+        fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
+      }
+
+      tx.update(fromRef, fromUpdates);
+
+      // 2) bump the "received" counter on the target user
+      const toSnap = await tx.get(toRef);
+      const toData = toSnap.data()!;
       tx.update(toRef, {
-        likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1),
+        dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
       });
-    }
-  });
+
+      // 3) write the dislike records
+      tx.set(givenRef, { 
+        matchId: toUserId, 
+        timestamp: firestore.FieldValue.serverTimestamp() 
+      });
+      tx.set(receivedRef, {
+        matchId: fromUserId,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      });
+
+      // 4) If they had liked us, also remove our like record from their likesGiven collection
+      if (hadLikedUs) {
+        const theirLikeGivenRef = toRef.collection("likesGiven").doc(fromUserId);
+        tx.delete(theirLikeGivenRef);
+        
+        // Update their likesGivenCount
+        tx.update(toRef, {
+          likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1),
+        });
+      }
+    });
   };
 
-  const getReceivedLikesDetailed = async (): Promise<
-    Array<any & { viaOrb: boolean; likedAt: Date }>
-  > => {
-    const uid = userData.userId!;
-    const recSnap = await getDocs(
-      collection(doc(FIRESTORE, "users", uid), "likesReceived")
-    );
-    const records = recSnap.docs.map((d) => d.data() as LikeRecord);
+const getReceivedLikesDetailed = async (): Promise<
+  Array<any & { viaOrb: boolean; likedAt: Date }>
+> => {
+  const uid = userData.userId!;
+  const recSnap = await FIRESTORE
+    .collection("users")
+    .doc(uid)
+    .collection("likesReceived")
+    .get();
+  
+  const records = recSnap.docs.map((d) => d.data() as LikeRecord);
 
-    // join each record with its user profile
-    const detailed = await Promise.all(
-      records.map(async (rec) => {
-        const uSnap = await getDoc(doc(FIRESTORE, "users", rec.matchId));
-        if (!uSnap.exists) return null;
-        const profile = uSnap.data() as any;
-        return {
-          ...profile,
-          userId: uSnap.id,
-          viaOrb: rec.viaOrb,
-          likedAt: rec.timestamp.toDate(),
-        };
-      })
-    );
+  // join each record with its user profile
+  const detailed = await Promise.all(
+    records.map(async (rec) => {
+      const uSnap = await FIRESTORE.collection("users").doc(rec.matchId).get();
+      if (!uSnap.exists) return null;
+      const profile = uSnap.data() as any;
+      return {
+        ...profile,
+        userId: uSnap.id,
+        viaOrb: rec.viaOrb,
+        likedAt: rec.timestamp.toDate(),
+      };
+    })
+  );
 
-    return detailed.filter(Boolean) as any[];
-  };
+  return detailed.filter(Boolean) as any[];
+};
 
   const getIdToken = async () => {
     try {
@@ -1380,9 +1345,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const screenToSave = screen || userData.currentOnboardingScreen;
       if (userData.userId) {
         setcurrentOnboardingScreen(screenToSave);
-        const docRef = doc(FIRESTORE, "users", userData.userId);
-        await setDoc(
-          docRef,
+        const docRef = FIRESTORE.collection("users").doc(userData.userId);
+        await docRef.set(
           { currentOnboardingScreen: screenToSave },
           { merge: true }
         );
@@ -1451,7 +1415,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     } else {
       await updateUserData({
         onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
+        onboardingCompletedAt: firestore.FieldValue.serverTimestamp(),
       });
       router.replace("/");
     }
@@ -1480,12 +1444,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       router.replace(`onboarding/${screen}` as any);
     }
   };
-
+  
   const completeOnboarding = async () => {
     try {
       await updateUserData({
         onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
+        onboardingCompletedAt: firestore.FieldValue.serverTimestamp(),
         currentOnboardingScreen: "Connect",
       });
       await fetchPotentialMatches();
@@ -1575,9 +1539,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const subscribeToChatMessages = (
     chatId: string,
     callback: (msgs: any[]) => void
-  ): Unsubscribe => {
-    const chatRef = doc(FIRESTORE, "chats", chatId);
-    return onSnapshot(chatRef, (snap) => {
+  ) => {
+    const chatRef = FIRESTORE.collection("chats").doc(chatId);
+    return chatRef.onSnapshot((snap) => {
       const msgs = snap.data()?.messages ?? [];
       callback(
         msgs.map((m: any) => ({
@@ -1600,13 +1564,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         lastUpdated: Date;
       }>
     ) => void
-  ): Unsubscribe => {
-    const q = query(
-      collection(FIRESTORE, "chats"),
-      where("participants", "array-contains", userId)
-    );
+  ) => {
+    const q = FIRESTORE
+      .collection("chats")
+      .where("participants", "array-contains", userId);
 
-    return onSnapshot(q, async (snap) => {
+    return q.onSnapshot(async (snap) => {
       // Only process chats that actually exist
       const existingChats = snap.docs.filter((doc) => doc.exists);
 
@@ -1616,7 +1579,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           const participants: string[] = data.participants;
           const otherId = participants.find((id) => id !== userId)!;
 
-          const userSnap = await getDoc(doc(FIRESTORE, "users", otherId));
+          const userSnap = await FIRESTORE.collection("users").doc(otherId).get();
           const profile = userSnap.exists ? userSnap.data()! : {};
 
           let updated = data.lastUpdated?.toDate
@@ -1726,10 +1689,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     senderId: string,
     receiverId: string
   ): Promise<void> => {
-    const chatRef = doc(FIRESTORE, "chats", chatId);
+    const chatRef = FIRESTORE.collection("chats").doc(chatId);
     try {
-      await updateDoc(chatRef, {
-        messages: arrayUnion({
+      await chatRef.update({
+        messages: firestore.FieldValue.arrayUnion({
           text: messageText,
           sender: senderId,
           receiver: receiverId,
@@ -1737,80 +1700,76 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         }),
         lastMessage: messageText,
         lastMessageSender: senderId,
-        lastUpdated: serverTimestamp(),
+        lastUpdated: firestore.FieldValue.serverTimestamp(),
       });
     } catch (err) {
       console.error("sendMessage error:", err);
     }
-  };
+};
 
-  const fetchChatMatches = async (
-    userId: string
-  ): Promise<
-    Array<{
-      userId: string;
-      lastMessage: string;
-      lastUpdated: Date;
-      firstName?: string;
-      photos?: string[];
-      [key: string]: any;
-    }>
-  > => {
-    console.log("fetchChatMatches called with userId:", userId);
-    try {
-      const chatsSnap = await getDocs(
-        query(
-          collection(FIRESTORE, "chats"),
-          where("participants", "array-contains", userId)
-        )
-      );
+const fetchChatMatches = async (
+  userId: string
+): Promise<Array<{
+    userId: string;
+    lastMessage: string;
+    lastUpdated: Date;
+    firstName?: string;
+    photos?: string[];
+    [key: string]: any;
+  }>> => {
+  console.log("fetchChatMatches called with userId:", userId);
+  try {
+    const chatsSnap = await FIRESTORE
+      .collection("chats")
+      .where("participants", "array-contains", userId)
+      .get();
 
-      const results = await Promise.all(
-        chatsSnap.docs.map(async (chatSnap) => {
-          const data = chatSnap.data();
-          const participants: string[] = data.participants;
-          const otherId = participants.find((id) => id !== userId)!;
+    const results = await Promise.all(
+      chatsSnap.docs.map(async (chatSnap) => {
+        const data = chatSnap.data();
+        const participants: string[] = data.participants;
+        const otherId = participants.find((id) => id !== userId)!;
 
-          const userSnap = await getDoc(doc(FIRESTORE, "users", otherId));
-          const profile = userSnap.exists ? userSnap.data() : {};
+        const userSnap = await FIRESTORE.collection("users").doc(otherId).get();
+        const profile = userSnap.exists ? userSnap.data() : {};
 
-          let updated: Date;
-          if (data.lastUpdated && data.lastUpdated.toDate) {
-            updated = data.lastUpdated.toDate();
-          } else if (data.lastUpdated) {
-            updated = new Date(data.lastUpdated);
-          } else if (data.createdAt) {
-            updated = new Date(data.createdAt);
-          } else {
-            updated = new Date();
-          }
+        let updated: Date;
+        if (data.lastUpdated && data.lastUpdated.toDate) {
+          updated = data.lastUpdated.toDate();
+        } else if (data.lastUpdated) {
+          updated = new Date(data.lastUpdated);
+        } else if (data.createdAt) {
+          updated = new Date(data.createdAt);
+        } else {
+          updated = new Date();
+        }
 
-          return {
-            userId: otherId,
-            lastMessage: data.lastMessage || "",
-            lastUpdated: updated,
-            firstName: profile?.firstName,
-            photos: profile?.photos,
-            ...profile,
-          };
-        })
-      );
+        return {
+          userId: otherId,
+          lastMessage: data.lastMessage || "",
+          lastUpdated: updated,
+          firstName: profile?.firstName,
+          photos: profile?.photos,
+          ...profile,
+        };
+      })
+    );
 
-      results.sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+    results.sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
 
-      return results;
-    } catch (err) {
-      console.error("fetchChatMatches error:", err);
-      return [];
-    }
-  };
+    return results;
+  } catch (err) {
+    console.error("fetchChatMatches error:", err);
+    return [];
+  }
+};
 
   const markChatAsRead = async (
     chatId: string,
     userId: string
   ): Promise<void> => {
-    const chatRef = doc(FIRESTORE, "chats", chatId);
-    await updateDoc(chatRef, {
+    const chatRef = FIRESTORE.collection("chats").doc(chatId);
+    await chatRef.update({
       lastMessageSender: userId,
     });
   };
@@ -1946,13 +1905,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!userData.userId) return false;
 
     try {
-      await addDoc(collection(FIRESTORE, "reports"), {
+      await FIRESTORE.collection("reports").add({
         reportedBy: userData.userId,
         reportedUser: reportedUserId,
         reason,
         details: details || "",
         status: "pending",
-        createdAt: serverTimestamp(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
       await unmatchUser(reportedUserId);
@@ -1967,8 +1926,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const markMatchAsRead = useCallback(
     async (otherUserId: string) => {
       const chatId = [userData.userId, otherUserId].sort().join("_");
-      const chatRef = doc(FIRESTORE, "chats", chatId);
-      await updateDoc(chatRef, {
+      const chatRef = FIRESTORE.collection("chats").doc(chatId);
+      await chatRef.update({
         lastMessageSender: userData.userId,
       });
       // optimistic local decrement:
@@ -1976,10 +1935,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [userData.userId]
   );
-
-  const deleteAccount = () => {
-    console.log("deleteAccount");
-  }
 
   const contextValue: UserContextType = {
     currentOnboardingScreen,
@@ -2030,8 +1985,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     unreadMatchesCount,
     reportUser,
     unmatchUser,
-    updateUserSettings,
-    deleteAccount
+    updateUserSettings
   };
 
   if (initializing) {

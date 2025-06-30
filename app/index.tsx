@@ -1,3 +1,4 @@
+import '@/services/FirebaseConfig';
 import React from "react";
 import LandingPageScreen from "./onboarding/LandingPageScreen";
 // Add this to your App.tsx or index.js file:
