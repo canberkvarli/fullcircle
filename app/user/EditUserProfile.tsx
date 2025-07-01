@@ -19,7 +19,6 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
-import EditUserProfileField from "@/components/EditUserProfileField";
 
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
@@ -76,7 +75,7 @@ export default function EditUserProfile() {
     });
   };
 
-  const renderField = (field: any) => {
+  const renderField = (field: { fieldName: string; title: string; value: any }) => {
     const formatFieldValue = (value: any, fieldName: string) => {
       if (!value || (Array.isArray(value) && value.length === 0)) {
         return "Not set";
@@ -92,19 +91,19 @@ export default function EditUserProfile() {
       return value.toString();
     };
 
-    const getFieldIcon = (fieldName: string) => {
-      const iconMap: { [key: string]: string } = {
-        spiritualDraws: "sparkles",
-        spiritualPractices: "leaf",
-        healingModalities: "medical",
-        gender: "person",
-        datePreferences: "heart",
-        fullName: "person-circle",
-        age: "calendar",
-        height: "resize",
-        location: "location",
+    const getFieldIcon = (fieldName: string): keyof typeof Ionicons.glyphMap => {
+      const iconMap: { [key: string]: keyof typeof Ionicons.glyphMap } = {
+        spiritualDraws: "sparkles-outline",
+        spiritualPractices: "leaf-outline",
+        healingModalities: "medical-outline",
+        gender: "person-outline",
+        datePreferences: "heart-outline",
+        fullName: "person-circle-outline",
+        age: "calendar-outline",
+        height: "resize-outline",
+        location: "location-outline",
       };
-      return iconMap[fieldName] || "information-circle";
+      return iconMap[fieldName] || "information-circle-outline";
     };
 
     const getFieldGradient = (fieldName: string) => {
@@ -126,11 +125,10 @@ export default function EditUserProfile() {
         key={field.fieldName}
         onPress={() => handleFieldPress(field.fieldName)}
         style={[
-          styles.enhancedFieldContainer,
+          styles.fieldContainer,
           { 
             backgroundColor: colors.card, 
-            borderColor: isSpiritualField ? gradientColors[0] + '40' : colors.border,
-            shadowColor: isSpiritualField ? gradientColors[0] : '#000',
+            borderColor: isSpiritualField ? gradientColors[0] + '30' : colors.border,
           }
         ]}
         activeOpacity={0.7}
@@ -141,13 +139,13 @@ export default function EditUserProfile() {
               styles.fieldIconContainer,
               { 
                 backgroundColor: isSpiritualField 
-                  ? `${gradientColors[0]}20` 
-                  : `${colors.primary}20`
+                  ? `${gradientColors[0]}15` 
+                  : `${colors.primary}15`
               }
             ]}>
               <Ionicons 
                 name={getFieldIcon(field.fieldName)} 
-                size={20} 
+                size={18} 
                 color={isSpiritualField ? gradientColors[0] : colors.primary} 
               />
             </View>
@@ -156,32 +154,11 @@ export default function EditUserProfile() {
               <Text style={[styles.fieldTitle, fonts.buttonFont, { color: colors.textDark }]}>
                 {field.title}
               </Text>
-              {isSpiritualField && (
-                <View style={[styles.spiritualBadge, { backgroundColor: gradientColors[0] + '15' }]}>
-                  <Text style={[styles.spiritualBadgeText, { color: gradientColors[0] }]}>
-                    ✨ Spiritual
-                  </Text>
-                </View>
-              )}
             </View>
 
             <View style={styles.fieldActions}>
-              <View style={[
-                styles.visibilityIndicator,
-                { 
-                  backgroundColor: fieldVisibility[field.fieldName] 
-                    ? colors.primary + '15' 
-                    : colors.textMuted + '15'
-                }
-              ]}>
-                <Ionicons 
-                  name={fieldVisibility[field.fieldName] ? "eye" : "eye-off"} 
-                  size={12} 
-                  color={fieldVisibility[field.fieldName] ? colors.primary : colors.textMuted}
-                />
-              </View>
               <Ionicons 
-                name="chevron-forward" 
+                name="chevron-forward-outline" 
                 size={16} 
                 color={colors.textMuted} 
               />
@@ -230,7 +207,7 @@ export default function EditUserProfile() {
     const index = parseInt(item.key.split('-')[1]);
     
     if (hasPhoto) {
-      // Render actual photo (like your working version)
+      // Render actual photo
       return (
         <View style={styles.photoContainer} key={item.key}>
           <View style={styles.photoWrapper}>
@@ -263,8 +240,8 @@ export default function EditUserProfile() {
             onPress={() => pickImage(index)}
             activeOpacity={0.7}
           >
-            <View style={[styles.placeholderContent, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="camera-outline" size={32} color={colors.primary} />
+            <View style={[styles.placeholderContent, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="camera-outline" size={24} color={colors.primary} />
               <Text style={[styles.placeholderText, fonts.captionFont, { color: colors.primary }]}>
                 Add Photo
               </Text>
@@ -273,25 +250,6 @@ export default function EditUserProfile() {
         </View>
       );
     }
-  };
-
-  const renderPhotoPlaceholder = (index: number) => {
-    return (
-      <View style={styles.photoContainer} key={`placeholder-${index}`}>
-        <TouchableOpacity 
-          style={[styles.photoPlaceholder, { borderColor: colors.border, backgroundColor: colors.background }]}
-          onPress={() => pickImage(index)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.placeholderContent, { backgroundColor: colors.primary + '20' }]}>
-            <Ionicons name="camera-outline" size={32} color={colors.primary} />
-            <Text style={[styles.placeholderText, fonts.captionFont, { color: colors.primary }]}>
-              Add Photo
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
   };
 
   const renderPhotoGrid = () => {
@@ -316,36 +274,49 @@ export default function EditUserProfile() {
       });
     }
     
-    console.log('photoData:', photoData); // Debug log
-    
     return (
       <View style={styles.photoGridContainer}>
         <DraggableGrid
           numColumns={3}
           renderItem={renderItem}
           data={photoData}
-          disabledReSorted={false}
           onDragRelease={(data) => {
-            // Only keep actual photos (filter out placeholders)
             const updatedPhotos = data
               .filter(item => item.uri && item.uri !== '')
               .map((item) => item.uri);
             setPhotos(updatedPhotos);
             setIsModified(true);
           }}
-          dragItemFlex={1}
-          dragAreaFlex={1}
-          hoverStyle={{ scale: 1.05 }}
           style={styles.photosGrid}
         />
 
+        {/* Photo requirements notice */}
+        <View style={[styles.photoRequirements, { 
+          backgroundColor: photos.length < 3 ? '#FFF3CD' : colors.primary + '10',
+          borderColor: photos.length < 3 ? '#F0AD4E' : colors.primary + '30'
+        }]}>
+          <Ionicons 
+            name={photos.length < 3 ? "warning-outline" : "checkmark-circle-outline"} 
+            size={16} 
+            color={photos.length < 3 ? '#F0AD4E' : colors.primary} 
+          />
+          <Text style={[styles.photoRequirementsText, fonts.captionFont, { 
+            color: photos.length < 3 ? '#8B4513' : colors.primary 
+          }]}>
+            {photos.length < 3 
+              ? `${photos.length}/3 photos - Add ${3 - photos.length} more photo${3 - photos.length > 1 ? 's' : ''} (minimum required)`
+              : `${photos.length}/6 photos - Looking good! You can add ${6 - photos.length} more.`
+            }
+          </Text>
+        </View>
+
         {/* Photo tips */}
-        {/* <View style={[styles.photoTips, { backgroundColor: colors.primary + '10' }]}>
+        <View style={[styles.photoTips, { backgroundColor: colors.primary + '10' }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={[styles.photoTipsText, fonts.captionFont, { color: colors.primary }]}>
             Add 3-6 photos that show your personality. First photo will be your main profile picture. Long press to drag and reorder.
           </Text>
-        </View> */}
+        </View>
       </View>
     );
   };
@@ -373,6 +344,16 @@ export default function EditUserProfile() {
   };
 
   const handleDone = async () => {
+    // Check if user has at least 3 photos before saving
+    if (photos.length < 3) {
+      Alert.alert(
+        "More Photos Needed",
+        "You need at least 3 photos to complete your profile. Please add more photos before saving.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     if (isModified) {
       try {
         await updateUserData({ photos });
@@ -462,7 +443,7 @@ export default function EditUserProfile() {
         
         <TouchableOpacity onPress={handleDone} style={styles.headerButton}>
           <Text style={[styles.headerButtonText, { 
-            color: colors.primary, 
+            color: photos.length < 3 ? colors.textMuted : colors.primary, 
             fontWeight: isModified ? '600' : '400' 
           }]}>
             {isModified ? "Save" : "Done"}
@@ -675,44 +656,39 @@ const styles = StyleSheet.create({
   editContainer: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
-    gap: Spacing.lg,
+    gap: Spacing.md,
   },
   
   section: {
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    padding: Spacing.lg,
+    padding: Spacing.md,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: Spacing.md,
   },
   
   sectionTitle: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
-    marginLeft: Spacing.sm,
     letterSpacing: 0.3,
   },
   
-  // Enhanced Photo Grid Styles
+  // Enhanced Photo Grid Styles - FIXED SIZING
   photosContainer: {
     minHeight: 150,
-    paddingVertical: Spacing.md,
   },
   
   photoGridContainer: {
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   
-  // Photo grid styles
   photosGrid: {
     flex: 1,
   },
@@ -724,38 +700,37 @@ const styles = StyleSheet.create({
   },
   
   photoWrapper: {
-    flex: 1,
+    width: 110,
+    height: 110,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     position: 'relative',
   },
   
   photo: {
-    width: '100%',
-    height: '100%',
+    width: 110,
+    height: 110,
     resizeMode: 'cover',
   },
   
   photoPlaceholder: {
-    width: '100%',
-    height: '100%',
-    marginTop: Spacing.md,
+    width: 110,
+    height: 110,
     borderRadius: BorderRadius.md,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.sm,
   },
   
   placeholderContent: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xs,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.sm,
-    width: '100%',
+    width: '85%',
   },
   
   placeholderText: {
@@ -798,55 +773,50 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  
-  // firstPhotoBadge: {
-  //   position: 'absolute',
-  //   top: Spacing.xs,
-  //   left: Spacing.xs,
-  //   width: 20,
-  //   height: 20,
-  //   borderRadius: 10,
-  //   backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  //   shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 1 },
-  //   shadowOpacity: 0.15,
-  //   shadowRadius: 2,
-  //   elevation: 2,
-  // },
-  
-  // firstPhotoBadgeText: {
-  //   fontSize: Typography.sizes.xs,
-  //   fontWeight: Typography.weights.bold,
-  //   color: '#333',
-  // },
-  
-  // Photo tips section
-  // photoTips: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   padding: Spacing.md,
-  //   borderRadius: BorderRadius.md,
-  //   marginTop: Spacing.sm,
-  //   gap: Spacing.sm,
-  // },
-  
-  // photoTipsText: {
-  //   flex: 1,
-  //   fontSize: Typography.sizes.xs,
-  //   lineHeight: Typography.sizes.xs * 1.4,
-  // },
 
-  // Enhanced Field Styles for Basic Info
-  enhancedFieldContainer: {
-    borderRadius: BorderRadius.lg,
+  // Photo requirements notice
+  photoRequirements: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  
+  photoRequirementsText: {
+    flex: 1,
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.medium,
+    lineHeight: Typography.sizes.xs * 1.4,
+  },
+
+  // Photo tips section
+  photoTips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  
+  photoTipsText: {
+    flex: 1,
+    fontSize: Typography.sizes.xs,
+    lineHeight: Typography.sizes.xs * 1.4,
+  },
+
+  // IMPROVED Field Styles
+  fieldContainer: {
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
     marginBottom: Spacing.sm,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
   },
   
   fieldContent: {
@@ -860,9 +830,9 @@ const styles = StyleSheet.create({
   },
   
   fieldIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -874,32 +844,10 @@ const styles = StyleSheet.create({
   
   fieldTitle: {
     fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.xs,
-  },
-  
-  spiritualBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  
-  spiritualBadgeText: {
-    fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
   },
   
   fieldActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  
-  visibilityIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -907,14 +855,14 @@ const styles = StyleSheet.create({
   fieldValue: {
     fontSize: Typography.sizes.sm,
     lineHeight: Typography.sizes.sm * 1.3,
-    marginBottom: Spacing.xs,
+    marginLeft: 44, // Align with title text
   },
   
   spiritualPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
-    marginTop: Spacing.xs,
+    marginLeft: 44, // Align with title text
   },
   
   spiritualTag: {
