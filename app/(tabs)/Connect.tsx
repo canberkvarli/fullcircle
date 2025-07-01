@@ -260,70 +260,64 @@ const ConnectScreen: React.FC = () => {
   };
 
   // No more matches state
-  if (noMoreMatches) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
-        
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Sacred Souls</Text>
-            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>Connect with purpose</Text>
-          </View>
-          
-          <TouchableOpacity 
-            onPress={() => router.push('/user/FullCircleSubscription')}
-            style={[styles.cosmicButton, { backgroundColor: colors.primary }]}
-          >
-            <Text style={[styles.cosmicButtonText, fonts.spiritualBodyFont, { color: colors.card }]}>
-              Expand Your Circle
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            onPress={() => router.push('/user/DatingPreferences')}
-            style={[styles.intentionsButton, { borderColor: colors.primary }]}
-          >
-            <Text style={[styles.intentionsButtonText, fonts.spiritualBodyFont, { color: colors.primary }]}>
-              Adjust Intentions
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.centeredContainer}>
-          <View style={[styles.cosmicSymbol, { backgroundColor: colors.primary + '15' }]}>
-            <Ionicons name="infinite" size={60} color={colors.primary} />
-          </View>
-          <Text style={[styles.noSoulsTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            The Universe is Aligning
-          </Text>
-          <Text style={[styles.noSoulsText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Your cosmic connections are being prepared. Expand your sacred circle or adjust your spiritual intentions.
-          </Text>
-          
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity 
-              onPress={() => router.push('/user/FullCircleSubscription')}
-              style={[styles.cosmicButton, { backgroundColor: colors.primary }]}
-            >
-              <Text style={[styles.cosmicButtonText, fonts.spiritualBodyFont, { color: colors.card }]}>
-                Expand Your Circle
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={() => router.push('/user/DatingPreferences')}
-              style={[styles.intentionsButton, { borderColor: colors.primary }]}
-            >
-              <Text style={[styles.intentionsButtonText, fonts.spiritualBodyFont, { color: colors.primary }]}>
-                Adjust Intentions
-              </Text>
-            </TouchableOpacity>
-          </View>
+if (noMoreMatches) {
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+      
+      {/* Header - matches other screens exactly */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Sacred Souls</Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>Connect with purpose</Text>
         </View>
       </View>
-    );
-  }
+
+      {/* Main content - follows KindredSpirits pattern */}
+      <View style={styles.noLikesContainer}>
+        {/* Cosmic symbol - matches KindredSpirits style */}
+        <View style={[styles.cosmicSymbol, { backgroundColor: colors.primary + '15' }]}>
+          <Ionicons name="infinite" size={60} color={colors.primary} />
+        </View>
+        
+        {/* Title and subtitle - matches KindredSpirits */}
+        <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          The Universe is Aligning
+        </Text>
+        
+        <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+          Sacred souls are being prepared for your cosmic journey. Expand your divine circle or adjust your spiritual intentions to discover new connections.
+        </Text>
+        
+        {/* Action buttons - matches KindredSpirits style */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+            onPress={() => router.push('/user/FullCircleSubscription')}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+            <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+              Expand Your Circle ✨
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.primary }]}
+            onPress={() => router.push('/user/DatingPreferences')}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="options" size={18} color={colors.primary} style={styles.buttonIcon} />
+            <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: colors.primary }]}>
+              Adjust Preferences 🔮
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 
   // Loading state
   if (loadingNextBatch || !currentPotentialMatch) {
@@ -523,11 +517,7 @@ const ConnectScreen: React.FC = () => {
                   activeOpacity={0.9}
                 >
                   <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                  <Text style={[
-                    styles.divineButtonText, 
-                    fonts.spiritualBodyFont,
-                    { color: '#FFFFFF' }
-                  ]}>
+                  <Text style={[styles.primaryButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}>
                     Embrace Full Circle
                   </Text>
                 </TouchableOpacity>
@@ -821,15 +811,9 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  
+
   buttonIcon: {
     marginRight: Spacing.sm,
-  },
-  
-  divineButtonText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-    letterSpacing: 0.5,
   },
   
   divineSecondaryButton: {
@@ -879,7 +863,7 @@ const styles = StyleSheet.create({
   cosmicSymbol: {
     marginBottom: Spacing.xl,
     padding: Spacing.xl,
-    borderRadius: BorderRadius.full,
+    borderRadius: 60,
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -960,6 +944,80 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
   },
+  
+  // Use existing noLikesContainer from KindredSpirits
+  noLikesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  
+  // Use existing noLikesTitle from KindredSpirits
+  noLikesTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    letterSpacing: 0.5,
+  },
+  
+  // Use existing noLikesSubtitle from KindredSpirits
+  noLikesSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Spacing['2xl'],
+    letterSpacing: 0.3,
+    fontStyle: 'italic',
+  },
+  
+  // Use existing actionContainer from KindredSpirits
+  actionContainer: {
+    width: '100%',
+    gap: Spacing.lg,
+  },
+  
+  // Use existing primaryButton from KindredSpirits
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  
+  // Use existing primaryButtonText from KindredSpirits
+  primaryButtonText: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  
+  // Use existing secondaryButton from KindredSpirits
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    borderWidth: 2,
+  },
+  
+  // Use existing secondaryButtonText from KindredSpirits
+  secondaryButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.3,
+  },
+  
 });
 
-export default ConnectScreen;
+export default ConnectScreen

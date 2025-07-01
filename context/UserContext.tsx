@@ -248,7 +248,7 @@ type UserContextType = {
   ) => any;
   unmatchUser: (userId: string) => any;
   updateUserSettings: (settings: Partial<UserSettings>) => Promise<void>;
-};
+}
 
 // Initial screens and initial user data
 const initialScreens = [
@@ -437,6 +437,37 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     currentPotentialMatchIndex,
     userData.onboardingCompleted,
   ]);
+
+useEffect(() => {
+  const initializeMatches = async () => {
+    if (userData.onboardingCompleted && 
+        potentialMatches.length === 0 && 
+        !currentPotentialMatch && 
+        !loadingNextBatch && 
+        !noMoreMatches) {
+      
+      console.log("Initializing first batch of matches...");
+      
+      try {
+        const firstBatch = await fetchPotentialMatches();
+        
+        if (firstBatch.length > 0) {
+          console.log("Setting first match from initial batch");
+          setCurrentPotentialMatch(firstBatch[0]);
+          setCurrentPotentialMatchIndex(0);
+        } else {
+          console.log("No matches found in initial batch");
+          setNoMoreMatches(true);
+        }
+      } catch (error) {
+        console.error("Error initializing matches:", error);
+        setNoMoreMatches(true);
+      }
+    }
+  };
+
+  initializeMatches();
+}, [userData.onboardingCompleted]);
 
   useEffect(() => {
     if (!userData.userId || !userData.onboardingCompleted) return;
@@ -960,24 +991,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return query;
   };
 
-  const fetchPotentialMatches = async () => {
-    // Early return if onboarding not completed
-    if (!userData.onboardingCompleted) {
-      console.log(
-        "Skipping potential matches fetch - onboarding not completed"
-      );
-      return [];
-    }
+const fetchPotentialMatches = async () => {
+  // Early return if onboarding not completed
+  if (!userData.onboardingCompleted) {
+    console.log("Skipping potential matches fetch - onboarding not completed");
+    return [];
+  }
 
-    if (!userData.userId) {
-      console.log("Skipping potential matches fetch - no user ID");
-      return [];
-    }
+  if (!userData.userId) {
+    console.log("Skipping potential matches fetch - no user ID");
+    return [];
+  }
 
-    setLoadingNextBatch(true);
-    userDataRef.current = userData;
-    console.log("fetching potential matches...");
+  setLoadingNextBatch(true);
+  console.log("fetching potential matches...");
 
+  try {
     const excluded = new Set<string>([
       userData.userId,
       ...excludedLikes,
@@ -987,62 +1016,66 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     ]);
 
     let fetched: any[] = [];
-    let hasMore = true;
-
-    while (fetched.length < 10 && hasMore) {
-      console.log("fetching batch...");
-      
-      // Start with base collection
-      let usersQuery = buildQueryWithFilters(
-        FIRESTORE.collection("users"),
-        {
-          matchPreferences: userData.matchPreferences,
-          currentLat: userData.latitude,
-          currentLon: userData.longitude,
-        }
-      );
-
-      // Add ordering and pagination
-      usersQuery = usersQuery
-        .orderBy("likesReceivedCount", "desc")
-        .limit(10);
-      
-      // Add startAfter if we have a last visible match
-      if (lastVisibleMatch) {
-        usersQuery = usersQuery.startAfter(lastVisibleMatch);
-      }
-      
-      const snap = await usersQuery.get();
-      
-      if (snap.empty) {
-        console.log("no more matches");
-        setNoMoreMatches(true);
-        setLoadingNextBatch(false);
-        break;
-      }
-      
-      const newBatch = snap.docs
-        .map((d) => d.data())
-        .filter((u) => !excluded.has(u.userId));
-        
-      if (!newBatch.length) {
-        setNoMoreMatches(true);
-        setLoadingNextBatch(false);
-        break;
-      }
-
-      fetched.push(...newBatch);
-      const lastDoc = snap.docs[snap.docs.length - 1];
-      setLastVisibleMatch(lastDoc.data().userId);
-      console.log("fetched batch", fetched.length);
+    
+    console.log("fetching batch...");
+    
+    // SIMPLIFIED: Just get users without complex filtering for now
+    let usersQuery = FIRESTORE.collection("users")
+      .where("onboardingCompleted", "==", true) // Only get completed users
+      .orderBy("likesReceivedCount", "desc")
+      .limit(20); // Get more at once since we're not filtering
+    
+    // Add startAfter if we have a last visible match
+    if (lastVisibleMatch) {
+      // For startAfter, we need the actual document, not just the userId
+      // Let's use a different approach - skip filtering for now
+      console.log("Has lastVisibleMatch, but skipping pagination for now");
     }
+    
+    console.log("Executing query...");
+    const snap = await usersQuery.get();
+    console.log(`Query returned ${snap.docs.length} documents`);
+    
+    if (snap.empty) {
+      console.log("No users found in database");
+      setNoMoreMatches(true);
+      setLoadingNextBatch(false);
+      return [];
+    }
+    
+    // Filter out excluded users
+    const newBatch = snap.docs
+      .map((d) => ({ userId: d.id, ...d.data() }))
+      .filter((u) => !excluded.has(u.userId));
+      
+    console.log(`After filtering, ${newBatch.length} valid users found`);
+      
+    if (!newBatch.length) {
+      console.log("All users in batch are excluded, marking as no more matches");
+      setNoMoreMatches(true);
+      setLoadingNextBatch(false);
+      return [];
+    }
+
+    fetched.push(...newBatch);
+    console.log("Successfully fetched batch:", fetched.length);
 
     if (fetched.length) {
       setPotentialMatches((p) => [...p, ...fetched]);
+    } else {
+      setNoMoreMatches(true);
     }
+    
     setLoadingNextBatch(false);
     return fetched;
-  };
+
+  } catch (error) {
+    console.error("Error fetching potential matches:", error);
+    setLoadingNextBatch(false);
+    setNoMoreMatches(true);
+    return [];
+  }
+};
 
   const resetPotentialMatches = () => {
     console.log("resetPotentialMatches(): Resetting potential matches...");
@@ -1053,51 +1086,74 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     setCurrentPotentialMatch(null);
   };
 
-  const loadNextPotentialMatch: () => Promise<void> = async () => {
-    console.log("loadNextPotentialMatch(): Loading next potential match...");
-    // Recalculate the current excluded set from userData.
-    const excluded = new Set<string>([
-      userData.userId,
-      ...excludedLikes,
-      ...excludedDislikes,
-      ...(userData.matches ?? []),
-    ]);
+const loadNextPotentialMatch: () => Promise<void> = async () => {
+  console.log("loadNextPotentialMatch(): Loading next potential match...");
+  
+  // If we're already loading or have no more matches, return early
+  if (loadingNextBatch || noMoreMatches) {
+    console.log("Already loading or no more matches available");
+    return;
+  }
+  
+  // Recalculate the current excluded set from userData.
+  const excluded = new Set<string>([
+    userData.userId,
+    ...excludedLikes,
+    ...excludedDislikes,
+    ...(userData.matches ?? []),
+  ]);
 
-    // Filter potentialMatches to only those not in the excluded set.
-    const valid = potentialMatches.filter((m) => !excluded.has(m.userId));
-    const currentIdx = valid.findIndex(
-      (m) => m.userId === currentPotentialMatch?.userId
+  // Filter potentialMatches to only those not in the excluded set.
+  const valid = potentialMatches.filter((m) => !excluded.has(m.userId));
+  const currentIdx = valid.findIndex(
+    (m) => m.userId === currentPotentialMatch?.userId
+  );
+
+  console.log(`Valid matches: ${valid.length}, current index: ${currentIdx}`);
+
+  // If we have valid matches, get the next one.
+  if (valid.length > currentIdx + 1) {
+    const next = valid[currentIdx + 1];
+    const fullIndex = potentialMatches.findIndex(
+      (m) => m.userId === next.userId
     );
-
-    // If we have valid matches, get the next one.
-    if (valid.length > currentIdx + 1) {
-      const next = valid[currentIdx + 1];
-      const fullIndex = potentialMatches.findIndex(
-        (m) => m.userId === next.userId
+    console.log("Setting next match from existing valid matches");
+    setCurrentPotentialMatch(next);
+    setCurrentPotentialMatchIndex(fullIndex);
+    return;
+  } 
+  
+  // No valid matches in current batch - try to fetch more
+  console.log("No valid matches in current batch, trying to fetch more...");
+  
+  try {
+    const newMatches = await fetchPotentialMatches();
+    
+    if (newMatches.length > 0) {
+      const validNewMatches = newMatches.filter(
+        (match) => !excluded.has(match.userId)
       );
-      setCurrentPotentialMatch(next);
-      setCurrentPotentialMatchIndex(fullIndex);
-    } else if (!noMoreMatches || !loadingNextBatch) {
-      // If no valid matches exist, fetch a new batch.
-      console.log(
-        "loadNextPotentialMatch(): No valid matches found, loading new batch..."
-      );
-      const newMatches = await fetchPotentialMatches();
-      // If new matches were fetched, try to set the first valid one.
-      if (newMatches.length > 0) {
-        const validNewMatches = newMatches.filter(
-          (match) => !excluded.has(match.userId)
-        );
-        if (validNewMatches.length > 0) {
-          setCurrentPotentialMatch(validNewMatches[0]);
-          // The new match's index will be at the end of the existing array.
-          setCurrentPotentialMatchIndex(potentialMatches.length);
-        }
+      
+      if (validNewMatches.length > 0) {
+        console.log("Found valid new matches, setting first one");
+        setCurrentPotentialMatch(validNewMatches[0]);
+        setCurrentPotentialMatchIndex(potentialMatches.length);
+        return;
       }
-    } else {
-      console.log("loadNextPotentialMatch(): No more matches to load.");
     }
-  };
+    
+    // No new valid matches found
+    console.log("No new valid matches found, marking as no more matches");
+    setNoMoreMatches(true);
+    setCurrentPotentialMatch(null);
+    
+  } catch (error) {
+    console.error("Error in loadNextPotentialMatch:", error);
+    setNoMoreMatches(true);
+    setCurrentPotentialMatch(null);
+  }
+};
+
 
   const likeMatch = async (matchId: string) => {
     setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
