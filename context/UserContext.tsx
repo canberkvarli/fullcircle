@@ -138,8 +138,6 @@ export type MatchPreferencesType = {
     min: number;
     max: number;
   };
-  childrenPreference?: string;
-  preferredEthnicities?: string[];
   preferredDistance: number;
   datePreferences: string[];
   desiredRelationship?: string;

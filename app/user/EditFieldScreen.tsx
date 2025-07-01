@@ -10,16 +10,20 @@ import {
   PermissionsAndroid,
   Platform,
   Alert,
+  useColorScheme,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
-import styles from "@/styles/User/EditFieldScreenStyles";
+import { Ionicons } from '@expo/vector-icons';
 import Checkbox from "expo-checkbox";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import Icon from "react-native-vector-icons/FontAwesome";
 import { RulerPicker } from "react-native-ruler-picker";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import useFieldState from "@/hooks/useFieldState";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
 
 const DEFAULT_REGION = {
   latitude: 37.8715,
@@ -28,126 +32,199 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.0421,
 };
 
+// Updated field options based on your onboarding screens
+const FIELD_OPTIONS = {
+  gender: [
+    "Woman",
+    "Man", 
+    "Non-binary",
+    "Genderqueer",
+    "Agender",
+    "Two-Spirit",
+    "Genderfluid",
+    "Other",
+  ],
+  
+  datePreferences: {
+    mainOptions: [
+      { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
+      { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
+    ],
+    otherOptions: [
+      { id: "Non-Binary", label: "Non-Binary Souls", subtitle: "Connected to fluid expressions" },
+      "Twin Flame Seeker",
+      "Soul Mate Guided", 
+      "Tantric Connection",
+      "Heart-Centered",
+      "Consciousness Explorer",
+      "Polyamorous Soul",
+      "Monogamous Journey",
+      "Spiritual Partnership",
+      "Sacred Union",
+      "Love Without Labels",
+    ],
+    allEnergyOption: { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" }
+  },
+
+  spiritualDraws: [
+    { 
+      label: "Healing & Restoration", 
+      value: "healing", 
+      description: "Energy work, trauma healing, emotional restoration",
+      color: "#228B22" 
+    },
+    { 
+      label: "Personal Growth", 
+      value: "growth", 
+      description: "Self-discovery, consciousness expansion, evolution",
+      color: "#FF6B35" 
+    },
+    { 
+      label: "Sacred Connection", 
+      value: "connection", 
+      description: "Community, relationships, divine communion",
+      color: "#4169E1" 
+    },
+    { 
+      label: "Spiritual Awakening", 
+      value: "awakening", 
+      description: "Enlightenment, transcendence, higher consciousness",
+      color: "#8A2BE2" 
+    },
+  ],
+
+  spiritualPractices: [
+    { name: "Meditation", icon: "🧘" },
+    { name: "Yoga", icon: "🕉️" },
+    { name: "Prayer", icon: "🙏" },
+    { name: "Journaling", icon: "📝" },
+    { name: "Energy Healing", icon: "✨" },
+    { name: "Crystal Work", icon: "💎" },
+    { name: "Tarot & Oracle", icon: "🔮" },
+    { name: "Astrology", icon: "⭐" },
+    { name: "Nature Rituals", icon: "🌿" },
+    { name: "Sound Healing", icon: "🎵" },
+    { name: "Breathwork", icon: "🌬️" },
+    { name: "Sacred Dance", icon: "💃" },
+    { name: "Plant Medicine", icon: "🍄" },
+    { name: "Shamanic Journey", icon: "🥁" },
+    { name: "Martial Arts", icon: "🥋" },
+    { name: "Fasting", icon: "🌙" },
+  ],
+
+  healingModalities: [
+    { name: "Reiki", icon: "👐", color: "#E74C3C" },
+    { name: "Acupuncture", icon: "📍", color: "#F39C12" },
+    { name: "Sound Therapy", icon: "🎼", color: "#F1C40F" },
+    { name: "Crystal Healing", icon: "💎", color: "#2ECC71" },
+    { name: "Aromatherapy", icon: "🌸", color: "#3498DB" },
+    { name: "Light Therapy", icon: "✨", color: "#E91E63" },
+    { name: "Massage Therapy", icon: "💆", color: "#FF5722" },
+    { name: "Hypnotherapy", icon: "🌀", color: "#607D8B" },
+    { name: "Homeopathy", icon: "💧", color: "#009688" },
+    { name: "Herbalism", icon: "🌿", color: "#4CAF50" },
+    { name: "Ayahuasca", icon: "🍄", color: "#8E24AA" },
+    { name: "Kambo", icon: "🐸", color: "#43A047" },
+  ],
+};
+
 function EditFieldScreen() {
   const router = useRouter();
   const { updateUserData, userData } = useUserContext();
   const { fieldName } = useLocalSearchParams();
+  
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const fonts = useFont();
 
-  // For datePreferences, get the value from matchPreferences.
-  const currentFieldValue =
-    fieldName === "datePreferences"
-      ? userData.matchPreferences?.datePreferences || null
-      : (userData as any)[fieldName as string] || null;
-  const isHidden =
-    (userData.hiddenFields as any)?.[fieldName as string] === false;
-  const fieldState = useFieldState(fieldName as string, currentFieldValue);
-  const {
-    OPTIONS,
-    selectedGender,
-    setSelectedGender,
-    selectedOrientations,
-    setSelectedOrientations,
-    selectedDatePreferences,
-    setSelectedDatePreferences,
-    selectedEducation,
-    setSelectedEducation,
-    jobLocation,
-    setJobLocation,
-    jobTitle,
-    setJobTitle,
-    customInput,
-    setCustomInput,
-    fieldConfig,
-    firstName,
-    setFirstName,
-    lastName,
-    setLastName,
-    selectedHeight,
-    setSelectedHeight,
-    selectedChildrenPreferences,
-    setSelectedChildrenPreferences,
-    selectedEthnicities,
-    setSelectedEthnicities,
-    selectedSpiritualPractices,
-    setSelectedSpiritualPractices,
-    location, // initial location string if any
-    setLocation,
-  } = fieldState;
+  // Get current field value
+  const getCurrentFieldValue = () => {
+    if (fieldName === "datePreferences") {
+      return userData.matchPreferences?.datePreferences || [];
+    } else if (fieldName === "spiritualDraws") {
+      return userData.spiritualProfile?.draws || [];
+    } else if (fieldName === "spiritualPractices") {
+      return userData.spiritualProfile?.practices || [];
+    } else if (fieldName === "healingModalities") {
+      return userData.spiritualProfile?.healingModalities || [];
+    }
+    return (userData as any)[fieldName as string] || null;
+  };
 
-  const [isVisible, setIsVisible] = useState(isHidden);
+  const currentFieldValue = getCurrentFieldValue();
+  const isHidden = (userData.hiddenFields as any)?.[fieldName as string] === false;
 
-  // For location editing
+  // State variables
+  const [selectedItems, setSelectedItems] = useState<string[]>(
+    Array.isArray(currentFieldValue) ? currentFieldValue : []
+  );
+  const [selectedSingleItem, setSelectedSingleItem] = useState<string>(
+    typeof currentFieldValue === 'string' ? currentFieldValue : ''
+  );
+  const [isVisible, setIsVisible] = useState(!isHidden);
+  const [firstName, setFirstName] = useState(userData.firstName || '');
+  const [lastName, setLastName] = useState(userData.lastName || '');
+  const [selectedHeight, setSelectedHeight] = useState(userData.height || 5.8);
+  const [customInput, setCustomInput] = useState('');
+
+  // Location state
   const [mapRegion, setMapRegion] = useState(DEFAULT_REGION);
   const [regionName, setRegionName] = useState("Loading...");
   const [loading, setLoading] = useState(true);
 
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
-    datePreferences: "I'm interested in",
-    childrenPreference: "Family Vision",
-    jobLocation: "Work",
-    jobTitle: "Job Title",
-    educationDegree: "Education Level",
-    firstName: "First Name",
-    lastName: "Last Name",
+    datePreferences: "I'm Looking For",
+    fullName: "Name", 
+    age: "Age",
     height: "Height",
     location: "Location",
-    ethnicities: "Ethnic Root",
-    spiritualPractices: "Spiritual Practices",
+    spiritualDraws: "Spiritual Draws",
+    spiritualPractices: "Spiritual Practices", 
+    healingModalities: "Healing Modalities",
   };
 
   useEffect(() => {
     if (fieldName === "location") {
-      (async () => {
-        if (Platform.OS === "android" && !(await hasLocationPermission())) {
-          setMapRegion(DEFAULT_REGION);
-          setLoading(false);
-          return;
-        }
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission to access location was denied");
-          setMapRegion(DEFAULT_REGION);
-          setLoading(false);
-          return;
-        }
-        let loc = await Location.getCurrentPositionAsync({});
-        const newRegion = {
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        };
-        setMapRegion(newRegion);
-        await updateRegionName(newRegion);
-        setLoading(false);
-      })();
+      initializeLocation();
     }
   }, [fieldName]);
 
-  const hasLocationPermission = async () => {
-    if (Platform.OS === "android") {
-      const permission = PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION;
-      const hasPermission = await PermissionsAndroid.check(permission);
-      if (hasPermission) return true;
-      const status = await PermissionsAndroid.request(permission);
-      return status === PermissionsAndroid.RESULTS.GRANTED;
+  const initializeLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission to access location was denied");
+        setMapRegion(DEFAULT_REGION);
+        setLoading(false);
+        return;
+      }
+      
+      let loc = await Location.getCurrentPositionAsync({});
+      const newRegion = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      };
+      setMapRegion(newRegion);
+      await updateRegionName(newRegion);
+      setLoading(false);
+    } catch (error) {
+      setMapRegion(DEFAULT_REGION);
+      setLoading(false);
     }
-    return true;
   };
 
-  const updateRegionName = async (region: {
-    latitude: number;
-    longitude: number;
-  }) => {
+  const updateRegionName = async (region: { latitude: number; longitude: number }) => {
     try {
       const places = await Location.reverseGeocodeAsync(region);
       if (places.length > 0) {
         setRegionName(
           places[0].city ||
-            places[0].region ||
-            places[0].country ||
-            "Unknown Location"
+          places[0].region ||
+          places[0].country ||
+          "Unknown Location"
         );
       } else {
         setRegionName("Unknown Location");
@@ -157,339 +234,679 @@ function EditFieldScreen() {
     }
   };
 
-  const handleGetCurrentLocation = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission to access location was denied");
-      return;
-    }
-    let loc = await Location.getCurrentPositionAsync({});
-    const newRegion = {
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
-    };
-    setMapRegion(newRegion);
-    await updateRegionName(newRegion);
-  };
-
   const handleSave = async () => {
-    const config = fieldConfig[fieldName as string];
-    let newFieldValue;
-
+    let updateData: any = {};
+    
     if (fieldName === "fullName") {
-      if (!firstName) {
-        alert("First name is required.");
+      if (!firstName.trim()) {
+        Alert.alert("Error", "First name is required.");
         return;
       }
-      newFieldValue = lastName ? `${firstName} ${lastName}` : firstName;
+      const fullName = lastName.trim() ? `${firstName.trim()} ${lastName.trim()}` : firstName.trim();
+      updateData = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        fullName,
+      };
     } else if (fieldName === "height") {
-      newFieldValue = selectedHeight;
-    } else if (fieldName === "gender") {
-      if (
-        selectedGender.length === 0 ||
-        (selectedGender.includes("Other") && !customInput)
-      ) {
-        alert(
-          "Please select at least one gender and provide input for 'Other' if selected."
-        );
-        return;
-      }
-      newFieldValue = selectedGender.map((g) =>
-        g === "Other" ? customInput : g
-      );
-    } else if (fieldName === "datePreferences") {
-      // If no option is selected or if "Everyone" is selected,
-      // default to ["Open to All"]
-      if (
-        selectedDatePreferences.length === 0 ||
-        selectedDatePreferences.includes("Everyone")
-      ) {
-        newFieldValue = ["Open to All"];
-      } else {
-        newFieldValue = selectedDatePreferences;
-      }
+      updateData = { height: selectedHeight };
     } else if (fieldName === "location") {
-      newFieldValue = {
-        city: regionName,
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
+      updateData = {
+        location: {
+          city: regionName,
+          latitude: mapRegion.latitude,
+          longitude: mapRegion.longitude,
+        },
+      };
+    } else if (fieldName === "datePreferences") {
+      updateData = {
+        matchPreferences: {
+          ...userData.matchPreferences,
+          datePreferences: selectedItems,
+        },
+      };
+    } else if (fieldName === "spiritualDraws") {
+      updateData = {
+        spiritualProfile: {
+          ...userData.spiritualProfile,
+          draws: selectedItems,
+        },
+      };
+    } else if (fieldName === "spiritualPractices") {
+      updateData = {
+        spiritualProfile: {
+          ...userData.spiritualProfile,
+          practices: selectedItems,
+        },
+      };
+    } else if (fieldName === "healingModalities") {
+      updateData = {
+        spiritualProfile: {
+          ...userData.spiritualProfile,
+          healingModalities: selectedItems,
+        },
       };
     } else {
-      newFieldValue = config?.selectedValue;
+      updateData = { [fieldName as string]: selectedItems.length ? selectedItems : selectedSingleItem };
     }
 
-    const isModified =
-      JSON.stringify(newFieldValue) !== JSON.stringify(currentFieldValue) ||
-      isVisible !== isHidden;
+    // Add hidden field setting
+    updateData.hiddenFields = {
+      ...userData.hiddenFields,
+      [fieldName as string]: !isVisible,
+    };
 
-    if (isModified) {
-      // For datePreferences, save under matchPreferences.
-      if (fieldName === "datePreferences") {
-        const existingMatchPrefs = userData.matchPreferences || {
-          preferredAgeRange: { min: 18, max: 99 },
-          preferredHeightRange: { min: 3, max: 8 },
-          preferredEthnicities: [],
-          preferredDistance: 100,
-          datePreferences: [],
-          desiredRelationship: "Not Specified",
-          preferredSpiritualPractices: [],
-        };
-        const updatedMatchPrefs = {
-          ...existingMatchPrefs,
-          datePreferences: newFieldValue,
-        };
-        await updateUserData({
-          matchPreferences: updatedMatchPrefs,
-          hiddenFields: {
-            ...userData.hiddenFields,
-            [fieldName as string]: !isVisible,
-          },
-        });
-      } else {
-        await updateUserData({
-          [fieldName as string]: newFieldValue,
-          hiddenFields: {
-            ...userData.hiddenFields,
-            [fieldName as string]: !isVisible,
-          },
-        });
-      }
-    }
+    await updateUserData(updateData);
     router.back();
   };
 
-  const handleDatePreferenceSelection = (title: string) => {
-    if (title === "Everyone") {
-      setSelectedDatePreferences(["Everyone"]);
-    } else {
-      setSelectedDatePreferences((prev: string[]) => {
-        const withoutEveryone = prev.filter((pref) => pref !== "Everyone");
-        if (withoutEveryone.includes(title)) {
-          return withoutEveryone.filter((pref) => pref !== title);
-        } else {
-          return [...withoutEveryone, title];
-        }
-      });
-    }
+  const handleItemToggle = (item: string) => {
+    setSelectedItems(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item)
+        : [...prev, item]
+    );
   };
 
-  const renderHeightPicker = () => (
-    <View style={styles.heightPickerContainer}>
-      <RulerPicker
-        min={3}
-        max={8}
-        step={0.1}
-        unit="ft"
-        fractionDigits={1}
-        initialValue={selectedHeight}
-        onValueChange={(value) => setSelectedHeight(Number(value))}
-      />
-    </View>
-  );
-
-  const renderAgeSection = () => {
-    const { age, birthdate } = userData;
+  const renderDatePreferences = () => {
+    const { mainOptions, otherOptions, allEnergyOption } = FIELD_OPTIONS.datePreferences;
+    
     return (
-      <View style={styles.ageContainer}>
-        <Text style={styles.ageText}>{age}</Text>
-        <Text style={styles.birthdateText}>{birthdate}</Text>
-        <Text style={styles.noticeText}>
-          Please contact the Circle team to change your age. This requires you
-          to upload your ID.
+      <View style={styles.datePreferencesContainer}>
+        {/* All Energies Option */}
+        <TouchableOpacity
+          style={[
+            styles.mainOption,
+            selectedItems.includes("Everyone") && styles.selectedMainOption
+          ]}
+          onPress={() => handleItemToggle("Everyone")}
+        >
+          <View style={styles.mainOptionContent}>
+            <Text style={[styles.mainOptionLabel, { color: colors.textDark }]}>
+              {allEnergyOption.label}
+            </Text>
+            <Text style={[styles.mainOptionSubtitle, { color: colors.textMuted }]}>
+              {allEnergyOption.subtitle}
+            </Text>
+          </View>
+          <Checkbox value={selectedItems.includes("Everyone")} />
+        </TouchableOpacity>
+
+        {/* Main Options */}
+        {mainOptions.map((option) => (
+          <TouchableOpacity
+            key={option.id}
+            style={[
+              styles.mainOption,
+              selectedItems.includes(option.id) && styles.selectedMainOption
+            ]}
+            onPress={() => handleItemToggle(option.id)}
+          >
+            <View style={styles.mainOptionContent}>
+              <Text style={[styles.mainOptionLabel, { color: colors.textDark }]}>
+                {option.label}
+              </Text>
+              <Text style={[styles.mainOptionSubtitle, { color: colors.textMuted }]}>
+                {option.subtitle}
+              </Text>
+            </View>
+            <Checkbox value={selectedItems.includes(option.id)} />
+          </TouchableOpacity>
+        ))}
+
+        {/* Other Options */}
+        <Text style={[styles.sectionLabel, fonts.buttonFont, { color: colors.textDark }]}>
+          Connection Types
         </Text>
+        <View style={styles.pillContainer}>
+          {otherOptions.map((option) => {
+            const optionId = typeof option === 'string' ? option : option.id;
+            const isSelected = selectedItems.includes(optionId);
+            
+            return (
+              <TouchableOpacity
+                key={optionId}
+                style={[
+                  styles.pill,
+                  { borderColor: colors.border, backgroundColor: colors.background },
+                  isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+                ]}
+                onPress={() => handleItemToggle(optionId)}
+              >
+                <Text style={[
+                  styles.pillText,
+                  { color: colors.textMuted },
+                  isSelected && { color: colors.primary }
+                ]}>
+                  {typeof option === 'string' ? option : option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     );
   };
 
-  const renderOption = (
-    option: string | { title: string; subtitle?: string; input?: boolean }
-  ) => {
-    const title = typeof option === "string" ? option : option.title;
-    const subtitle = typeof option === "string" ? null : option.subtitle;
-    const input = typeof option === "string" ? false : option.input;
-    let isSelected = false;
+  const renderSpiritualDraws = () => {
+    return (
+      <View style={styles.spiritualDrawsContainer}>
+        {FIELD_OPTIONS.spiritualDraws.map((draw) => {
+          const isSelected = selectedItems.includes(draw.value);
+          
+          return (
+            <TouchableOpacity
+              key={draw.value}
+              style={[
+                styles.drawCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                isSelected && { borderColor: draw.color, backgroundColor: draw.color + '15' }
+              ]}
+              onPress={() => handleItemToggle(draw.value)}
+            >
+              <View style={styles.drawContent}>
+                <Text style={[styles.drawLabel, fonts.buttonFont, { color: colors.textDark }]}>
+                  {draw.label}
+                </Text>
+                <Text style={[styles.drawDescription, fonts.captionFont, { color: colors.textMuted }]}>
+                  {draw.description}
+                </Text>
+              </View>
+              <Checkbox value={isSelected} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderPracticesOrModalities = (items: any[], fieldType: string) => {
+    return (
+      <View style={styles.practicesContainer}>
+        {items.map((item) => {
+          const isSelected = selectedItems.includes(item.name);
+          
+          return (
+            <TouchableOpacity
+              key={item.name}
+              style={[
+                styles.practiceCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+              ]}
+              onPress={() => handleItemToggle(item.name)}
+            >
+              <Text style={styles.practiceIcon}>{item.icon}</Text>
+              <Text style={[styles.practiceName, fonts.buttonFont, { color: colors.textDark }]}>
+                {item.name}
+              </Text>
+              <Checkbox value={isSelected} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderBasicOptions = (options: string[]) => {
+    return (
+      <View style={styles.basicOptionsContainer}>
+        {options.map((option) => {
+          const isSelected = selectedItems.includes(option);
+          
+          return (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.basicOption,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+              ]}
+              onPress={() => handleItemToggle(option)}
+            >
+              <Text style={[styles.basicOptionText, fonts.buttonFont, { color: colors.textDark }]}>
+                {option}
+              </Text>
+              <Checkbox value={isSelected} />
+            </TouchableOpacity>
+          );
+        })}
+        
+        {/* Custom input for "Other" */}
+        {fieldName === "gender" && selectedItems.includes("Other") && (
+          <TextInput
+            style={[styles.customInput, { borderColor: colors.border, color: colors.textDark }]}
+            placeholder="Please specify..."
+            value={customInput}
+            onChangeText={setCustomInput}
+            placeholderTextColor={colors.textMuted}
+          />
+        )}
+      </View>
+    );
+  };
+
+  const renderContent = () => {
+    if (fieldName === "fullName") {
+      return (
+        <View style={styles.nameContainer}>
+          <TextInput
+            style={[styles.nameInput, { borderColor: colors.border, color: colors.textDark }]}
+            placeholder="First Name"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholderTextColor={colors.textMuted}
+          />
+          <TextInput
+            style={[styles.nameInput, { borderColor: colors.border, color: colors.textDark }]}
+            placeholder="Last Name (Optional)"
+            value={lastName}
+            onChangeText={setLastName}
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={[styles.helpText, fonts.captionFont, { color: colors.textMuted }]}>
+            Last name is optional and only shared with matches.
+          </Text>
+        </View>
+      );
+    }
+
+    if (fieldName === "height") {
+      return (
+        <View style={styles.heightContainer}>
+          <RulerPicker
+            min={3}
+            max={8}
+            step={0.1}
+            unit="ft"
+            fractionDigits={1}
+            initialValue={selectedHeight}
+            onValueChange={(value) => setSelectedHeight(Number(value))}
+          />
+        </View>
+      );
+    }
+
+    if (fieldName === "location") {
+      return (
+        <View style={styles.locationContainer}>
+          <Text style={[styles.regionName, fonts.buttonFont, { color: colors.textDark }]}>
+            {regionName}
+          </Text>
+          {loading ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <MapView
+              style={styles.map}
+              region={mapRegion}
+              onRegionChangeComplete={(newRegion) => {
+                setMapRegion(newRegion);
+                updateRegionName(newRegion);
+              }}
+              showsUserLocation
+              showsMyLocationButton
+            >
+              <Marker
+                coordinate={{
+                  latitude: mapRegion.latitude,
+                  longitude: mapRegion.longitude,
+                }}
+                title="You are here"
+              />
+            </MapView>
+          )}
+          <TouchableOpacity
+            style={[styles.locationButton, { backgroundColor: colors.primary }]}
+            onPress={initializeLocation}
+          >
+            <Text style={[styles.locationButtonText, fonts.buttonFont]}>
+              Get Current Location
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (fieldName === "datePreferences") {
+      return renderDatePreferences();
+    }
+
+    if (fieldName === "spiritualDraws") {
+      return renderSpiritualDraws();
+    }
+
+    if (fieldName === "spiritualPractices") {
+      return renderPracticesOrModalities(FIELD_OPTIONS.spiritualPractices, 'practices');
+    }
+
+    if (fieldName === "healingModalities") {
+      return renderPracticesOrModalities(FIELD_OPTIONS.healingModalities, 'modalities');
+    }
 
     if (fieldName === "gender") {
-      isSelected = selectedGender.includes(title);
-    } else if (fieldName === "datePreferences") {
-      isSelected = selectedDatePreferences.includes(title);
-    } else if (fieldName === "educationDegree") {
-      isSelected = selectedEducation === title;
-    } else if (fieldName === "ethnicities") {
-      isSelected = selectedEthnicities.includes(title);
-    } else if (fieldName === "childrenPreference") {
-      isSelected = (selectedChildrenPreferences || []).includes(title);
-    } else if (fieldName === "spiritualPractices") {
-      isSelected = (selectedSpiritualPractices as string[]).includes(title);
+      return renderBasicOptions(FIELD_OPTIONS.gender);
     }
 
-    return (
-      <TouchableOpacity
-        style={styles.optionContainer}
-        onPress={() => {
-          if (fieldName === "gender") {
-            setSelectedGender((prev: string[]) =>
-              prev.includes(title)
-                ? prev.filter((item) => item !== title)
-                : [...prev, title]
-            );
-            if (title === "Other" && !selectedGender.includes("Other")) {
-              setCustomInput("");
-            }
-          } else if (fieldName === "datePreferences") {
-            handleDatePreferenceSelection(title);
-          } else if (fieldName === "educationDegree") {
-            setSelectedEducation(title);
-          } else if (fieldName === "childrenPreference") {
-            setSelectedChildrenPreferences(title);
-          } else if (fieldName === "spiritualPractices") {
-            setSelectedSpiritualPractices((prev: string[]) =>
-              prev.includes(title)
-                ? prev.filter((item) => item !== title)
-                : [...prev, title]
-            );
-          }
-        }}
-      >
-        <View>
-          <Text style={styles.optionText}>{title}</Text>
-          {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
-          {input && selectedGender.includes("Other") && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter here"
-              value={customInput}
-              onChangeText={setCustomInput}
-            />
-          )}
-        </View>
-        <Checkbox value={isSelected} />
-      </TouchableOpacity>
-    );
+    return null;
   };
 
+  const styles = createStyles(colors);
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={handleSave}>
-        <Icon name="chevron-left" size={24} color="black" />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>
-        {fieldTitleMap[fieldName as string] ||
-          (typeof fieldName === "string"
-            ? fieldName
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase())
-            : fieldName)}
-      </Text>
-
-      <ScrollView style={styles.scrollContainer}>
-        {fieldName === "fullName" && (
-          <>
-            <TextInput
-              style={styles.workInput}
-              placeholder="First Name"
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-            <TextInput
-              style={styles.workInput}
-              placeholder="Last Name"
-              value={lastName}
-              onChangeText={setLastName}
-            />
-            <Text
-              style={styles.optionalText}
-              onPress={() => console.log("Why is clicked")}
-            >
-              Last name is optional, and only shared with matches. Why?
-            </Text>
-          </>
-        )}
-
-        {(fieldName === "jobLocation" || fieldName === "jobTitle") && (
-          <TextInput
-            style={styles.workInput}
-            placeholder={`Enter ${fieldTitleMap[fieldName as string]}`}
-            value={fieldName === "jobLocation" ? jobLocation : jobTitle}
-            onChangeText={
-              fieldName === "jobLocation" ? setJobLocation : setJobTitle
-            }
-          />
-        )}
-
-        {fieldName === "location" ? (
-          <View style={styles.mapContainer}>
-            <Text style={styles.regionName}>{regionName}</Text>
-            {loading ? (
-              <ActivityIndicator
-                size="large"
-                color="black"
-                style={styles.loadingIndicator}
-              />
-            ) : (
-              <MapView
-                style={styles.map}
-                region={mapRegion}
-                onRegionChangeComplete={(newRegion) => {
-                  setMapRegion(newRegion);
-                  updateRegionName(newRegion);
-                }}
-                showsUserLocation
-                showsMyLocationButton
-              >
-                <Marker
-                  coordinate={{
-                    latitude: mapRegion.latitude,
-                    longitude: mapRegion.longitude,
-                  }}
-                  title={"You are here"}
-                />
-              </MapView>
-            )}
-            <TouchableOpacity
-              style={styles.currentLocationButton}
-              onPress={handleGetCurrentLocation}
-            >
-              <Text style={styles.buttonText}>Get Current Location</Text>
-            </TouchableOpacity>
-          </View>
-        ) : fieldName !== "jobLocation" &&
-          fieldName !== "jobTitle" &&
-          fieldName !== "firstName" ? (
-          <FlatList
-            data={
-              OPTIONS[fieldName as keyof typeof OPTIONS] as Array<
-                string | { title: string; subtitle?: string; input?: boolean }
-              >
-            }
-            renderItem={({ item }) => renderOption(item)}
-            keyExtractor={(item) =>
-              typeof item === "string" ? item : item.title
-            }
-            scrollEnabled={false}
-          />
-        ) : null}
-
-        {fieldName === "age" && renderAgeSection()}
-        {fieldName === "height" && renderHeightPicker()}
-      </ScrollView>
-
-      <View style={styles.visibilityContainer}>
-        <Text style={styles.visibilityText}>
-          {isVisible ? "Visible" : "Hidden"} on profile
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+      
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+        </TouchableOpacity>
+        
+        <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          {fieldTitleMap[fieldName as string] || fieldName}
         </Text>
-        <TouchableOpacity onPress={() => setIsVisible((prev) => !prev)}>
-          <Icon
-            name={isVisible ? "eye" : "eye-slash"}
-            size={24}
-            color="black"
-          />
+        
+        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+          <Text style={[styles.saveButtonText, { color: colors.primary }]}>Save</Text>
         </TouchableOpacity>
       </View>
-    </View>
+
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {renderContent()}
+      </ScrollView>
+
+      {/* Visibility Toggle */}
+      <View style={[styles.visibilityContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <View style={styles.visibilityContent}>
+          <Ionicons 
+            name={isVisible ? "eye" : "eye-off"} 
+            size={20} 
+            color={isVisible ? colors.primary : colors.textMuted} 
+          />
+          <Text style={[styles.visibilityText, fonts.buttonFont, { color: colors.textDark }]}>
+            {isVisible ? "Visible" : "Hidden"} on profile
+          </Text>
+        </View>
+        <TouchableOpacity 
+          onPress={() => setIsVisible(!isVisible)}
+          style={[styles.visibilityToggle, { backgroundColor: isVisible ? colors.primary : colors.textMuted }]}
+        >
+          <View style={[styles.visibilityToggleThumb, { backgroundColor: colors.card }]} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const createStyles = (colors: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 0 : Spacing.sm,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+  },
+  
+  backButton: {
+    padding: Spacing.sm,
+  },
+  
+  headerTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    flex: 1,
+    textAlign: 'center',
+  },
+  
+  saveButton: {
+    padding: Spacing.sm,
+  },
+  
+  saveButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+  },
+  
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  
+  // Date Preferences Styles
+  datePreferencesContainer: {
+    gap: Spacing.md,
+  },
+  
+  mainOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  
+  selectedMainOption: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '15',
+  },
+  
+  mainOptionContent: {
+    flex: 1,
+  },
+  
+  mainOptionLabel: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.xs,
+  },
+  
+  mainOptionSubtitle: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+  },
+  
+  sectionLabel: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  
+  pillContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  
+  pill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  
+  pillText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+  },
+  
+  // Spiritual Draws Styles
+  spiritualDrawsContainer: {
+    gap: Spacing.md,
+  },
+  
+  drawCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+  },
+  
+  drawContent: {
+    flex: 1,
+  },
+  
+  drawLabel: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.xs,
+  },
+  
+  drawDescription: {
+    fontSize: Typography.sizes.sm,
+    lineHeight: Typography.sizes.sm * 1.3,
+  },
+  
+  // Practices/Modalities Styles
+  practicesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  
+  practiceCard: {
+    width: '48%',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  
+  practiceIcon: {
+    fontSize: 24,
+  },
+  
+  practiceName: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
+  },
+  
+  // Basic Options Styles
+  basicOptionsContainer: {
+    gap: Spacing.sm,
+  },
+  
+  basicOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  
+  basicOptionText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+  },
+  
+  customInput: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    fontSize: Typography.sizes.base,
+    marginTop: Spacing.sm,
+  },
+  
+  // Name Input Styles
+  nameContainer: {
+    gap: Spacing.md,
+  },
+  
+  nameInput: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    fontSize: Typography.sizes.base,
+  },
+  
+  helpText: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+  },
+  
+  // Height Styles
+  heightContainer: {
+    paddingVertical: Spacing.xl,
+  },
+  
+  // Location Styles
+  locationContainer: {
+    gap: Spacing.md,
+  },
+  
+  regionName: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  
+  map: {
+    height: 300,
+    borderRadius: BorderRadius.md,
+  },
+  
+  locationButton: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  
+  locationButtonText: {
+    color: '#FFFFFF',
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+  },
+  
+  // Visibility Toggle Styles
+  visibilityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
+    borderTopWidth: 1,
+  },
+  
+  visibilityContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  
+  visibilityText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+  },
+  
+  visibilityToggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  
+  visibilityToggleThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignSelf: 'flex-end',
+  },
+});
 
 export default EditFieldScreen;
