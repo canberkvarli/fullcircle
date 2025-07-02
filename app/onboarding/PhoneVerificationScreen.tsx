@@ -159,7 +159,9 @@ const PhoneVerificationScreen = () => {
 
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Great connections are worth the extra moment it takes to get them right
+        Great{' '}
+        <Text style={styles.highlightedWord}>connections</Text>
+        {' are worth the extra moment it takes to get them right'}
       </Text>
     </SafeAreaView>
   );
@@ -291,16 +293,24 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "normal", // Changed from italic
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
       position: "absolute",
       bottom: Platform.select({ ios: 100, android: 80 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontStyle: "normal", // Changed from italic
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
+      color: colors.textDark, // Darker color for better visibility
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
+      opacity: 0.8, // Slightly transparent for elegance
+    },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
     },
   });
 };

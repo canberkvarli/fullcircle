@@ -107,7 +107,9 @@ function PhoneNumberScreen(): JSX.Element {
         
         <View style={styles.affirmationContainer}>
           <Text style={styles.affirmation}>
-            The right connections find their way to you when you're ready
+            The right{' '}
+            <Text style={styles.highlightedWord}>connections</Text>
+            {" find their way to you when you're ready"}
           </Text>
         </View>
         
@@ -235,12 +237,20 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       paddingHorizontal: Spacing.lg,
     },
     affirmation: {
-      ...fonts.affirmationFont,
-      color: colors.primary,
+      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
+      color: colors.textDark, // Darker color for better visibility
       textAlign: "center",
-      fontStyle: "normal", // Changed from italic
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.5,
+      opacity: 0.8, // Slightly transparent for elegance
+    },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
     },
     loadingContainer: {
       alignItems: 'center',

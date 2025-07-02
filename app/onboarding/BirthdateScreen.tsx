@@ -39,8 +39,24 @@ function BirthdateScreen() {
 
   const getInitialDate = () => {
     if (userData?.birthyear && userData?.birthmonth && userData?.birthday) {
-      const monthIndex = new Date(Date.parse(userData.birthmonth + " 1, 2000")).getMonth();
-      return new Date(parseInt(userData.birthyear), monthIndex, parseInt(userData.birthday));
+      try {
+        const year = parseInt(userData.birthyear);
+        const day = parseInt(userData.birthday);
+        
+        // Convert month abbreviation to month number
+        const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const monthIndex = monthNames.findIndex(month => month === userData.birthmonth?.toLowerCase());
+        
+        if (monthIndex !== -1 && !isNaN(year) && !isNaN(day)) {
+          const date = new Date(year, monthIndex, day);
+          // Validate the date
+          if (date.getFullYear() === year && date.getMonth() === monthIndex && date.getDate() === day) {
+            return date;
+          }
+        }
+      } catch (error) {
+        console.log("Error parsing existing birthdate:", error);
+      }
     }
     return getDefaultDate();
   };
@@ -54,7 +70,8 @@ function BirthdateScreen() {
       const today = new Date();
       const birthDate = new Date(selectedDate);
 
-      if (birthDate > today) {
+      // Validate the birth date
+      if (isNaN(birthDate.getTime()) || birthDate > today) {
         setAge(0);
         return;
       }
@@ -66,7 +83,7 @@ function BirthdateScreen() {
         calculatedAge--;
       }
 
-      setAge(calculatedAge);
+      setAge(Math.max(0, calculatedAge));
     };
 
     calculateAge();
@@ -74,12 +91,15 @@ function BirthdateScreen() {
 
   const handleDateChange = (event: any, date?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
-    if (date) {
+    if (date && !isNaN(date.getTime())) {
       setSelectedDate(date);
     }
   };
 
   const formatDate = (date: Date) => {
+    if (isNaN(date.getTime())) {
+      return "Select your birthday";
+    }
     return date.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -97,6 +117,11 @@ function BirthdateScreen() {
   };
 
   const handleBirthdateSubmit = async () => {
+    if (isNaN(selectedDate.getTime())) {
+      Alert.alert("Select Date", "Please select your birthdate");
+      return;
+    }
+
     if (age < 18) {
       Alert.alert("Almost there!", "Circle welcomes members 18 and older");
       return;
@@ -175,8 +200,8 @@ function BirthdateScreen() {
           )}
           
           <View style={styles.ageContainer}>
-            <Text style={styles.ageText}>Your age: {age}</Text>
-            {age < 18 && (
+            <Text style={styles.ageText}>Your age: {isNaN(age) ? '--' : age}</Text>
+            {age < 18 && age > 0 && (
               <Text style={styles.ageWarning}>You must be 18 or older to join Circle</Text>
             )}
             {age > 100 && (
@@ -196,10 +221,10 @@ function BirthdateScreen() {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            (age < 18 || age > 100) && styles.submitButtonDisabled
+            (age < 18 || age > 100 || isNaN(age)) && styles.submitButtonDisabled
           ]}
           onPress={handleBirthdateSubmit}
-          disabled={age < 18 || age > 100}
+          disabled={age < 18 || age > 100 || isNaN(age)}
         >
           <Ionicons 
             name="chevron-forward" 
@@ -277,7 +302,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       ...fonts.captionFont,
       color: colors.textMuted,
       fontSize: Typography.sizes.sm,
-      // marginBottom: Spacing.sm,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
@@ -302,7 +326,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       color: colors.primary,
       fontSize: Typography.sizes.xl,
       fontWeight: Typography.weights.medium,
-      // marginBottom: Spacing.sm,
     },
     ageWarning: {
       ...fonts.captionFont,
@@ -349,7 +372,65 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       backgroundColor: colors.textMuted,
       opacity: 0.6,
     },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "flex-end",
+    },
+    modalContent: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: BorderRadius.xl,
+      borderTopRightRadius: BorderRadius.xl,
+      maxHeight: '70%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.medium,
+      color: colors.textDark,
+    },
+    modalCancelText: {
+      ...fonts.buttonFont,
+      color: colors.textMuted,
+    },
+    modalDoneText: {
+      ...fonts.buttonFont,
+      color: colors.primary,
+      fontWeight: Typography.weights.medium,
+    },
+    selectorList: {
+      flex: 1,
+    },
+    selectorItem: {
+      paddingVertical: Spacing.lg,
+      paddingHorizontal: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      height: 60,
+      justifyContent: 'center',
+    },
+    selectorItemSelected: {
+      backgroundColor: colors.primary + '10',
+    },
+    selectorItemText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+      textAlign: 'center',
+    },
+    selectorItemTextSelected: {
+      color: colors.primary,
+      fontWeight: Typography.weights.medium,
+    },
   });
 };
 
-export default BirthdateScreen;
+export default BirthdateScreen
