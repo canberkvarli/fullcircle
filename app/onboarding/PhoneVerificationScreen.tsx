@@ -36,7 +36,7 @@ const PhoneVerificationScreen = () => {
   const handleVerifyCode = async () => {
     const code = verificationCode.join("");
     if (code.trim() === "") {
-      Alert.alert("Sacred Code", "Please enter the mystical code we sent to your realm");
+      Alert.alert("Almost there!", "Please enter the code we sent you");
       return;
     }
 
@@ -48,7 +48,7 @@ const PhoneVerificationScreen = () => {
         phoneNumber as string
       );
     } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The sacred numbers don't align. Please try again with pure intention.");
+      Alert.alert("Verification Issue", "That code doesn't match. Please try again.");
       setVerificationCode(new Array(6).fill(""));
     } finally {
       setLoading(false);
@@ -114,11 +114,11 @@ const PhoneVerificationScreen = () => {
       </TouchableOpacity>
 
       {/* Title */}
-      <Text style={styles.title}>Verify your cosmic connection</Text>
+      <Text style={styles.title}>Almost there</Text>
       
       {/* Subtitle */}
       <View style={styles.subtitleContainer}>
-        <Text style={styles.subtitle}>Sacred code sent to {phoneNumber}</Text>
+        <Text style={styles.subtitle}>We sent a code to {phoneNumber}</Text>
       </View>
 
       {/* Verification Code Input */}
@@ -146,20 +146,20 @@ const PhoneVerificationScreen = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Channeling your energy through the cosmos...</Text>
+          <Text style={styles.loadingText}>Verifying your code...</Text>
         </View>
       ) : (
         <TouchableOpacity
           style={styles.resendContainer}
           onPress={() => router.replace("onboarding/PhoneNumberScreen" as any)}
         >
-          <Text style={styles.changeNumberLink}>Code lost in the cosmic winds?</Text>
+          <Text style={styles.changeNumberLink}>Didn't get the code?</Text>
         </TouchableOpacity>
       )}
 
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Trust the process - your soul's journey is divinely guided
+        Great connections are worth the extra moment it takes to get them right
       </Text>
     </SafeAreaView>
   );
@@ -201,7 +201,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont, // Using spiritual font instead of mixing properties
+      ...fonts.spiritualTitleFont, // Keeping font for consistency
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.xl,
@@ -215,10 +215,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing['2xl'],
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
+      ...fonts.spiritualSubtitleFont, // Keeping font but removing italics
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "left",
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
     },
     codeContainer: {
       flexDirection: "row",
@@ -272,10 +272,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginTop: Spacing.lg,
     },
     loadingText: {
-      ...fonts.spiritualBodyFont, // Using spiritual body font
-      color: colors.primary, // Primary color for emphasis
+      ...fonts.spiritualBodyFont, // Keeping font but removing italics
+      color: colors.primary,
       marginTop: Spacing.sm,
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
       textAlign: "center",
       paddingHorizontal: Spacing.md,
     },
@@ -284,23 +284,23 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginTop: Spacing.lg,
     },
     changeNumberLink: {
-      ...fonts.buttonFont, // Using button font from useFont
+      ...fonts.buttonFont,
       color: colors.primary,
       textDecorationLine: "underline",
       textAlign: "center",
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
     },
     affirmation: {
-      ...fonts.affirmationFont, // Using affirmation font properly
+      ...fonts.affirmationFont,
       position: "absolute",
       bottom: Platform.select({ ios: 100, android: 80 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight, // Better contrast
+      fontStyle: "normal", // Changed from italic
+      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
-      letterSpacing: 0.3, // Slight letter spacing for elegance
+      letterSpacing: 0.3,
     },
   });
 };

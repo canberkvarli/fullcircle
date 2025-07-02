@@ -51,12 +51,12 @@ function NameScreen() {
 
   const handleNameSubmit = async () => {
     if (firstName.trim() === "") {
-      Alert.alert("Sacred Energy", "Please share your first name so we can honor your essence");
+      Alert.alert("Almost there!", "We'd love to know what to call you");
       return;
     }
 
     if (!userData.userId || typeof userData.userId !== "string") {
-      Alert.alert("Connection Error", "Something mystical went wrong. Please try again.");
+      Alert.alert("Connection Issue", "Something went wrong. Please try again.");
       return;
     }
 
@@ -75,7 +75,7 @@ function NameScreen() {
       navigateToNextScreen();
     } catch (error) {
       console.error("Error submitting name:", error);
-      Alert.alert("Sacred Journey", "The universe needs a moment. Please try again.");
+      Alert.alert("Oops!", "Something went wrong. Please try again.");
     }
   };
 
@@ -96,7 +96,7 @@ function NameScreen() {
       <OnboardingProgressBar currentScreen="NameScreen" />
 
       {/* Title */}
-      <Text style={styles.title}>How shall we call you?</Text>
+      <Text style={styles.title}>What should we call you?</Text>
 
       {/* Subtitle */}
       <Text style={styles.subtitle}>
@@ -107,7 +107,7 @@ function NameScreen() {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Your calling name"
+          placeholder="The name that feels like you"
           placeholderTextColor={colors.textMuted}
           value={firstName}
           onChangeText={(text) => handleInputChange(text, "firstName")}
@@ -128,14 +128,16 @@ function NameScreen() {
         onPress={() => setIsModalVisible(true)}
       >
         <Text style={styles.optionalText}>
-          Your family name remains private, and shared only with your destined connections.
-          <Text style={styles.linkText}>Why this matters?</Text>
+          Your last name stays private until you decide to share it with someone special.
+          <Text style={styles.linkText}> Learn more</Text>
         </Text>
       </TouchableOpacity>
 
       {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Every name carries a unique vibration that calls to kindred spirits
+        Every name carries its own{' '}
+        <Text style={styles.highlightedWord}>music</Text>
+        {', drawing the right people closer'}
       </Text>
 
       {/* Submit Button */}
@@ -163,20 +165,20 @@ function NameScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Name Sharing</Text>
+            <Text style={styles.modalTitle}>Privacy & Connection</Text>
             <Text style={styles.modalText}>
-              In our circle, your calling name creates the first vibration of connection. 
-              Your family name remains protected in our cosmic vault, revealed only when hearts 
-              align and souls recognize each other through meaningful matches.
+              Your first name creates that initial spark of recognition. 
+              Your family name stays tucked away in your profile, only shared when you both 
+              feel ready to let someone deeper into your world.
             </Text>
             <Text style={styles.modalSubText}>
-              This honors both authentic connection and your personal sovereignty.
+              This gives you control over how much you share and when.
             </Text>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.modalCloseText}>I understand</Text>
+              <Text style={styles.modalCloseText}>Got it</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -222,7 +224,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont, // Using spiritual font for mystical feel
+      ...fonts.spiritualTitleFont, // Keeping the font for consistency
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -230,16 +232,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
+      ...fonts.spiritualSubtitleFont, // Keeping the font but removing italics
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
     },
     inputContainer: {
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.md, // Reduced from Spacing.lg for tighter spacing
+      marginBottom: Spacing.md,
     },
     input: {
       ...fonts.inputFont,
@@ -251,8 +253,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.sm,
       color: colors.textDark,
-      // Enhanced focus styling
-      // borderColor: colors.primary + '20',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -270,8 +270,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.xl,
     },
     optionalText: {
-      ...fonts.spiritualBodyFont, // Using spiritual body font
-      fontStyle: "italic",
+      ...fonts.spiritualBodyFont, // Keeping font but removing italics
+      fontStyle: "normal", // Changed from italic
       color: colors.textMuted,
       lineHeight: Typography.sizes.base * 1.5,
     },
@@ -283,16 +283,24 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontWeight: Typography.weights.semibold,
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
       position: 'absolute',
       bottom: Platform.select({ ios: 130, android: 110 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark, // Darker color for better visibility
       lineHeight: Typography.sizes.lg * 1.5,
-      letterSpacing: 0.3, // Slight letter spacing for elegance
+      letterSpacing: 0.3,
+      opacity: 0.8, // Slightly transparent for elegance
+    },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
     },
     submitButton: {
       position: "absolute",
@@ -332,7 +340,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.6)", // Darker overlay for better focus
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
       justifyContent: "center",
       alignItems: "center",
     },
@@ -358,26 +366,26 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualTitleFont, // Using spiritual font for modal title
-      fontSize: Typography.sizes.xl, // Slightly smaller than page title
+      ...fonts.spiritualTitleFont, // Keeping the font
+      fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.spiritualBodyFont, // Using spiritual body font
+      ...fonts.spiritualBodyFont, // Keeping font but removing italics
       textAlign: "center",
       color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
       marginBottom: Spacing.md,
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
     },
     modalSubText: {
       ...fonts.captionFont,
       textAlign: "center",
       color: colors.primary,
       marginBottom: Spacing.xl,
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
       fontWeight: Typography.weights.medium,
     },
     modalCloseButton: {

@@ -122,6 +122,7 @@ export const Typography = {
     medium: 'Nunito-Medium',
     semibold: 'Nunito-SemiBold',
     bold: 'Nunito-Bold',
+    italic: 'Nunito-Italic',
     
     // Spiritual fonts (Quicksand)
     spiritualLight: 'Quicksand-Light',
@@ -136,6 +137,7 @@ export const Typography = {
     elegantMedium: 'Raleway-Medium',
     elegantSemiBold: 'Raleway-SemiBold',
     elegantBold: 'Raleway-Bold',
+    elegantItalic: 'Raleway-Italic',
   }
 };
 

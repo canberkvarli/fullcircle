@@ -34,7 +34,7 @@ function PhoneNumberScreen(): JSX.Element {
   const handleSubmit = async () => {
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     if (!phoneRegex.test(formattedPhoneNumber)) {
-      Alert.alert("Connection Issue", "Please share a valid number so we can find you in the cosmic network.");
+      Alert.alert("Almost there!", "Please share a valid number so we can connect you.");
       return;
     }
 
@@ -54,7 +54,7 @@ function PhoneNumberScreen(): JSX.Element {
       });
     } catch (error) {
       console.error("Failed to sign in with phone number: ", error);
-      Alert.alert("Sacred Connection", "The universe is having trouble connecting. Please try again.");
+      Alert.alert("Connection Issue", "We're having trouble connecting right now. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -71,11 +71,11 @@ function PhoneNumberScreen(): JSX.Element {
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         
-        <Text style={styles.title}>Your Sacred Journey Begins</Text>
+        <Text style={styles.title}>Let's get you connected</Text>
         
         <View style={styles.mainContent}>
           <Text style={styles.subtitle}>
-            Share your phone number to join the circle of kindred souls
+            Share your number to join the circle of kindred souls
           </Text>
           
           <View style={styles.phoneContainer}>
@@ -107,7 +107,7 @@ function PhoneNumberScreen(): JSX.Element {
         
         <View style={styles.affirmationContainer}>
           <Text style={styles.affirmation}>
-            When souls are meant to connect, the universe conspires to make it happen
+            The right connections find their way to you when you're ready
           </Text>
         </View>
         
@@ -115,7 +115,7 @@ function PhoneNumberScreen(): JSX.Element {
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Connecting to the cosmic network...</Text>
+              <Text style={styles.loadingText}>Making the connection...</Text>
             </View>
           ) : (
             <TouchableOpacity 
@@ -205,22 +205,22 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: 'transparent',
     },
     title: {
-      ...fonts.spiritualTitleFont, // Using spiritual font for more mystical feel
+      ...fonts.spiritualTitleFont, // Keeping the font for consistency
       color: colors.textDark,
       marginTop: Spacing.lg,
       marginLeft: Spacing.xl,
       textAlign: "left",
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Using spiritual font
+      ...fonts.spiritualSubtitleFont, // Keeping font but removing italics
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "center",
       marginTop: Spacing.xl,
       marginBottom: Spacing.xl,
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
     },
     notificationText: {
-      ...fonts.captionFont, // Back to regular caption font, less mystical
+      ...fonts.captionFont,
       color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
       textAlign: "center",
       marginTop: Spacing.lg,
@@ -236,11 +236,11 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     affirmation: {
       ...fonts.affirmationFont,
-      color: colors.primary, // Using primary color for emphasis
+      color: colors.primary,
       textAlign: "center",
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
       lineHeight: Typography.sizes.lg * 1.5,
-      letterSpacing: 0.5, // Slight letter spacing for elegance
+      letterSpacing: 0.5,
     },
     loadingContainer: {
       alignItems: 'center',
@@ -252,7 +252,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       ...fonts.spiritualBodyFont,
       color: colors.primary,
       marginLeft: Spacing.sm,
-      fontStyle: "italic",
+      fontStyle: "normal", // Changed from italic
     },
     nextButton: {
       backgroundColor: colors.primary,

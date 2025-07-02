@@ -45,13 +45,12 @@ export default BirthdateScreen;
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: currentYear - 1930 + 1 }, (_, i) => currentYear - i).reverse();
 
-// Smart defaults - set to reasonable age (25 years old)
 const getSmartDefaults = () => {
   const today = new Date();
   const defaultAge = 25;
   const defaultYear = today.getFullYear() - defaultAge;
-  const defaultMonth = today.getMonth() + 1; // Current month
-  const defaultDay = Math.min(today.getDate(), 15); // 15th or current day if earlier
+  const defaultMonth = today.getMonth() + 1;
+  const defaultDay = Math.min(today.getDate(), 15);
   
   return {
     month: months.find(m => m.number === defaultMonth) || months[0],
@@ -85,7 +84,6 @@ function BirthdateScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [activeSelector, setActiveSelector] = useState<'month' | 'day' | 'year'>('month');
 
-  // Calculate age whenever birthdate changes
   useEffect(() => {
     const calculateAge = () => {
       const today = new Date();
@@ -111,19 +109,19 @@ function BirthdateScreen() {
 
   const handleBirthdateSubmit = async () => {
     if (age < 18) {
-      Alert.alert("Sacred Circle", "Our cosmic community welcomes souls 18 and older on their spiritual dating journey");
+      Alert.alert("Almost there!", "Circle welcomes members 18 and older");
       return;
     }
 
     if (age > 100) {
-      Alert.alert("Timeless Soul", "Please verify your birthdate - we want to ensure accurate cosmic alignment");
+      Alert.alert("Let's double-check", "Please verify your birthdate to ensure accuracy");
       return;
     }
 
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
-        Alert.alert("Energy Disruption", "Something mystical went wrong. Please try again.");
+        Alert.alert("Connection Issue", "Something went wrong. Please try again.");
         return;
       }
 
@@ -136,7 +134,7 @@ function BirthdateScreen() {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The universe had trouble saving your sacred timeline: " + error.message);
+      Alert.alert("Connection Issue", "We had trouble saving your information: " + error.message);
     }
   };
 
@@ -229,7 +227,6 @@ function BirthdateScreen() {
     );
   };
 
-  // Quick age selector buttons for common ages
   const QuickAgeSelector = () => {
     const quickAges = [21, 25, 30, 35, 40];
     
@@ -263,7 +260,6 @@ function BirthdateScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -271,20 +267,15 @@ function BirthdateScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
 
-        {/* Progress Bar */}
         <OnboardingProgressBar currentScreen="BirthdateScreen" />
         
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Title */}
-          <Text style={styles.title}>Celebrate your cosmic arrival</Text>
+          <Text style={styles.title}>When's your birthday?</Text>
           
-          {/* Subtitle */}
-          <Text style={styles.subtitle}>When did your soul choose to enter this realm?</Text>
+          <Text style={styles.subtitle}>Help us celebrate you properly</Text>
           
-          {/* Quick Age Selector */}
           <QuickAgeSelector />
           
-          {/* Date Selectors */}
           <View style={styles.dateInputs}>
             <TouchableOpacity 
               style={styles.dateSelector}
@@ -314,27 +305,25 @@ function BirthdateScreen() {
             </TouchableOpacity>
           </View>
           
-          {/* Age Display */}
           <View style={styles.ageContainer}>
-            <Text style={styles.ageText}>Your cosmic age: {age}</Text>
+            <Text style={styles.ageText}>Your age: {age}</Text>
             {age < 18 && (
-              <Text style={styles.ageWarning}>You must be 18 or older to join our sacred circle</Text>
+              <Text style={styles.ageWarning}>You must be 18 or older to join Circle</Text>
             )}
             {age > 100 && (
-              <Text style={styles.ageWarning}>Please verify your birthdate for cosmic accuracy</Text>
+              <Text style={styles.ageWarning}>Please verify your birthdate for accuracy</Text>
             )}
           </View>
           
-          {/* Warning */}
-          <Text style={styles.warning}>This sacred information becomes permanent once set</Text>
+          <Text style={styles.warning}>This information becomes permanent once set</Text>
           
-          {/* Affirmation */}
           <Text style={styles.affirmation}>
-            Every soul chooses the perfect moment to begin their earthly journey
+            Every{' '}
+            <Text style={styles.highlightedWord}>birthday</Text>
+            {' marks another year of stories worth sharing'}
           </Text>
         </ScrollView>
         
-        {/* Submit Button */}
         <TouchableOpacity
           style={[
             styles.submitButton,
@@ -367,7 +356,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
     },
     scrollContent: {
       padding: Spacing.lg,
-      paddingBottom: 100, // Space for submit button
+      paddingBottom: 100,
     },
     backButton: {
       backgroundColor: colors.card,
@@ -395,7 +384,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.xl,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     quickAgeContainer: {
       marginBottom: Spacing.xl,
@@ -487,13 +476,21 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       fontStyle: "italic",
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       marginBottom: Spacing.xl,
+      opacity: 0.8,
+    },
+    highlightedWord: {
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",

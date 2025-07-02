@@ -17,6 +17,7 @@ export default function RootLayout() {
     'Nunito-Medium': require('../assets/fonts/nunito/Nunito-Medium.ttf'),
     'Nunito-SemiBold': require('../assets/fonts/nunito/Nunito-SemiBold.ttf'),
     'Nunito-Bold': require('../assets/fonts/nunito/Nunito-Bold.ttf'),
+    "Nunito-Italic": require('../assets/fonts/nunito/Nunito-Italic.ttf'),
     
     // Quicksand (spiritual, light feel)
     'Quicksand-Light': require('../assets/fonts/quicksand/Quicksand-Light.ttf'),
@@ -31,6 +32,7 @@ export default function RootLayout() {
     'Raleway-Medium': require('../assets/fonts/raleway/Raleway-Medium.ttf'),
     'Raleway-SemiBold': require('../assets/fonts/raleway/Raleway-SemiBold.ttf'),
     'Raleway-Bold': require('../assets/fonts/raleway/Raleway-Bold.ttf'),
+    'Raleway-Italic': require('../assets/fonts/raleway/Raleway-Italic.ttf'),
   });
 
   useEffect(() => {

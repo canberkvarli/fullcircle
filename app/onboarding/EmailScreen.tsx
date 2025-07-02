@@ -55,7 +55,6 @@ function EmailScreen() {
     return unsubscribe;
   }, []);
 
-  // Helper function to check if Google is connected
   const isGoogleConnected = () => {
     return userData?.settings?.connectedAccounts?.google === true || 
            FIREBASE_AUTH.currentUser?.providerData?.some(provider => provider.providerId === 'google.com') ||
@@ -64,12 +63,12 @@ function EmailScreen() {
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
-      Alert.alert("Sacred Connection", "Please share your digital sanctuary address to stay connected");
+      Alert.alert("Almost there!", "Please share your email to stay connected");
       return;
     }
 
     if (!isValidEmail(email)) {
-      Alert.alert("Energy Alignment", "The cosmic address seems incomplete. Please check and try again");
+      Alert.alert("Check your email", "That email address doesn't look quite right. Please check and try again");
       return;
     }
 
@@ -80,7 +79,7 @@ function EmailScreen() {
       });
       setModalVisible(true);
     } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The universe had trouble saving your information: " + error.message);
+      Alert.alert("Connection Issue", "We had trouble saving your information: " + error.message);
     }
   };
 
@@ -94,19 +93,15 @@ function EmailScreen() {
       const { idToken } = await GoogleSignin.signIn();
       const newGoogleCredential = auth.GoogleAuthProvider.credential(idToken);
       
-      // Check if there's a current user (phone user)
       if (!FIREBASE_AUTH.currentUser) {
         Alert.alert("Error", "No user session found. Please sign in with phone first.");
         return;
       }
 
-      // Link the Google credential to the existing phone user
       await FIREBASE_AUTH.currentUser.linkWithCredential(newGoogleCredential);
       
-      // Get Google user info for updating profile
       const googleUser = await GoogleSignin.getCurrentUser();
       
-      // Update user data with Google info but keep existing data
       await updateUserData({
         email: googleUser?.user.email || email,
         GoogleSSOEnabled: true,
@@ -122,11 +117,10 @@ function EmailScreen() {
         },
       });
       
-      // Set the googleCredential in context so the UI updates
       setGoogleCredential(newGoogleCredential);
       
       console.log("Successfully linked Google account to phone user");
-      Alert.alert("Divine Connection", "Your Google energy has been successfully linked! ✨");
+      Alert.alert("Great!", "Your Google account has been successfully linked! ✨");
       
     } catch (error: any) {
       console.error("Google sign-in error: ", error);
@@ -150,20 +144,20 @@ function EmailScreen() {
   const handleModalOption = (option: number) => {
     switch (option) {
       case 1:
-        Alert.alert("Sacred Apple Connection", "This divine pathway is being prepared for you!");
+        Alert.alert("Coming Soon", "Apple Sign-In is being prepared for you!");
         break;
       case 2:
         if (isGoogleConnected()) {
           Alert.alert(
-            "Google Energy Connected",
-            "Your Google account is already linked to your sacred journey. Would you like to switch to a different Google account?",
+            "Google Connected",
+            "Your Google account is already linked. Would you like to switch to a different Google account?",
             [
               {
                 text: "Keep Current",
                 style: "cancel",
               },
               {
-                text: "Switch Energy",
+                text: "Switch Account",
                 onPress: async () => {
                   try {
                     await GoogleSignin.signOut();
@@ -188,7 +182,6 @@ function EmailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button at top left */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={navigateToPreviousScreen}
@@ -196,19 +189,15 @@ function EmailScreen() {
         <Ionicons name="chevron-back" size={24} color={colors.textDark} />
       </TouchableOpacity>
 
-      {/* Progress Bar below back button */}
       <OnboardingProgressBar currentScreen="EmailScreen" />
 
-      {/* Title */}
-      <Text style={styles.title}>Open your channels</Text>
+      <Text style={styles.title}>Stay in touch</Text>
       
-      {/* Subtitle */}
-      <Text style={styles.subtitle}>Share your digital address</Text>
+      <Text style={styles.subtitle}>Share your email address with us</Text>
       
-      {/* Email Input */}
       <TextInput
         style={styles.input}
-        placeholder="your.essence@cosmos.com"
+        placeholder="your.email@example.com"
         placeholderTextColor={colors.textMuted}
         value={email}
         onChangeText={setEmail}
@@ -217,7 +206,6 @@ function EmailScreen() {
         autoFocus={true}
       />
       
-      {/* Marketing Toggle */}
       <View style={styles.toggleContainer}>
         <TouchableOpacity
           style={styles.toggle}
@@ -229,17 +217,17 @@ function EmailScreen() {
             color={colors.primary}
           />
           <Text style={styles.toggleText}>
-            I prefer to receive only essential cosmic communications about my Circle journey
+            I prefer to receive only essential updates about my Circle journey
           </Text>
         </TouchableOpacity>
       </View>
       
-      {/* Affirmation */}
       <Text style={styles.affirmation}>
-        Communication flows effortlessly when hearts are aligned
+        The best{' '}
+        <Text style={styles.highlightedWord}>conversations</Text>
+        {' happen when people feel truly heard'}
       </Text>
       
-      {/* Submit Button */}
       <TouchableOpacity 
         style={[
           styles.submitButton,
@@ -255,7 +243,6 @@ function EmailScreen() {
         />
       </TouchableOpacity>
 
-      {/* Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -266,19 +253,19 @@ function EmailScreen() {
           <View style={styles.modalContainer}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Strengthen your cosmic connection</Text>
+                <Text style={styles.modalTitle}>Make connecting even easier</Text>
                 <Text style={styles.modalSubtitle}>
-                  Linking your spiritual account creates deeper resonance and easier access to your Circle.
+                  Linking your account creates a smoother experience and easier access to your Circle.
                 </Text>
                 {[
-                  { option: 1, text: "Connect your Apple essence", icon: "logo-apple", connected: false },
+                  { option: 1, text: "Connect with Apple", icon: "logo-apple", connected: false },
                   { 
                     option: 2, 
-                    text: "Connect your Google energy", 
+                    text: "Connect with Google", 
                     icon: "logo-google", 
                     connected: isGoogleConnected() 
                   },
-                  { option: 3, text: "Continue with current flow", icon: "checkmark-circle", connected: false },
+                  { option: 3, text: "Continue as is", icon: "checkmark-circle", connected: false },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.option}
@@ -300,7 +287,7 @@ function EmailScreen() {
                         item.connected ? styles.connectedText : null,
                       ]}
                     >
-                      {item.connected && item.option === 2 ? "Google energy connected ✨" : item.text}
+                      {item.connected && item.option === 2 ? "Google account connected ✨" : item.text}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -350,7 +337,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont, // Using spiritual fonts
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -358,19 +345,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Using spiritual subtitle font
+      ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     input: {
       ...fonts.inputFont,
       height: 56,
       backgroundColor: colors.card,
       borderWidth: 2,
-      borderColor: colors.primary + '20', // Subtle primary color border
+      borderColor: colors.primary + '20',
       borderRadius: BorderRadius.md,
       paddingHorizontal: Spacing.lg,
       marginHorizontal: Spacing.lg,
@@ -413,24 +400,32 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       alignItems: "flex-start",
     },
     toggleText: {
-      ...fonts.spiritualBodyFont, // Using spiritual body font
-      fontStyle: "italic",
+      ...fonts.spiritualBodyFont,
+      fontStyle: "normal",
       color: colors.textMuted,
       marginLeft: Spacing.sm,
       flex: 1,
       lineHeight: Typography.sizes.base * 1.5,
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       position: 'absolute',
       bottom: Platform.select({ ios: 120, android: 100 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
+      opacity: 0.8,
+    },
+    highlightedWord: {
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",
@@ -472,7 +467,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.6)", // Darker overlay
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
     },
     modalContent: {
       backgroundColor: colors.card,
@@ -496,19 +491,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualTitleFont, // Using spiritual font
+      ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.sm,
       textAlign: "center",
     },
     modalSubtitle: {
-      ...fonts.spiritualBodyFont, // Using spiritual body font
+      ...fonts.spiritualBodyFont,
       color: colors.textLight,
       marginBottom: Spacing.xl,
       textAlign: "center",
       lineHeight: Typography.sizes.base * 1.6,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     modalOption: {
       flexDirection: 'row',
@@ -530,7 +525,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       flex: 1,
     },
     connectedOption: {
-      backgroundColor: colors.success + '20', // 20% opacity
+      backgroundColor: colors.success + '20',
       borderColor: colors.success,
     },
     connectedText: {

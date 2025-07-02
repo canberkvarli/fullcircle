@@ -25,6 +25,7 @@ export const useFont = () => {
     buttonFont: getFontStyle('base', 'semibold'),
     captionFont: getFontStyle('sm', 'medium'),
     inputFont: getFontStyle('base', 'regular'),
+    italicFont: getFontStyle('base', 'italic'),
     
     // Spiritual fonts (Quicksand) - for affirmations, special text
     spiritualTitleFont: getFontStyle('4xl', 'spiritualBold'),
@@ -36,6 +37,7 @@ export const useFont = () => {
     elegantTitleFont: getFontStyle('4xl', 'elegantBold'),
     elegantSubtitleFont: getFontStyle('lg', 'elegantLight'),
     elegantBodyFont: getFontStyle('base', 'elegantRegular'),
+    elegantItalicFont: getFontStyle('base', 'elegantItalic'),
     
     // Modal fonts
     modalTitleFont: getFontStyle('xl', 'semibold'),
