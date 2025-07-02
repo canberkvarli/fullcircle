@@ -26,7 +26,7 @@ export default function EditUserProfile() {
   const [tab, setTab] = useState("Edit");
   const router = useRouter();
   const [isModified, setIsModified] = useState(false);
-  const [fieldVisibility, setFieldVisibility] = useState({});
+  const [fieldVisibility, setFieldVisibility] = useState<{ [key: string]: boolean }>({});
 
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -34,19 +34,23 @@ export default function EditUserProfile() {
 
   useEffect(() => {
     const initialVisibility = {
-      // Basic fields that actually exist in UserDataType
+      // Always visible fields (no toggle needed)
+      fullName: true,
+      firstName: true,
+      lastName: true,
+      
+      // Basic info with visibility controls
+      height: !userData.hiddenFields?.height,
+      location: !userData.hiddenFields?.location,
+      
+      // Dating preferences with visibility controls
       gender: !userData.hiddenFields?.gender,
       datePreferences: !userData.hiddenFields?.datePreferences,
-      spiritualProfile: !userData.hiddenFields?.spiritualProfile,
+      
+      // Spiritual fields with visibility controls
       spiritualDraws: !userData.hiddenFields?.spiritualDraws,
       spiritualPractices: !userData.hiddenFields?.spiritualPractices,
       healingModalities: !userData.hiddenFields?.healingModalities,
-      firstName: true,
-      lastName: true,
-      fullName: true,
-      age: true,
-      height: !userData.hiddenFields?.height,
-      location: true,
     };
 
     setFieldVisibility(initialVisibility);
@@ -73,6 +77,15 @@ export default function EditUserProfile() {
       pathname: "/user/EditFieldScreen",
       params: { fieldName },
     });
+  };
+
+  // Check if field should show visibility toggle
+  const shouldShowVisibilityToggle = (fieldName: string) => {
+    const fieldsWithVisibilityControl = [
+      'height', 'location', 'gender', 'datePreferences', 
+      'spiritualDraws', 'spiritualPractices', 'healingModalities'
+    ];
+    return fieldsWithVisibilityControl.includes(fieldName);
   };
 
   const renderField = (field: { fieldName: string; title: string; value: any }) => {
@@ -119,6 +132,8 @@ export default function EditUserProfile() {
 
     const isSpiritualField = ['spiritualDraws', 'spiritualPractices', 'healingModalities'].includes(field.fieldName);
     const gradientColors = getFieldGradient(field.fieldName);
+    const hasVisibilityControl = shouldShowVisibilityToggle(field.fieldName);
+    const isFieldVisible = fieldVisibility[field.fieldName];
 
     return (
       <TouchableOpacity
@@ -157,6 +172,23 @@ export default function EditUserProfile() {
             </View>
 
             <View style={styles.fieldActions}>
+              {/* Visibility indicator - only show for certain fields */}
+              {hasVisibilityControl && (
+                <View style={[
+                  styles.visibilityIndicator,
+                  { 
+                    backgroundColor: isFieldVisible 
+                      ? colors.primary + '15' 
+                      : colors.textMuted + '15'
+                  }
+                ]}>
+                  <Ionicons 
+                    name={isFieldVisible ? "eye-outline" : "eye-off-outline"} 
+                    size={12} 
+                    color={isFieldVisible ? colors.primary : colors.textMuted}
+                  />
+                </View>
+              )}
               <Ionicons 
                 name="chevron-forward-outline" 
                 size={16} 
@@ -290,33 +322,35 @@ export default function EditUserProfile() {
           style={styles.photosGrid}
         />
 
-        {/* Photo requirements notice */}
-        <View style={[styles.photoRequirements, { 
-          backgroundColor: photos.length < 3 ? '#FFF3CD' : colors.primary + '10',
-          borderColor: photos.length < 3 ? '#F0AD4E' : colors.primary + '30'
-        }]}>
-          <Ionicons 
-            name={photos.length < 3 ? "warning-outline" : "checkmark-circle-outline"} 
-            size={16} 
-            color={photos.length < 3 ? '#F0AD4E' : colors.primary} 
-          />
-          <Text style={[styles.photoRequirementsText, fonts.captionFont, { 
-            color: photos.length < 3 ? '#8B4513' : colors.primary 
+        {/* Photo requirements notice - only show if less than 6 photos */}
+        {photos.length < 6 && (
+          <View style={[styles.photoRequirements, { 
+            backgroundColor: photos.length < 3 ? '#FFF3CD' : colors.primary + '10',
+            borderColor: photos.length < 3 ? '#F0AD4E' : colors.primary + '30'
           }]}>
-            {photos.length < 3 
-              ? `${photos.length}/3 photos - Add ${3 - photos.length} more photo${3 - photos.length > 1 ? 's' : ''} (minimum required)`
-              : `${photos.length}/6 photos - Looking good! You can add ${6 - photos.length} more.`
-            }
-          </Text>
-        </View>
+            <Ionicons 
+              name={photos.length < 3 ? "warning-outline" : "checkmark-circle-outline"} 
+              size={16} 
+              color={photos.length < 3 ? '#F0AD4E' : colors.primary} 
+            />
+            <Text style={[styles.photoRequirementsText, fonts.captionFont, { 
+              color: photos.length < 3 ? '#8B4513' : colors.primary 
+            }]}>
+              {photos.length < 3 
+                ? `${photos.length}/3 photos - Add ${3 - photos.length} more photo${3 - photos.length > 1 ? 's' : ''} (minimum required)`
+                : `${photos.length}/6 photos - You can add ${6 - photos.length} more photo${6 - photos.length > 1 ? 's' : ''}.`
+              }
+            </Text>
+          </View>
+        )}
 
         {/* Photo tips */}
-        <View style={[styles.photoTips, { backgroundColor: colors.primary + '10' }]}>
+        {/* <View style={[styles.photoTips, { backgroundColor: colors.primary + '10' }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={[styles.photoTipsText, fonts.captionFont, { color: colors.primary }]}>
             Add 3-6 photos that show your personality. First photo will be your main profile picture. Long press to drag and reorder.
           </Text>
-        </View>
+        </View> */}
       </View>
     );
   };
@@ -793,20 +827,20 @@ const styles = StyleSheet.create({
   },
 
   // Photo tips section
-  photoTips: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginTop: Spacing.sm,
-    gap: Spacing.sm,
-  },
+  // photoTips: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   padding: Spacing.md,
+  //   borderRadius: BorderRadius.md,
+  //   marginTop: Spacing.sm,
+  //   gap: Spacing.sm,
+  // },
   
-  photoTipsText: {
-    flex: 1,
-    fontSize: Typography.sizes.xs,
-    lineHeight: Typography.sizes.xs * 1.4,
-  },
+  // photoTipsText: {
+  //   flex: 1,
+  //   fontSize: Typography.sizes.xs,
+  //   lineHeight: Typography.sizes.xs * 1.4,
+  // },
 
   // IMPROVED Field Styles
   fieldContainer: {
@@ -848,6 +882,16 @@ const styles = StyleSheet.create({
   },
   
   fieldActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  
+  // RESTORED: Visibility indicator
+  visibilityIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },

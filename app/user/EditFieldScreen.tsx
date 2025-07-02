@@ -16,7 +16,6 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import Checkbox from "expo-checkbox";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { RulerPicker } from "react-native-ruler-picker";
@@ -32,7 +31,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.0421,
 };
 
-// Updated field options based on your onboarding screens
+// Updated field options - cleaner spiritual design
 const FIELD_OPTIONS = {
   gender: [
     "Woman",
@@ -65,7 +64,6 @@ const FIELD_OPTIONS = {
     ],
     allEnergyOption: { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" }
   },
-
   spiritualDraws: [
     { 
       label: "Healing & Restoration", 
@@ -93,38 +91,21 @@ const FIELD_OPTIONS = {
     },
   ],
 
+  // Clean spiritual practices without emojis
   spiritualPractices: [
-    { name: "Meditation", icon: "🧘" },
-    { name: "Yoga", icon: "🕉️" },
-    { name: "Prayer", icon: "🙏" },
-    { name: "Journaling", icon: "📝" },
-    { name: "Energy Healing", icon: "✨" },
-    { name: "Crystal Work", icon: "💎" },
-    { name: "Tarot & Oracle", icon: "🔮" },
-    { name: "Astrology", icon: "⭐" },
-    { name: "Nature Rituals", icon: "🌿" },
-    { name: "Sound Healing", icon: "🎵" },
-    { name: "Breathwork", icon: "🌬️" },
-    { name: "Sacred Dance", icon: "💃" },
-    { name: "Plant Medicine", icon: "🍄" },
-    { name: "Shamanic Journey", icon: "🥁" },
-    { name: "Martial Arts", icon: "🥋" },
-    { name: "Fasting", icon: "🌙" },
+    "Meditation", "Yoga", "Prayer", "Journaling", "Energy Healing", 
+    "Crystal Work", "Tarot & Oracle", "Astrology", "Nature Rituals", 
+    "Sound Healing", "Breathwork", "Sacred Dance", "Plant Medicine", 
+    "Shamanic Journey", "Martial Arts", "Fasting", "Chanting",
+    "Mindfulness", "Contemplation", "Sacred Geometry"
   ],
 
+  // Clean healing modalities without emojis
   healingModalities: [
-    { name: "Reiki", icon: "👐", color: "#E74C3C" },
-    { name: "Acupuncture", icon: "📍", color: "#F39C12" },
-    { name: "Sound Therapy", icon: "🎼", color: "#F1C40F" },
-    { name: "Crystal Healing", icon: "💎", color: "#2ECC71" },
-    { name: "Aromatherapy", icon: "🌸", color: "#3498DB" },
-    { name: "Light Therapy", icon: "✨", color: "#E91E63" },
-    { name: "Massage Therapy", icon: "💆", color: "#FF5722" },
-    { name: "Hypnotherapy", icon: "🌀", color: "#607D8B" },
-    { name: "Homeopathy", icon: "💧", color: "#009688" },
-    { name: "Herbalism", icon: "🌿", color: "#4CAF50" },
-    { name: "Ayahuasca", icon: "🍄", color: "#8E24AA" },
-    { name: "Kambo", icon: "🐸", color: "#43A047" },
+    "Reiki", "Acupuncture", "Sound Therapy", "Crystal Healing", 
+    "Aromatherapy", "Light Therapy", "Massage Therapy", "Hypnotherapy", 
+    "Homeopathy", "Herbalism", "Ayahuasca", "Kambo", "Cupping",
+    "Reflexology", "Craniosacral", "Chakra Balancing"
   ],
 };
 
@@ -137,13 +118,18 @@ function EditFieldScreen() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
-  // Get current field value
+  // Get current field value - FIXED
   const getCurrentFieldValue = () => {
-    if (fieldName === "datePreferences") {
+    if (fieldName === "fullName") {
+      return userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+    } else if (fieldName === "age") {
+      return userData.age;
+    } else if (fieldName === "datePreferences") {
       return userData.matchPreferences?.datePreferences || [];
     } else if (fieldName === "spiritualDraws") {
       return userData.spiritualProfile?.draws || [];
     } else if (fieldName === "spiritualPractices") {
+      // Check both direct field and nested structure
       return userData.spiritualProfile?.practices || [];
     } else if (fieldName === "healingModalities") {
       return userData.spiritualProfile?.healingModalities || [];
@@ -154,7 +140,7 @@ function EditFieldScreen() {
   const currentFieldValue = getCurrentFieldValue();
   const isHidden = (userData.hiddenFields as any)?.[fieldName as string] === false;
 
-  // State variables
+  // State variables - FIXED initialization
   const [selectedItems, setSelectedItems] = useState<string[]>(
     Array.isArray(currentFieldValue) ? currentFieldValue : []
   );
@@ -162,8 +148,27 @@ function EditFieldScreen() {
     typeof currentFieldValue === 'string' ? currentFieldValue : ''
   );
   const [isVisible, setIsVisible] = useState(!isHidden);
-  const [firstName, setFirstName] = useState(userData.firstName || '');
-  const [lastName, setLastName] = useState(userData.lastName || '');
+  
+  // FIXED: Proper initialization of name fields
+  const [firstName, setFirstName] = useState(() => {
+    if (fieldName === "fullName") {
+      const fullName = userData.fullName || '';
+      return userData.firstName || fullName.split(' ')[0] || '';
+    }
+    return userData.firstName || '';
+  });
+  
+  const [lastName, setLastName] = useState(() => {
+    if (fieldName === "fullName") {
+      const fullName = userData.fullName || '';
+      const nameParts = fullName.split(' ');
+      return userData.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+    }
+    return userData.lastName || '';
+  });
+  
+  // FIXED: Age initialization
+  const [age, setAge] = useState(userData.age?.toString() || '');
   const [selectedHeight, setSelectedHeight] = useState(userData.height || 5.8);
   const [customInput, setCustomInput] = useState('');
 
@@ -248,6 +253,13 @@ function EditFieldScreen() {
         lastName: lastName.trim(),
         fullName,
       };
+    } else if (fieldName === "age") {
+      const ageNum = parseInt(age);
+      if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
+        Alert.alert("Error", "Please enter a valid age between 18-100.");
+        return;
+      }
+      updateData = { age: ageNum };
     } else if (fieldName === "height") {
       updateData = { height: selectedHeight };
     } else if (fieldName === "location") {
@@ -273,7 +285,9 @@ function EditFieldScreen() {
         },
       };
     } else if (fieldName === "spiritualPractices") {
+      // Update both direct field and nested structure for compatibility
       updateData = {
+        spiritualPractices: selectedItems,
         spiritualProfile: {
           ...userData.spiritualProfile,
           practices: selectedItems,
@@ -290,7 +304,7 @@ function EditFieldScreen() {
       updateData = { [fieldName as string]: selectedItems.length ? selectedItems : selectedSingleItem };
     }
 
-    // Add hidden field setting
+    // FIXED: Add hidden field setting with correct logic
     updateData.hiddenFields = {
       ...userData.hiddenFields,
       [fieldName as string]: !isVisible,
@@ -308,6 +322,24 @@ function EditFieldScreen() {
     );
   };
 
+  // Custom Selection Component (replaces checkboxes)
+  const SelectionBubble = ({ isSelected, size = 20 }: { isSelected: boolean; size?: number }) => (
+    <View style={[
+      styles.selectionBubble,
+      { 
+        width: size, 
+        height: size, 
+        borderRadius: size / 2,
+        borderColor: isSelected ? colors.primary : colors.border,
+        backgroundColor: isSelected ? colors.primary : 'transparent'
+      }
+    ]}>
+      {isSelected && (
+        <Ionicons name="checkmark" size={size * 0.6} color="#FFFFFF" />
+      )}
+    </View>
+  );
+
   const renderDatePreferences = () => {
     const { mainOptions, otherOptions, allEnergyOption } = FIELD_OPTIONS.datePreferences;
     
@@ -316,20 +348,25 @@ function EditFieldScreen() {
         {/* All Energies Option */}
         <TouchableOpacity
           style={[
-            styles.mainOption,
-            selectedItems.includes("Everyone") && styles.selectedMainOption
+            styles.modernOption,
+            { borderColor: colors.border, backgroundColor: colors.card },
+            selectedItems.includes("Everyone") && { 
+              borderColor: colors.primary, 
+              backgroundColor: colors.primary + '10' 
+            }
           ]}
           onPress={() => handleItemToggle("Everyone")}
+          activeOpacity={0.7}
         >
-          <View style={styles.mainOptionContent}>
-            <Text style={[styles.mainOptionLabel, { color: colors.textDark }]}>
+          <View style={styles.optionContent}>
+            <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
               {allEnergyOption.label}
             </Text>
-            <Text style={[styles.mainOptionSubtitle, { color: colors.textMuted }]}>
+            <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
               {allEnergyOption.subtitle}
             </Text>
           </View>
-          <Checkbox value={selectedItems.includes("Everyone")} />
+          <SelectionBubble isSelected={selectedItems.includes("Everyone")} />
         </TouchableOpacity>
 
         {/* Main Options */}
@@ -337,20 +374,25 @@ function EditFieldScreen() {
           <TouchableOpacity
             key={option.id}
             style={[
-              styles.mainOption,
-              selectedItems.includes(option.id) && styles.selectedMainOption
+              styles.modernOption,
+              { borderColor: colors.border, backgroundColor: colors.card },
+              selectedItems.includes(option.id) && { 
+                borderColor: colors.primary, 
+                backgroundColor: colors.primary + '10' 
+              }
             ]}
             onPress={() => handleItemToggle(option.id)}
+            activeOpacity={0.7}
           >
-            <View style={styles.mainOptionContent}>
-              <Text style={[styles.mainOptionLabel, { color: colors.textDark }]}>
+            <View style={styles.optionContent}>
+              <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
                 {option.label}
               </Text>
-              <Text style={[styles.mainOptionSubtitle, { color: colors.textMuted }]}>
+              <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
                 {option.subtitle}
               </Text>
             </View>
-            <Checkbox value={selectedItems.includes(option.id)} />
+            <SelectionBubble isSelected={selectedItems.includes(option.id)} />
           </TouchableOpacity>
         ))}
 
@@ -367,14 +409,16 @@ function EditFieldScreen() {
               <TouchableOpacity
                 key={optionId}
                 style={[
-                  styles.pill,
+                  styles.spiritualPill,
                   { borderColor: colors.border, backgroundColor: colors.background },
                   isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
                 ]}
                 onPress={() => handleItemToggle(optionId)}
+                activeOpacity={0.7}
               >
                 <Text style={[
                   styles.pillText,
+                  fonts.captionFont,
                   { color: colors.textMuted },
                   isSelected && { color: colors.primary }
                 ]}>
@@ -398,21 +442,22 @@ function EditFieldScreen() {
             <TouchableOpacity
               key={draw.value}
               style={[
-                styles.drawCard,
+                styles.modernOption,
                 { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { borderColor: draw.color, backgroundColor: draw.color + '15' }
+                isSelected && { borderColor: draw.color, backgroundColor: draw.color + '10' }
               ]}
               onPress={() => handleItemToggle(draw.value)}
+              activeOpacity={0.7}
             >
-              <View style={styles.drawContent}>
-                <Text style={[styles.drawLabel, fonts.buttonFont, { color: colors.textDark }]}>
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
                   {draw.label}
                 </Text>
-                <Text style={[styles.drawDescription, fonts.captionFont, { color: colors.textMuted }]}>
+                <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
                   {draw.description}
                 </Text>
               </View>
-              <Checkbox value={isSelected} />
+              <SelectionBubble isSelected={isSelected} />
             </TouchableOpacity>
           );
         })}
@@ -420,27 +465,41 @@ function EditFieldScreen() {
     );
   };
 
-  const renderPracticesOrModalities = (items: any[], fieldType: string) => {
+  // IMPROVED: Clean spiritual practices/modalities design
+  const renderPracticesOrModalities = (items: string[], fieldType: string) => {
     return (
-      <View style={styles.practicesContainer}>
+      <View style={styles.spiritualGrid}>
         {items.map((item) => {
-          const isSelected = selectedItems.includes(item.name);
+          const isSelected = selectedItems.includes(item);
           
           return (
             <TouchableOpacity
-              key={item.name}
+              key={item}
               style={[
-                styles.practiceCard,
+                styles.spiritualBubble,
                 { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+                isSelected && { 
+                  borderColor: colors.primary, 
+                  backgroundColor: colors.primary + '15',
+                  transform: [{ scale: 1.02 }]
+                }
               ]}
-              onPress={() => handleItemToggle(item.name)}
+              onPress={() => handleItemToggle(item)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.practiceIcon}>{item.icon}</Text>
-              <Text style={[styles.practiceName, fonts.buttonFont, { color: colors.textDark }]}>
-                {item.name}
+              <Text style={[
+                styles.spiritualBubbleText, 
+                fonts.captionFont,
+                { color: colors.textDark },
+                isSelected && { color: colors.primary, fontWeight: Typography.weights.semibold }
+              ]}>
+                {item}
               </Text>
-              <Checkbox value={isSelected} />
+              {isSelected && (
+                <View style={styles.selectedIndicator}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}
@@ -458,16 +517,17 @@ function EditFieldScreen() {
             <TouchableOpacity
               key={option}
               style={[
-                styles.basicOption,
+                styles.modernOption,
                 { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
+                isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }
               ]}
               onPress={() => handleItemToggle(option)}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.basicOptionText, fonts.buttonFont, { color: colors.textDark }]}>
+              <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
                 {option}
               </Text>
-              <Checkbox value={isSelected} />
+              <SelectionBubble isSelected={isSelected} />
             </TouchableOpacity>
           );
         })}
@@ -506,6 +566,25 @@ function EditFieldScreen() {
           />
           <Text style={[styles.helpText, fonts.captionFont, { color: colors.textMuted }]}>
             Last name is optional and only shared with matches.
+          </Text>
+        </View>
+      );
+    }
+
+    if (fieldName === "age") {
+      return (
+        <View style={styles.ageContainer}>
+          <TextInput
+            style={[styles.ageInput, { borderColor: colors.border, color: colors.textDark }]}
+            placeholder="Enter your age"
+            value={age}
+            onChangeText={setAge}
+            keyboardType="numeric"
+            maxLength={2}
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={[styles.helpText, fonts.captionFont, { color: colors.textMuted }]}>
+            Your age helps us find compatible matches.
           </Text>
         </View>
       );
@@ -615,7 +694,7 @@ function EditFieldScreen() {
         {renderContent()}
       </ScrollView>
 
-      {/* Visibility Toggle */}
+      {/* FIXED: Visibility Toggle */}
       <View style={[styles.visibilityContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <View style={styles.visibilityContent}>
           <Ionicons 
@@ -629,9 +708,19 @@ function EditFieldScreen() {
         </View>
         <TouchableOpacity 
           onPress={() => setIsVisible(!isVisible)}
-          style={[styles.visibilityToggle, { backgroundColor: isVisible ? colors.primary : colors.textMuted }]}
+          style={[
+            styles.visibilityToggle, 
+            { backgroundColor: isVisible ? colors.primary : colors.textMuted + '40' }
+          ]}
+          activeOpacity={0.7}
         >
-          <View style={[styles.visibilityToggleThumb, { backgroundColor: colors.card }]} />
+          <View style={[
+            styles.visibilityToggleThumb, 
+            { 
+              backgroundColor: colors.card,
+              transform: [{ translateX: isVisible ? 22 : 2 }]
+            }
+          ]} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -678,41 +767,43 @@ const createStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
   },
-  
-  // Date Preferences Styles
-  datePreferencesContainer: {
-    gap: Spacing.md,
+
+  // Modern Selection Bubble
+  selectionBubble: {
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
-  mainOption: {
+  // Modern Option Style
+  modernOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 2,
+    marginBottom: Spacing.sm,
   },
   
-  selectedMainOption: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '15',
-  },
-  
-  mainOptionContent: {
+  optionContent: {
     flex: 1,
   },
   
-  mainOptionLabel: {
-    fontSize: Typography.sizes.lg,
+  optionLabel: {
+    fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.xs,
   },
   
-  mainOptionSubtitle: {
+  optionSubtitle: {
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
+  },
+  
+  // Date Preferences Styles
+  datePreferencesContainer: {
+    gap: Spacing.md,
   },
   
   sectionLabel: {
@@ -728,11 +819,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     gap: Spacing.sm,
   },
   
-  pill: {
+  spiritualPill: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   
   pillText: {
@@ -745,54 +836,36 @@ const createStyles = (colors: any) => StyleSheet.create({
     gap: Spacing.md,
   },
   
-  drawCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-  },
-  
-  drawContent: {
-    flex: 1,
-  },
-  
-  drawLabel: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.xs,
-  },
-  
-  drawDescription: {
-    fontSize: Typography.sizes.sm,
-    lineHeight: Typography.sizes.sm * 1.3,
-  },
-  
-  // Practices/Modalities Styles
-  practicesContainer: {
+  // Clean Spiritual Grid
+  spiritualGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  
-  practiceCard: {
-    width: '48%',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    alignItems: 'center',
     gap: Spacing.sm,
+    justifyContent: 'space-between',
   },
   
-  practiceIcon: {
-    fontSize: 24,
+  spiritualBubble: {
+    minWidth: '47%',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    minHeight: 50,
   },
   
-  practiceName: {
+  spiritualBubbleText: {
     fontSize: Typography.sizes.sm,
     fontWeight: Typography.weights.medium,
     textAlign: 'center',
+  },
+  
+  selectedIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
   },
   
   // Basic Options Styles
@@ -800,24 +873,10 @@ const createStyles = (colors: any) => StyleSheet.create({
     gap: Spacing.sm,
   },
   
-  basicOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-  },
-  
-  basicOptionText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-  },
-  
   customInput: {
     padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
     fontSize: Typography.sizes.base,
     marginTop: Spacing.sm,
   },
@@ -828,15 +887,32 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   
   nameInput: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
     fontSize: Typography.sizes.base,
+  },
+  
+  // Age Input Styles
+  ageContainer: {
+    gap: Spacing.md,
+    alignItems: 'center',
+  },
+  
+  ageInput: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    fontSize: Typography.sizes.xl,
+    textAlign: 'center',
+    width: 120,
+    fontWeight: Typography.weights.bold,
   },
   
   helpText: {
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
+    textAlign: 'center',
   },
   
   // Height Styles
@@ -858,12 +934,12 @@ const createStyles = (colors: any) => StyleSheet.create({
   
   map: {
     height: 300,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.xl,
   },
   
   locationButton: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
     alignItems: 'center',
   },
   
@@ -873,7 +949,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: Typography.weights.semibold,
   },
   
-  // Visibility Toggle Styles
+  // FIXED: Visibility Toggle Styles
   visibilityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -898,14 +974,19 @@ const createStyles = (colors: any) => StyleSheet.create({
     height: 28,
     borderRadius: 14,
     justifyContent: 'center',
-    paddingHorizontal: 2,
+    position: 'relative',
   },
   
   visibilityToggleThumb: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    alignSelf: 'flex-end',
+    position: 'absolute',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
 
