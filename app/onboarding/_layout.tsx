@@ -13,13 +13,13 @@ export default function OnboardingStackLayout() {
       <Stack.Screen name="NameScreen" options={{ headerShown: false }} />
       <Stack.Screen name="EmailScreen" options={{ headerShown: false }} />
       <Stack.Screen name="BirthdateScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="HeightScreen" options={{ headerShown: false }} />
       <Stack.Screen name="LocationScreen" options={{ headerShown: false }} />
       <Stack.Screen name="GenderScreen" options={{ headerShown: false }} />
       <Stack.Screen
         name="DatePreferenceScreen"
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="HeightScreen" options={{ headerShown: false }} />
       <Stack.Screen name="SpiritualDrawsScreen" options={{ headerShown: false }} />
       <Stack.Screen name="SpiritualPracticesScreen" options={{ headerShown: false }} />
       <Stack.Screen name="HealingModalitiesScreen" options={{ headerShown: false }} />

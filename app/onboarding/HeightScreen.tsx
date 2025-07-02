@@ -13,12 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
-import Checkbox from "expo-checkbox";
 import { RulerPicker } from "react-native-ruler-picker";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-// Helper to format a height (in feet as a float) into a feet/inches string.
 function formatHeight(height: number): string {
   const feet = Math.floor(height);
   const inches = Math.round((height - feet) * 12);
@@ -38,7 +36,6 @@ function HeightScreen() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
-  // Initialize selectedHeight as a number (default to 6 if no value exists)
   const [selectedHeight, setSelectedHeight] = useState<number>(
     typeof userData?.height === "number" ? userData.height : 6
   );
@@ -46,7 +43,6 @@ function HeightScreen() {
     height: userData?.hiddenFields?.height || false,
   });
 
-  // Clamp the height between 3 ft and 8 ft.
   useEffect(() => {
     if (selectedHeight < 3) {
       setSelectedHeight(3);
@@ -59,7 +55,7 @@ function HeightScreen() {
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
-        Alert.alert("Sacred Dimensions", "Something mystical went wrong. Please try again.");
+        Alert.alert("Connection Issue", "Something went wrong. Please try again.");
         return;
       }
       await updateUserData({
@@ -71,7 +67,7 @@ function HeightScreen() {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The universe had trouble saving your height: " + error.message);
+      Alert.alert("Connection Issue", "We had trouble saving your height: " + error.message);
     }
   };
 
@@ -82,10 +78,26 @@ function HeightScreen() {
     }));
   };
 
+  // Custom rounded checkbox component
+  const RoundedCheckbox = ({ value, onValueChange }: { value: boolean; onValueChange: () => void }) => (
+    <TouchableOpacity
+      style={[styles.customCheckbox, value && styles.customCheckboxChecked]}
+      onPress={onValueChange}
+      activeOpacity={0.7}
+    >
+      {value && (
+        <Ionicons 
+          name="checkmark" 
+          size={16} 
+          color={colors.background} 
+        />
+      )}
+    </TouchableOpacity>
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigateToPreviousScreen()}
@@ -93,24 +105,18 @@ function HeightScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
 
-        {/* Progress Bar */}
         <OnboardingProgressBar currentScreen="HeightScreen" />
 
-        {/* Title */}
         <Text style={styles.title}>Stand tall</Text>
 
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>What's your sacred stature?</Text>
+        <Text style={styles.subtitle}>Help us show you compatible matches</Text>
 
-        {/* Height Input Container */}
         <View style={styles.heightInputs}>
-          {/* Current Height Display */}
           <View style={styles.heightDisplay}>
             <Text style={styles.heightValue}>{formatHeight(selectedHeight)}</Text>
             <Text style={styles.heightLabel}>Your height</Text>
           </View>
 
-          {/* Ruler Picker */}
           <View style={styles.rulerContainer}>
             <RulerPicker
               min={3}
@@ -124,30 +130,27 @@ function HeightScreen() {
               indicatorHeight={80}
               indicatorColor={colors.primary}
               valueTextStyle={{
-                fontSize: 0, // Hide the built-in text since we're showing it above
+                fontSize: 0,
                 color: 'transparent',
               }}
             />
           </View>
         </View>
 
-        {/* Hidden Field Toggle */}
         <View style={styles.hiddenContainer}>
           <Text style={styles.hiddenText}>Keep this private</Text>
-          <Checkbox
+          <RoundedCheckbox
             value={hiddenFields["height"] || false}
             onValueChange={() => toggleHidden("height")}
-            style={styles.checkbox}
-            color={hiddenFields.height ? colors.primary : undefined}
           />
         </View>
 
-        {/* Affirmation */}
         <Text style={styles.affirmation}>
-          Every dimension of your being is perfectly designed by the universe
+          Every{' '}
+          <Text style={styles.highlightedWord}>person</Text>
+          {' brings their own unique presence to the world'}
         </Text>
 
-        {/* Submit Button */}
         <TouchableOpacity
           style={styles.submitButton}
           onPress={handleHeightSubmit}
@@ -209,11 +212,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       textAlign: "left",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     heightInputs: {
       alignItems: 'center',
-      marginBottom: Spacing['2xl'], // More space to prevent overlap
+      marginBottom: Spacing['2xl'],
       paddingHorizontal: Spacing.lg,
     },
     heightDisplay: {
@@ -247,10 +250,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.textLight,
       fontSize: Typography.sizes.base,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     rulerContainer: {
-      // Clean container with no borders or styling
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -261,32 +263,83 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
-      borderRadius: BorderRadius.md,
+      borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
     },
     hiddenText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,
-      fontStyle: "italic",
+      fontStyle: "normal",
       marginRight: Spacing.md,
     },
-    checkbox: {
-      width: 20,
-      height: 20,
+    customCheckbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    customCheckboxChecked: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       position: 'absolute',
-      bottom: Platform.select({ ios: 220, android: 160 }), // Moved higher to avoid overlap
+      bottom: Platform.select({ ios: 220, android: 160 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
+      opacity: 0.8,
+    },
+    highlightedWord: {
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",

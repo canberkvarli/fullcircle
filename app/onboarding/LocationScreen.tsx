@@ -57,7 +57,7 @@ const LocationScreen = () => {
 
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Sacred Space", "We need your location to connect you with nearby kindred souls");
+        Alert.alert("Location Needed", "We need your location to connect you with nearby people");
         setRegion(DEFAULT_LOCATION);
         setLoading(false);
         return;
@@ -93,7 +93,7 @@ const LocationScreen = () => {
   const handleGetCurrentLocation = async () => {
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Sacred Space", "We need your location to connect you with nearby kindred souls");
+      Alert.alert("Location Needed", "We need your location to connect you with nearby people");
       return;
     }
     
@@ -160,8 +160,8 @@ const LocationScreen = () => {
       navigateToNextScreen();
     } catch (error) {
       Alert.alert(
-        "Cosmic Interference",
-        "The universe had trouble saving your location: " +
+        "Connection Issue",
+        "We had trouble saving your location: " +
           (error instanceof Error ? error.message : String(error))
       );
     }
@@ -169,7 +169,6 @@ const LocationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigateToPreviousScreen()}
@@ -177,23 +176,17 @@ const LocationScreen = () => {
         <Ionicons name="chevron-back" size={24} color={colors.textDark} />
       </TouchableOpacity>
 
-      {/* Progress Bar */}
       <OnboardingProgressBar currentScreen="LocationScreen" />
 
-      {/* Content Container - prevents content from going behind buttons */}
       <View style={styles.contentContainer}>
-        {/* Title */}
-        <Text style={styles.title}>Where are you rooted?</Text>
+        <Text style={styles.title}>Where do you call home?</Text>
 
-        {/* Subtitle */}
         <Text style={styles.subtitle}>
-          Share your sacred space to connect with nearby souls
+          Share your location to connect with people nearby
         </Text>
 
-        {/* Current Location Name */}
         <Text style={styles.regionName}>{regionName}</Text>
 
-        {/* Map Container */}
         <View style={styles.mapContainer}>
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -202,7 +195,7 @@ const LocationScreen = () => {
                 color={colors.primary}
                 style={styles.loadingIndicator}
               />
-              <Text style={styles.loadingText}>Finding your cosmic coordinates...</Text>
+              <Text style={styles.loadingText}>Finding your location...</Text>
             </View>
           ) : (
             <>
@@ -225,7 +218,7 @@ const LocationScreen = () => {
                     latitude: region.latitude,
                     longitude: region.longitude,
                   }}
-                  title={"Your sacred space"}
+                  title={"Your location"}
                 >
                   <View style={styles.customMarker}>
                     <Ionicons name="location" size={30} color={colors.primary} />
@@ -233,7 +226,6 @@ const LocationScreen = () => {
                 </Marker>
               </MapView>
 
-              {/* Current Location Button */}
               <TouchableOpacity
                 style={styles.currentLocationButton}
                 onPress={handleGetCurrentLocation}
@@ -245,13 +237,12 @@ const LocationScreen = () => {
           )}
         </View>
 
-        {/* Affirmation */}
         <Text style={styles.affirmation}>
-          Ground yourself in the present moment and sacred space
+          The best connections often happen close to
+          <Text style={styles.highlightedWord}> home</Text>
         </Text>
       </View>
 
-      {/* Continue Button */}
       <TouchableOpacity
         style={styles.continueButton}
         onPress={handleContinue}
@@ -300,7 +291,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     contentContainer: {
       flex: 1,
-      paddingBottom: 100, // Space for continue button and affirmation
+      paddingBottom: 100,
     },
     title: {
       ...fonts.spiritualTitleFont,
@@ -316,7 +307,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       textAlign: "left",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     regionName: {
       ...fonts.spiritualBodyFont,
@@ -324,15 +315,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.lg,
       marginBottom: Spacing.lg,
       textAlign: "center",
-      fontStyle: "italic",
+      fontStyle: "normal",
       fontWeight: Typography.weights.medium,
     },
     mapContainer: {
-      height: 300, // Reduced height to leave more room for affirmation
+      height: 300,
       borderRadius: BorderRadius.xl,
       overflow: "hidden",
       marginBottom: Spacing.xl,
-      marginHorizontal: 0, // Removed horizontal margin
+      marginHorizontal: 0,
       position: "relative",
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -411,17 +402,25 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     loadingText: {
       ...fonts.spiritualBodyFont,
       color: colors.textMuted,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.lg,
-      marginTop: 'auto', // Push to bottom of content container
+      marginTop: 'auto',
+      opacity: 0.8,
+    },
+    highlightedWord: {
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     continueButton: {
       position: "absolute",
