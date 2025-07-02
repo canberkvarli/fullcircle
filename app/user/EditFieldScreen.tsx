@@ -41,7 +41,6 @@ const FIELD_OPTIONS = {
     "Agender",
     "Two-Spirit",
     "Genderfluid",
-    "Other",
   ],
   
   datePreferences: {
@@ -531,17 +530,6 @@ function EditFieldScreen() {
             </TouchableOpacity>
           );
         })}
-        
-        {/* Custom input for "Other" */}
-        {fieldName === "gender" && selectedItems.includes("Other") && (
-          <TextInput
-            style={[styles.customInput, { borderColor: colors.border, color: colors.textDark }]}
-            placeholder="Please specify..."
-            value={customInput}
-            onChangeText={setCustomInput}
-            placeholderTextColor={colors.textMuted}
-          />
-        )}
       </View>
     );
   };
@@ -765,7 +753,8 @@ const createStyles = (colors: any) => StyleSheet.create({
   scrollContainer: {
     flex: 1,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
 
   // Modern Selection Bubble
@@ -783,7 +772,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.xl,
     borderWidth: 2,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   
   optionContent: {
@@ -879,6 +868,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1.5,
     fontSize: Typography.sizes.base,
     marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   
   // Name Input Styles
@@ -948,8 +938,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.semibold,
   },
-  
-  // FIXED: Visibility Toggle Styles
+
   visibilityContainer: {
     flexDirection: 'row',
     alignItems: 'center',

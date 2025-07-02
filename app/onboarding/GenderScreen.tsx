@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   View,
-  TextInput,
   useColorScheme,
   Platform,
   StyleSheet,
@@ -37,22 +36,12 @@ function GenderScreen() {
     gender: userData?.hiddenFields?.gender || false,
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [customOther, setCustomOther] = useState<string>("");
 
   const toggleGender = (gender: string) => {
-    if (gender === "Other") {
-      if (selectedGender.includes("Other")) {
-        setSelectedGender(selectedGender.filter((g) => g !== "Other"));
-        setCustomOther("");
-      } else {
-        setSelectedGender([...selectedGender, "Other"]);
-      }
+    if (selectedGender.includes(gender)) {
+      setSelectedGender(selectedGender.filter((g) => g !== gender));
     } else {
-      if (selectedGender.includes(gender)) {
-        setSelectedGender(selectedGender.filter((g) => g !== gender));
-      } else {
-        setSelectedGender([...selectedGender, gender]);
-      }
+      setSelectedGender([...selectedGender, gender]);
     }
   };
 
@@ -64,23 +53,16 @@ function GenderScreen() {
   };
 
   const handleNext = async () => {
-    // Replace "Other" with the custom input if provided.
-    const finalGender = selectedGender.map((g) =>
-      g === "Other" ? (customOther ? customOther : "Other") : g
-    );
     await updateUserData({
-      gender: finalGender,
+      gender: selectedGender,
       hiddenFields,
     });
     navigateToNextScreen();
   };
 
   const handlePrevious = async () => {
-    const finalGender = selectedGender.map((g) =>
-      g === "Other" ? (customOther ? customOther : "Other") : g
-    );
     await updateUserData({
-      gender: finalGender,
+      gender: selectedGender,
       hiddenFields,
     });
     navigateToPreviousScreen();
@@ -104,11 +86,6 @@ function GenderScreen() {
     { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
     { title: "Bigender", subtitle: "Celebrate your duality" },
     { title: "Intersex", subtitle: "Embrace your uniqueness" },
-    {
-      title: "Other",
-      subtitle: "Describe your unique path",
-      input: true,
-    },
   ];
 
   return (
@@ -244,15 +221,6 @@ function GenderScreen() {
                       {selectedGender.includes(option.title) && <View style={styles.selectedOrb} />}
                     </View>
                   </View>
-                  {option.input && selectedGender.includes("Other") && (
-                    <TextInput
-                      style={styles.customInput}
-                      placeholder="Enter your identity"
-                      placeholderTextColor={colors.textMuted}
-                      value={customOther}
-                      onChangeText={setCustomOther}
-                    />
-                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -461,17 +429,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.sm,
       color: colors.textLight,
       fontStyle: "italic",
-    },
-    customInput: {
-      backgroundColor: colors.background,
-      borderRadius: BorderRadius.sm,
-      padding: Spacing.md,
-      marginTop: Spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      ...fonts.spiritualBodyFont,
-      color: colors.textDark,
-      fontSize: Typography.sizes.base,
     },
     hiddenContainer: {
       flexDirection: "row",
