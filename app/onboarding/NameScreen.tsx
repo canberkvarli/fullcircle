@@ -100,7 +100,7 @@ function NameScreen() {
 
       {/* Subtitle */}
       <Text style={styles.subtitle}>
-        Share the sacred sounds that call to your soul
+        Share the sounds that call to your soul
       </Text>
 
       {/* Input Fields */}
@@ -128,7 +128,7 @@ function NameScreen() {
         onPress={() => setIsModalVisible(true)}
       >
         <Text style={styles.optionalText}>
-          Your family name remains sacred and private, shared only with your destined connections.{" "}
+          Your family name remains private, and shared only with your destined connections.
           <Text style={styles.linkText}>Why this matters?</Text>
         </Text>
       </TouchableOpacity>
@@ -163,9 +163,9 @@ function NameScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Sacred Name Sharing</Text>
+            <Text style={styles.modalTitle}>Name Sharing</Text>
             <Text style={styles.modalText}>
-              In our sacred circle, your calling name creates the first vibration of connection. 
+              In our circle, your calling name creates the first vibration of connection. 
               Your family name remains protected in our cosmic vault, revealed only when hearts 
               align and souls recognize each other through meaningful matches.
             </Text>
