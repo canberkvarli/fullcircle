@@ -19,6 +19,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import ProfilePreview from "@/components/ProfilePreview";
 
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
@@ -40,6 +41,7 @@ export default function EditUserProfile() {
       lastName: true,
       
       // Basic info with visibility controls
+      age: !userData.hiddenFields?.age,
       height: !userData.hiddenFields?.height,
       location: !userData.hiddenFields?.location,
       
@@ -82,7 +84,7 @@ export default function EditUserProfile() {
   // Check if field should show visibility toggle
   const shouldShowVisibilityToggle = (fieldName: string) => {
     const fieldsWithVisibilityControl = [
-      'height', 'location', 'gender', 'datePreferences', 
+      'age', 'height', 'location', 'gender', 'datePreferences', 
       'spiritualDraws', 'spiritualPractices', 'healingModalities'
     ];
     return fieldsWithVisibilityControl.includes(fieldName);
@@ -345,12 +347,12 @@ export default function EditUserProfile() {
         )}
 
         {/* Photo tips */}
-        {/* <View style={[styles.photoTips, { backgroundColor: colors.primary + '10' }]}>
+        <View style={[styles.photoTips, { backgroundColor: colors.primary + '10' }]}>
           <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={[styles.photoTipsText, fonts.captionFont, { color: colors.primary }]}>
             Add 3-6 photos that show your personality. First photo will be your main profile picture. Long press to drag and reorder.
           </Text>
-        </View> */}
+        </View>
       </View>
     );
   };
@@ -405,7 +407,7 @@ export default function EditUserProfile() {
     {
       fieldName: "fullName",
       title: "Name",
-      value: userData.fullName || userData.firstName,
+      value: userData.fullName ? userData.fullName : userData.firstName,
     },
     {
       fieldName: "age",
@@ -590,19 +592,9 @@ export default function EditUserProfile() {
           </View>
         )}
         
-        {tab === "View" && (
-          <View style={styles.previewContainer}>
-            <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="eye" size={32} color={colors.primary} style={styles.previewIcon} />
-              <Text style={[styles.previewTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Profile Preview
-              </Text>
-              <Text style={[styles.previewText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                This is how your profile appears to other users. Make sure your photos and info represent the real you!
-              </Text>
-            </View>
-          </View>
-        )}
+      {tab === "View" && (
+        <ProfilePreview userData={userData} photos={photos} />
+      )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -827,20 +819,20 @@ const styles = StyleSheet.create({
   },
 
   // Photo tips section
-  // photoTips: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   padding: Spacing.md,
-  //   borderRadius: BorderRadius.md,
-  //   marginTop: Spacing.sm,
-  //   gap: Spacing.sm,
-  // },
+  photoTips: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
   
-  // photoTipsText: {
-  //   flex: 1,
-  //   fontSize: Typography.sizes.xs,
-  //   lineHeight: Typography.sizes.xs * 1.4,
-  // },
+  photoTipsText: {
+    flex: 1,
+    fontSize: Typography.sizes.xs,
+    lineHeight: Typography.sizes.xs * 1.4,
+  },
 
   // IMPROVED Field Styles
   fieldContainer: {
@@ -930,42 +922,5 @@ const styles = StyleSheet.create({
   moreTagText: {
     fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
-  },
-  
-  previewContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  
-  previewCard: {
-    width: '100%',
-    padding: Spacing['2xl'],
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  
-  previewIcon: {
-    marginBottom: Spacing.lg,
-  },
-  
-  previewTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  
-  previewText: {
-    fontSize: Typography.sizes.base,
-    textAlign: 'center',
-    lineHeight: Typography.sizes.base * 1.4,
   },
 });
