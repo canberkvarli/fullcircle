@@ -26,11 +26,11 @@ const ConnectScreen: React.FC = () => {
     likeMatch,
     dislikeMatch,
     currentPotentialMatch,
-    loadNextPotentialMatch,
     loadingNextBatch,
     userData,
     noMoreMatches,
     orbLike,
+    exclusionsLoaded
   } = useUserContext();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -57,85 +57,93 @@ const ConnectScreen: React.FC = () => {
   // Orb button glow when available
   const orbButtonGlow = useRef(new Animated.Value(0)).current;
 
-  const handleAction = async (action: 'like' | 'pass' | 'orb') => {
-    if (actionInProgress || !currentPotentialMatch) return;
-    
-    // Check if trying to use orb but no orbs available
-    if (action === 'orb' && (!userData?.numOfOrbs || userData.numOfOrbs <= 0)) {
-      showDivineOrbModal();
-      return;
+useEffect(() => {
+  console.log('🖥️ ConnectScreen: Match state changed', {
+    currentMatch: currentPotentialMatch?.userId,
+    firstName: currentPotentialMatch?.firstName,
+    loading: loadingNextBatch,
+    noMore: noMoreMatches,
+  });
+}, [currentPotentialMatch, loadingNextBatch, noMoreMatches]);
+
+const handleAction = async (action: 'like' | 'pass' | 'orb') => {
+  if (actionInProgress || !currentPotentialMatch) return;
+  
+  if (action === 'orb' && (!userData?.numOfOrbs || userData.numOfOrbs <= 0)) {
+    showDivineOrbModal();
+    return;
+  }
+  
+  setActionInProgress(true);
+  setLastAction(action);
+  
+  Animated.parallel([
+    Animated.timing(overlayOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }),
+    Animated.spring(overlayScale, {
+      toValue: 1,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }),
+    Animated.timing(contentOpacity, {
+      toValue: 0.3,
+      duration: 300,
+      useNativeDriver: true,
+    }),
+  ]).start();
+
+  // Step 2: Process the action
+  const userId = currentPotentialMatch.userId;
+  try {
+    if (action === 'pass') {
+      await dislikeMatch(userId); // This now handles loadNextPotentialMatch internally
+    } else if (action === 'orb') {
+      await orbLike(userId); // This now handles loadNextPotentialMatch internally
+    } else {
+      await likeMatch(userId); // This now handles loadNextPotentialMatch internally
     }
-    
-    setActionInProgress(true);
-    setLastAction(action);
-    
-    // Step 1: Simple overlay appears with the action
+  } catch (error) {
+    console.error('Action failed:', error);
+    // On error, reset the UI state
+    setActionInProgress(false);
+    setLastAction(null);
+    contentOpacity.setValue(1);
+    overlayOpacity.setValue(0);
+    overlayScale.setValue(0.8);
+    return;
+  }
+
+  scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+
+  setTimeout(() => {
     Animated.parallel([
+      // Fade out overlay
       Animated.timing(overlayOpacity, {
-        toValue: 1,
-        duration: 300,
+        toValue: 0,
+        duration: 400,
         useNativeDriver: true,
       }),
-      Animated.spring(overlayScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      // Fade content slightly
+      // Fade in new content
       Animated.timing(contentOpacity, {
-        toValue: 0.3,
-        duration: 300,
+        toValue: 1,
+        duration: 500,
+        delay: 200,
         useNativeDriver: true,
       }),
-    ]).start();
-
-    // Step 2: Process the action
-    const userId = currentPotentialMatch.userId;
-    try {
-      if (action === 'pass') {
-        await dislikeMatch(userId);
-      } else if (action === 'orb') {
-        await orbLike(userId);
-      } else {
-        await likeMatch(userId);
-      }
-    } catch (error) {
-      console.error('Action failed:', error);
-    }
-
-    // Step 3: Load next match
-    setTimeout(() => {
-      loadNextPotentialMatch();
-      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-    }, 800);
-
-    // Step 4: Simple fade transition to new content
-    setTimeout(() => {
-      Animated.parallel([
-        // Fade out overlay
-        Animated.timing(overlayOpacity, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        // Fade in new content
-        Animated.timing(contentOpacity, {
-          toValue: 1,
-          duration: 500,
-          delay: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Reset state
-        setActionInProgress(false);
-        setLastAction(null);
-        setPhotosLoaded(false);
-        overlayScale.setValue(0.8);
-        buttonsOpacity.setValue(0);
-      });
-    }, 1200);
-  };
+    ]).start(() => {
+      // Reset state
+      setActionInProgress(false);
+      setLastAction(null);
+      setPhotosLoaded(false);
+      overlayScale.setValue(0.8);
+      buttonsOpacity.setValue(0);
+    });
+  }, 800); // Reduced timing since we don't need to wait for manual loadNext
+};
 
   const showDivineOrbModal = () => {
     setShowOrbModal(true);
@@ -293,7 +301,7 @@ if (noMoreMatches) {
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
-            onPress={() => router.push('/user/FullCircleSubscription')}
+            onPress={() => router.navigate('/user/FullCircleSubscription')}
             activeOpacity={0.9}
           >
             <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
@@ -304,7 +312,7 @@ if (noMoreMatches) {
           
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.primary }]}
-            onPress={() => router.push('/user/DatingPreferences')}
+            onPress={() => router.navigate('/user/DatingPreferences')}
             activeOpacity={0.9}
           >
             <Ionicons name="options" size={18} color={colors.primary} style={styles.buttonIcon} />
@@ -320,15 +328,19 @@ if (noMoreMatches) {
 
 
   // Loading state
-  if (loadingNextBatch || !currentPotentialMatch) {
+  if (loadingNextBatch || !currentPotentialMatch || !exclusionsLoaded) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Sacred Souls</Text>
-            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>Connect with purpose</Text>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              Sacred Souls
+            </Text>
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Connect with purpose
+            </Text>
           </View>
         </View>
 
@@ -337,10 +349,10 @@ if (noMoreMatches) {
             <Ionicons name="heart" size={40} color={colors.primary} />
           </View>
           <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: colors.primary }]}>
-            Aligning Sacred Souls
+            {loadingNextBatch ? "Aligning Sacred Souls" : "Preparing Your Journey"}
           </Text>
           <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            The universe is preparing your next connection
+            {loadingNextBatch ? "The universe is preparing your next connection" : "Sacred energies are gathering"}
           </Text>
         </View>
       </View>

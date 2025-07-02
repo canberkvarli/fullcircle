@@ -200,10 +200,10 @@ function EmailScreen() {
       <OnboardingProgressBar currentScreen="EmailScreen" />
 
       {/* Title */}
-      <Text style={styles.title}>Open sacred channels</Text>
+      <Text style={styles.title}>Open your channels</Text>
       
       {/* Subtitle */}
-      <Text style={styles.subtitle}>Share your digital sanctuary address</Text>
+      <Text style={styles.subtitle}>Share your digital address</Text>
       
       {/* Email Input */}
       <TextInput

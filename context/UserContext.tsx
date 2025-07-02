@@ -5,16 +5,13 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  ReactNode,
+  useMemo,
 } from "react";
-import { AppState, Alert } from "react-native";
 import { useRouter, useSegments } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
 import auth from "@react-native-firebase/auth";
-import * as Location from "expo-location";
-import { v4 as uuidv4 } from "uuid";
 
 import firestore, { 
   FirebaseFirestoreTypes 
@@ -66,14 +63,16 @@ export type UserDataType = {
   
   // 🔮 Spiritual Profile Section
   spiritualProfile?: {
-    draws?: string[];                  // From SpiritualDrawsScreen
-    practices?: string[];              // From SpiritualPracticesScreen
-    healingModalities?: string[];      // From HealingModalitiesScreen
+    draws?: string[];
+    practices?: string[];
+    healingModalities?: string[];
   };
   
   fullCircleSubscription: boolean;
   likesGivenCount?: number;
   likesReceivedCount?: number;
+  dislikesGivenCount?: number;
+  dislikesReceivedCount?: number;
   matches?: string[];
   onboardingCompleted?: boolean;
   onboardingCompletedAt?: any;
@@ -201,9 +200,9 @@ type UserContextType = {
   orbLike: (matchId: string) => Promise<void>;
   dislikeMatch: (matchId: string) => any;
   currentPotentialMatch: UserDataType | null;
-  setCurrentPotentialMatch: React.Dispatch<React.SetStateAction<any>>;
   loadNextPotentialMatch: () => void;
   loadingNextBatch: boolean;
+  currentMatchIndex: number;
   createOrFetchChat: (
     userId: string,
     matchedUserId: string
@@ -236,9 +235,7 @@ type UserContextType = {
   getReceivedLikesDetailed: () => Promise<any[]>;
   noMoreMatches: boolean;
   likesGivenCount?: number;
-  likesReceivedCount?: number;
-  dislikesGivenCount?: number;
-  dislikesReceivedCount?: number;
+  exclusionsLoaded?: boolean;
   reportUser: (
     userId: string,
     reason: string,
@@ -344,13 +341,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentUser, setCurrentUser] = useState<FirebaseAuthTypes.User | null>(
     null
   );
-  const [currentPotentialMatchIndex, setCurrentPotentialMatchIndex] =
-    useState(0);
-  const [currentPotentialMatch, setCurrentPotentialMatch] =
-    useState<UserDataType | null>(null);
-  const [potentialMatches, setPotentialMatches] = useState<UserDataType[]>([]);
   const [initializing, setInitializing] = useState(true);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [loadingNextBatch, setLoadingNextBatch] = useState(false);
+  const [lastFetchedDoc, setLastFetchedDoc] = useState<any>(null);
+  const [potentialMatches, setPotentialMatches] = useState<UserDataType[]>([]);
+  const [matchingInitialized, setMatchingInitialized] = useState(false);
   const [lastVisibleMatch, setLastVisibleMatch] = useState<"" | null>(null);
   const [noMoreMatches, setNoMoreMatches] = useState<boolean>(false);
   const [chatMatches, setChatMatches] = useState<MatchType[]>([]);
@@ -370,122 +366,68 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [excludedDislikes, setExcludedDislikes] = useState<Set<string>>(
     new Set()
   );
+  const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(new Set());
   const [receivedLikes, setReceivedLikes] = useState<Set<string>>(new Set());
+  const [exclusionsLoaded, setExclusionsLoaded] = useState(false);
+  const PREFETCH_THRESHOLD = 3;
 
   useEffect(() => {
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
     return subscriber;
   }, []);
 
-  useEffect(() => {
-    // Early return if onboarding is not completed
-    if (!userData.onboardingCompleted) {
-      console.log("Skipping match fetch - onboarding not completed");
-      return;
-    }
+  const currentPotentialMatch = useMemo(() => {
+    const match = potentialMatches[currentMatchIndex] || null;
+    console.log('🎯 Current match computed:', {
+      index: currentMatchIndex,
+      totalMatches: potentialMatches.length,
+      matchId: match?.userId,
+      matchName: match?.firstName
+    });
+    return match;
+  }, [potentialMatches, currentMatchIndex]);
 
-    // Also check if we have a valid user
-    if (!userData.userId || !currentUser) {
-      console.log("Skipping match fetch - no user ID or current user");
-      return;
-    }
-
-    // Check if match preferences are properly initialized
-    if (!userData.matchPreferences?.datePreferences?.length) {
-      console.log("Skipping match fetch - match preferences not initialized");
-      return;
-    }
-
-    console.log(
-      "Match preferences changed, resetting matches",
-      userData.matchPreferences
-    );
-    resetPotentialMatches();
-
-    const initFetch = async () => {
-      const initialBatch = await fetchPotentialMatches();
-      if (initialBatch.length > 0) {
-        setCurrentPotentialMatch(initialBatch[0]);
-        setCurrentPotentialMatchIndex(0);
-      }
-    };
-
-    initFetch();
-  }, [
-    userData.matchPreferences,
-    userData.onboardingCompleted,
-    userData.userId,
-    currentUser,
-  ]);
-
-  useEffect(() => {
-    // Don't prefetch during onboarding
-    if (!userData.onboardingCompleted) return;
-
-    // Don't prefetch until we have at least one batch
-    if (potentialMatches.length === 0) return;
-
-    const buffer = potentialMatches.length - currentPotentialMatchIndex - 1;
-    if (buffer < 3 && !loadingNextBatch && !noMoreMatches) {
-      console.log("Buffer is low, fetching more potential matches...");
-      fetchPotentialMatches();
-    }
-  }, [
-    potentialMatches,
-    currentPotentialMatchIndex,
-    userData.onboardingCompleted,
-  ]);
 
 useEffect(() => {
-  const initializeMatches = async () => {
-    if (userData.onboardingCompleted && 
-        potentialMatches.length === 0 && 
-        !currentPotentialMatch && 
-        !loadingNextBatch && 
-        !noMoreMatches) {
-      
-      console.log("Initializing first batch of matches...");
-      
-      try {
-        const firstBatch = await fetchPotentialMatches();
-        
-        if (firstBatch.length > 0) {
-          console.log("Setting first match from initial batch");
-          setCurrentPotentialMatch(firstBatch[0]);
-          setCurrentPotentialMatchIndex(0);
-        } else {
-          console.log("No matches found in initial batch");
-          setNoMoreMatches(true);
-        }
-      } catch (error) {
-        console.error("Error initializing matches:", error);
-        setNoMoreMatches(true);
-      }
-    }
-  };
+  if (!userData.userId || !userData.onboardingCompleted) {
+    setExclusionsLoaded(false);
+    return;
+  }
 
-  initializeMatches();
-}, [userData.onboardingCompleted]);
-
-  useEffect(() => {
-    if (!userData.userId || !userData.onboardingCompleted) return;
-
-    const loadExclusions = async () => {
+  const loadExclusions = async () => {
+    console.log('📥 Loading exclusions for user:', userData.userId);
+    
+    try {
+      // Load likes given
       const likesSnap = await FIRESTORE.collection("users")
         .doc(userData.userId)
         .collection("likesGiven")
         .get();
+      
+      const likedIds = new Set(likesSnap.docs.map((d) => d.id));
+      console.log(`📥 Loaded ${likedIds.size} liked users:`, Array.from(likedIds));
+      setExcludedLikes(likedIds);
+      
       const dislikesSnap = await FIRESTORE.collection("users")
         .doc(userData.userId)
         .collection("dislikesGiven")
         .get();
+      
+      const dislikedIds = new Set(dislikesSnap.docs.map((d) => d.id));
+      console.log(`📥 Loaded ${dislikedIds.size} disliked users:`, Array.from(dislikedIds));
+      setExcludedDislikes(dislikedIds);
+      
+      setExclusionsLoaded(true);
+      console.log('✅ Exclusions loading complete - FLAG SET TO TRUE');
+      
+    } catch (error) {
+      console.error('❌ Error loading exclusions:', error);
+      setExclusionsLoaded(true);
+    }
+  };
 
-      setExcludedLikes(new Set(likesSnap.docs.map((d) => d.id)));
-      setExcludedDislikes(new Set(dislikesSnap.docs.map((d) => d.id)));
-    };
-
-    loadExclusions();
-  }, [userData.userId, userData.onboardingCompleted]);
+  loadExclusions();
+}, [userData.userId, userData.onboardingCompleted]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -989,282 +931,432 @@ useEffect(() => {
     return query;
   };
 
-const fetchPotentialMatches = async () => {
-  // Early return if onboarding not completed
-  if (!userData.onboardingCompleted) {
-    console.log("Skipping potential matches fetch - onboarding not completed");
+const fetchPotentialMatches = useCallback(async (): Promise<UserDataType[]> => {
+  if (loadingNextBatch) {
+    console.log('⏸️ Already loading, skipping fetch');
     return [];
   }
 
-  if (!userData.userId) {
-    console.log("Skipping potential matches fetch - no user ID");
-    return [];
-  }
-
+  console.log('🔍 Starting fetch potential matches...');
   setLoadingNextBatch(true);
-  console.log("fetching potential matches...");
-
+  
   try {
-    const excluded = new Set<string>([
-      userData.userId,
-      ...excludedLikes,
-      ...excludedDislikes,
-      ...(receivedLikes ?? []),
-      ...(userData.matches ?? []),
-    ]);
-
-    let fetched: any[] = [];
+    // Build query
+    let query = FIRESTORE.collection("users")
+      .where("onboardingCompleted", "==", true)
+      .orderBy("createdAt", "desc")
+      .limit(10);
     
-    console.log("fetching batch...");
-    
-    // SIMPLIFIED: Just get users without complex filtering for now
-    let usersQuery = FIRESTORE.collection("users")
-      .where("onboardingCompleted", "==", true) // Only get completed users
-      .orderBy("likesReceivedCount", "desc")
-      .limit(20); // Get more at once since we're not filtering
-    
-    // Add startAfter if we have a last visible match
-    if (lastVisibleMatch) {
-      // For startAfter, we need the actual document, not just the userId
-      // Let's use a different approach - skip filtering for now
-      console.log("Has lastVisibleMatch, but skipping pagination for now");
+    if (lastFetchedDoc) {
+      console.log('📄 Using pagination with lastDoc');
+      query = query.startAfter(lastFetchedDoc);
     }
     
-    console.log("Executing query...");
-    const snap = await usersQuery.get();
-    console.log(`Query returned ${snap.docs.length} documents`);
+    const snapshot = await query.get();
+    console.log(`📊 Query returned ${snapshot.docs.length} raw users`);
     
-    if (snap.empty) {
-      console.log("No users found in database");
+    if (snapshot.empty) {
+      console.log('📭 No more users in database');
       setNoMoreMatches(true);
       setLoadingNextBatch(false);
       return [];
     }
     
-    // Filter out excluded users
-    const newBatch = snap.docs
-      .map((d) => ({ userId: d.id, ...d.data() }))
-      .filter((u) => !excluded.has(u.userId));
-      
-    console.log(`After filtering, ${newBatch.length} valid users found`);
-      
-    if (!newBatch.length) {
-      console.log("All users in batch are excluded, marking as no more matches");
-      setNoMoreMatches(true);
-      setLoadingNextBatch(false);
-      return [];
-    }
 
-    fetched.push(...newBatch);
-    console.log("Successfully fetched batch:", fetched.length);
-
-    if (fetched.length) {
-      setPotentialMatches((p) => [...p, ...fetched]);
-    } else {
-      setNoMoreMatches(true);
+    const excluded = new Set<string>();
+    
+    if (userData.userId) {
+      excluded.add(userData.userId);
+      console.log(`🚫 Excluding current user: ${userData.userId}`);
     }
+    
+    if (userData.matches?.length) {
+      userData.matches.forEach(id => excluded.add(id));
+      console.log(`🚫 Excluding ${userData.matches.length} matches`);
+    }
+    
+    excludedLikes.forEach(id => excluded.add(id));
+    console.log(`🚫 Excluding ${excludedLikes.size} liked users`);
+    
+    excludedDislikes.forEach(id => excluded.add(id));
+    console.log(`🚫 Excluding ${excludedDislikes.size} disliked users`);
+    
+    excludedUserIds.forEach(id => excluded.add(id));
+    console.log(`🚫 Excluding ${excludedUserIds.size} session users`);
+    
+    receivedLikes.forEach(id => excluded.add(id));
+    console.log(`🚫 Excluding ${receivedLikes.size} received likes`);
+    
+    console.log(`🚫 Total excluded users: ${excluded.size}`);
+    console.log(`🚫 Excluded IDs:`, Array.from(excluded));
+    
+    const allUsers = snapshot.docs.map(doc => ({
+      userId: doc.id,
+      ...doc.data()
+    } as UserDataType));
+    
+    console.log(`📋 All fetched users:`, allUsers.map(u => `${u.userId} (${u.firstName})`));
+    
+    const validUsers = allUsers.filter(user => {
+      const isExcluded = excluded.has(user.userId);
+      if (isExcluded) {
+        console.log(`❌ Excluding user ${user.userId} (${user.firstName})`);
+      } else {
+        console.log(`✅ Including user ${user.userId} (${user.firstName})`);
+      }
+      return !isExcluded;
+    });
+    
+    console.log(`✅ Filtered to ${validUsers.length} valid users out of ${allUsers.length}`);
+    
+    if (snapshot.docs.length > 0) {
+      setLastFetchedDoc(snapshot.docs[snapshot.docs.length - 1]);
+    }
+    
+    // Take first 10 for batch
+    const batch = validUsers.slice(0, 10);
+    console.log(`📦 Returning batch of ${batch.length} users:`, batch.map(u => `${u.userId} (${u.firstName})`));
     
     setLoadingNextBatch(false);
-    return fetched;
-
+    
+    if (batch.length === 0) {
+      setNoMoreMatches(true);
+    }
+    
+    return batch;
+    
   } catch (error) {
-    console.error("Error fetching potential matches:", error);
+    console.error('❌ Error fetching matches:', error);
     setLoadingNextBatch(false);
     setNoMoreMatches(true);
     return [];
   }
-};
+}, [
+  lastFetchedDoc,
+  userData.userId,
+  userData.matches,
+  excludedLikes,
+  excludedDislikes,
+  excludedUserIds,
+  receivedLikes
+]);
 
-  const resetPotentialMatches = () => {
-    console.log("resetPotentialMatches(): Resetting potential matches...");
-    setLoadingNextBatch(false);
-    setPotentialMatches([]);
-    setLastVisibleMatch(null);
-    setNoMoreMatches(false);
-    setCurrentPotentialMatch(null);
-  };
 
-const loadNextPotentialMatch: () => Promise<void> = async () => {
-  console.log("loadNextPotentialMatch(): Loading next potential match...");
-  
-  // If we're already loading or have no more matches, return early
-  if (loadingNextBatch || noMoreMatches) {
-    console.log("Already loading or no more matches available");
+const initializeMatches = useCallback(async () => {
+  if (matchingInitialized || loadingNextBatch) {
+    console.log('✅ Already initialized or loading');
     return;
   }
   
-  // Recalculate the current excluded set from userData.
-  const excluded = new Set<string>([
-    userData.userId,
-    ...excludedLikes,
-    ...excludedDislikes,
-    ...(userData.matches ?? []),
-  ]);
-
-  // Filter potentialMatches to only those not in the excluded set.
-  const valid = potentialMatches.filter((m) => !excluded.has(m.userId));
-  const currentIdx = valid.findIndex(
-    (m) => m.userId === currentPotentialMatch?.userId
-  );
-
-  console.log(`Valid matches: ${valid.length}, current index: ${currentIdx}`);
-
-  // If we have valid matches, get the next one.
-  if (valid.length > currentIdx + 1) {
-    const next = valid[currentIdx + 1];
-    const fullIndex = potentialMatches.findIndex(
-      (m) => m.userId === next.userId
-    );
-    console.log("Setting next match from existing valid matches");
-    setCurrentPotentialMatch(next);
-    setCurrentPotentialMatchIndex(fullIndex);
+  if (!userData.userId || !userData.onboardingCompleted) {
+    console.log('⏸️ Not ready - missing userId or onboarding incomplete');
     return;
-  } 
+  }
   
-  // No valid matches in current batch - try to fetch more
-  console.log("No valid matches in current batch, trying to fetch more...");
+  if (!exclusionsLoaded) {
+    console.log('⏸️ Waiting for exclusions to load...');
+    return;
+  }
+  
+  console.log('🚀 INITIALIZING MATCHES (with exclusions loaded)...');
+  setMatchingInitialized(true);
   
   try {
-    const newMatches = await fetchPotentialMatches();
+    const firstBatch = await fetchPotentialMatches();
     
-    if (newMatches.length > 0) {
-      const validNewMatches = newMatches.filter(
-        (match) => !excluded.has(match.userId)
-      );
+    if (firstBatch.length > 0) {
+      console.log(`🎉 Successfully initialized with ${firstBatch.length} matches`);
+      setPotentialMatches(firstBatch);
+      setCurrentMatchIndex(0);
+    } else {
+      console.log('📭 No matches found during initialization');
+      setNoMoreMatches(true);
+    }
+  } catch (error) {
+    console.error('❌ Error during initialization:', error);
+    setNoMoreMatches(true);
+  }
+}, [userData.userId, userData.onboardingCompleted, exclusionsLoaded]); // ✅ Add e
+
+  useEffect(() => {
+    if (userData.onboardingCompleted && potentialMatches.length > 0 && !loadingNextBatch && !noMoreMatches) {
+      const remainingMatches = potentialMatches.length - currentMatchIndex - 1;
       
-      if (validNewMatches.length > 0) {
-        console.log("Found valid new matches, setting first one");
-        setCurrentPotentialMatch(validNewMatches[0]);
-        setCurrentPotentialMatchIndex(potentialMatches.length);
-        return;
+      if (remainingMatches <= PREFETCH_THRESHOLD) {
+        console.log(`📊 Running low on matches (${remainingMatches} left), prefetching...`);
+        
+        fetchPotentialMatches().then(newBatch => {
+          if (newBatch.length > 0) {
+            console.log(`✅ Prefetched ${newBatch.length} more matches`);
+            setPotentialMatches(prev => [...prev, ...newBatch]);
+          }
+        }).catch(error => {
+          console.error("❌ Error prefetching matches:", error);
+        });
       }
     }
+  }, [currentMatchIndex, potentialMatches.length]);
+
+  const resetPotentialMatches = useCallback(() => {
+    console.log('🔄 RESETTING POTENTIAL MATCHES');
+    setPotentialMatches([]);
+    setCurrentMatchIndex(0);
+    setLoadingNextBatch(false);
+    setNoMoreMatches(false);
+    setLastFetchedDoc(null);
+    setExcludedUserIds(new Set());
+    setMatchingInitialized(false);
+  }, []);
+
+  const loadNextPotentialMatch = useCallback(async () => {
+    console.log('➡️ Loading next match...');
+    console.log('📊 Current state:', {
+      currentIndex: currentMatchIndex,
+      totalMatches: potentialMatches.length,
+      nextIndex: currentMatchIndex + 1
+    });
     
-    // No new valid matches found
-    console.log("No new valid matches found, marking as no more matches");
-    setNoMoreMatches(true);
-    setCurrentPotentialMatch(null);
+    if (currentMatchIndex + 1 < potentialMatches.length) {
+      console.log('📋 Moving to next match in batch');
+      setCurrentMatchIndex(prev => prev + 1);
+      return;
+    }
     
+    console.log('🔄 Need to fetch more matches');
+    try {
+      const newBatch = await fetchPotentialMatches();
+      
+      if (newBatch.length > 0) {
+        console.log(`📦 Adding ${newBatch.length} new matches to batch`);
+        setPotentialMatches(prev => [...prev, ...newBatch]);
+        setCurrentMatchIndex(prev => prev + 1);
+      } else {
+        console.log('📭 No more matches available');
+        setNoMoreMatches(true);
+      }
+    } catch (error) {
+      console.error('❌ Error loading next match:', error);
+      setNoMoreMatches(true);
+    }
+  }, [currentMatchIndex, potentialMatches.length, fetchPotentialMatches]);
+
+
+const dislikeMatch = useCallback(async (matchId: string) => {
+  console.log(`👎 DISLIKING USER: ${matchId}`);
+  
+  try {
+    setExcludedUserIds(prev => new Set(prev).add(matchId));
+    await recordDislikeWithBatch(userData.userId, matchId);
+    setExcludedDislikes(prev => new Set(prev).add(matchId));
+    await loadNextPotentialMatch();
+    console.log('✅ Dislike completed successfully');
   } catch (error) {
-    console.error("Error in loadNextPotentialMatch:", error);
-    setNoMoreMatches(true);
-    setCurrentPotentialMatch(null);
+    console.error('❌ Error disliking match:', error);
+    setExcludedUserIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(matchId);
+      return newSet;
+    });
+    setExcludedDislikes(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(matchId);
+      return newSet;
+    });
   }
-};
+}, [userData.userId, loadNextPotentialMatch]);
 
+const likeMatch = useCallback(async (matchId: string) => {
+  console.log(`❤️ LIKING USER: ${matchId}`);
+  console.log('📊 Current state before like:', {
+    currentIndex: currentMatchIndex,
+    totalMatches: potentialMatches.length,
+    matchingInitialized,
+  });
+  
+  try {
+    setExcludedUserIds(prev => new Set(prev).add(matchId));
+    console.log('✅ Added to excluded user IDs');
+    
+    console.log('🔄 Starting recordLike with batch...');
+    await recordLikeWithBatch(userData.userId, matchId, false);
+    console.log('✅ recordLike batch completed successfully');
+    
+    setExcludedLikes(prev => new Set(prev).add(matchId));
+    console.log('✅ Added to excluded likes set');
+    
+    console.log('🔄 About to call loadNextPotentialMatch...');
+    await loadNextPotentialMatch();
+    console.log('✅ loadNextPotentialMatch completed');
+    
+    console.log('✅ Like completed successfully');
+  } catch (error) {
+    console.error('❌ Error liking match:', error);
+    
+    setExcludedUserIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(matchId);
+      return newSet;
+    });
+    setExcludedLikes(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(matchId);
+      return newSet;
+    });
+    
+    console.log('🔄 Cleaned up exclusion sets after error');
+    throw error;
+  }
+}, [userData.userId, loadNextPotentialMatch, currentMatchIndex, potentialMatches.length, matchingInitialized]);
 
-  const likeMatch = async (matchId: string) => {
-    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
-    await recordLike(userData.userId, matchId, false);
-    setExcludedLikes((prev) => new Set(prev).add(matchId));
-  };
+const orbLike = useCallback(async (matchId: string) => {
+  console.log(`✨ ORB LIKING USER: ${matchId}`);
+  
+  try {
+    if (!userData.numOfOrbs || userData.numOfOrbs <= 0) {
+      throw new Error("No orbs available");
+    }
+    
+    setExcludedUserIds(prev => new Set(prev).add(matchId));
+    
+    await recordLikeWithBatch(userData.userId, matchId, true);
+    
+    setExcludedLikes(prev => new Set(prev).add(matchId));
+    
+    setUserData(prev => ({
+      ...prev,
+      numOfOrbs: (prev.numOfOrbs || 0) - 1
+    }));
+    
+    await loadNextPotentialMatch();
+    console.log('✅ Orb like completed successfully');
+  } catch (error) {
+    console.error('❌ Error orb liking match:', error);
+    setExcludedUserIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(matchId);
+      return newSet;
+    });
+    setExcludedLikes(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(matchId);
+      return newSet;
+    });
+  }
+}, [userData.userId, userData.numOfOrbs, loadNextPotentialMatch]);
 
-  const dislikeMatch = async (matchId: string) => {
-    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
-    await recordDislike(userData.userId, matchId);
-    setExcludedDislikes((prev) => new Set(prev).add(matchId));
-  };
-
-  const orbLike = async (matchId: string) => {
-    setPotentialMatches((prev) => prev.filter((m) => m.userId !== matchId));
-    await recordLike(userData.userId, matchId, true);
-    setExcludedLikes((prev) => new Set(prev).add(matchId));
-  };
-
-  const recordLike = async (
-    fromUserId: string,
-    toUserId: string,
-    viaOrb: boolean = false
-  ): Promise<void> => {
+const recordLikeWithBatch = async (
+  fromUserId: string,
+  toUserId: string,
+  viaOrb: boolean = false
+): Promise<void> => {
+  console.log('🔥 Using batch approach for like...');
+  
+  try {
     const fromRef = FIRESTORE.collection("users").doc(fromUserId);
     const toRef = FIRESTORE.collection("users").doc(toUserId);
-
     const givenRef = fromRef.collection("likesGiven").doc(toUserId);
     const receivedRef = toRef.collection("likesReceived").doc(fromUserId);
-
-    // incoming like record to us
     const incomingRef = fromRef.collection("likesReceived").doc(toUserId);
-
-    await FIRESTORE.runTransaction(async (tx) => {
-      const fromSnap = await tx.get(fromRef);
-      const fromData = fromSnap.data()!;
-
-      // check if they already liked us
-      const incomingSnap = await tx.get(incomingRef);
-      const hadLikedUs = incomingSnap.exists;
-
-      // check orb allowance
-      if (viaOrb && (fromData.numOfOrbs ?? 0) < 1) {
-        throw new Error("No orbs left this week");
-      }
-
-      // decrement orb & bump your given counter
-      const updates: any = {
-        likesGivenCount: (fromData.likesGivenCount ?? 0) + 1,
-      };
-      if (viaOrb && !fromData.fullCircleSubscription) {
-        updates.numOfOrbs = (fromData.numOfOrbs ?? 0) - 1;
-      }
-      // if they'd already liked us, remove that incoming like & decrement our counter
-      if (hadLikedUs) {
-        tx.delete(incomingRef);
-        updates.likesReceivedCount = (fromData.likesReceivedCount ?? 1) - 1;
-      }
-      tx.update(fromRef, updates);
-
-      // bump receiver's counter
-      const toSnap = await tx.get(toRef);
-      const toData = toSnap.data()!;
-      tx.update(toRef, {
+    
+    console.log('🔥 Reading current user data...');
+    const [fromSnap, toSnap, incomingSnap] = await Promise.all([
+      fromRef.get(),
+      toRef.get(),
+      incomingRef.get()
+    ]);
+    
+    if (!fromSnap.exists || !toSnap.exists) {
+      throw new Error('User documents do not exist');
+    }
+    
+    const fromData = fromSnap.data()!;
+    const toData = toSnap.data()!;
+    const hadLikedUs = incomingSnap.exists;
+    
+    console.log('🔥 Data loaded:', { 
+      fromExists: fromSnap.exists, 
+      toExists: toSnap.exists, 
+      hadLikedUs,
+      fromLikesGiven: fromData.likesGivenCount 
+    });
+    
+    // Check orb allowance
+    if (viaOrb && (fromData.numOfOrbs ?? 0) < 1) {
+      throw new Error("No orbs left this week");
+    }
+    
+    // Prepare batch
+    const batch = FIRESTORE.batch();
+    
+    // Set like records
+    batch.set(givenRef, {
+      matchId: toUserId,
+      viaOrb,
+      timestamp: firestore.FieldValue.serverTimestamp(),
+    });
+    
+    batch.set(receivedRef, {
+      matchId: fromUserId,
+      viaOrb,
+      timestamp: firestore.FieldValue.serverTimestamp(),
+    });
+    
+    const fromUpdates: any = {
+      likesGivenCount: (fromData.likesGivenCount ?? 0) + 1,
+    };
+    
+    if (viaOrb && !fromData.fullCircleSubscription) {
+      fromUpdates.numOfOrbs = Math.max(0, (fromData.numOfOrbs ?? 0) - 1);
+    }
+    
+    if (hadLikedUs) {
+      console.log('🔥 MUTUAL LIKE DETECTED - Creating match...');
+      
+      batch.delete(incomingRef);
+      fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
+      
+      const myMatchRef = fromRef.collection("matches").doc(toUserId);
+      const theirMatchRef = toRef.collection("matches").doc(fromUserId);
+      
+      batch.set(myMatchRef, {
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      });
+      batch.set(theirMatchRef, {
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      });
+      
+      fromUpdates.matches = firestore.FieldValue.arrayUnion(toUserId);
+      
+      const chatId = [fromUserId, toUserId].sort().join("_");
+      const chatRef = FIRESTORE.collection("chats").doc(chatId);
+      batch.set(chatRef, {
+        participants: [fromUserId, toUserId],
+        messages: [],
+        lastMessage: "",
+        lastMessageSender: "",
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        lastUpdated: firestore.FieldValue.serverTimestamp(),
+      });
+      
+      batch.update(toRef, {
+        matches: firestore.FieldValue.arrayUnion(fromUserId),
+        likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
+        likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1), // They liked us first
+      });
+      
+      console.log('🔥 Match and chat will be created');
+    } else {
+      batch.update(toRef, {
         likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
       });
-
-      // write the actual sub‑collection records with viaOrb flag
-      tx.set(givenRef, {
-        matchId: toUserId,
-        viaOrb,
-        timestamp: firestore.FieldValue.serverTimestamp(),
-      });
-      tx.set(receivedRef, {
-        matchId: fromUserId,
-        viaOrb,
-        timestamp: firestore.FieldValue.serverTimestamp(),
-      });
-
-      // if it was mutual, also write your matches subcollections
-      if (hadLikedUs) {
-        console.log("mutual like");
-        const myMatchRef = fromRef.collection("matches").doc(toUserId);
-        const theirMatchRef = toRef.collection("matches").doc(fromUserId);
-        tx.set(myMatchRef, {
-          timestamp: firestore.FieldValue.serverTimestamp(),
-        });
-        tx.set(theirMatchRef, {
-          timestamp: firestore.FieldValue.serverTimestamp(),
-        });
-
-        // Update matches arrays
-        tx.update(fromRef, {
-          matches: firestore.FieldValue.arrayUnion(toUserId),
-        });
-        tx.update(toRef, {
-          matches: firestore.FieldValue.arrayUnion(fromUserId),
-        });
-
-        const chatId = [fromUserId, toUserId].sort().join("_");
-        const chatRef = FIRESTORE.collection("chats").doc(chatId);
-        tx.set(chatRef, {
-          participants: [fromUserId, toUserId],
-          messages: [],
-          lastMessage: "",
-          lastMessageSender: "",
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          lastUpdated: firestore.FieldValue.serverTimestamp(),
-        });
-      }
-    });
-
-    // Update local state after successful transaction
+    }
+    
+    batch.update(fromRef, fromUpdates);
+    
+    console.log('🔥 Committing batch...');
+    await batch.commit();
+    console.log('✅ Batch committed successfully');
+    
     if (viaOrb && !userData.fullCircleSubscription) {
       setUserData((prev) => ({
         ...prev,
@@ -1277,70 +1369,111 @@ const loadNextPotentialMatch: () => Promise<void> = async () => {
         likesGivenCount: (prev.likesGivenCount ?? 0) + 1,
       }));
     }
-  };
+    
+    if (hadLikedUs) {
+      console.log('🎉 MUTUAL MATCH CREATED!');
+    }
+    
+    console.log('🔥 Local state updated');
+    
+  } catch (error) {
+    console.error('❌ Batch approach failed:', error);
+    throw error;
+  }
+};
 
-  const recordDislike = async (
-    fromUserId: string,
-    toUserId: string
-  ): Promise<void> => {
+const recordDislikeWithBatch = async (
+  fromUserId: string,
+  toUserId: string
+): Promise<void> => {
+  console.log('🔥 Using batch approach for dislike...');
+  
+  try {
     const fromRef = FIRESTORE.collection("users").doc(fromUserId);
     const toRef = FIRESTORE.collection("users").doc(toUserId);
     const givenRef = fromRef.collection("dislikesGiven").doc(toUserId);
     const receivedRef = toRef.collection("dislikesReceived").doc(fromUserId);
-
-    // Check if the target user had liked us - if so, we need to remove that like
     const incomingLikeRef = fromRef.collection("likesReceived").doc(toUserId);
-
-    await FIRESTORE.runTransaction(async (tx) => {
-      // Check if they had liked us
-      const incomingLikeSnap = await tx.get(incomingLikeRef);
-      const hadLikedUs = incomingLikeSnap.exists;
-
-      // 1) bump the "given" counter
-      const fromSnap = await tx.get(fromRef);
-      const fromData = fromSnap.data()!;
-      
-      const fromUpdates: any = {
-        dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
-      };
-
-      // If they had liked us, remove that incoming like record and decrement our received counter
-      if (hadLikedUs) {
-        tx.delete(incomingLikeRef);
-        fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
-      }
-
-      tx.update(fromRef, fromUpdates);
-
-      // 2) bump the "received" counter on the target user
-      const toSnap = await tx.get(toRef);
-      const toData = toSnap.data()!;
-      tx.update(toRef, {
-        dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
-      });
-
-      // 3) write the dislike records
-      tx.set(givenRef, { 
-        matchId: toUserId, 
-        timestamp: firestore.FieldValue.serverTimestamp() 
-      });
-      tx.set(receivedRef, {
-        matchId: fromUserId,
-        timestamp: firestore.FieldValue.serverTimestamp(),
-      });
-
-      // 4) If they had liked us, also remove our like record from their likesGiven collection
-      if (hadLikedUs) {
-        const theirLikeGivenRef = toRef.collection("likesGiven").doc(fromUserId);
-        tx.delete(theirLikeGivenRef);
-        
-        // Update their likesGivenCount
-        tx.update(toRef, {
-          likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1),
-        });
-      }
+    
+    console.log('🔥 Reading current user data for dislike...');
+    const [fromSnap, toSnap, incomingLikeSnap] = await Promise.all([
+      fromRef.get(),
+      toRef.get(),
+      incomingLikeRef.get()
+    ]);
+    
+    if (!fromSnap.exists || !toSnap.exists) {
+      throw new Error('User documents do not exist');
+    }
+    
+    const fromData = fromSnap.data()!;
+    const toData = toSnap.data()!;
+    const hadLikedUs = incomingLikeSnap.exists;
+    
+    console.log('🔥 Dislike data loaded:', { 
+      fromExists: fromSnap.exists, 
+      toExists: toSnap.exists, 
+      hadLikedUs,
+      fromDislikesGiven: fromData.dislikesGivenCount 
     });
-  };
+    
+    const batch = FIRESTORE.batch();
+    
+    batch.set(givenRef, {
+      matchId: toUserId,
+      timestamp: firestore.FieldValue.serverTimestamp(),
+    });
+    
+    batch.set(receivedRef, {
+      matchId: fromUserId,
+      timestamp: firestore.FieldValue.serverTimestamp(),
+    });
+    
+    const fromUpdates: any = {
+      dislikesGivenCount: (fromData.dislikesGivenCount ?? 0) + 1,
+    };
+    
+    const toUpdates: any = {
+      dislikesReceivedCount: (toData.dislikesReceivedCount ?? 0) + 1,
+    };
+    
+    // Handle case where they had liked us
+    if (hadLikedUs) {
+      console.log('🔥 Target user had liked us - removing their like...');
+      
+      batch.delete(incomingLikeRef);
+      
+      fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
+      
+      const theirLikeGivenRef = toRef.collection("likesGiven").doc(fromUserId);
+      batch.delete(theirLikeGivenRef);
+      toUpdates.likesGivenCount = Math.max(0, (toData.likesGivenCount ?? 1) - 1);
+      
+      console.log('🔥 Mutual like records will be removed');
+    }
+    
+    batch.update(fromRef, fromUpdates);
+    batch.update(toRef, toUpdates);
+    
+    console.log('🔥 Committing dislike batch...');
+    await batch.commit();
+    console.log('✅ Dislike batch committed successfully');
+    
+    setUserData((prev) => ({
+      ...prev,
+      dislikesGivenCount: (prev.dislikesGivenCount ?? 0) + 1,
+      ...(hadLikedUs && {
+        likesReceivedCount: Math.max(0, (prev.likesReceivedCount ?? 1) - 1)
+      })
+    }));
+    
+    console.log('🔥 Local dislike state updated');
+    
+  } catch (error) {
+    console.error('❌ Dislike batch approach failed:', error);
+    throw error;
+  }
+};
 
 const getReceivedLikesDetailed = async (): Promise<
   Array<any & { viaOrb: boolean; likedAt: Date }>
@@ -1990,6 +2123,20 @@ const fetchChatMatches = async (
     [userData.userId]
   );
 
+  // 1. Initialize matches when onboarding is completed
+  useEffect(() => {
+    console.log('🔄 useEffect: User state changed', {
+      userId: userData.userId,
+      onboardingCompleted: userData.onboardingCompleted,
+      matchingInitialized
+    });
+    
+    if (userData.userId && userData.onboardingCompleted && !matchingInitialized) {
+      console.log('🚀 Triggering match initialization...');
+      initializeMatches();
+    }
+  }, [userData.userId, userData.onboardingCompleted, matchingInitialized, initializeMatches]);
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -2018,8 +2165,8 @@ const fetchChatMatches = async (
     orbLike,
     dislikeMatch,
     currentPotentialMatch,
-    setCurrentPotentialMatch,
     loadNextPotentialMatch,
+    currentMatchIndex,
     loadingNextBatch,
     createOrFetchChat,
     subscribeToChatMessages,
@@ -2039,7 +2186,8 @@ const fetchChatMatches = async (
     unreadMatchesCount,
     reportUser,
     unmatchUser,
-    updateUserSettings
+    updateUserSettings,
+    exclusionsLoaded
   };
 
   if (initializing) {
