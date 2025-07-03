@@ -16,6 +16,16 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
+// Spiritual color palette
+const spiritualColors = {
+  masculine: '#4A90E2',    // Calming blue - represents depth, stability, wisdom
+  feminine: '#E94B7C',     // Warm pink/rose - represents nurturing, compassion, love
+  divine: '#FFD700',       // Golden yellow - represents enlightenment, universal energy
+  masculineGlow: '#4A90E2' + '20',
+  feminineGlow: '#E94B7C' + '20',
+  divineGlow: '#FFD700' + '20',
+};
+
 function GenderScreen() {
   const {
     navigateToNextScreen,
@@ -36,12 +46,32 @@ function GenderScreen() {
     gender: userData?.hiddenFields?.gender || false,
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [warningVisible, setWarningVisible] = useState(false);
 
   const toggleGender = (gender: string) => {
     if (selectedGender.includes(gender)) {
       setSelectedGender(selectedGender.filter((g) => g !== gender));
+      setWarningVisible(false);
     } else {
-      setSelectedGender([...selectedGender, gender]);
+      // Prevent Man + Woman combination
+      if (gender === "Man" && selectedGender.includes("Woman")) {
+        setSelectedGender(["Man"]); // Replace Woman with Man
+        setWarningVisible(false);
+      } else if (gender === "Woman" && selectedGender.includes("Man")) {
+        setSelectedGender(["Woman"]); // Replace Man with Woman
+        setWarningVisible(false);
+      } else {
+        // If at limit, replace the oldest selection with the new one
+        if (selectedGender.length >= 2) {
+          const newSelection = [selectedGender[1], gender]; // Keep most recent, add new
+          setSelectedGender(newSelection);
+          setWarningVisible(false);
+        } else {
+          // Normal addition when under limit
+          setSelectedGender([...selectedGender, gender]);
+          setWarningVisible(false);
+        }
+      }
     }
   };
 
@@ -53,6 +83,9 @@ function GenderScreen() {
   };
 
   const handleNext = async () => {
+    if (selectedGender.length === 0) {
+      return; // Don't proceed without selection
+    }
     await updateUserData({
       gender: selectedGender,
       hiddenFields,
@@ -69,7 +102,6 @@ function GenderScreen() {
   };
 
   useEffect(() => {
-    // Ensure hiddenFields.gender is set to a boolean.
     setHiddenFields((prev) => ({
       ...prev,
       gender: prev.gender !== undefined ? prev.gender : false,
@@ -86,7 +118,48 @@ function GenderScreen() {
     { title: "Two-Spirit", subtitle: "Honor your sacred duality" },
     { title: "Bigender", subtitle: "Celebrate your duality" },
     { title: "Intersex", subtitle: "Embrace your uniqueness" },
+    { title: "Questioning", subtitle: "Honor your journey of discovery" },
   ];
+
+  // Helper function to get colors for each option
+  const getOptionColors = (title: string) => {
+    if (title === "Man") {
+      return {
+        borderColor: spiritualColors.masculine,
+        backgroundColor: spiritualColors.masculineGlow,
+        orbColor: spiritualColors.masculine,
+      };
+    } else if (title === "Woman") {
+      return {
+        borderColor: spiritualColors.feminine,
+        backgroundColor: spiritualColors.feminineGlow,
+        orbColor: spiritualColors.feminine,
+      };
+    } else {
+      return {
+        borderColor: spiritualColors.divine,
+        backgroundColor: spiritualColors.divineGlow,
+        orbColor: spiritualColors.divine,
+      };
+    }
+  };
+
+  // Custom rounded checkbox component
+  const RoundedCheckbox = ({ value, onValueChange }: { value: boolean; onValueChange: () => void }) => (
+    <TouchableOpacity
+      style={[styles.customCheckbox, value && styles.customCheckboxChecked]}
+      onPress={onValueChange}
+      activeOpacity={0.7}
+    >
+      {value && (
+        <Ionicons 
+          name="checkmark" 
+          size={16} 
+          color={colors.background} 
+        />
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -95,7 +168,6 @@ function GenderScreen() {
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={handlePrevious}
@@ -103,23 +175,32 @@ function GenderScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.textDark} />
           </TouchableOpacity>
 
-          {/* Progress Bar */}
           <OnboardingProgressBar currentScreen="GenderScreen" />
 
-          {/* Title */}
           <Text style={styles.title}>How do you identify?</Text>
 
-          {/* Subtitle */}
           <Text style={styles.subtitle}>
-            Share your authentic self with our cosmic community
+            Select up to 2 that best describe you
           </Text>
 
-          {/* Main Gender Options */}
+          {/* Gentle Warning Message */}
+          {warningVisible && (
+            <View style={styles.warningContainer}>
+              <Text style={styles.warningText}>
+                Please choose up to 2 identities that best represent you
+              </Text>
+            </View>
+          )}
+
           <View style={styles.mainOptionsContainer}>
             <TouchableOpacity
               style={[
                 styles.mainOption,
-                selectedGender.includes("Man") && styles.optionSelected,
+                selectedGender.includes("Man") && {
+                  ...styles.optionSelected,
+                  borderColor: spiritualColors.masculine,
+                  backgroundColor: spiritualColors.masculineGlow,
+                }
               ]}
               onPress={() => toggleGender("Man")}
             >
@@ -135,11 +216,16 @@ function GenderScreen() {
                     styles.mainOptionSubtitle,
                     selectedGender.includes("Man") && styles.selectedSubtext
                   ]}>
-                    Radiate your masculine energy
+                    Express your authentic strength
                   </Text>
                 </View>
                 <View style={styles.orbSpace}>
-                  {selectedGender.includes("Man") && <View style={styles.selectedOrb} />}
+                  {selectedGender.includes("Man") && (
+                    <View style={[
+                      styles.selectedOrb,
+                      { backgroundColor: spiritualColors.masculine }
+                    ]} />
+                  )}
                 </View>
               </View>
             </TouchableOpacity>
@@ -147,7 +233,11 @@ function GenderScreen() {
             <TouchableOpacity
               style={[
                 styles.mainOption,
-                selectedGender.includes("Woman") && styles.optionSelected,
+                selectedGender.includes("Woman") && {
+                  ...styles.optionSelected,
+                  borderColor: spiritualColors.feminine,
+                  backgroundColor: spiritualColors.feminineGlow,
+                }
               ]}
               onPress={() => toggleGender("Woman")}
             >
@@ -163,17 +253,21 @@ function GenderScreen() {
                     styles.mainOptionSubtitle,
                     selectedGender.includes("Woman") && styles.selectedSubtext
                   ]}>
-                    Embrace your feminine essence
+                    Embrace your radiant energy
                   </Text>
                 </View>
                 <View style={styles.orbSpace}>
-                  {selectedGender.includes("Woman") && <View style={styles.selectedOrb} />}
+                  {selectedGender.includes("Woman") && (
+                    <View style={[
+                      styles.selectedOrb,
+                      { backgroundColor: spiritualColors.feminine }
+                    ]} />
+                  )}
                 </View>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* More Options Dropdown */}
           <TouchableOpacity
             style={styles.dropdownButton}
             onPress={() => setDropdownOpen(!dropdownOpen)}
@@ -188,65 +282,77 @@ function GenderScreen() {
             />
           </TouchableOpacity>
 
-          {/* Dropdown Options */}
           {dropdownOpen && (
             <View style={styles.dropdown}>
-              {genderOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.title}
-                  style={[
-                    styles.dropdownOption,
-                    selectedGender.includes(option.title) && styles.optionSelected,
-                  ]}
-                  onPress={() => toggleGender(option.title)}
-                >
-                  <View style={styles.optionContent}>
-                    <View style={styles.optionTextContainer}>
-                      <Text style={[
-                        styles.dropdownOptionTitle,
-                        selectedGender.includes(option.title) && styles.selectedText
-                      ]}>
-                        {option.title}
-                      </Text>
-                      {option.subtitle && (
+              {genderOptions.map((option) => {
+                const optionColors = getOptionColors(option.title);
+                return (
+                  <TouchableOpacity
+                    key={option.title}
+                    style={[
+                      styles.dropdownOption,
+                      selectedGender.includes(option.title) && {
+                        borderColor: optionColors.borderColor,
+                        backgroundColor: optionColors.backgroundColor,
+                      }
+                    ]}
+                    onPress={() => toggleGender(option.title)}
+                  >
+                    <View style={styles.optionContent}>
+                      <View style={styles.optionTextContainer}>
                         <Text style={[
-                          styles.dropdownOptionSubtitle,
-                          selectedGender.includes(option.title) && styles.selectedSubtext
+                          styles.dropdownOptionTitle,
+                          selectedGender.includes(option.title) && styles.selectedText
                         ]}>
-                          {option.subtitle}
+                          {option.title}
                         </Text>
-                      )}
+                        {option.subtitle && (
+                          <Text style={[
+                            styles.dropdownOptionSubtitle,
+                            selectedGender.includes(option.title) && styles.selectedSubtext
+                          ]}>
+                            {option.subtitle}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.orbSpace}>
+                        {selectedGender.includes(option.title) && (
+                          <View style={[
+                            styles.selectedOrb,
+                            { backgroundColor: optionColors.orbColor }
+                          ]} />
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.orbSpace}>
-                      {selectedGender.includes(option.title) && <View style={styles.selectedOrb} />}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
 
-          {/* Hidden Field Toggle */}
           <View style={styles.hiddenContainer}>
             <Text style={styles.hiddenText}>Keep this private</Text>
-            <View style={styles.orbCheckboxContainer}>
-              <TouchableOpacity 
-                style={styles.orbCheckbox}
-                onPress={() => toggleHidden("gender")}
-              >
-                {hiddenFields.gender && <View style={styles.selectedOrb} />}
-              </TouchableOpacity>
-            </View>
+            <RoundedCheckbox
+              value={hiddenFields["gender"] || false}
+              onValueChange={() => toggleHidden("gender")}
+            />
           </View>
 
-          {/* Affirmation */}
           <Text style={styles.affirmation}>
-            In the circle of life, every soul shines with their unique light
+            Every{' '}
+            <Text style={styles.highlightedWord}>identity</Text>
+            {' deserves to be seen, celebrated, and honored'}
           </Text>
         </ScrollView>
 
-        {/* Submit Button */}
-        <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
+        <TouchableOpacity 
+          style={[
+            styles.submitButton,
+            selectedGender.length === 0 && styles.submitButtonDisabled
+          ]} 
+          onPress={handleNext}
+          disabled={selectedGender.length === 0}
+        >
           <Ionicons name="chevron-forward" size={24} color={colors.background} />
         </TouchableOpacity>
       </SafeAreaView>
@@ -264,7 +370,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     scrollViewContent: {
       padding: Spacing.lg,
-      paddingBottom: 100, // Space for submit button
+      paddingBottom: 100,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
     backButton: {
@@ -307,6 +413,33 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       textAlign: "left",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
+      fontStyle: "normal",
+    },
+    warningContainer: {
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.md,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.primary + '30',
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    warningText: {
+      ...fonts.spiritualBodyFont,
+      color: colors.primary,
+      textAlign: "center",
+      fontSize: Typography.sizes.sm,
       fontStyle: "italic",
     },
     mainOptionsContainer: {
@@ -315,7 +448,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     mainOption: {
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.lg,
+      borderRadius: BorderRadius.xl,
       padding: Spacing.lg,
       marginBottom: Spacing.md,
       borderWidth: 2,
@@ -333,8 +466,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       }),
     },
     optionSelected: {
-      borderColor: '#FFD700',
-      backgroundColor: '#FFD700' + '15',
+      // Dynamic colors applied inline
     },
     optionContent: {
       flexDirection: 'row',
@@ -355,7 +487,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.base,
       color: colors.textLight,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     selectedText: {
       color: colors.textDark,
@@ -374,10 +506,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       width: 16,
       height: 16,
       borderRadius: 8,
-      backgroundColor: '#FFD700',
+      // Dynamic backgroundColor applied inline
       ...Platform.select({
         ios: {
-          shadowColor: '#FFD700',
           shadowOffset: { width: 0, height: 0 },
           shadowOpacity: 0.8,
           shadowRadius: 6,
@@ -389,7 +520,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     dropdownButton: {
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.md,
+      borderRadius: BorderRadius.xl,
       padding: Spacing.lg,
       marginBottom: Spacing.lg,
       marginHorizontal: Spacing.lg,
@@ -403,7 +534,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.primary,
       fontSize: Typography.sizes.base,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     dropdown: {
       marginBottom: Spacing.xl,
@@ -411,7 +542,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     dropdownOption: {
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.md,
+      borderRadius: BorderRadius.xl,
       padding: Spacing.lg,
       marginBottom: Spacing.sm,
       borderWidth: 1,
@@ -428,7 +559,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.sm,
       color: colors.textLight,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
     hiddenContainer: {
       flexDirection: "row",
@@ -438,7 +569,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       paddingHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
-      borderRadius: BorderRadius.md,
+      borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -446,30 +577,61 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,
-      fontStyle: "italic",
+      fontStyle: "normal",
     },
-    orbCheckboxContainer: {
-      marginLeft: Spacing.md,
-    },
-    orbCheckbox: {
+    customCheckbox: {
       width: 24,
       height: 24,
       borderRadius: 12,
       borderWidth: 2,
       borderColor: colors.border,
-      backgroundColor: colors.card,
+      backgroundColor: colors.background,
       justifyContent: 'center',
       alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    customCheckboxChecked: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
+      opacity: 0.8,
+    },
+    highlightedWord: {
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",
@@ -490,6 +652,20 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
         android: {
           elevation: 8,
+        },
+      }),
+    },
+    submitButtonDisabled: {
+      backgroundColor: colors.textMuted,
+      opacity: 0.6,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.textMuted,
+          shadowOpacity: 0.15,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 3,
         },
       }),
     },
