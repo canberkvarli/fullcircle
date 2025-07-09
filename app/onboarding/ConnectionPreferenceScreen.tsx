@@ -691,7 +691,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       backgroundColor: colors.card,
       borderRadius: BorderRadius.full,
       paddingVertical: Spacing.md,
-      paddingHorizontal: Spacing.sm,
+      paddingHorizontal: Spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       alignSelf: "flex-start",
