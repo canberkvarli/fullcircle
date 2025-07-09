@@ -34,7 +34,7 @@ const genders = [
   "Other",
 ];
 
-const datePreferencesArray = [
+const ConnectionPreferencesArray = [
   "Men",
   "Women",
   "Non-Binary",
@@ -363,8 +363,8 @@ async function seedFirestore(numUsers: number) {
         max: 7.0,
       },
       preferredDistance: faker.number.int({ min: 5, max: 100 }),
-      datePreferences: faker.helpers.arrayElements(
-        datePreferencesArray,
+      ConnectionPreferences: faker.helpers.arrayElements(
+        ConnectionPreferencesArray,
         faker.number.int({ min: 1, max: 3 })
       ),
       spiritualCompatibility: {
@@ -411,7 +411,7 @@ async function seedFirestore(numUsers: number) {
 
     // Hidden fields generation (ONLY for fields that actually exist)
     const hiddenFields: { [key: string]: boolean } = {};
-    const fieldsToHide = ['gender', 'spiritualProfile', 'height', 'datePreferences'];
+    const fieldsToHide = ['gender', 'spiritualProfile', 'height', 'ConnectionPreferences'];
     fieldsToHide.forEach(field => {
       hiddenFields[field] = faker.datatype.boolean(0.2); // 20% chance to hide each field
     });

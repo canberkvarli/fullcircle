@@ -47,9 +47,9 @@ export default function DatingPreferences() {
   const preferences = [
     {
       label: "Looking For",
-      value: userData?.matchPreferences?.datePreferences,
+      value: userData?.matchPreferences?.ConnectionPreferences,
       isSubscriberField: false,
-      fieldName: "datePreferences",
+      fieldName: "ConnectionPreferences",
       icon: "heart-circle",
       description: "Who you're interested in connecting with"
     },

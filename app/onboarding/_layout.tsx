@@ -17,7 +17,7 @@ export default function OnboardingStackLayout() {
       <Stack.Screen name="LocationScreen" options={{ headerShown: false }} />
       <Stack.Screen name="GenderScreen" options={{ headerShown: false }} />
       <Stack.Screen
-        name="DatePreferenceScreen"
+        name="ConnectionPreferenceScreen"
         options={{ headerShown: false }}
       />
       <Stack.Screen name="SpiritualDrawsScreen" options={{ headerShown: false }} />

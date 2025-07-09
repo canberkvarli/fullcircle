@@ -27,7 +27,7 @@ interface PotentialMatchType {
   ethnicities: string[];
   sexualOrientation: string[];
   matchPreferences: {
-    datePreferences: string[];
+    ConnectionPreferences: string[];
     childrenPreference: string;
     preferredEthnicities: string[];
     preferredAgeRange: {
@@ -76,7 +76,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -140,7 +140,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -204,7 +204,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -268,7 +268,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",
@@ -332,7 +332,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -396,7 +396,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -460,7 +460,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -524,7 +524,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -588,7 +588,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -652,7 +652,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Open to Children",
@@ -716,7 +716,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Open to Children",
@@ -780,7 +780,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -844,7 +844,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",
@@ -908,7 +908,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -972,7 +972,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1036,7 +1036,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1100,7 +1100,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1164,7 +1164,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1228,7 +1228,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Open to Children",
@@ -1292,7 +1292,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1356,7 +1356,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",
@@ -1420,7 +1420,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -1484,7 +1484,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",
@@ -1548,7 +1548,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1612,7 +1612,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1676,7 +1676,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1740,7 +1740,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1804,7 +1804,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1868,7 +1868,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -1932,7 +1932,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -1996,7 +1996,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2060,7 +2060,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -2124,7 +2124,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2188,7 +2188,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2252,7 +2252,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -2316,7 +2316,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2380,7 +2380,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Gay"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -2444,7 +2444,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -2508,7 +2508,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2572,7 +2572,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2636,7 +2636,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Open to Children",
@@ -2700,7 +2700,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2764,7 +2764,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",
@@ -2828,7 +2828,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -2892,7 +2892,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Straight"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",
@@ -2956,7 +2956,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Don’t want Children",
@@ -3020,7 +3020,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Men"
       ],
       "childrenPreference": "Open to Children",
@@ -3084,7 +3084,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -3148,7 +3148,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Queer"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Everyone"
       ],
       "childrenPreference": "Open to Children",
@@ -3212,7 +3212,7 @@ const potentialMatches: PotentialMatchType[] = [
       "Bisexual"
     ],
     "matchPreferences": {
-      "datePreferences": [
+      "ConnectionPreferences": [
         "Women"
       ],
       "childrenPreference": "Open to Children",

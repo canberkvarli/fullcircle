@@ -220,8 +220,8 @@ const UserShow: React.FC = () => {
       },
       {
         title: "Sacred Connections",
-        content: currentUser.matchPreferences?.datePreferences?.length
-          ? currentUser.matchPreferences.datePreferences.join(", ")
+        content: currentUser.matchPreferences?.ConnectionPreferences?.length
+          ? currentUser.matchPreferences.ConnectionPreferences.join(", ")
           : 'Open to divine connections',
         icon: "heart-circle"
       },

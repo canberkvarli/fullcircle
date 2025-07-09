@@ -116,8 +116,8 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       },
       {
         title: "Sacred Connections",
-        content: userData.matchPreferences?.datePreferences?.length
-          ? userData.matchPreferences.datePreferences.join(", ")
+        content: userData.matchPreferences?.ConnectionPreferences?.length
+          ? userData.matchPreferences.ConnectionPreferences.join(", ")
           : 'Open to divine connections',
         icon: "heart-circle"
       },
@@ -175,12 +175,12 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       });
     }
 
-    if (userData.matchPreferences?.datePreferences && userData.matchPreferences.datePreferences.length > 0) {
+    if (userData.matchPreferences?.ConnectionPreferences && userData.matchPreferences.ConnectionPreferences.length > 0) {
       sections.push({
         type: 'info',
         title: "Seeking Connections With",
         icon: "heart-outline",
-        content: userData.matchPreferences.datePreferences.join(", "),
+        content: userData.matchPreferences.ConnectionPreferences.join(", "),
         isPill: false
       });
     }

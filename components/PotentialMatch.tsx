@@ -104,12 +104,12 @@ const generateInfoCards = (user: UserDataType) => {
   }
 
   // Connection Preferences
-  if (user.matchPreferences?.datePreferences && user.matchPreferences.datePreferences.length > 0) {
+  if (user.matchPreferences?.ConnectionPreferences && user.matchPreferences.ConnectionPreferences.length > 0) {
     cards.push({
       title: "Looking For",
-      content: user.matchPreferences.datePreferences.join(", "),
+      content: user.matchPreferences.ConnectionPreferences.join(", "),
       icon: "heart-circle",
-      pillsData: user.matchPreferences.datePreferences,
+      pillsData: user.matchPreferences.ConnectionPreferences,
     });
   }
 

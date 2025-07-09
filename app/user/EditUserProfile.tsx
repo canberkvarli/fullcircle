@@ -47,7 +47,7 @@ export default function EditUserProfile() {
       
       // Dating preferences with visibility controls
       gender: !userData.hiddenFields?.gender,
-      datePreferences: !userData.hiddenFields?.datePreferences,
+      ConnectionPreferences: !userData.hiddenFields?.ConnectionPreferences,
       
       // Spiritual fields with visibility controls
       spiritualDraws: !userData.hiddenFields?.spiritualDraws,
@@ -84,7 +84,7 @@ export default function EditUserProfile() {
   // Check if field should show visibility toggle
   const shouldShowVisibilityToggle = (fieldName: string) => {
     const fieldsWithVisibilityControl = [
-      'age', 'height', 'location', 'gender', 'datePreferences', 
+      'age', 'height', 'location', 'gender', 'ConnectionPreferences', 
       'spiritualDraws', 'spiritualPractices', 'healingModalities'
     ];
     return fieldsWithVisibilityControl.includes(fieldName);
@@ -112,7 +112,7 @@ export default function EditUserProfile() {
         spiritualPractices: "leaf-outline",
         healingModalities: "medical-outline",
         gender: "person-outline",
-        datePreferences: "heart-outline",
+        ConnectionPreferences: "heart-outline",
         fullName: "person-circle-outline",
         age: "calendar-outline",
         height: "resize-outline",
@@ -127,7 +127,7 @@ export default function EditUserProfile() {
         spiritualPractices: [colors.primary, "#20B2AA"], 
         healingModalities: [colors.primary, "#FF6347"],
         gender: [colors.primary, "#4169E1"],
-        datePreferences: [colors.primary, "#E91E63"],
+        ConnectionPreferences: [colors.primary, "#E91E63"],
       };
       return gradientMap[fieldName] || [colors.primary, colors.primary];
     };
@@ -433,9 +433,9 @@ export default function EditUserProfile() {
       value: userData.gender,
     },
     {
-      fieldName: "datePreferences",
+      fieldName: "ConnectionPreferences",
       title: "I'm Looking For",
-      value: userData.matchPreferences?.datePreferences,
+      value: userData.matchPreferences?.ConnectionPreferences,
     },
   ];
 

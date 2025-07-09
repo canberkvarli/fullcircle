@@ -36,7 +36,7 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
           input: true,
         },
       ],
-      datePreferences: [
+      ConnectionPreferences: [
         "Men",
         "Women",
         "Non-binary",
@@ -117,7 +117,7 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
   const [selectedOrientations, setSelectedOrientations] = useState<string[]>(
     []
   );
-  const [selectedDatePreferences, setSelectedDatePreferences] = useState<
+  const [selectedConnectionPreferences, setSelectedConnectionPreferences] = useState<
     string[]
   >([]);
   const [selectedEducation, setSelectedEducation] = useState<string | null>(
@@ -153,13 +153,13 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
           setCustomInput("");
         }
       }
-    } else if (fieldName === "datePreferences") {
+    } else if (fieldName === "ConnectionPreferences") {
       // If stored value is "Open to All" or an array with only that value, convert to ["Everyone"] for the UI.
       if (typeof currentFieldValue === "string") {
         if (currentFieldValue === "Open to All") {
-          setSelectedDatePreferences(["Everyone"]);
+          setSelectedConnectionPreferences(["Everyone"]);
         } else {
-          setSelectedDatePreferences([]);
+          setSelectedConnectionPreferences([]);
         }
       } else if (Array.isArray(currentFieldValue)) {
         if (
@@ -167,13 +167,13 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
           (currentFieldValue.length === 1 &&
             currentFieldValue[0] === "Open to All")
         ) {
-          setSelectedDatePreferences(["Everyone"]);
+          setSelectedConnectionPreferences(["Everyone"]);
         } else {
-          setSelectedDatePreferences(currentFieldValue);
+          setSelectedConnectionPreferences(currentFieldValue);
         }
       } else {
         // Default to Everyone if no value exists.
-        setSelectedDatePreferences(["Everyone"]);
+        setSelectedConnectionPreferences(["Everyone"]);
       }
     } else if (fieldName === "educationDegree") {
       setSelectedEducation(currentFieldValue || null);
@@ -209,12 +209,12 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
       customInput: customInput,
       setCustomInput: setCustomInput,
     },
-    datePreferences: {
+    ConnectionPreferences: {
       title: "Date Preference",
-      options: OPTIONS.datePreferences,
-      selectedValue: selectedDatePreferences,
-      onSelect: setSelectedDatePreferences,
-      clearAll: () => setSelectedDatePreferences([]),
+      options: OPTIONS.ConnectionPreferences,
+      selectedValue: selectedConnectionPreferences,
+      onSelect: setSelectedConnectionPreferences,
+      clearAll: () => setSelectedConnectionPreferences([]),
     },
     childrenPreference: {
       title: "Children Preference",
@@ -295,8 +295,8 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
     setSelectedGender,
     selectedOrientations,
     setSelectedOrientations,
-    selectedDatePreferences,
-    setSelectedDatePreferences,
+    selectedConnectionPreferences,
+    setSelectedConnectionPreferences,
     selectedEducation,
     setSelectedEducation,
     selectedEthnicities,

@@ -17,7 +17,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
 const FIELD_TITLES: Record<string, string> = {
-  datePreferences: "Looking For",
+  ConnectionPreferences: "Looking For",
   preferredAgeRange: "Age Range",
   preferredDistance: "Maximum Distance",
   preferredHeightRange: "Height Range",
@@ -27,7 +27,7 @@ const FIELD_TITLES: Record<string, string> = {
 };
 
 const FIELD_DESCRIPTIONS: Record<string, string> = {
-  datePreferences: "Who you're interested in connecting with",
+  ConnectionPreferences: "Who you're interested in connecting with",
   preferredAgeRange: "Your preferred age range for connections",
   preferredDistance: "How far you're willing to connect",
   preferredHeightRange: "Your preferred height range",
@@ -81,8 +81,8 @@ function EditPreferenceField() {
     // Clean the value based on field type
     let cleanedValue = value;
     
-    if (fieldName === "datePreferences") {
-      // ONLY the exact options from your DatePreferenceScreen - NO OLD GENDER OPTIONS AT ALL
+    if (fieldName === "ConnectionPreferences") {
+      // ONLY the exact options from your ConnectionPreferenceScreen - NO OLD GENDER OPTIONS AT ALL
       const mainOptions = ["Men", "Women"]; // from mainOptions.id
       const otherOptionsWithId = ["Non-Binary"]; // from otherOptions with id  
       const otherStringOptions = [
@@ -100,7 +100,7 @@ function EditPreferenceField() {
       const allEnergyOption = ["Everyone"]; // from allEnergyOption.id
       
       // Combine exactly as they appear in your onboarding
-      const validDatePreferenceOptions = [
+      const validConnectionPreferenceOptions = [
         ...mainOptions,
         ...otherOptionsWithId,
         ...otherStringOptions,
@@ -108,7 +108,7 @@ function EditPreferenceField() {
       ];
       
       if (Array.isArray(value)) {
-        cleanedValue = value.filter(item => validDatePreferenceOptions.includes(item));
+        cleanedValue = value.filter(item => validConnectionPreferenceOptions.includes(item));
         // Only default to "Everyone" if truly empty after filtering
         if (cleanedValue.length === 0) cleanedValue = ["Everyone"];
       } else {
@@ -150,7 +150,7 @@ function EditPreferenceField() {
           updatedData.matchPreferences[fieldName] = cleanedValue;
         }
 
-        console.log("Saving datePreferences:", cleanedValue); // Debug log
+        console.log("Saving ConnectionPreferences:", cleanedValue); // Debug log
         await updateUserData(updatedData);
         await resetPotentialMatches();
       } catch (error) {
@@ -239,7 +239,7 @@ const handleCheckboxToggle = (
 
   const renderField = () => {
     switch (fieldName) {
-      case "datePreferences": {
+      case "ConnectionPreferences": {
         const mainOptions = ["Men", "Women"];
         const otherOptionsWithId = ["Non-Binary"];
         const otherStringOptions = [
@@ -256,7 +256,7 @@ const handleCheckboxToggle = (
         ];
         const allEnergyOption = ["Everyone"];
         
-        const datePreferenceOptions = [
+        const ConnectionPreferenceOptions = [
           ...mainOptions,
           ...otherOptionsWithId,
           ...otherStringOptions,
@@ -265,10 +265,10 @@ const handleCheckboxToggle = (
         
         return (
           <CheckboxList
-            options={datePreferenceOptions}
+            options={ConnectionPreferenceOptions}
             selected={value && value.length > 0 ? value : ["Everyone"]}
             onToggle={(option) =>
-              handleCheckboxToggle(option, datePreferenceOptions, "Everyone")
+              handleCheckboxToggle(option, ConnectionPreferenceOptions, "Everyone")
             }
           />
         );

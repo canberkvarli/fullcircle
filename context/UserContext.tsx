@@ -87,7 +87,14 @@ export type UserDataType = {
       max: number;
     };
     preferredDistance: number;
-    datePreferences: string[];
+    
+    // 🌟 NEW: Connection Intent & Preferences
+    connectionIntent?: "romantic" | "friendship"; // Main connection type
+    connectionPreferences?: string[]; // Who they want to connect with (Men, Women, Non-Binary, Everyone)
+    connectionStyles?: string[]; // How they want to connect (Twin Flame, Practice Partners, etc.)
+    
+    // 🔄 DEPRECATED: Keeping for backward compatibility
+    datePreferences: string[]; // Will map to connectionPreferences when connectionIntent is "romantic"
     
     // 🔮 Spiritual Matching Preferences (for later)
     spiritualCompatibility?: {
@@ -138,7 +145,15 @@ export type MatchPreferencesType = {
     max: number;
   };
   preferredDistance: number;
+  
+  // 🌟 NEW: Connection Intent & Preferences
+  connectionIntent?: "romantic" | "friendship";
+  connectionPreferences?: string[];
+  connectionStyles?: string[];
+  
+  // 🔄 DEPRECATED: Keeping for backward compatibility
   datePreferences: string[];
+  
   desiredRelationship?: string;
   preferredSpiritualPractices?: string[];
 };
@@ -257,11 +272,10 @@ const initialScreens = [
   "HeightScreen",
   "LocationScreen",
   "GenderScreen",
-  "DatePreferenceScreen",
+  "ConnectionPreferenceScreen",
   "SpiritualDrawsScreen",
   "SpiritualPracticesScreen",
   "HealingModalitiesScreen",
-  // "SpiritualPartnershipScreen",  // ??
   "PhotosScreen",
 ];
 
@@ -863,73 +877,73 @@ useEffect(() => {
     }
   };
 
-  const buildQueryWithFilters = (
-    baseQuery: FirebaseFirestoreTypes.Query,
-    {
-      matchPreferences,
-      currentLat,
-      currentLon,
-    }: {
-      matchPreferences?: typeof userData.matchPreferences;
-      currentLat?: number;
-      currentLon?: number;
-    }
-  ): FirebaseFirestoreTypes.Query => {
-    let query = baseQuery;
+  // const buildQueryWithFilters = (
+  //   baseQuery: FirebaseFirestoreTypes.Query,
+  //   {
+  //     matchPreferences,
+  //     currentLat,
+  //     currentLon,
+  //   }: {
+  //     matchPreferences?: typeof userData.matchPreferences;
+  //     currentLat?: number;
+  //     currentLon?: number;
+  //   }
+  // ): FirebaseFirestoreTypes.Query => {
+  //   let query = baseQuery;
 
-    // --- Gender / datePreferences ---
-    const prefs = matchPreferences?.datePreferences ?? [];
+  //   // --- Gender / ConnectionPreferences ---
+  //   const prefs = matchPreferences?.ConnectionPreferences ?? [];
 
-    // If they picked "Everyone", skip the gender filter completely
-    if (!prefs.includes("Everyone")) {
-      // Drop any stray "Everyone" if it ever appears alongside others
-      const filtered = prefs.filter((p) => p !== "Everyone");
+  //   // If they picked "Everyone", skip the gender filter completely
+  //   if (!prefs.includes("Everyone")) {
+  //     // Drop any stray "Everyone" if it ever appears alongside others
+  //     const filtered = prefs.filter((p) => p !== "Everyone");
 
-      const genderMap: Record<string, string> = {
-        Men: "Man",
-        Women: "Woman",
-        "Non-Binary": "Non-binary",
-      };
-      const mapped = filtered.map((p) => genderMap[p] || p);
+  //     const genderMap: Record<string, string> = {
+  //       Men: "Man",
+  //       Women: "Woman",
+  //       "Non-Binary": "Non-binary",
+  //     };
+  //     const mapped = filtered.map((p) => genderMap[p] || p);
 
-      if (mapped.length === 1) {
-        query = query.where("gender", "==", mapped[0]);
-      } else if (mapped.length > 1) {
-        query = query.where("gender", "in", mapped);
-      }
-    }
+  //     if (mapped.length === 1) {
+  //       query = query.where("gender", "==", mapped[0]);
+  //     } else if (mapped.length > 1) {
+  //       query = query.where("gender", "in", mapped);
+  //     }
+  //   }
 
-    // --- Age Range ---
-    const age = matchPreferences?.preferredAgeRange;
-    if (age?.min != null && age?.max != null) {
-      query = query.where("age", ">=", age.min).where("age", "<=", age.max);
-    }
+  //   // --- Age Range ---
+  //   const age = matchPreferences?.preferredAgeRange;
+  //   if (age?.min != null && age?.max != null) {
+  //     query = query.where("age", ">=", age.min).where("age", "<=", age.max);
+  //   }
 
-    // --- Height Range ---
-    const height = matchPreferences?.preferredHeightRange;
-    if (height?.min != null && height?.max != null) {
-      query = query.where("height", ">=", height.min).where("height", "<=", height.max);
-    }
+  //   // --- Height Range ---
+  //   const height = matchPreferences?.preferredHeightRange;
+  //   if (height?.min != null && height?.max != null) {
+  //     query = query.where("height", ">=", height.min).where("height", "<=", height.max);
+  //   }
 
-    // --- Distance Bounding Box ---
-    if (
-      currentLat != null &&
-      currentLon != null &&
-      matchPreferences?.preferredDistance != null
-    ) {
-      const maxDist = matchPreferences.preferredDistance;
-      const latDelta = maxDist / 69;
-      const lonDelta = maxDist / (69 * Math.cos((currentLat * Math.PI) / 180));
+  //   // --- Distance Bounding Box ---
+  //   if (
+  //     currentLat != null &&
+  //     currentLon != null &&
+  //     matchPreferences?.preferredDistance != null
+  //   ) {
+  //     const maxDist = matchPreferences.preferredDistance;
+  //     const latDelta = maxDist / 69;
+  //     const lonDelta = maxDist / (69 * Math.cos((currentLat * Math.PI) / 180));
       
-      query = query
-        .where("latitude", ">=", currentLat - latDelta)
-        .where("latitude", "<=", currentLat + latDelta)
-        .where("longitude", ">=", currentLon - lonDelta)
-        .where("longitude", "<=", currentLon + lonDelta);
-    }
+  //     query = query
+  //       .where("latitude", ">=", currentLat - latDelta)
+  //       .where("latitude", "<=", currentLat + latDelta)
+  //       .where("longitude", ">=", currentLon - lonDelta)
+  //       .where("longitude", "<=", currentLon + lonDelta);
+  //   }
 
-    return query;
-  };
+  //   return query;
+  // };
 
 const fetchPotentialMatches = useCallback(async (): Promise<UserDataType[]> => {
   if (loadingNextBatch) {

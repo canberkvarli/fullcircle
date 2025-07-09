@@ -43,7 +43,7 @@ const FIELD_OPTIONS = {
     "Genderfluid",
   ],
   
-  datePreferences: {
+  ConnectionPreferences: {
     mainOptions: [
       { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
       { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
@@ -123,8 +123,8 @@ function EditFieldScreen() {
       return userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
     } else if (fieldName === "age") {
       return userData.age;
-    } else if (fieldName === "datePreferences") {
-      return userData.matchPreferences?.datePreferences || [];
+    } else if (fieldName === "ConnectionPreferences") {
+      return userData.matchPreferences?.ConnectionPreferences || [];
     } else if (fieldName === "spiritualDraws") {
       return userData.spiritualProfile?.draws || [];
     } else if (fieldName === "spiritualPractices") {
@@ -178,7 +178,7 @@ function EditFieldScreen() {
 
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
-    datePreferences: "I'm Looking For",
+    ConnectionPreferences: "I'm Looking For",
     fullName: "Name", 
     age: "Age",
     height: "Height",
@@ -269,11 +269,11 @@ function EditFieldScreen() {
           longitude: mapRegion.longitude,
         },
       };
-    } else if (fieldName === "datePreferences") {
+    } else if (fieldName === "ConnectionPreferences") {
       updateData = {
         matchPreferences: {
           ...userData.matchPreferences,
-          datePreferences: selectedItems,
+          ConnectionPreferences: selectedItems,
         },
       };
     } else if (fieldName === "spiritualDraws") {
@@ -339,11 +339,11 @@ function EditFieldScreen() {
     </View>
   );
 
-  const renderDatePreferences = () => {
-    const { mainOptions, otherOptions, allEnergyOption } = FIELD_OPTIONS.datePreferences;
+  const renderConnectionPreferences = () => {
+    const { mainOptions, otherOptions, allEnergyOption } = FIELD_OPTIONS.ConnectionPreferences;
     
     return (
-      <View style={styles.datePreferencesContainer}>
+      <View style={styles.ConnectionPreferencesContainer}>
         {/* All Energies Option */}
         <TouchableOpacity
           style={[
@@ -634,8 +634,8 @@ function EditFieldScreen() {
       );
     }
 
-    if (fieldName === "datePreferences") {
-      return renderDatePreferences();
+    if (fieldName === "ConnectionPreferences") {
+      return renderConnectionPreferences();
     }
 
     if (fieldName === "spiritualDraws") {
@@ -791,7 +791,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   
   // Date Preferences Styles
-  datePreferencesContainer: {
+  ConnectionPreferencesContainer: {
     gap: Spacing.md,
   },
   
