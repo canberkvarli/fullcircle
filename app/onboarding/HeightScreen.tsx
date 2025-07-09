@@ -8,6 +8,7 @@ import {
   useColorScheme,
   Platform,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -16,6 +17,8 @@ import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { RulerPicker } from "react-native-ruler-picker";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 function formatHeight(height: number): string {
   const feet = Math.floor(height);
@@ -78,7 +81,6 @@ function HeightScreen() {
     }));
   };
 
-  // Custom rounded checkbox component
   const RoundedCheckbox = ({ value, onValueChange }: { value: boolean; onValueChange: () => void }) => (
     <TouchableOpacity
       style={[styles.customCheckbox, value && styles.customCheckboxChecked]}
@@ -95,6 +97,10 @@ function HeightScreen() {
     </TouchableOpacity>
   );
 
+  // Calculate compact ruler dimensions
+  const rulerWidth = Math.min(screenWidth - 60, 280); // Smaller, more reasonable size
+  const rulerHeight = 180; // Much smaller height
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
@@ -107,11 +113,10 @@ function HeightScreen() {
 
         <OnboardingProgressBar currentScreen="HeightScreen" />
 
-        <Text style={styles.title}>Stand tall</Text>
+        <View style={styles.content}>
+          <Text style={styles.title}>Stand tall</Text>
+          <Text style={styles.subtitle}>Help us show you compatible matches</Text>
 
-        <Text style={styles.subtitle}>Help us show you compatible matches</Text>
-
-        <View style={styles.heightInputs}>
           <View style={styles.heightDisplay}>
             <Text style={styles.heightValue}>{formatHeight(selectedHeight)}</Text>
             <Text style={styles.heightLabel}>Your height</Text>
@@ -125,9 +130,9 @@ function HeightScreen() {
               initialValue={selectedHeight}
               onValueChange={(number) => setSelectedHeight(Number(number))}
               unit="ft"
-              width={320}
-              height={280}
-              indicatorHeight={80}
+              width={rulerWidth}
+              height={rulerHeight}
+              indicatorHeight={60} // Smaller indicator
               indicatorColor={colors.primary}
               valueTextStyle={{
                 fontSize: 0,
@@ -135,21 +140,21 @@ function HeightScreen() {
               }}
             />
           </View>
-        </View>
 
-        <View style={styles.hiddenContainer}>
-          <Text style={styles.hiddenText}>Keep this private</Text>
-          <RoundedCheckbox
-            value={hiddenFields["height"] || false}
-            onValueChange={() => toggleHidden("height")}
-          />
-        </View>
+          <View style={styles.hiddenContainer}>
+            <Text style={styles.hiddenText}>Keep this private</Text>
+            <RoundedCheckbox
+              value={hiddenFields["height"] || false}
+              onValueChange={() => toggleHidden("height")}
+            />
+          </View>
 
-        <Text style={styles.affirmation}>
-          Every{' '}
-          <Text style={styles.highlightedWord}>person</Text>
-          {' brings their own unique presence to the world'}
-        </Text>
+          <Text style={styles.affirmation}>
+            Every{' '}
+            <Text style={styles.highlightedWord}>person</Text>
+            {' brings their own unique presence to the world'}
+          </Text>
+        </View>
 
         <TouchableOpacity
           style={styles.submitButton}
@@ -164,6 +169,7 @@ function HeightScreen() {
 
 const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>) => {
   const colors = Colors[colorScheme];
+  const { height } = Dimensions.get('window');
 
   return StyleSheet.create({
     container: {
@@ -171,6 +177,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       backgroundColor: colors.background,
       padding: Spacing.lg,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+    },
+    content: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: 100, // Space for submit button
     },
     backButton: {
       backgroundColor: colors.card,
@@ -202,6 +214,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
+      alignSelf: 'flex-start',
       marginTop: Spacing.sm,
       marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
@@ -210,23 +223,20 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
+      alignSelf: 'flex-start',
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
       fontStyle: "normal",
     },
-    heightInputs: {
-      alignItems: 'center',
-      marginBottom: Spacing['2xl'],
-      paddingHorizontal: Spacing.lg,
-    },
     heightDisplay: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.md,
+      padding: Spacing.lg,
       alignItems: 'center',
       borderWidth: 2,
       borderColor: colors.border,
-      minWidth: 150,
+      minWidth: 160,
+      marginBottom: Spacing.lg,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -260,12 +270,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
-      padding: Spacing.lg,
+      padding: Spacing.md,
       borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
+      marginBottom: Spacing.md,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -323,15 +333,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     affirmation: {
       ...fonts.elegantItalicFont,
-      position: 'absolute',
-      bottom: Platform.select({ ios: 220, android: 160 }),
-      left: Spacing.lg,
-      right: Spacing.lg,
       textAlign: "center",
       color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       opacity: 0.8,
+      paddingHorizontal: Spacing.lg,
     },
     highlightedWord: {
       color: colors.textDark,
@@ -343,7 +350,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     submitButton: {
       position: "absolute",
-      bottom: Platform.select({ ios: 40, android: 20 }),
+      bottom: Platform.select({ ios: 50, android: 30 }),
       right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
