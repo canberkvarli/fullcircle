@@ -1612,13 +1612,13 @@ const getReceivedLikesDetailed = async (): Promise<
       const nextScreen = screens[nextScreenIndex];
       await saveProgress(nextScreen);
       updateUserData({ currentOnboardingScreen: nextScreen });
-      router.replace(`onboarding/${nextScreen}` as any);
+      router.navigate(`onboarding/${nextScreen}` as any);
     } else {
       await updateUserData({
         onboardingCompleted: true,
         onboardingCompletedAt: firestore.FieldValue.serverTimestamp(),
       });
-      router.replace("/");
+      router.navigate("/");
     }
   };
 

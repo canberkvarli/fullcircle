@@ -217,10 +217,7 @@ function SpiritualDrawsScreen() {
         
         {/* Header */}
         <Text style={styles.title}>What draws you to spirituality?</Text>
-        <Text style={styles.subtitle}>
-          Select all the callings that resonate with your soul
-        </Text>
-
+        <Text style={styles.subtitle}>Select all the callings that resonate with your soul </Text>
         {/* Selected Preview */}
         {renderSelectedPreview()}
 
@@ -238,16 +235,17 @@ function SpiritualDrawsScreen() {
           {/* Hide Option */}
           <View style={styles.hiddenContainer}>
             <Text style={styles.hiddenText}>Keep my spiritual draws private</Text>
-            <View style={styles.orbCheckboxContainer}>
-              <TouchableOpacity 
-                style={styles.orbCheckbox}
-                onPress={() => toggleHidden("spiritualProfile")}
-              >
-                {hiddenFields["spiritualProfile"] && (
-                  <View style={styles.selectedOrb} />
-                )}
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={[
+                styles.checkboxContainer,
+                hiddenFields["spiritualProfile"] && styles.checkboxSelected
+              ]}
+              onPress={() => toggleHidden("spiritualProfile")}
+            >
+              {hiddenFields["spiritualProfile"] && (
+                <Ionicons name="checkmark" size={16} color={colors.background} />
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Affirmation */}
@@ -460,35 +458,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.base,
       fontStyle: 'italic',
     },
-    orbCheckboxContainer: {
-      marginLeft: Spacing.md,
-    },
-    orbCheckbox: {
+    checkboxContainer: {
       width: 24,
       height: 24,
-      borderRadius: 12,
+      borderRadius: BorderRadius.sm,
       borderWidth: 2,
       borderColor: colors.border,
       backgroundColor: colors.card,
       justifyContent: 'center',
       alignItems: 'center',
     },
-    selectedOrb: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      backgroundColor: '#FFD700',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#FFD700',
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.8,
-          shadowRadius: 6,
-        },
-        android: {
-          elevation: 6,
-        },
-      }),
+    checkboxSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
     },
     affirmation: {
       ...fonts.elegantItalicFont,

@@ -480,7 +480,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       alignItems: 'center',
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,

@@ -380,7 +380,7 @@ function HealingModalitiesScreen() {
         >
           <Ionicons 
             name={modality.icon as any} 
-            size={Math.max(Math.min(orbSize * 0.45, 22), 15)} // Slightly larger icons
+            size={Math.max(Math.min(orbSize * 0.45, 22), 15)}
             color={iconColor}
           />
         </TouchableOpacity>
@@ -396,7 +396,7 @@ function HealingModalitiesScreen() {
           ]}
           numberOfLines={2}
           adjustsFontSizeToFit={true}
-          minimumFontScale={0.75} // Increased from 0.7 to 0.75
+          minimumFontScale={0.75}
         >
           {modality.name}
         </Text>
