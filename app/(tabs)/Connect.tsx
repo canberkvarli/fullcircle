@@ -43,18 +43,15 @@ const ConnectScreen: React.FC = () => {
   const [showOrbModal, setShowOrbModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   
-  // Simple, elegant animations
   const contentOpacity = useRef(new Animated.Value(1)).current;
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const overlayScale = useRef(new Animated.Value(0.8)).current;
   
-  // Divine orb modal animations
   const orbModalOpacity = useRef(new Animated.Value(0)).current;
   const orbModalScale = useRef(new Animated.Value(0.8)).current;
   const divineGlow = useRef(new Animated.Value(0)).current;
   
-  // Orb button glow when available
   const orbButtonGlow = useRef(new Animated.Value(0)).current;
 
 useEffect(() => {
@@ -96,19 +93,17 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }),
   ]).start();
 
-  // Step 2: Process the action
   const userId = currentPotentialMatch.userId;
   try {
     if (action === 'pass') {
-      await dislikeMatch(userId); // This now handles loadNextPotentialMatch internally
+      await dislikeMatch(userId);
     } else if (action === 'orb') {
-      await orbLike(userId); // This now handles loadNextPotentialMatch internally
+      await orbLike(userId);
     } else {
-      await likeMatch(userId); // This now handles loadNextPotentialMatch internally
+      await likeMatch(userId);
     }
   } catch (error) {
     console.error('Action failed:', error);
-    // On error, reset the UI state
     setActionInProgress(false);
     setLastAction(null);
     contentOpacity.setValue(1);
@@ -121,13 +116,11 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
 
   setTimeout(() => {
     Animated.parallel([
-      // Fade out overlay
       Animated.timing(overlayOpacity, {
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
       }),
-      // Fade in new content
       Animated.timing(contentOpacity, {
         toValue: 1,
         duration: 500,
@@ -135,20 +128,18 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Reset state
       setActionInProgress(false);
       setLastAction(null);
       setPhotosLoaded(false);
       overlayScale.setValue(0.8);
       buttonsOpacity.setValue(0);
     });
-  }, 800); // Reduced timing since we don't need to wait for manual loadNext
+  }, 800);
 };
 
   const showDivineOrbModal = () => {
     setShowOrbModal(true);
     
-    // Divine appearance with golden light
     Animated.parallel([
       Animated.timing(orbModalOpacity, {
         toValue: 1,
@@ -161,7 +152,6 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
         friction: 8,
         useNativeDriver: true,
       }),
-      // Divine glow effect
       Animated.loop(
         Animated.sequence([
           Animated.timing(divineGlow, {
@@ -206,7 +196,6 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
 
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
-    // Simple button fade in
     Animated.timing(buttonsOpacity, {
       toValue: 1,
       duration: 400,
@@ -214,13 +203,11 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
       useNativeDriver: true,
     }).start();
     
-    // Start orb button glow if user has orbs
     if (userData?.numOfOrbs && userData.numOfOrbs > 0) {
-      // Continuous smooth breathing effect - no pauses
       Animated.loop(
         Animated.timing(orbButtonGlow, {
           toValue: 1,
-          duration: 2000, // Smooth 2-second cycle
+          duration: 2000,
           useNativeDriver: false,
         }),
         { iterations: -1, resetBeforeIteration: true }
@@ -228,7 +215,6 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }
   };
 
-  // Reset when new match loads
   useEffect(() => {
     if (currentPotentialMatch && !actionInProgress) {
       contentOpacity.setValue(1);
@@ -242,10 +228,10 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
 
   const getActionColor = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
-      case 'like': return '#D49A8C';
-      case 'pass': return '#8B95A7';
-      case 'orb': return '#FFD700'; // Divine golden color for orb
-      default: return '#FFD700'; // Divine golden fallback
+      case 'like': return '#B8860B'; // Rusty gold
+      case 'pass': return '#8B7355'; // Rusty brown
+      case 'orb': return '#CD853F'; // Peru/rusty gold
+      default: return '#CD853F';
     }
   };
 
@@ -267,57 +253,56 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }
   };
 
-  // No more matches state
+// No more matches state
 if (noMoreMatches) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
       
-      {/* Header - matches other screens exactly */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Sacred Souls</Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>Connect with purpose</Text>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Circle</Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Meaningful{' '}
+            <Text style={styles.highlightedWord}>connections</Text>
+            {' await'}
+          </Text>
         </View>
       </View>
 
-      {/* Main content - follows KindredSpirits pattern */}
       <View style={styles.noLikesContainer}>
-        {/* Cosmic symbol - matches KindredSpirits style */}
-        <View style={[styles.cosmicSymbol, { backgroundColor: colors.primary + '15' }]}>
-          <Ionicons name="infinite" size={60} color={colors.primary} />
+        <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
+          <Ionicons name="infinite" size={32} color="#B8860B" />
         </View>
         
-        {/* Title and subtitle - matches KindredSpirits */}
         <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-          The Universe is Aligning
+          More connections coming soon
         </Text>
         
         <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-          Sacred souls are being prepared for your cosmic journey. Expand your divine circle or adjust your spiritual intentions to discover new connections.
+          We're preparing more meaningful matches for you. Expand your circle or adjust your preferences to discover new connections.
         </Text>
         
-        {/* Action buttons - matches KindredSpirits style */}
         <View style={styles.actionContainer}>
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+            style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
             onPress={() => router.navigate('/user/FullCircleSubscription')}
             activeOpacity={0.9}
           >
             <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
             <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-              Expand Your Circle ✨
+              Expand Your Circle
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.primary }]}
+            style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
             onPress={() => router.navigate('/user/DatingPreferences')}
             activeOpacity={0.9}
           >
-            <Ionicons name="options" size={18} color={colors.primary} style={styles.buttonIcon} />
-            <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: colors.primary }]}>
-              Adjust Preferences 🔮
+            <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+            <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+              Adjust Preferences
             </Text>
           </TouchableOpacity>
         </View>
@@ -325,7 +310,6 @@ if (noMoreMatches) {
     </View>
   );
 }
-
 
   // Loading state
   if (loadingNextBatch || !currentPotentialMatch || !exclusionsLoaded) {
@@ -336,23 +320,25 @@ if (noMoreMatches) {
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              Sacred Souls
+              Circle
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Connect with purpose
+              Meaningful{' '}
+              <Text style={styles.highlightedWord}>connections</Text>
+              {' await'}
             </Text>
           </View>
         </View>
 
         <View style={styles.centeredContainer}>
-          <View style={[styles.loadingMandala, { backgroundColor: colors.primary + '10' }]}>
-            <Ionicons name="heart" size={40} color={colors.primary} />
+          <View style={[styles.loadingMandala, { backgroundColor: '#B8860B' + '10' }]}>
+            <Ionicons name="heart" size={24} color="#B8860B" />
           </View>
-          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: colors.primary }]}>
-            {loadingNextBatch ? "Aligning Sacred Souls" : "Preparing Your Journey"}
+          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+            {loadingNextBatch ? "Finding Your Matches" : "Preparing Your Journey"}
           </Text>
           <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            {loadingNextBatch ? "The universe is preparing your next connection" : "Sacred energies are gathering"}
+            {loadingNextBatch ? "We're preparing your next connection" : "Getting everything ready"}
           </Text>
         </View>
       </View>
@@ -363,7 +349,6 @@ if (noMoreMatches) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
       
-      {/* Main Content */}
       <Animated.View 
         style={[
           styles.contentContainer,
@@ -385,7 +370,6 @@ if (noMoreMatches) {
         </ScrollView>
       </Animated.View>
 
-      {/* Settings Button */}
       <TouchableOpacity 
         style={[
           styles.settingsFloating, 
@@ -394,13 +378,11 @@ if (noMoreMatches) {
         onPress={() => router.push('/user/DatingPreferences')}
         activeOpacity={0.7}
       >
-        <Ionicons name="options" size={22} color={colors.primary} />
+        <Ionicons name="options" size={22} color="#B8860B" />
       </TouchableOpacity>
 
-      {/* Action Buttons */}
       {photosLoaded && !actionInProgress && (
         <Animated.View style={[styles.buttonsContainer, { opacity: buttonsOpacity }]}>
-          {/* Pass Button */}
           <TouchableOpacity 
             style={[
               styles.actionButton, 
@@ -410,10 +392,9 @@ if (noMoreMatches) {
             onPress={() => handleAction('pass')}
             activeOpacity={0.8}
           >
-            <Ionicons name="close" size={20} color="#8B95A7" />
+            <Ionicons name="close" size={20} color="#8B7355" />
           </TouchableOpacity>
 
-          {/* Like Button */}
           <TouchableOpacity 
             style={[
               styles.actionButton, 
@@ -423,10 +404,9 @@ if (noMoreMatches) {
             onPress={() => handleAction('like')}
             activeOpacity={0.8}
           >
-            <Ionicons name="heart" size={20} color="#D49A8C" />
+            <Ionicons name="heart" size={20} color="#B8860B" />
           </TouchableOpacity>
 
-          {/* Orb Button with Divine Glow */}
           <View style={styles.orbButtonContainer}>
           {userData?.numOfOrbs && userData.numOfOrbs > 0 && (
             <Animated.View 
@@ -435,7 +415,7 @@ if (noMoreMatches) {
                 {
                   shadowOpacity: orbButtonGlow.interpolate({
                     inputRange: [0, 0.5, 1],
-                    outputRange: [0.3, 0.8, 0.3] // More prominent divine glow
+                    outputRange: [0.3, 0.8, 0.3]
                   }),
                 }
               ]}
@@ -446,8 +426,8 @@ if (noMoreMatches) {
               styles.actionButton, 
               styles.centerAction,
               { 
-                backgroundColor: '#8B4513', // Rich, sacred brown with warmth
-                shadowColor: '#FFD700', // Divine golden shadow
+                backgroundColor: '#8B4513',
+                shadowColor: '#CD853F',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.3,
                 shadowRadius: 4,
@@ -457,14 +437,13 @@ if (noMoreMatches) {
             onPress={() => handleAction('orb')}
             activeOpacity={0.8}
           >
-            <Ionicons name="sparkles" size={22} color="#FFD700" />
-            <View style={[styles.orbRing, { borderColor: '#FFD700' + '60' }]} />
+            <Ionicons name="sparkles" size={22} color="#CD853F" />
+            <View style={[styles.orbRing, { borderColor: '#CD853F' + '60' }]} />
           </TouchableOpacity>
           </View>
         </Animated.View>
       )}
 
-      {/* Divine Orb Modal - Sacred Golden Light */}
       {showOrbModal && (
         <Animated.View 
           style={[
@@ -478,12 +457,11 @@ if (noMoreMatches) {
               {
                 transform: [{ scale: orbModalScale }],
                 backgroundColor: colors.card,
-                borderColor: '#FFD700',
-                shadowColor: '#FFD700',
+                borderColor: '#CD853F',
+                shadowColor: '#CD853F',
               }
             ]}
           >
-            {/* Divine Glow Background */}
             <Animated.View 
               style={[
                 styles.divineGlow,
@@ -494,10 +472,9 @@ if (noMoreMatches) {
               ]}
             />
             
-            {/* Sacred Content */}
             <View style={styles.divineContent}>
               <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
-                <Ionicons name="sparkles" size={48} color="#B8860B" />
+                <Ionicons name="sparkles" size={36} color="#B8860B" />
               </View>
               
               <Text style={[
@@ -505,7 +482,7 @@ if (noMoreMatches) {
                 fonts.spiritualTitleFont, 
                 { color: colors.textDark }
               ]}>
-                Sacred Orbs Needed
+                More Orbs Needed
               </Text>
               
               <Text style={[
@@ -513,7 +490,7 @@ if (noMoreMatches) {
                 fonts.spiritualBodyFont, 
                 { color: colors.textLight }
               ]}>
-                Your divine orbs have been lovingly shared with fellow souls. To continue spreading this sacred energy, embrace the Full Circle journey.
+                You've shared all your orbs with fellow connections. To continue spreading this energy, join the Full Circle experience.
               </Text>
               
               <View style={styles.divineActions}>
@@ -521,7 +498,7 @@ if (noMoreMatches) {
                   style={[
                     styles.divineButton, 
                     { 
-                      backgroundColor: '#B8860B', // Darker gold, less overwhelming
+                      backgroundColor: '#B8860B',
                       shadowColor: '#B8860B'
                     }
                   ]}
@@ -529,8 +506,8 @@ if (noMoreMatches) {
                   activeOpacity={0.9}
                 >
                   <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                  <Text style={[styles.primaryButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}>
-                    Embrace Full Circle
+                  <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
+                    Join Full Circle
                   </Text>
                 </TouchableOpacity>
                 
@@ -556,7 +533,6 @@ if (noMoreMatches) {
         </Animated.View>
       )}
 
-      {/* Simple Action Overlay */}
       {lastAction && (
         <Animated.View 
           style={[
@@ -635,6 +611,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
     opacity: 0.8,
+  },
+  
+  highlightedWord: {
+    color: '#B8860B',
+    textShadowColor: '#CD853F',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.5,
   },
   
   scrollView: {
@@ -757,7 +742,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 125 : 105,
     left: '50%',
-    marginLeft: -28, // Center the 56px button properly
+    marginLeft: -28,
     width: 56,
     height: 56,
     justifyContent: 'center',
@@ -766,22 +751,22 @@ const styles = StyleSheet.create({
   
   orbGlow: {
     position: 'absolute',
-    width: 56, // Same size as button
+    width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'transparent', // No background, just glow
-    top: 0, // Perfectly aligned with button
+    backgroundColor: 'transparent',
+    top: 0,
     left: 0,
-    shadowColor: '#FFD700', // Divine yellow glow
+    shadowColor: '#CD853F',
     shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 12, // Slightly more prominent divine glow
+    shadowRadius: 12,
     elevation: 0,
   },
   
   divineIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xl,
@@ -874,70 +859,16 @@ const styles = StyleSheet.create({
   
   cosmicSymbol: {
     marginBottom: Spacing.xl,
-    padding: Spacing.xl,
-    borderRadius: 60,
+    padding: Spacing.lg,
+    borderRadius: 40,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   
-  noSoulsTitle: {
-    fontSize: Typography.sizes['3xl'],
-    fontWeight: Typography.weights.bold,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-    letterSpacing: 0.5,
-  },
-  
-  noSoulsText: {
-    fontSize: Typography.sizes.base,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: Spacing['2xl'],
-    paddingHorizontal: Spacing.md,
-    letterSpacing: 0.3,
-  },
-  
-  actionButtonsContainer: {
-    width: '100%',
-    gap: Spacing.lg,
-  },
-  
-  cosmicButton: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    alignItems: 'center',
-    shadowColor: '#7B6B5C',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  
-  cosmicButtonText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
-    letterSpacing: 0.5,
-  },
-  
-  intentionsButton: {
-    borderWidth: 2,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.xl,
-    alignItems: 'center',
-  },
-  
-  intentionsButtonText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-    letterSpacing: 0.5,
-  },
-  
   loadingMandala: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     marginBottom: Spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
@@ -957,7 +888,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  // Use existing noLikesContainer from KindredSpirits
   noLikesContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -965,7 +895,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   
-  // Use existing noLikesTitle from KindredSpirits
   noLikesTitle: {
     fontSize: Typography.sizes['2xl'],
     fontWeight: Typography.weights.bold,
@@ -974,7 +903,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   
-  // Use existing noLikesSubtitle from KindredSpirits
   noLikesSubtitle: {
     fontSize: Typography.sizes.base,
     textAlign: 'center',
@@ -984,13 +912,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   
-  // Use existing actionContainer from KindredSpirits
   actionContainer: {
     width: '100%',
     gap: Spacing.lg,
   },
   
-  // Use existing primaryButton from KindredSpirits
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1004,7 +930,6 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   
-  // Use existing primaryButtonText from KindredSpirits
   primaryButtonText: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
@@ -1012,7 +937,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   
-  // Use existing secondaryButton from KindredSpirits
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1023,13 +947,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   
-  // Use existing secondaryButtonText from KindredSpirits
   secondaryButtonText: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.3,
-  },
-  
-});
-
-export default ConnectScreen
+  }}
+)
+export default ConnectScreen;
