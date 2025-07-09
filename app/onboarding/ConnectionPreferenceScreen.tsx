@@ -17,7 +17,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-// Connection Intent Options
 const connectionIntents = [
   { 
     id: "romantic", 
@@ -33,7 +32,6 @@ const connectionIntents = [
   },
 ];
 
-// Romantic dating preferences (for when "romantic" is selected)
 const romanticOptions = [
   { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
   { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
@@ -41,7 +39,6 @@ const romanticOptions = [
   { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" },
 ];
 
-// Romantic connection styles (pills for romantic)
 const romanticStyles = [
   "Twin Flame Seeker",
   "Soul Mate Guided", 
@@ -55,7 +52,6 @@ const romanticStyles = [
   "Love Without Labels",
 ];
 
-// Friendship connection styles (pills for friendship)
 const friendshipStyles = [
   "Practice Partners",
   "Meditation Buddies",
@@ -82,17 +78,14 @@ const ConnectionPreferenceScreen = () => {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
-  // Connection intent state
   const [connectionIntent, setConnectionIntent] = useState<string>(
     userData?.matchPreferences?.connectionIntent || ""
   );
 
-  // Preferences based on connection intent
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
     userData?.matchPreferences?.connectionPreferences || []
   );
 
-  // Connection styles
   const [selectedStyles, setSelectedStyles] = useState<string[]>(
     userData?.matchPreferences?.connectionStyles || []
   );
@@ -119,47 +112,44 @@ const ConnectionPreferenceScreen = () => {
     }));
   };
 
-  // Helper function to get orb color based on option and intent
   const getOrbColor = (optionId: string, intent: string = connectionIntent) => {
     if (intent === "romantic") {
       switch (optionId) {
         case "Men":
-          return '#3B82F6'; // Classic blue for masculine energy
+          return '#3B82F6';
         case "Women":
-          return '#F59E0B'; // Warm amber for feminine energy
+          return '#F59E0B';
         case "Non-Binary":
-          return '#8B5CF6'; // Purple for non-binary
+          return '#8B5CF6';
         case "Everyone":
-          return '#DC2626'; // Rich red for all energies
+          return '#DC2626';
         default:
-          return '#EF4444'; // Bright red for romantic styles
+          return '#EF4444';
       }
     } else if (intent === "friendship") {
-      return '#059669'; // Consistent emerald for friendship
+      return '#059669';
     }
-    return '#06B6D4'; // Cyan default
+    return '#06B6D4';
   };
 
-  // Helper function to get selection color
   const getSelectionColor = (optionId: string, intent: string = connectionIntent) => {
     const orbColor = getOrbColor(optionId, intent);
-    return orbColor + '20'; // Add transparency
+    return orbColor + '20';
   };
 
-  // Get intent-specific colors
   const getIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
-        primary: '#B91C1C', // Deep sophisticated red
-        secondary: '#FEF2F2', // Very light red background
-        accent: '#7F1D1D', // Darker red accent
+        primary: '#B91C1C',
+        secondary: '#FEF2F2',
+        accent: '#7F1D1D',
         gradient: ['#B91C1C', '#DC2626'],
       };
     } else {
       return {
-        primary: '#059669', // Rich emerald green
-        secondary: '#ECFDF5', // Very light green background
-        accent: '#047857', // Deeper green accent
+        primary: '#059669',
+        secondary: '#ECFDF5',
+        accent: '#047857',
         gradient: ['#059669', '#10B981'],
       };
     }
@@ -167,7 +157,6 @@ const ConnectionPreferenceScreen = () => {
 
   const toggleConnectionIntent = (intent: string) => {
     setConnectionIntent(intent);
-    // Reset preferences when switching intent
     setSelectedPreferences([]);
     setSelectedStyles([]);
   };
@@ -216,7 +205,6 @@ const ConnectionPreferenceScreen = () => {
       return;
     }
 
-    // For friendship, we don't need specific preferences - just the intent
     if (connectionIntent === "romantic" && selectedPreferences.length === 0) {
       Alert.alert("Dating Preferences", "Please select at least one preference");
       return;
@@ -229,7 +217,6 @@ const ConnectionPreferenceScreen = () => {
           connectionIntent: connectionIntent as "romantic" | "friendship",
           connectionPreferences: connectionIntent === "romantic" ? selectedPreferences : ["Everyone"],
           connectionStyles: selectedStyles,
-          // Maintain backward compatibility
           datePreferences: connectionIntent === "romantic" ? selectedPreferences : [],
           preferredDistance: userData.matchPreferences?.preferredDistance || 0,
           preferredAgeRange: userData.matchPreferences?.preferredAgeRange || { min: 18, max: 99 },
@@ -256,7 +243,6 @@ const ConnectionPreferenceScreen = () => {
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={navigateToPreviousScreen}
@@ -264,18 +250,14 @@ const ConnectionPreferenceScreen = () => {
             <Ionicons name="chevron-back" size={24} color={colors.textDark} />
           </TouchableOpacity>
 
-          {/* Progress Bar */}
           <OnboardingProgressBar currentScreen="ConnectionPreferenceScreen" />
 
-          {/* Title */}
           <Text style={styles.title}>Connection Preferences</Text>
 
-          {/* Subtitle */}
           <Text style={styles.subtitle}>
             What type of meaningful connections are you seeking?
           </Text>
           
-          {/* Connection Intent Selection */}
           <View style={styles.intentContainer}>
             {connectionIntents.map((intent) => (
               <TouchableOpacity
@@ -328,7 +310,6 @@ const ConnectionPreferenceScreen = () => {
             ))}
           </View>
 
-          {/* Connection Preferences - Show only if romantic intent is selected */}
           {connectionIntent === "romantic" && (
             <>
               <Text style={[styles.sectionTitle, { color: intentColors.primary }]}>
@@ -376,7 +357,6 @@ const ConnectionPreferenceScreen = () => {
             </>
           )}
 
-          {/* Connection Styles - Show for both romantic and friendship */}
           {connectionIntent && (
             <>
               <Text style={[styles.sectionTitle, { color: intentColors.primary }]}>
@@ -412,7 +392,6 @@ const ConnectionPreferenceScreen = () => {
                 ))}
               </View>
 
-              {/* Hidden Field Toggle */}
               <View style={styles.hiddenContainer}>
                 <Text style={styles.hiddenText}>Keep this private</Text>
                 <TouchableOpacity 
@@ -428,7 +407,6 @@ const ConnectionPreferenceScreen = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Affirmation */}
               <Text style={styles.affirmation}>
                 {connectionIntent === "romantic" 
                   ? <>Open your <Text style={styles.highlightedWord}>heart</Text> to the dance of love and connection</>
@@ -439,7 +417,6 @@ const ConnectionPreferenceScreen = () => {
           )}
         </ScrollView>
 
-        {/* Submit Button */}
         <TouchableOpacity 
           style={[
             styles.submitButton,
@@ -823,18 +800,18 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       marginBottom: Spacing.xl,
     },
     highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",
       bottom: Platform.select({ ios: 50, android: 30 }),
       right: Spacing.xl,
-      backgroundColor: '#8B5A2B', // Brown color like NameScreen
+      backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       width: 56,
       height: 56,
@@ -842,7 +819,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: "center",
       ...Platform.select({
         ios: {
-          shadowColor: '#8B5A2B',
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.4,
           shadowRadius: 8,
