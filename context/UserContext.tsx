@@ -1633,16 +1633,16 @@ const getReceivedLikesDetailed = async (): Promise<
       };
       setUserData(updatedUserData);
       await saveProgress(previousScreen);
-      router.replace(`onboarding/${previousScreen}` as any);
+      router.navigate(`onboarding/${previousScreen}` as any);
     }
   };
 
   const navigateToScreen = async (screen: string) => {
     if (screen === "NameScreen") {
-      router.replace("onboarding/LoginSignupScreen" as any);
+      router.navigate("onboarding/LoginSignupScreen" as any);
     } else {
       await saveProgress(screen);
-      router.replace(`onboarding/${screen}` as any);
+      router.navigate(`onboarding/${screen}` as any);
     }
   };
   
