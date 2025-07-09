@@ -1604,27 +1604,28 @@ const getReceivedLikesDetailed = async (): Promise<
   };
 
   const navigateToNextScreen = async () => {
-    const currentScreenIndex = screens.indexOf(
-      userData.currentOnboardingScreen
-    );
+    const currentScreenIndex = screens.indexOf(userData.currentOnboardingScreen);
     const nextScreenIndex = currentScreenIndex + 1;
+    
     if (nextScreenIndex < screens.length) {
       const nextScreen = screens[nextScreenIndex];
       await saveProgress(nextScreen);
       updateUserData({ currentOnboardingScreen: nextScreen });
-      router.navigate(`onboarding/${nextScreen}` as any);
+      
+      router.push(`onboarding/${nextScreen}` as any);
     } else {
       await updateUserData({
         onboardingCompleted: true,
         onboardingCompletedAt: firestore.FieldValue.serverTimestamp(),
       });
-      router.navigate("/");
+      router.replace("/(tabs)/Connect" as any); // or wherever you want to go after onboarding
     }
   };
 
   const navigateToPreviousScreen = async () => {
     const { currentOnboardingScreen } = userData;
     const currentIndex = screens.indexOf(currentOnboardingScreen);
+    
     if (currentIndex > 0) {
       const previousScreen = screens[currentIndex - 1];
       const updatedUserData = {
@@ -1633,16 +1634,21 @@ const getReceivedLikesDetailed = async (): Promise<
       };
       setUserData(updatedUserData);
       await saveProgress(previousScreen);
-      router.navigate(`onboarding/${previousScreen}` as any);
+      
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace(`onboarding/${previousScreen}` as any);
+      }
     }
   };
 
   const navigateToScreen = async (screen: string) => {
     if (screen === "NameScreen") {
-      router.navigate("onboarding/LoginSignupScreen" as any);
+      router.replace("onboarding/LoginSignupScreen" as any);
     } else {
       await saveProgress(screen);
-      router.navigate(`onboarding/${screen}` as any);
+      router.push(`onboarding/${screen}` as any);
     }
   };
   
