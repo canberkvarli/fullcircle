@@ -10,6 +10,7 @@ import {
   Platform,
   useColorScheme,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -18,6 +19,8 @@ import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const DEFAULT_LOCATION = {
   latitude: 37.8715,
@@ -179,13 +182,13 @@ const LocationScreen = () => {
       <OnboardingProgressBar currentScreen="LocationScreen" />
 
       <View style={styles.contentContainer}>
-        <Text style={styles.title}>Where do you call home?</Text>
-
-        <Text style={styles.subtitle}>
-          Share your location to connect with people nearby
-        </Text>
-
-        <Text style={styles.regionName}>{regionName}</Text>
+        <View style={styles.headerSection}>
+          <Text style={styles.title}>Where are you rooted?</Text>
+          <Text style={styles.subtitle}>
+            Share your location to connect with people nearby
+          </Text>
+          <Text style={styles.regionName}>{regionName}</Text>
+        </View>
 
         <View style={styles.mapContainer}>
           {loading ? (
@@ -238,8 +241,8 @@ const LocationScreen = () => {
         </View>
 
         <Text style={styles.affirmation}>
-          The best connections often happen close to
-          <Text style={styles.highlightedWord}> home</Text>
+          The best connections often happen close to{' '}
+          <Text style={styles.highlightedWord}>home</Text>
         </Text>
       </View>
 
@@ -255,6 +258,13 @@ const LocationScreen = () => {
 
 const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>) => {
   const colors = Colors[colorScheme];
+  
+  // Calculate responsive map height based on screen size
+  const getMapHeight = () => {
+    if (screenHeight < 700) return 220; // Small screens (iPhone SE, etc.)
+    if (screenHeight < 800) return 260; // Medium screens (iPhone 12/13)
+    return 270; // Large screens (iPhone Pro Max, etc.)
+  };
 
   return StyleSheet.create({
     container: {
@@ -291,7 +301,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     contentContainer: {
       flex: 1,
-      paddingBottom: 100,
+      justifyContent: 'space-between',
+      paddingBottom: 100, // Space for continue button
+    },
+    headerSection: {
+      marginBottom: Spacing.lg,
     },
     title: {
       ...fonts.spiritualTitleFont,
@@ -305,7 +319,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
       paddingHorizontal: Spacing.lg,
       fontStyle: "normal",
     },
@@ -313,16 +327,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.primary,
       fontSize: Typography.sizes.lg,
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.sm,
       textAlign: "center",
       fontStyle: "normal",
       fontWeight: Typography.weights.medium,
     },
     mapContainer: {
-      height: 300,
+      height: getMapHeight(), // Responsive height
       borderRadius: BorderRadius.xl,
       overflow: "hidden",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
       marginHorizontal: 0,
       position: "relative",
       backgroundColor: colors.card,
@@ -411,7 +425,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.lg,
-      marginTop: 'auto',
       opacity: 0.8,
     },
     highlightedWord: {
