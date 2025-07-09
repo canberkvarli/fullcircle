@@ -19,21 +19,20 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const healingModalities = [
-  { name: "Reiki", icon: "👐", color: "#E74C3C" },
-  { name: "Acupuncture", icon: "📍", color: "#F39C12" },
-  { name: "Sound Therapy", icon: "🎼", color: "#F1C40F" },
-  { name: "Crystal Healing", icon: "💎", color: "#2ECC71" },
-  { name: "Aromatherapy", icon: "🌸", color: "#3498DB" },
-  { name: "Light Therapy", icon: "✨", color: "#E91E63" },
-  { name: "Massage Therapy", icon: "💆", color: "#FF5722" },
-  { name: "Hypnotherapy", icon: "🌀", color: "#607D8B" },
-  { name: "Homeopathy", icon: "💧", color: "#009688" },
-  { name: "Herbalism", icon: "🌿", color: "#4CAF50" },
-  { name: "Ayahuasca", icon: "🍄", color: "#8E24AA" },
-  { name: "Kambo", icon: "🐸", color: "#43A047" },
+  { name: "Reiki", icon: "hand-left-outline", color: "#E74C3C" },
+  { name: "Acupuncture", icon: "location-outline", color: "#F39C12" },
+  { name: "Sound Therapy", icon: "musical-notes-outline", color: "#F1C40F" },
+  { name: "Crystal Healing", icon: "diamond-outline", color: "#2ECC71" },
+  { name: "Aromatherapy", icon: "flower-outline", color: "#3498DB" },
+  { name: "Light Therapy", icon: "sunny-outline", color: "#E91E63" },
+  { name: "Massage Therapy", icon: "body-outline", color: "#FF5722" },
+  { name: "Hypnotherapy", icon: "eye-outline", color: "#607D8B" },
+  { name: "Homeopathy", icon: "water-outline", color: "#009688" },
+  { name: "Herbalism", icon: "leaf-outline", color: "#4CAF50" },
+  { name: "Plant Medicine", icon: "flask-outline", color: "#8E24AA" },
 ];
 
 function HealingModalitiesScreen() {
@@ -55,6 +54,53 @@ function HealingModalitiesScreen() {
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData?.hiddenFields || {}
   );
+
+  // Responsive dimensions - much more adaptive approach
+  const getResponsiveDimensions = () => {
+    const isTablet = screenWidth > 768;
+    const isSmallDevice = screenWidth < 375;
+    const isVerySmall = screenWidth < 350;
+    
+    // More conservative sizing that works on all devices
+    let containerSize;
+    if (isVerySmall) {
+      containerSize = screenWidth * 0.88; // Increased from 85% to 88%
+    } else if (isSmallDevice) {
+      containerSize = screenWidth * 0.91; // Increased from 88% to 91%
+    } else if (isTablet) {
+      containerSize = Math.min(screenWidth * 0.75, 520); // Increased from 500px to 520px
+    } else {
+      containerSize = screenWidth * 0.93; // Increased from 90% to 93%
+    }
+    
+    // Ensure minimum viable size
+    containerSize = Math.max(containerSize, 320);
+    
+    // Radius proportional to container but with safety margins
+    const radius = containerSize * 0.36; // Increased from 0.35 to 0.36
+    
+    // Orb and center sizes based on available space - slightly bigger
+    const orbSize = Math.max(Math.min(containerSize * 0.085, 52), 37); // Increased from 0.08 to 0.085, max 52
+    const centerSize = Math.max(Math.min(containerSize * 0.16, 95), 65); // Increased from 0.15 to 0.16, max 95
+    
+    // Label container size based on spacing between orbs - slightly bigger
+    const circumference = 2 * Math.PI * radius;
+    const spaceBetweenOrbs = circumference / healingModalities.length;
+    const labelContainerSize = Math.max(Math.min(spaceBetweenOrbs * 1.40, 85), 65); // Increased from 0.8 to 0.85, max 85
+    
+    return {
+      containerSize,
+      radius,
+      orbSize,
+      centerSize,
+      labelContainerSize,
+      isTablet,
+      isSmallDevice,
+      isVerySmall,
+    };
+  };
+
+  const dimensions = getResponsiveDimensions();
 
   // Animations
   const rotationAnim = useRef(new Animated.Value(0)).current;
@@ -114,15 +160,10 @@ function HealingModalitiesScreen() {
   }, []);
 
   const handleModalitiesSubmit = async () => {
-    if (selectedModalities.length === 0) {
-      Alert.alert("Sacred Healing", "Please select at least one healing modality that calls to your soul");
-      return;
-    }
-
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
-        Alert.alert("Energy Disruption", "Something mystical went wrong. Please try again.");
+        Alert.alert("Connection Error", "Something went wrong. Please try again.");
         return;
       }
 
@@ -135,7 +176,7 @@ function HealingModalitiesScreen() {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The universe had trouble saving your healing modalities: " + error.message);
+      Alert.alert("Error", "Unable to save your healing modalities: " + error.message);
     }
   };
 
@@ -163,10 +204,11 @@ function HealingModalitiesScreen() {
   // Calculate perfect circle positions with equal distribution
   const getCirclePosition = (index: number, totalItems: number, radius: number, centerX: number, centerY: number) => {
     const angle = (index * 2 * Math.PI) / totalItems - Math.PI / 2; // Start from top
+    const { labelContainerSize } = dimensions;
     
     return {
-      left: centerX + radius * Math.cos(angle) - 35, // -35 for half the orb container width (70/2)
-      top: centerY + radius * Math.sin(angle) - 35,   // -35 for half the orb container height (70/2)
+      left: centerX + radius * Math.cos(angle) - labelContainerSize / 2,
+      top: centerY + radius * Math.sin(angle) - labelContainerSize / 2,
     };
   };
 
@@ -187,18 +229,33 @@ function HealingModalitiesScreen() {
     });
 
     const allSelected = selectedModalities.length === healingModalities.length;
+    const { centerSize } = dimensions;
 
     return (
-      <View style={styles.centerContainer}>
-        {/* Divine Yellow Light Core */}
+      <View style={[styles.centerContainer, { 
+        left: dimensions.containerSize / 2 - centerSize / 2,
+        top: dimensions.containerSize / 2 - centerSize / 2,
+        width: centerSize,
+        height: centerSize,
+      }]}>
+        {/* Clickable Overlay - This ensures the touch works */}
         <TouchableOpacity
           onPress={handleSelectAll}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
+          style={[styles.centerTouchable, {
+            width: centerSize,
+            height: centerSize,
+            borderRadius: centerSize / 2,
+          }]}
         >
+          {/* Visual Circle with Animation */}
           <Animated.View 
             style={[
               styles.centerCircle,
               {
+                width: centerSize,
+                height: centerSize,
+                borderRadius: centerSize / 2,
                 transform: [
                   { rotate: rotation },
                   { scale: pulseAnim }
@@ -207,21 +264,46 @@ function HealingModalitiesScreen() {
               allSelected && styles.centerCircleAllSelected
             ]}
           >
-            <TouchableOpacity
-              onPress={handleSelectAll}
-              activeOpacity={0.8}
-              style={styles.innerCoreButton}
-            >
-              <View style={[styles.innerCore, allSelected && styles.innerCoreAllSelected]} />
-            </TouchableOpacity>
+            <View style={[
+              styles.innerCore, 
+              {
+                width: centerSize * 0.7,
+                height: centerSize * 0.7,
+                borderRadius: centerSize * 0.35,
+              },
+              allSelected && styles.innerCoreAllSelected
+            ]} />
           </Animated.View>
         </TouchableOpacity>
         
-        {/* Energy waves */}
-        <View style={styles.energyWaves}>
-          <View style={[styles.wave, styles.wave1]} />
-          <View style={[styles.wave, styles.wave2]} />
-          <View style={[styles.wave, styles.wave3]} />
+        {/* Energy waves - Behind the touchable area */}
+        <View style={[styles.energyWaves, {
+          width: centerSize * 2,
+          height: centerSize * 2,
+          left: -centerSize / 2,
+          top: -centerSize / 2,
+        }]}>
+          <View style={[styles.wave, styles.wave1, {
+            width: centerSize * 1.4,
+            height: centerSize * 1.4,
+            borderRadius: centerSize * 0.7,
+            left: centerSize * 0.3,
+            top: centerSize * 0.3,
+          }]} />
+          <View style={[styles.wave, styles.wave2, {
+            width: centerSize * 1.7,
+            height: centerSize * 1.7,
+            borderRadius: centerSize * 0.85,
+            left: centerSize * 0.15,
+            top: centerSize * 0.15,
+          }]} />
+          <View style={[styles.wave, styles.wave3, {
+            width: centerSize * 2,
+            height: centerSize * 2,
+            borderRadius: centerSize,
+            left: 0,
+            top: 0,
+          }]} />
         </View>
       </View>
     );
@@ -230,14 +312,38 @@ function HealingModalitiesScreen() {
   const renderModalityOrb = (modality: typeof healingModalities[0], index: number) => {
     const isSelected = selectedModalities.includes(modality.name);
     const allSelected = selectedModalities.length === healingModalities.length;
-    const orbColor = getOrbColor(modality.color);
-    const containerSize = 440; // Increased container size for more spacing
+    const { containerSize, radius, orbSize, labelContainerSize } = dimensions;
     const centerX = containerSize / 2;
     const centerY = containerSize / 2;
-    const radius = 175; // Increased radius to spread modalities further apart
     
     const position = getCirclePosition(index, healingModalities.length, radius, centerX, centerY);
     const animation = modalityAnimations[index];
+
+    // Calculate font size based on container size
+    const fontSize = Math.max(Math.min(labelContainerSize * 0.16, Typography.sizes.xs), 10); // Increased from 0.15 to 0.16
+
+    // Better color logic for readability
+    let orbColor, textColor, iconColor, backgroundColor;
+    
+    if (allSelected) {
+      // When all selected - golden theme with better contrast
+      orbColor = '#FFD700';
+      backgroundColor = '#FFD700' + 'DD'; // More opaque golden background
+      iconColor = '#1A1A1A'; // Dark icon for contrast
+      textColor = '#B8860B'; // Darker golden text for readability
+    } else if (isSelected) {
+      // Individual selection - original colors
+      orbColor = modality.color;
+      backgroundColor = modality.color + 'FF';
+      iconColor = '#FFFFFF';
+      textColor = modality.color;
+    } else {
+      // Unselected state
+      orbColor = modality.color;
+      backgroundColor = modality.color + '40';
+      iconColor = modality.color;
+      textColor = colors.textDark;
+    }
 
     return (
       <Animated.View
@@ -246,6 +352,8 @@ function HealingModalitiesScreen() {
           styles.modalityOrb,
           position,
           {
+            width: labelContainerSize,
+            height: labelContainerSize,
             transform: [{ scale: animation.scale }],
             opacity: animation.opacity,
           }
@@ -254,11 +362,15 @@ function HealingModalitiesScreen() {
         <TouchableOpacity
           style={[
             styles.orbTouchable,
-            { 
-              backgroundColor: orbColor + (isSelected ? 'FF' : '40'),
+            {
+              width: orbSize,
+              height: orbSize,
+              borderRadius: orbSize / 2,
+              backgroundColor: backgroundColor,
               borderColor: orbColor,
+              borderWidth: allSelected ? 3 : 2, // Thicker border when all selected
             },
-            isSelected && {
+            (isSelected || allSelected) && {
               ...styles.selectedOrb,
               shadowColor: orbColor,
             }
@@ -266,12 +378,26 @@ function HealingModalitiesScreen() {
           onPress={() => handleModalitySelect(modality.name)}
           activeOpacity={0.8}
         >
-          <Text style={styles.orbIcon}>{modality.icon}</Text>
+          <Ionicons 
+            name={modality.icon as any} 
+            size={Math.max(Math.min(orbSize * 0.45, 22), 15)} // Slightly larger icons
+            color={iconColor}
+          />
         </TouchableOpacity>
-        <Text style={[
-          styles.modalityLabel,
-          { color: isSelected ? orbColor : colors.textDark }
-        ]}>
+        <Text 
+          style={[
+            styles.modalityLabel,
+            { 
+              color: textColor,
+              fontSize: fontSize,
+              fontWeight: (allSelected || isSelected) ? Typography.weights.semibold : Typography.weights.regular,
+              width: labelContainerSize,
+            }
+          ]}
+          numberOfLines={2}
+          adjustsFontSizeToFit={true}
+          minimumFontScale={0.75} // Increased from 0.7 to 0.75
+        >
           {modality.name}
         </Text>
       </Animated.View>
@@ -281,17 +407,30 @@ function HealingModalitiesScreen() {
   const renderSelectedCount = () => {
     if (selectedModalities.length === 0) return null;
 
+    const allSelected = selectedModalities.length === healingModalities.length;
+
     return (
       <View style={styles.selectedContainer}>
-        <Text style={styles.selectedText}>
-          {selectedModalities.length} healing modalities selected
+        <Text style={[
+          styles.selectedText,
+          allSelected && { color: '#B8860B' } // Darker golden text for better readability
+        ]}>
+          {allSelected ? 'All healing modalities selected! ✨' : `${selectedModalities.length} healing modalit${selectedModalities.length === 1 ? 'y' : 'ies'} selected`}
         </Text>
         <View style={styles.selectedDots}>
           {selectedModalities.slice(0, 6).map((_, index) => (
-            <View key={index} style={styles.selectedDot} />
+            <View key={index} style={[
+              styles.selectedDot,
+              allSelected && { backgroundColor: '#B8860B' } // Darker golden dots
+            ]} />
           ))}
           {selectedModalities.length > 6 && (
-            <Text style={styles.moreText}>+{selectedModalities.length - 6}</Text>
+            <Text style={[
+              styles.moreText,
+              allSelected && { color: '#B8860B' } // Darker golden text
+            ]}>
+              +{selectedModalities.length - 6}
+            </Text>
           )}
         </View>
       </View>
@@ -315,7 +454,7 @@ function HealingModalitiesScreen() {
         {/* Header */}
         <Text style={styles.title}>Your Healing Journey</Text>
         <Text style={styles.subtitle}>
-          Select the sacred modalities that resonate with your healing essence
+          Select the modalities that resonate with your healing essence.
         </Text>
 
         {/* Selected Count - Reserved Space */}
@@ -329,7 +468,10 @@ function HealingModalitiesScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.healingCircleContainer}>
+          <View style={[styles.healingCircleContainer, {
+            width: dimensions.containerSize,
+            height: dimensions.containerSize,
+          }]}>
             {/* Center Visualization */}
             {renderCenterVisualization()}
             
@@ -354,25 +496,22 @@ function HealingModalitiesScreen() {
 
           {/* Affirmation */}
           <Text style={styles.affirmation}>
-            Your healing journey is a sacred path that connects you to others walking similar roads of transformation
+            Your healing journey is a sacred path that connects you to others walking similar roads of
+            <Text style={styles.highlightedWord}> transformation</Text>
           </Text>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              selectedModalities.length === 0 && styles.submitButtonDisabled
-            ]}
-            onPress={handleModalitiesSubmit}
-            disabled={selectedModalities.length === 0}
-          >
-            <Ionicons 
-              name="chevron-forward" 
-              size={24} 
-              color={colors.background} 
-            />
-          </TouchableOpacity>
         </ScrollView>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleModalitiesSubmit}
+        >
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={colors.background} 
+          />
+        </TouchableOpacity>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -414,17 +553,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
-    innerCoreButton: {
-      width: 70,
-      height: 70,
-      borderRadius: 35,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     title: {
       ...fonts.spiritualTitleFont,
       color: colors.textDark,
-      textAlign: "center",
+      textAlign: "left",
       marginTop: Spacing.sm,
       marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
@@ -432,10 +564,18 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     subtitle: {
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
-      textAlign: "center",
-      marginBottom: Spacing.xs,
+      textAlign: "left",
+      marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
+    },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
     },
     selectedCountSpace: {
       height: 45,
@@ -475,29 +615,20 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     scrollContainer: {
       paddingHorizontal: Spacing.lg,
-      paddingBottom: Spacing.lg,
+      paddingBottom: 120,
       alignItems: 'center',
     },
     healingCircleContainer: {
-      width: 440, // Increased container width
-      height: 440, // Increased container height
       position: 'relative',
       marginBottom: Spacing.xs,
       alignSelf: 'center',
     },
     centerContainer: {
       position: 'absolute',
-      left: 220 - 50, // Perfect center horizontally (440/2 - 50)
-      top: 220 - 50,  // Perfect center vertically (440/2 - 50)
       alignItems: 'center',
       justifyContent: 'center',
-      width: 100,
-      height: 100,
     },
     centerCircle: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
       backgroundColor: '#FFD700' + '30',
       borderWidth: 3,
       borderColor: '#FFD700',
@@ -527,10 +658,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
+    centerTouchable: {
+      position: 'absolute',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10, // Ensure it's on top
+    },
     innerCore: {
-      width: 70,
-      height: 70,
-      borderRadius: 35,
       backgroundColor: '#FFD700',
       ...Platform.select({
         ios: {
@@ -557,45 +691,21 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     energyWaves: {
       position: 'absolute',
-      width: 200,
-      height: 200,
-      left: -50,
-      top: -50,
+      zIndex: 1, // Behind the touchable area
     },
     wave: {
       position: 'absolute',
-      borderRadius: 120,
       borderWidth: 1,
       borderColor: '#FFD700' + '20',
     },
-    wave1: {
-      width: 140,
-      height: 140,
-      left: 30,
-      top: 30,
-    },
-    wave2: {
-      width: 170,
-      height: 170,
-      left: 15,
-      top: 15,
-    },
-    wave3: {
-      width: 200,
-      height: 200,
-      left: 0,
-      top: 0,
-    },
+    wave1: {},
+    wave2: {},
+    wave3: {},
     modalityOrb: {
       position: 'absolute',
       alignItems: 'center',
-      width: 70, // Increased width for better label spacing
-      height: 90,
     },
     orbTouchable: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
@@ -625,22 +735,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
-    orbIcon: {
-      fontSize: 20,
-    },
     modalityLabel: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.xs,
       textAlign: 'center',
-      maxWidth: 70, // Increased to match container width
       fontWeight: Typography.weights.medium,
+      lineHeight: Typography.sizes.xs * 1.2,
+      marginTop: Spacing.xs / 2,
     },
     hiddenContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       marginTop: Spacing["3xl"],
-      marginBottom: Spacing.xs,
+      marginBottom: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
       borderRadius: BorderRadius.md,
@@ -684,25 +791,26 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
       fontStyle: "italic",
-      color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
-      marginTop: Spacing.sm,
-      paddingHorizontal: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.xl,
+      color: colors.textDark,
+      opacity: 0.8,
     },
     submitButton: {
-      alignSelf: 'flex-end',
+      position: "absolute",
+      bottom: Platform.select({ ios: 50, android: 30 }),
+      right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       width: 56,
       height: 56,
       justifyContent: "center",
       alignItems: "center",
-      marginBottom: Spacing.lg,
-      marginTop: Spacing.lg,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -712,20 +820,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
         android: {
           elevation: 8,
-        },
-      }),
-    },
-    submitButtonDisabled: {
-      backgroundColor: colors.textMuted,
-      opacity: 0.6,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.textMuted,
-          shadowOpacity: 0.15,
-          shadowRadius: 3,
-        },
-        android: {
-          elevation: 3,
         },
       }),
     },
