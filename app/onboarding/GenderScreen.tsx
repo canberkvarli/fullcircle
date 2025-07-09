@@ -369,7 +369,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       backgroundColor: colors.background,
     },
     scrollViewContent: {
-      padding: Spacing.lg,
       paddingBottom: 100,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
@@ -566,7 +565,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: "center",
       justifyContent: "space-between",
       marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.lg,
+      marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
       borderRadius: BorderRadius.xl,
