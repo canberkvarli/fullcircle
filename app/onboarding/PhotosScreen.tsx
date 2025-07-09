@@ -380,7 +380,9 @@ function PhotosScreen() {
 
           {/* Affirmation */}
           <Text style={styles.affirmation}>
-            Your authentic beauty shines through every image you share
+            Your authentic{' '}
+            <Text style={styles.highlightedWord}>beauty</Text>
+            {' shines through every image you share'}
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -696,6 +698,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.xl,
       marginBottom: Spacing.xl,
+    },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
     },
   });
 };
