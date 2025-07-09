@@ -592,6 +592,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     intentSubtitle: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.sm,
+      paddingRight: Spacing.lg,
       color: colors.textLight,
       fontStyle: "italic",
       lineHeight: Typography.sizes.sm * 1.3,
