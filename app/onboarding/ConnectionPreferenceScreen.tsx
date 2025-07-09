@@ -523,7 +523,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     intentOption: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
+      padding: Spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       position: "relative",

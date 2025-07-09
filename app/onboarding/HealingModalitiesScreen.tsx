@@ -204,11 +204,11 @@ function HealingModalitiesScreen() {
   // Calculate perfect circle positions with equal distribution
   const getCirclePosition = (index: number, totalItems: number, radius: number, centerX: number, centerY: number) => {
     const angle = (index * 2 * Math.PI) / totalItems - Math.PI / 2; // Start from top
-    const { labelContainerSize } = dimensions;
+    const { orbSize } = dimensions;
     
     return {
-      left: centerX + radius * Math.cos(angle) - labelContainerSize / 2,
-      top: centerY + radius * Math.sin(angle) - labelContainerSize / 2,
+      left: centerX + radius * Math.cos(angle) - orbSize / 2,
+      top: centerY + radius * Math.sin(angle) - orbSize / 2,
     };
   };
 
@@ -229,12 +229,15 @@ function HealingModalitiesScreen() {
     });
 
     const allSelected = selectedModalities.length === healingModalities.length;
-    const { centerSize } = dimensions;
+    const { centerSize, containerSize, radius } = dimensions;
+
+    const centerX = containerSize / 2;
+    const centerY = containerSize / 2;
 
     return (
       <View style={[styles.centerContainer, { 
-        left: dimensions.containerSize / 2 - centerSize / 2,
-        top: dimensions.containerSize / 2 - centerSize / 2,
+        left: centerX - centerSize / 2,
+        top: centerY - centerSize / 2,
         width: centerSize,
         height: centerSize,
       }]}>
@@ -309,18 +312,22 @@ function HealingModalitiesScreen() {
     );
   };
 
+
   const renderModalityOrb = (modality: typeof healingModalities[0], index: number) => {
     const isSelected = selectedModalities.includes(modality.name);
     const allSelected = selectedModalities.length === healingModalities.length;
     const { containerSize, radius, orbSize, labelContainerSize } = dimensions;
+    
+    // Use the exact same center calculation
     const centerX = containerSize / 2;
     const centerY = containerSize / 2;
     
-    const position = getCirclePosition(index, healingModalities.length, radius, centerX, centerY);
+    // Get orb position (this positions the orb center, not the label container)
+    const orbPosition = getCirclePosition(index, healingModalities.length, radius, centerX, centerY);
     const animation = modalityAnimations[index];
 
     // Calculate font size based on container size
-    const fontSize = Math.max(Math.min(labelContainerSize * 0.16, Typography.sizes.xs), 10); // Increased from 0.15 to 0.16
+    const fontSize = Math.max(Math.min(labelContainerSize * 0.16, Typography.sizes.xs), 10);
 
     // Better color logic for readability
     let orbColor, textColor, iconColor, backgroundColor;
@@ -328,9 +335,9 @@ function HealingModalitiesScreen() {
     if (allSelected) {
       // When all selected - golden theme with better contrast
       orbColor = '#FFD700';
-      backgroundColor = '#FFD700' + 'DD'; // More opaque golden background
-      iconColor = '#1A1A1A'; // Dark icon for contrast
-      textColor = '#B8860B'; // Darker golden text for readability
+      backgroundColor = '#FFD700' + 'DD';
+      iconColor = '#1A1A1A';
+      textColor = '#B8860B';
     } else if (isSelected) {
       // Individual selection - original colors
       orbColor = modality.color;
@@ -350,8 +357,9 @@ function HealingModalitiesScreen() {
         key={modality.name}
         style={[
           styles.modalityOrb,
-          position,
           {
+            left: orbPosition.left - (labelContainerSize - orbSize) / 2,
+            top: orbPosition.top,
             width: labelContainerSize,
             height: labelContainerSize,
             transform: [{ scale: animation.scale }],
@@ -359,6 +367,7 @@ function HealingModalitiesScreen() {
           }
         ]}
       >
+        
         <TouchableOpacity
           style={[
             styles.orbTouchable,
@@ -368,7 +377,8 @@ function HealingModalitiesScreen() {
               borderRadius: orbSize / 2,
               backgroundColor: backgroundColor,
               borderColor: orbColor,
-              borderWidth: allSelected ? 3 : 2, // Thicker border when all selected
+              borderWidth: allSelected ? 3 : 2,
+              alignSelf: 'center',
             },
             (isSelected || allSelected) && {
               ...styles.selectedOrb,
