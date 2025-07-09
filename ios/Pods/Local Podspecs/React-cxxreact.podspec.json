@@ -34,8 +34,7 @@
     "React-jsi": [],
     "React-logger": [],
     "React-debug": [],
-    "React-timing": [],
-    "hermes-engine": []
+    "React-timing": []
   },
   "resource_bundles": {
     "React-cxxreact_privacy": "PrivacyInfo.xcprivacy"

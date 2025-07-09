@@ -20,6 +20,7 @@
     "@expo/vector-icons": "~14.0.4",
     "@ptomasroos/react-native-multi-slider": "^2.2.2",
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-firebase/app": "^20.5.0",
     "@react-native-firebase/auth": "^20.5.0",
     "@react-native-firebase/firestore": "^20.5.0",
@@ -65,8 +66,7 @@
     "react-native-svg": "15.8.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
-    "uuid": "^10.0.0",
-    "@react-native-community/datetimepicker": "8.2.0"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",

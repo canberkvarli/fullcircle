@@ -39,7 +39,6 @@
     "ReactCodegen": [],
     "React-NativeModulesApple": [],
     "React-jsinspector": [],
-    "ReactCommon": [],
-    "hermes-engine": []
+    "ReactCommon": []
   }
 }

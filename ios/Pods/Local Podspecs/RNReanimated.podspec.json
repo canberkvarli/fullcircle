@@ -56,7 +56,7 @@
     "React-ImageManager": [],
     "React-rendererdebug": [],
     "DoubleConversion": [],
-    "hermes-engine": []
+    "React-jsi": []
   },
   "subspecs": [
     {

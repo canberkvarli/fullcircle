@@ -41,6 +41,6 @@
     "React-graphics": [],
     "React-Fabric": [],
     "React-rendererdebug": [],
-    "hermes-engine": []
+    "React-jsc": []
   }
 }
