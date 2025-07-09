@@ -124,18 +124,18 @@ const ConnectionPreferenceScreen = () => {
     if (intent === "romantic") {
       switch (optionId) {
         case "Men":
-          return '#6366F1'; // Indigo for masculine energy
+          return '#3B82F6'; // Classic blue for masculine energy
         case "Women":
-          return '#EC4899'; // Pink for feminine energy
+          return '#F59E0B'; // Warm amber for feminine energy
         case "Non-Binary":
           return '#8B5CF6'; // Purple for non-binary
         case "Everyone":
-          return '#F59E0B'; // Amber for all energies
+          return '#DC2626'; // Rich red for all energies
         default:
-          return '#F97316'; // Orange for romantic styles
+          return '#EF4444'; // Bright red for romantic styles
       }
     } else if (intent === "friendship") {
-      return '#10B981'; // Emerald for friendship
+      return '#059669'; // Consistent emerald for friendship
     }
     return '#06B6D4'; // Cyan default
   };
@@ -150,17 +150,17 @@ const ConnectionPreferenceScreen = () => {
   const getIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
-        primary: '#EC4899',
-        secondary: '#FDF2F8',
-        accent: '#BE185D',
-        gradient: ['#EC4899', '#F97316'],
+        primary: '#B91C1C', // Deep sophisticated red
+        secondary: '#FEF2F2', // Very light red background
+        accent: '#7F1D1D', // Darker red accent
+        gradient: ['#B91C1C', '#DC2626'],
       };
     } else {
       return {
-        primary: '#10B981',
-        secondary: '#F0FDF4',
-        accent: '#047857',
-        gradient: ['#10B981', '#06B6D4'],
+        primary: '#059669', // Rich emerald green
+        secondary: '#ECFDF5', // Very light green background
+        accent: '#047857', // Deeper green accent
+        gradient: ['#059669', '#10B981'],
       };
     }
   };
@@ -242,10 +242,7 @@ const ConnectionPreferenceScreen = () => {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert(
-        "Cosmic Interference",
-        "The universe had trouble saving your preferences: " + error.message
-      );
+      Alert.alert("Error", "Unable to save your preferences: " + error.message);
     }
   };
 
@@ -294,12 +291,20 @@ const ConnectionPreferenceScreen = () => {
                 onPress={() => toggleConnectionIntent(intent.id)}
               >
                 <View style={styles.intentContent}>
-                  <Ionicons 
-                    name={intent.icon as any} 
-                    size={24} 
-                    color={connectionIntent === intent.id ? getIntentColors(intent.id).primary : colors.textMuted} 
-                  />
-                  <View style={{ flex: 1 }}>
+                  <View style={[
+                    styles.iconContainer,
+                    connectionIntent === intent.id && { 
+                      backgroundColor: getIntentColors(intent.id).primary + '20',
+                      borderColor: getIntentColors(intent.id).primary 
+                    }
+                  ]}>
+                    <Ionicons 
+                      name={intent.icon as any} 
+                      size={20} 
+                      color={connectionIntent === intent.id ? getIntentColors(intent.id).primary : colors.textMuted} 
+                    />
+                  </View>
+                  <View style={styles.textContainer}>
                     <Text style={[
                       styles.intentTitle,
                       connectionIntent === intent.id && { color: getIntentColors(intent.id).primary }
@@ -314,7 +319,9 @@ const ConnectionPreferenceScreen = () => {
                     </Text>
                   </View>
                   {connectionIntent === intent.id && (
-                    <View style={[styles.selectedOrb, { backgroundColor: getIntentColors(intent.id).primary }]} />
+                    <View style={styles.orbSpace}>
+                      <View style={[styles.selectedOrb, { backgroundColor: getIntentColors(intent.id).primary }]} />
+                    </View>
                   )}
                 </View>
               </TouchableOpacity>
@@ -408,22 +415,23 @@ const ConnectionPreferenceScreen = () => {
               {/* Hidden Field Toggle */}
               <View style={styles.hiddenContainer}>
                 <Text style={styles.hiddenText}>Keep this private</Text>
-                <View style={styles.orbCheckboxContainer}>
-                  <TouchableOpacity 
-                    style={styles.orbCheckbox}
-                    onPress={() => toggleHidden("connectionPreferences")}
-                  >
-                    {hiddenFields.connectionPreferences && (
-                      <View style={[styles.selectedOrb, { backgroundColor: intentColors.primary }]} />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity 
+                  style={[
+                    styles.checkboxContainer,
+                    hiddenFields.connectionPreferences && styles.checkboxSelected
+                  ]}
+                  onPress={() => toggleHidden("connectionPreferences")}
+                >
+                  {hiddenFields.connectionPreferences && (
+                    <Ionicons name="checkmark" size={16} color={colors.background} />
+                  )}
+                </TouchableOpacity>
               </View>
 
               {/* Affirmation */}
               <Text style={styles.affirmation}>
                 {connectionIntent === "romantic" 
-                  ? "Open your heart to the dance of love and connection"
+                  ? <>Open your <Text style={styles.highlightedWord}>heart</Text> to the dance of love and connection</>
                   : "Nurture the bonds that support your spiritual journey"
                 }
               </Text>
@@ -437,7 +445,6 @@ const ConnectionPreferenceScreen = () => {
             styles.submitButton,
             !connectionIntent && styles.submitButtonDisabled,
             (connectionIntent === "romantic" && selectedPreferences.length === 0) && styles.submitButtonDisabled,
-            connectionIntent && { backgroundColor: intentColors.primary }
           ]} 
           onPress={handleSubmit}
           disabled={!connectionIntent || (connectionIntent === "romantic" && selectedPreferences.length === 0)}
@@ -511,93 +518,116 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     intentContainer: {
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
+      gap: Spacing.md,
     },
     intentOption: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
       padding: Spacing.lg,
-      marginBottom: Spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       position: "relative",
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
         },
         android: {
-          elevation: 4,
+          elevation: 3,
         },
       }),
     },
     intentSelected: {
       borderWidth: 2,
-      transform: [{ scale: 1.02 }],
+      backgroundColor: colors.background,
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
+          shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.15,
-          shadowRadius: 16,
+          shadowRadius: 15,
         },
         android: {
-          elevation: 8,
+          elevation: 6,
         },
       }),
     },
     intentContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      position: 'relative',
+    },
+    iconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: BorderRadius.lg,
+      backgroundColor: colors.border + '20',
+      borderWidth: 1,
+      borderColor: colors.border + '60',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: Spacing.lg,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    textContainer: {
+      flex: 1,
     },
     intentTitle: {
-      ...fonts.spiritualTitleFont,
-      fontSize: Typography.sizes.xl,
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.lg,
       color: colors.textDark,
-      marginLeft: Spacing.md,
       marginBottom: Spacing.xs,
-      fontWeight: Typography.weights.bold,
+      fontWeight: Typography.weights.semibold,
     },
     intentSubtitle: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.base,
+      fontSize: Typography.sizes.sm,
       color: colors.textLight,
       fontStyle: "italic",
-      marginLeft: Spacing.md,
+      lineHeight: Typography.sizes.sm * 1.3,
     },
     sectionTitle: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.lg,
       marginBottom: Spacing.lg,
       paddingHorizontal: Spacing.lg,
-      fontWeight: Typography.weights.bold,
+      fontWeight: Typography.weights.semibold,
     },
     preferencesContainer: {
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
+      gap: Spacing.md,
     },
     preferenceOption: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
-      marginBottom: Spacing.md,
+      padding: Spacing.xl,
       borderWidth: 1,
       borderColor: colors.border,
       position: "relative",
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
+          shadowOffset: { width: 0, height: 3 },
           shadowOpacity: 0.08,
-          shadowRadius: 8,
+          shadowRadius: 10,
         },
         android: {
-          elevation: 2,
+          elevation: 3,
         },
       }),
     },
@@ -613,6 +643,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.base,
       color: colors.textLight,
       fontStyle: "italic",
+      lineHeight: Typography.sizes.base * 1.3,
     },
     optionContent: {
       flexDirection: 'row',
@@ -653,16 +684,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     pillsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
-      paddingHorizontal: Spacing.xs,
+      paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
+      gap: Spacing.sm,
     },
     pillButton: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.full,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.lg,
-      marginRight: Spacing.sm,
-      marginBottom: Spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
       alignSelf: "flex-start",
@@ -673,8 +703,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         ios: {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 6,
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
         },
         android: {
           elevation: 2,
@@ -720,10 +750,21 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
       backgroundColor: colors.card,
-      padding: Spacing.lg,
-      borderRadius: BorderRadius.md,
+      padding: Spacing.xl,
+      borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
     },
     hiddenText: {
       ...fonts.spiritualBodyFont,
@@ -734,18 +775,44 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     orbCheckboxContainer: {
       marginLeft: Spacing.md,
     },
-    orbCheckbox: {
+    checkboxContainer: {
       width: 24,
       height: 24,
-      borderRadius: 12,
+      borderRadius: BorderRadius.sm,
       borderWidth: 2,
       borderColor: colors.border,
       backgroundColor: colors.card,
       justifyContent: 'center',
       alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    checkboxSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,
@@ -754,11 +821,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
     },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
+    },
     submitButton: {
       position: "absolute",
       bottom: Platform.select({ ios: 50, android: 30 }),
       right: Spacing.xl,
-      backgroundColor: colors.primary,
+      backgroundColor: '#8B5A2B', // Brown color like NameScreen
       borderRadius: BorderRadius.full,
       width: 56,
       height: 56,
@@ -766,7 +841,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: "center",
       ...Platform.select({
         ios: {
-          shadowColor: colors.primary,
+          shadowColor: '#8B5A2B',
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.4,
           shadowRadius: 8,
