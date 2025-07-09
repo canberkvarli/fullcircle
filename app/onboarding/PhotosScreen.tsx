@@ -690,7 +690,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       color: colors.textMuted,
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,

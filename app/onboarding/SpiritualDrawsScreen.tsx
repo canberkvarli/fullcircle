@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
-import Checkbox from "expo-checkbox";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -93,15 +92,10 @@ function SpiritualDrawsScreen() {
   }, []);
 
   const handleDrawsSubmit = async () => {
-    if (selectedDraws.length === 0) {
-      Alert.alert("Sacred Calling", "Please select at least one spiritual draw that resonates with your soul");
-      return;
-    }
-
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
-        Alert.alert("Energy Disruption", "Something mystical went wrong. Please try again.");
+        Alert.alert("Connection Error", "Something went wrong. Please try again.");
         return;
       }
 
@@ -114,7 +108,7 @@ function SpiritualDrawsScreen() {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The universe had trouble saving your spiritual draws: " + error.message);
+      Alert.alert("Error", "Unable to save your spiritual draws: " + error.message);
     }
   };
 
@@ -180,6 +174,7 @@ function SpiritualDrawsScreen() {
       </Animated.View>
     );
   };
+
   const renderSelectedPreview = () => {
     if (selectedDraws.length === 0) return null;
 
@@ -223,7 +218,7 @@ function SpiritualDrawsScreen() {
         {/* Header */}
         <Text style={styles.title}>What draws you to spirituality?</Text>
         <Text style={styles.subtitle}>
-          Select all the sacred callings that resonate with your soul
+          Select all the callings that resonate with your soul
         </Text>
 
         {/* Selected Preview */}
@@ -243,35 +238,37 @@ function SpiritualDrawsScreen() {
           {/* Hide Option */}
           <View style={styles.hiddenContainer}>
             <Text style={styles.hiddenText}>Keep my spiritual draws private</Text>
-            <Checkbox
-              value={hiddenFields["spiritualProfile"] || false}
-              onValueChange={() => toggleHidden("spiritualProfile")}
-              style={styles.checkbox}
-              color={hiddenFields["spiritualProfile"] ? colors.primary : undefined}
-            />
+            <View style={styles.orbCheckboxContainer}>
+              <TouchableOpacity 
+                style={styles.orbCheckbox}
+                onPress={() => toggleHidden("spiritualProfile")}
+              >
+                {hiddenFields["spiritualProfile"] && (
+                  <View style={styles.selectedOrb} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Affirmation */}
           <Text style={styles.affirmation}>
-            Your spiritual callings are the sacred threads that weave you to kindred souls
+            Your spiritual{' '}
+            <Text style={styles.highlightedWord}>callings</Text>
+            {' are the sacred threads that weave you to kindred souls'}
           </Text>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              selectedDraws.length === 0 && styles.submitButtonDisabled
-            ]}
-            onPress={handleDrawsSubmit}
-            disabled={selectedDraws.length === 0}
-          >
-            <Ionicons 
-              name="chevron-forward" 
-              size={24} 
-              color={colors.background} 
-            />
-          </TouchableOpacity>
         </ScrollView>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleDrawsSubmit}
+        >
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={colors.background} 
+          />
+        </TouchableOpacity>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -329,6 +326,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
     },
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
+    },
     selectedPreview: {
       alignItems: 'center',
       marginBottom: Spacing.lg,
@@ -366,7 +371,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     scrollContainer: {
       paddingHorizontal: Spacing.lg,
-      paddingBottom: Spacing.lg,
+      paddingBottom: 120, // Space for fixed submit button
     },
     drawsContainer: {
       gap: Spacing.lg,
@@ -455,31 +460,56 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.base,
       fontStyle: 'italic',
     },
-    checkbox: {
-      width: 20,
-      height: 20,
+    orbCheckboxContainer: {
+      marginLeft: Spacing.md,
+    },
+    orbCheckbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    selectedOrb: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: '#FFD700',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.8,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
-      marginTop: Spacing.lg,
+      paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.md,
     },
     submitButton: {
-      alignSelf: 'flex-end',
+      position: "absolute",
+      bottom: Platform.select({ ios: 50, android: 30 }),
+      right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       width: 56,
       height: 56,
       justifyContent: "center",
       alignItems: "center",
-      marginBottom: Spacing.lg,
-      marginTop: Spacing.lg,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -489,20 +519,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
         android: {
           elevation: 8,
-        },
-      }),
-    },
-    submitButtonDisabled: {
-      backgroundColor: colors.textMuted,
-      opacity: 0.6,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.textMuted,
-          shadowOpacity: 0.15,
-          shadowRadius: 3,
-        },
-        android: {
-          elevation: 3,
         },
       }),
     },
