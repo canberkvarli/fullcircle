@@ -36,7 +36,7 @@ const KindredSpirits: React.FC = () => {
       setLikedByUsers(users);
       setIsLoading(false);
     });
-    return () => unsubscribe();
+    return unsubscribe;
   }, [userData.userId, subscribeToReceivedLikes]);
 
   const handleCardPress = (user: any, isFirst: boolean) => {
