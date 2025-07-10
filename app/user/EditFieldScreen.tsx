@@ -47,6 +47,7 @@ const FIELD_OPTIONS = {
   connectionIntent: [
     { id: "romantic", label: "Dating", subtitle: "Seeking romantic & intimate connections", icon: "heart" },
     { id: "friendship", label: "Friendship", subtitle: "Building meaningful platonic bonds", icon: "people" },
+    { id: "both", label: "Both", subtitle: "Open to all types of meaningful connections", icon: "infinite" },
   ],
 
   // Connection preferences (for dating - who you're interested in) - EXPANDED OPTIONS with limit 2
@@ -74,6 +75,12 @@ const FIELD_OPTIONS = {
       "Practice Partners", "Meditation Buddies", "Adventure Seekers", "Study Circles",
       "Healing Circles", "Creative Collaborators", "Retreat Companions", 
       "Wisdom Sharers", "Community Builders", "Soul Supporters",
+    ],
+    both: [
+      // Combined styles for "both" option
+      "Twin Flame Seeker", "Soul Mate Guided", "Heart-Centered", "Love Without Labels",
+      "Practice Partners", "Meditation Buddies", "Healing Circles", "Soul Supporters",
+      "Consciousness Explorer", "Community Builders", "Creative Collaborators", "Wisdom Sharers",
     ],
   },
   
@@ -253,6 +260,12 @@ function EditFieldScreen() {
   };
 
   const handleSave = async () => {
+    // GENDER VALIDATION - Must select at least one gender
+    if (fieldName === "gender" && selectedItems.length === 0) {
+      Alert.alert("Gender Required", "Please select at least one gender identity.");
+      return;
+    }
+
     let updateData: any = {};
     
     if (fieldName === "fullName") {
@@ -289,7 +302,7 @@ function EditFieldScreen() {
           ...userData.matchPreferences,
           connectionIntent: selectedSingleItem,
           // Reset preferences when changing intent
-          connectionPreferences: selectedSingleItem === "romantic" ? [] : ["Everyone"],
+          connectionPreferences: (selectedSingleItem === "romantic" || selectedSingleItem === "both") ? [] : ["Everyone"],
           connectionStyles: [],
         },
       };
@@ -397,11 +410,23 @@ function EditFieldScreen() {
         secondary: '#FDF2F8',
         accent: '#BE185D',
       };
-    } else {
+    } else if (intent === "friendship") {
       return {
         primary: '#10B981',
         secondary: '#F0FDF4',
         accent: '#047857',
+      };
+    } else if (intent === "both") {
+      return {
+        primary: '#8B5CF6',
+        secondary: '#F5F3FF',
+        accent: '#7C3AED',
+      };
+    } else {
+      return {
+        primary: '#0891B2',
+        secondary: '#F0F9FF',
+        accent: '#0E7490',
       };
     }
   };
@@ -464,7 +489,7 @@ function EditFieldScreen() {
     );
   };
 
-  // UPDATED: Render gender or connection preferences with 2-person limit
+  // UPDATED: Render gender or connection preferences with improved UI
   const renderLimitedGenderOptions = (options: string[], isConnectionPrefs: boolean = false) => {
     const maxSelections = 2;
     const selectedCount = selectedItems.filter(item => item !== "Everyone").length;
@@ -472,55 +497,85 @@ function EditFieldScreen() {
     
     return (
       <View style={styles.connectionPreferencesContainer}>
-        {/* Selection Counter */}
-        <View style={[styles.selectionCounter, { backgroundColor: colors.primary + '15' }]}>
-          <Text style={[styles.counterText, { color: colors.primary }]}>
-            {hasEveryone 
-              ? (isConnectionPrefs ? "All gender identities selected" : "All genders selected")
-              : `${selectedCount}/${maxSelections} selected`
-            }
-          </Text>
-          {selectedCount === maxSelections && !hasEveryone && (
-            <Text style={[styles.limitText, { color: colors.textMuted }]}>
-              Maximum reached • Selecting another will replace the first
+        {/* Improved Selection Status */}
+        {fieldName === "gender" && (
+          <View style={[styles.genderSelectionStatus, { 
+            backgroundColor: selectedCount > 0 ? colors.primary + '10' : colors.textMuted + '10',
+            borderColor: selectedCount > 0 ? colors.primary + '30' : colors.textMuted + '30'
+          }]}>
+            <Ionicons 
+              name={selectedCount > 0 ? "checkmark-circle" : "information-circle"} 
+              size={18} 
+              color={selectedCount > 0 ? colors.primary : colors.textMuted} 
+            />
+            <Text style={[styles.statusText, { 
+              color: selectedCount > 0 ? colors.primary : colors.textMuted 
+            }]}>
+              {selectedCount === 0 
+                ? "Select at least 1 gender (up to 2)" 
+                : `${selectedCount}/2 selected`
+              }
             </Text>
-          )}
-        </View>
+          </View>
+        )}
 
-        {options.map((option) => {
-          const isSelected = selectedItems.includes(option);
-          const isEveryone = option === "Everyone";
-          const isDisabled = !isSelected && hasEveryone && !isEveryone;
-          
-          return (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.modernOption,
-                {
-                  borderColor: isSelected ? colors.primary : colors.border,
-                  backgroundColor: isSelected ? colors.primary + '10' : colors.card,
-                  opacity: isDisabled ? 0.5 : 1
-                }
-              ]}
-              onPress={() => !isDisabled && handleItemToggle(option)}
-              activeOpacity={isDisabled ? 1 : 0.7}
-              disabled={isDisabled}
-            >
-              <View style={styles.optionContent}>
-                <Text style={[styles.optionLabel, { color: colors.textDark }]}>
+        {isConnectionPrefs && (
+          <View style={[styles.selectionCounter, { backgroundColor: colors.primary + '15' }]}>
+            <Text style={[styles.counterText, { color: colors.primary }]}>
+              {hasEveryone 
+                ? "All gender identities selected"
+                : `${selectedCount}/${maxSelections} selected`
+              }
+            </Text>
+            {selectedCount === maxSelections && !hasEveryone && (
+              <Text style={[styles.limitText, { color: colors.textMuted }]}>
+                Maximum reached • Selecting another will replace the first
+              </Text>
+            )}
+          </View>
+        )}
+
+        <View style={styles.genderGrid}>
+          {options.map((option) => {
+            const isSelected = selectedItems.includes(option);
+            const isEveryone = option === "Everyone";
+            const isDisabled = !isSelected && hasEveryone && !isEveryone;
+            
+            return (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.genderPill,
+                  {
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primary + '15' : colors.card,
+                    opacity: isDisabled ? 0.5 : 1
+                  }
+                ]}
+                onPress={() => !isDisabled && handleItemToggle(option)}
+                activeOpacity={isDisabled ? 1 : 0.7}
+                disabled={isDisabled}
+              >
+                <Text style={[styles.genderPillText, { 
+                  color: isSelected ? colors.primary : colors.textDark,
+                  fontWeight: isSelected ? Typography.weights.semibold : Typography.weights.medium
+                }]}>
                   {option}
                 </Text>
+                {isSelected && (
+                  <View style={styles.pillSelectedIndicator}>
+                    <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  </View>
+                )}
                 {isEveryone && isConnectionPrefs && (
-                  <Text style={[styles.optionSubtitle, { color: colors.textMuted }]}>
-                    Open to all gender identities
+                  <Text style={[styles.everyoneSubtext, { color: colors.textMuted }]}>
+                    Open to all
                   </Text>
                 )}
-              </View>
-              <SelectionBubble isSelected={isSelected} />
-            </TouchableOpacity>
-          );
-        })}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     );
   };
@@ -941,6 +996,72 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: Typography.sizes.xs,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+
+  // IMPROVED Gender Selection Status
+  genderSelectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+    justifyContent: 'center',
+  },
+
+  statusText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.sm,
+  },
+
+  // IMPROVED Gender Grid - Reduced gaps
+  genderGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm, // Reduced from default spacing
+    justifyContent: 'space-between',
+  },
+
+  genderPill: {
+    minWidth: '47%',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    minHeight: 50,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+
+  genderPillText: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+  },
+
+  pillSelectedIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+  },
+
+  everyoneSubtext: {
+    fontSize: Typography.sizes.xs,
+    fontStyle: 'italic',
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
 
   helpText: {

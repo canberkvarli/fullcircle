@@ -103,15 +103,27 @@ export default function EditUserProfile() {
       }
       
       if (Array.isArray(value)) {
-        if (value.length > 3) {
-          return `${value.slice(0, 3).join(", ")} +${value.length - 3} more`;
+        // Filter out any non-string values and empty strings
+        const validValues = value.filter(item => 
+          typeof item === 'string' && item.trim().length > 0
+        );
+        
+        if (validValues.length === 0) {
+          return "Not set";
         }
-        return value.join(", ");
+        
+        if (validValues.length > 3) {
+          return `${validValues.slice(0, 3).join(", ")} +${validValues.length - 3} more`;
+        }
+        return validValues.join(", ");
       }
       
       // Special formatting for connection intent
       if (fieldName === "connectionIntent") {
-        return value === "romantic" ? "Dating" : "Friendship";
+        return value === "romantic" ? "Dating" 
+             : value === "friendship" ? "Friendship"
+             : value === "both" ? "Both"
+             : value.toString();
       }
       
       return value.toString();
@@ -152,6 +164,13 @@ export default function EditUserProfile() {
     const gradientColors = getFieldGradient(field.fieldName);
     const hasVisibilityControl = shouldShowVisibilityToggle(field.fieldName);
     const isFieldVisible = fieldVisibility[field.fieldName];
+
+    // Get the actual field value with proper validation
+    const fieldValue = field.value;
+    const hasValidValue = fieldValue && 
+      (Array.isArray(fieldValue) ? fieldValue.length > 0 && fieldValue.some(item => 
+        typeof item === 'string' && item.trim().length > 0
+      ) : true);
 
     return (
       <TouchableOpacity
@@ -226,7 +245,7 @@ export default function EditUserProfile() {
                 }
               ]}>
                 <Ionicons 
-                  name={isRomantic ? "heart" : "people"} 
+                  name={isRomantic ? "heart" : connectionIntent === "both" ? "infinite" : "people"} 
                   size={14} 
                   color={gradientColors[1]} 
                 />
@@ -238,28 +257,31 @@ export default function EditUserProfile() {
           ) : (
             <>
               {/* Colorful tags for spiritual and connection fields */}
-              {(isSpiritualField || isConnectionField) && Array.isArray(field.value) && field.value.length > 0 ? (
+              {(isSpiritualField || isConnectionField) && hasValidValue && Array.isArray(field.value) ? (
                 <View style={styles.spiritualPreview}>
-                  {field.value.slice(0, 3).map((item: string, index: number) => (
-                    <View 
-                      key={index}
-                      style={[
-                        styles.spiritualTag,
-                        { 
-                          backgroundColor: gradientColors[1] + '20',
-                          borderColor: gradientColors[1] + '40'
-                        }
-                      ]}
-                    >
-                      <Text style={[styles.spiritualTagText, { color: gradientColors[1] }]}>
-                        {item}
-                      </Text>
-                    </View>
-                  ))}
-                  {field.value.length > 3 && (
+                  {field.value
+                    .filter(item => typeof item === 'string' && item.trim().length > 0)
+                    .slice(0, 3)
+                    .map((item: string, index: number) => (
+                      <View 
+                        key={`${field.fieldName}-${index}`}
+                        style={[
+                          styles.spiritualTag,
+                          { 
+                            backgroundColor: gradientColors[1] + '20',
+                            borderColor: gradientColors[1] + '40'
+                          }
+                        ]}
+                      >
+                        <Text style={[styles.spiritualTagText, { color: gradientColors[1] }]}>
+                          {item}
+                        </Text>
+                      </View>
+                    ))}
+                  {field.value.filter(item => typeof item === 'string' && item.trim().length > 0).length > 3 && (
                     <View style={[styles.moreTag, { backgroundColor: colors.textMuted + '20' }]}>
                       <Text style={[styles.moreTagText, { color: colors.textMuted }]}>
-                        +{field.value.length - 3}
+                        +{field.value.filter(item => typeof item === 'string' && item.trim().length > 0).length - 3}
                       </Text>
                     </View>
                   )}
@@ -442,6 +464,15 @@ export default function EditUserProfile() {
     router.back();
   };
 
+  // Helper function to check if spiritual field has valid data
+  const hasValidSpiritualData = (fieldValue: any) => {
+    if (!fieldValue) return false;
+    if (Array.isArray(fieldValue)) {
+      return fieldValue.some(item => typeof item === 'string' && item.trim().length > 0);
+    }
+    return typeof fieldValue === 'string' && fieldValue.trim().length > 0;
+  };
+
   // Field groups based on new UserDataType and connection preferences structure
   const BasicInfoFields = [
     {
@@ -471,8 +502,8 @@ export default function EditUserProfile() {
     },
   ];
 
-  // Based on actual UserDataType with new spiritualProfile structure
-  const SpiritualFields = [
+  // Always include all spiritual fields in edit mode (users need to be able to add them)
+  const AllSpiritualFields = [
     {
       fieldName: "spiritualDraws",
       title: "Spiritual Draws", 
@@ -490,6 +521,12 @@ export default function EditUserProfile() {
     },
   ];
 
+  // Only filter for fields that have data (for conditional preview rendering)
+  const SpiritualFieldsWithData = AllSpiritualFields.filter(field => hasValidSpiritualData(field.value));
+
+  // Check if we should show the spiritual section in PREVIEW mode
+  const shouldShowSpiritualSectionInPreview = SpiritualFieldsWithData.length > 0;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -497,12 +534,14 @@ export default function EditUserProfile() {
       {/* Header - matches your app style */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-          <Text style={[styles.headerButtonText, { color: colors.primary }]}>Cancel</Text>
+          <Text style={[styles.headerButtonText, { color: colors.primary }]}>
+            Cancel
+          </Text>
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            {userData.firstName}
+            {userData.firstName || 'Profile'}
           </Text>
         </View>
         
@@ -595,19 +634,18 @@ export default function EditUserProfile() {
               {BasicInfoFields.map(renderField)}
             </View>
 
-            {/* Spiritual Section - only if user has any spiritual profile data */}
-            {(userData.spiritualProfile?.draws?.length || 
-              userData.spiritualProfile?.practices?.length || 
-              userData.spiritualProfile?.healingModalities?.length) && (
-              <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                    Spiritual Profile
-                  </Text>
-                </View>
-                {SpiritualFields.map(renderField)}
+            {/* Spiritual Section - ALWAYS show in edit mode so users can add spiritual info */}
+            <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  Spiritual Profile
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
+                  Share your spiritual journey and practices
+                </Text>
               </View>
-            )}
+              {AllSpiritualFields.map(renderField)}
+            </View>
           </View>
         )}
         
@@ -723,6 +761,27 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
     letterSpacing: 0.3,
+  },
+  
+  sectionSubtitle: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.regular,
+    letterSpacing: 0.2,
+    marginTop: Spacing.xs,
+    fontStyle: 'italic',
+  },
+  
+  emptyStateContainer: {
+    padding: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  emptyStateText: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: Typography.sizes.sm * 1.4,
   },
   
   // Photo Grid Styles
