@@ -40,6 +40,22 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
   preferredHealingModalities: "Healing modalities you're drawn to",
 };
 
+const romanticOptions = [
+            "Men", 
+            "Women",
+            "Non-Binary",
+            "Genderqueer", 
+            "Agender", 
+            "Genderfluid", 
+            "Trans Woman", 
+            "Trans Man", 
+            "Two-Spirit", 
+            "Bigender", 
+            "Intersex", 
+            "Questioning", 
+            "Everyone"
+          ];
+
 function EditPreferenceField() {
   const { fieldName, currentValue } = useLocalSearchParams<{
     fieldName: string;
@@ -90,8 +106,6 @@ function EditPreferenceField() {
     // Handle connection preferences based on current connection intent
     if (fieldName === "connectionPreferences") {
       if (connectionIntent === "romantic") {
-        // Romantic options - same as your ConnectionPreferenceScreen
-        const romanticOptions = ["Men", "Women", "Non-Binary", "Everyone"];
         if (Array.isArray(value)) {
           cleanedValue = value.filter(item => romanticOptions.includes(item));
           if (cleanedValue.length === 0) cleanedValue = ["Everyone"];
@@ -173,11 +187,6 @@ function EditPreferenceField() {
         } else {
           // Handle new connection fields
           updatedData.matchPreferences[fieldName] = cleanedValue;
-          
-          // Also update legacy datePreferences for backward compatibility
-          if (fieldName === "connectionPreferences" && connectionIntent === "romantic") {
-            updatedData.matchPreferences.datePreferences = cleanedValue;
-          }
         }
 
         console.log(`Saving ${fieldName}:`, cleanedValue);
@@ -316,7 +325,6 @@ function EditPreferenceField() {
       case "connectionPreferences": {
         // Only show gender options for romantic connections
         if (connectionIntent === "romantic") {
-          const romanticOptions = ["Men", "Women", "Non-Binary", "Everyone"];
           return (
             <CheckboxList
               options={romanticOptions}

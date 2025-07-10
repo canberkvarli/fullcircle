@@ -148,9 +148,6 @@ export type MatchPreferencesType = {
   connectionPreferences?: string[];
   connectionStyles?: string[];
   
-  // 🔄 DEPRECATED: Keeping for backward compatibility
-  datePreferences: string[];
-  
   desiredRelationship?: string;
   preferredSpiritualPractices?: string[];
 };
@@ -305,7 +302,6 @@ const initialUserData: UserDataType = {
       max: 8,
     },
     preferredDistance: 100,
-    connectionIntent: undefined,
     connectionPreferences: [],
     connectionStyles: [],
     spiritualCompatibility: {

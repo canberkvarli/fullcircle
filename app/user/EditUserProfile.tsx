@@ -33,6 +33,10 @@ export default function EditUserProfile() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
+  // Get connection intent for appropriate labeling
+  const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
+  const isRomantic = connectionIntent === "romantic";
+
   useEffect(() => {
     const initialVisibility = {
       // Always visible fields (no toggle needed)
@@ -45,9 +49,11 @@ export default function EditUserProfile() {
       height: !userData.hiddenFields?.height,
       location: !userData.hiddenFields?.location,
       
-      // Dating preferences with visibility controls
+      // Connection preferences with visibility controls
       gender: !userData.hiddenFields?.gender,
-      ConnectionPreferences: !userData.hiddenFields?.ConnectionPreferences,
+      connectionIntent: true, // Always visible
+      connectionPreferences: !userData.hiddenFields?.connectionPreferences,
+      connectionStyles: !userData.hiddenFields?.connectionStyles,
       
       // Spiritual fields with visibility controls
       spiritualDraws: !userData.hiddenFields?.spiritualDraws,
@@ -84,7 +90,7 @@ export default function EditUserProfile() {
   // Check if field should show visibility toggle
   const shouldShowVisibilityToggle = (fieldName: string) => {
     const fieldsWithVisibilityControl = [
-      'age', 'height', 'location', 'gender', 'ConnectionPreferences', 
+      'age', 'height', 'location', 'gender', 'connectionPreferences', 'connectionStyles',
       'spiritualDraws', 'spiritualPractices', 'healingModalities'
     ];
     return fieldsWithVisibilityControl.includes(fieldName);
@@ -103,6 +109,11 @@ export default function EditUserProfile() {
         return value.join(", ");
       }
       
+      // Special formatting for connection intent
+      if (fieldName === "connectionIntent") {
+        return value === "romantic" ? "Dating" : "Friendship";
+      }
+      
       return value.toString();
     };
 
@@ -112,7 +123,9 @@ export default function EditUserProfile() {
         spiritualPractices: "leaf-outline",
         healingModalities: "medical-outline",
         gender: "person-outline",
-        ConnectionPreferences: "heart-outline",
+        connectionIntent: isRomantic ? "heart-outline" : "people-outline",
+        connectionPreferences: "heart-circle-outline",
+        connectionStyles: "link-outline",
         fullName: "person-circle-outline",
         age: "calendar-outline",
         height: "resize-outline",
@@ -127,12 +140,15 @@ export default function EditUserProfile() {
         spiritualPractices: [colors.primary, "#20B2AA"], 
         healingModalities: [colors.primary, "#FF6347"],
         gender: [colors.primary, "#4169E1"],
-        ConnectionPreferences: [colors.primary, "#E91E63"],
+        connectionIntent: isRomantic ? ["#EC4899", "#F97316"] : ["#10B981", "#06B6D4"],
+        connectionPreferences: isRomantic ? ["#EC4899", "#BE185D"] : ["#10B981", "#047857"],
+        connectionStyles: isRomantic ? ["#F97316", "#EC4899"] : ["#06B6D4", "#10B981"],
       };
       return gradientMap[fieldName] || [colors.primary, colors.primary];
     };
 
     const isSpiritualField = ['spiritualDraws', 'spiritualPractices', 'healingModalities'].includes(field.fieldName);
+    const isConnectionField = ['connectionIntent', 'connectionPreferences', 'connectionStyles'].includes(field.fieldName);
     const gradientColors = getFieldGradient(field.fieldName);
     const hasVisibilityControl = shouldShowVisibilityToggle(field.fieldName);
     const isFieldVisible = fieldVisibility[field.fieldName];
@@ -145,7 +161,7 @@ export default function EditUserProfile() {
           styles.fieldContainer,
           { 
             backgroundColor: colors.card, 
-            borderColor: isSpiritualField ? gradientColors[0] + '30' : colors.border,
+            borderColor: (isSpiritualField || isConnectionField) ? gradientColors[0] + '30' : colors.border,
           }
         ]}
         activeOpacity={0.7}
@@ -155,7 +171,7 @@ export default function EditUserProfile() {
             <View style={[
               styles.fieldIconContainer,
               { 
-                backgroundColor: isSpiritualField 
+                backgroundColor: (isSpiritualField || isConnectionField)
                   ? `${gradientColors[0]}15` 
                   : `${colors.primary}15`
               }
@@ -163,7 +179,7 @@ export default function EditUserProfile() {
               <Ionicons 
                 name={getFieldIcon(field.fieldName)} 
                 size={18} 
-                color={isSpiritualField ? gradientColors[0] : colors.primary} 
+                color={(isSpiritualField || isConnectionField) ? gradientColors[0] : colors.primary} 
               />
             </View>
             
@@ -199,37 +215,61 @@ export default function EditUserProfile() {
             </View>
           </View>
 
-          {/* Only show colorful tags for spiritual fields, regular text for others */}
-          {isSpiritualField && Array.isArray(field.value) && field.value.length > 0 ? (
-            <View style={styles.spiritualPreview}>
-              {field.value.slice(0, 3).map((item: string, index: number) => (
-                <View 
-                  key={index}
-                  style={[
-                    styles.spiritualTag,
-                    { 
-                      backgroundColor: gradientColors[1] + '20',
-                      borderColor: gradientColors[1] + '40'
-                    }
-                  ]}
-                >
-                  <Text style={[styles.spiritualTagText, { color: gradientColors[1] }]}>
-                    {item}
-                  </Text>
-                </View>
-              ))}
-              {field.value.length > 3 && (
-                <View style={[styles.moreTag, { backgroundColor: colors.textMuted + '20' }]}>
-                  <Text style={[styles.moreTagText, { color: colors.textMuted }]}>
-                    +{field.value.length - 3}
-                  </Text>
-                </View>
-              )}
+          {/* Special handling for connection intent */}
+          {field.fieldName === "connectionIntent" ? (
+            <View style={styles.connectionIntentDisplay}>
+              <View style={[
+                styles.connectionIntentBadge,
+                { 
+                  backgroundColor: gradientColors[1] + '20',
+                  borderColor: gradientColors[1] + '40'
+                }
+              ]}>
+                <Ionicons 
+                  name={isRomantic ? "heart" : "people"} 
+                  size={14} 
+                  color={gradientColors[1]} 
+                />
+                <Text style={[styles.connectionIntentText, { color: gradientColors[1] }]}>
+                  {formatFieldValue(field.value, field.fieldName)}
+                </Text>
+              </View>
             </View>
           ) : (
-            <Text style={[styles.fieldValue, fonts.captionFont, { color: colors.textMuted }]}>
-              {formatFieldValue(field.value, field.fieldName)}
-            </Text>
+            <>
+              {/* Colorful tags for spiritual and connection fields */}
+              {(isSpiritualField || isConnectionField) && Array.isArray(field.value) && field.value.length > 0 ? (
+                <View style={styles.spiritualPreview}>
+                  {field.value.slice(0, 3).map((item: string, index: number) => (
+                    <View 
+                      key={index}
+                      style={[
+                        styles.spiritualTag,
+                        { 
+                          backgroundColor: gradientColors[1] + '20',
+                          borderColor: gradientColors[1] + '40'
+                        }
+                      ]}
+                    >
+                      <Text style={[styles.spiritualTagText, { color: gradientColors[1] }]}>
+                        {item}
+                      </Text>
+                    </View>
+                  ))}
+                  {field.value.length > 3 && (
+                    <View style={[styles.moreTag, { backgroundColor: colors.textMuted + '20' }]}>
+                      <Text style={[styles.moreTagText, { color: colors.textMuted }]}>
+                        +{field.value.length - 3}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <Text style={[styles.fieldValue, fonts.captionFont, { color: colors.textMuted }]}>
+                  {formatFieldValue(field.value, field.fieldName)}
+                </Text>
+              )}
+            </>
           )}
         </View>
       </TouchableOpacity>
@@ -402,7 +442,7 @@ export default function EditUserProfile() {
     router.back();
   };
 
-  // Field groups based on ACTUAL UserDataType and onboarding screens
+  // Field groups based on new UserDataType and connection preferences structure
   const BasicInfoFields = [
     {
       fieldName: "fullName",
@@ -420,22 +460,14 @@ export default function EditUserProfile() {
       value: userData.height,
     },
     {
-      fieldName: "location",
-      title: "Location",
-      value: userData.location?.city,
-    },
-  ];
-
-  const IdentityFields = [
-    {
       fieldName: "gender",
       title: "Gender",
       value: userData.gender,
     },
     {
-      fieldName: "ConnectionPreferences",
-      title: "I'm Looking For",
-      value: userData.matchPreferences?.ConnectionPreferences,
+      fieldName: "location",
+      title: "Location",
+      value: userData.location?.city,
     },
   ];
 
@@ -471,9 +503,6 @@ export default function EditUserProfile() {
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
             {userData.firstName}
-          </Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Edit your profile
           </Text>
         </View>
         
@@ -566,16 +595,6 @@ export default function EditUserProfile() {
               {BasicInfoFields.map(renderField)}
             </View>
 
-            {/* Identity Section */}
-            <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  Dating Preferences
-                </Text>
-              </View>
-              {IdentityFields.map(renderField)}
-            </View>
-
             {/* Spiritual Section - only if user has any spiritual profile data */}
             {(userData.spiritualProfile?.draws?.length || 
               userData.spiritualProfile?.practices?.length || 
@@ -592,9 +611,9 @@ export default function EditUserProfile() {
           </View>
         )}
         
-      {tab === "View" && (
-        <ProfilePreview userData={userData} photos={photos} />
-      )}
+        {tab === "View" && (
+          <ProfilePreview userData={userData} photos={photos} />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -634,12 +653,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
     letterSpacing: 0.5,
-  },
-  
-  headerSubtitle: {
-    fontSize: Typography.sizes.xs,
-    fontStyle: 'italic',
-    marginTop: 2,
   },
   
   tabBar: {
@@ -689,11 +702,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     padding: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   
   sectionHeader: {
@@ -706,7 +725,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  // Enhanced Photo Grid Styles - FIXED SIZING
+  // Photo Grid Styles
   photosContainer: {
     minHeight: 150,
   },
@@ -765,7 +784,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Action icons
   editPhotoIcon: {
     position: 'absolute',
     bottom: Spacing.xs,
@@ -776,11 +794,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   
   removePhotoIcon: {
@@ -793,14 +817,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 
-  // Photo requirements notice
   photoRequirements: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -818,7 +847,6 @@ const styles = StyleSheet.create({
     lineHeight: Typography.sizes.xs * 1.4,
   },
 
-  // Photo tips section
   photoTips: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -834,25 +862,33 @@ const styles = StyleSheet.create({
     lineHeight: Typography.sizes.xs * 1.4,
   },
 
-  // IMPROVED Field Styles
+  // Field Styles
   fieldContainer: {
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginBottom: Spacing.sm,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   
   fieldContent: {
-    padding: Spacing.md,
+    gap: Spacing.sm,
   },
   
   fieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
   },
   
   fieldIconContainer: {
@@ -861,7 +897,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.md,
   },
   
   fieldTitleContainer: {
@@ -870,7 +905,8 @@ const styles = StyleSheet.create({
   
   fieldTitle: {
     fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
+    fontWeight: Typography.weights.semibold,
+    letterSpacing: 0.3,
   },
   
   fieldActions: {
@@ -879,48 +915,71 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   
-  // RESTORED: Visibility indicator
   visibilityIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
-  fieldValue: {
-    fontSize: Typography.sizes.sm,
-    lineHeight: Typography.sizes.sm * 1.3,
-    marginLeft: 44, // Align with title text
+
+  // Connection Intent Special Styling
+  connectionIntentDisplay: {
+    marginTop: Spacing.sm,
   },
-  
+
+  connectionIntentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    gap: Spacing.xs,
+  },
+
+  connectionIntentText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.3,
+  },
+
+  // Spiritual/Connection Field Tags
   spiritualPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
-    marginLeft: 44, // Align with title text
+    marginTop: Spacing.sm,
   },
   
   spiritualTag: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
   },
   
   spiritualTagText: {
     fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
   },
   
   moreTag: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
   },
   
   moreTagText: {
     fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
+  },
+  
+  fieldValue: {
+    fontSize: Typography.sizes.sm,
+    marginTop: Spacing.xs,
+    lineHeight: Typography.sizes.sm * 1.3,
   },
 });

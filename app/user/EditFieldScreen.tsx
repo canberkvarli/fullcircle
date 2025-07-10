@@ -3,11 +3,9 @@ import {
   View,
   Text,
   TouchableOpacity,
-  FlatList,
   TextInput,
   ScrollView,
   ActivityIndicator,
-  PermissionsAndroid,
   Platform,
   Alert,
   useColorScheme,
@@ -31,7 +29,7 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.0421,
 };
 
-// Updated field options - cleaner spiritual design
+// Updated field options - using new connection structure
 const FIELD_OPTIONS = {
   gender: [
     "Woman",
@@ -43,50 +41,57 @@ const FIELD_OPTIONS = {
     "Genderfluid",
   ],
   
-  ConnectionPreferences: {
-    mainOptions: [
-      { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
-      { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
+  connectionIntent: [
+    { id: "romantic", label: "Dating", subtitle: "Seeking romantic & intimate connections", icon: "heart" },
+    { id: "friendship", label: "Friendship", subtitle: "Building meaningful platonic bonds", icon: "people" },
+  ],
+
+  // Romantic preferences (for when connection intent is romantic)
+  connectionPreferences: [
+    { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
+    { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
+    { id: "Non-Binary", label: "Non-Binary Souls", subtitle: "Connected to fluid expressions" },
+    { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" },
+  ],
+
+  // Connection styles
+  connectionStyles: {
+    romantic: [
+      "Twin Flame Seeker", "Soul Mate Guided", "Tantric Connection", "Heart-Centered",
+      "Consciousness Explorer", "Polyamorous Soul", "Monogamous Journey", 
+      "Spiritual Partnership", "Sacred Union", "Love Without Labels",
     ],
-    otherOptions: [
-      { id: "Non-Binary", label: "Non-Binary Souls", subtitle: "Connected to fluid expressions" },
-      "Twin Flame Seeker",
-      "Soul Mate Guided", 
-      "Tantric Connection",
-      "Heart-Centered",
-      "Consciousness Explorer",
-      "Polyamorous Soul",
-      "Monogamous Journey",
-      "Spiritual Partnership",
-      "Sacred Union",
-      "Love Without Labels",
+    friendship: [
+      "Practice Partners", "Meditation Buddies", "Adventure Seekers", "Study Circles",
+      "Healing Circles", "Creative Collaborators", "Retreat Companions", 
+      "Wisdom Sharers", "Community Builders", "Soul Supporters",
     ],
-    allEnergyOption: { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" }
   },
+  
   spiritualDraws: [
     { 
       label: "Healing & Restoration", 
       value: "healing", 
       description: "Energy work, trauma healing, emotional restoration",
-      color: "#228B22" 
+      color: "#10B981" 
     },
     { 
       label: "Personal Growth", 
       value: "growth", 
       description: "Self-discovery, consciousness expansion, evolution",
-      color: "#FF6B35" 
+      color: "#F59E0B" 
     },
     { 
       label: "Sacred Connection", 
       value: "connection", 
       description: "Community, relationships, divine communion",
-      color: "#4169E1" 
+      color: "#6366F1" 
     },
     { 
       label: "Spiritual Awakening", 
       value: "awakening", 
       description: "Enlightenment, transcendence, higher consciousness",
-      color: "#8A2BE2" 
+      color: "#8B5CF6" 
     },
   ],
 
@@ -99,11 +104,11 @@ const FIELD_OPTIONS = {
     "Mindfulness", "Contemplation", "Sacred Geometry"
   ],
 
-  // Clean healing modalities without emojis
+  // Clean healing modalities without emojis (removed Ayahuasca and Kambo)
   healingModalities: [
     "Reiki", "Acupuncture", "Sound Therapy", "Crystal Healing", 
     "Aromatherapy", "Light Therapy", "Massage Therapy", "Hypnotherapy", 
-    "Homeopathy", "Herbalism", "Ayahuasca", "Kambo", "Cupping",
+    "Homeopathy", "Herbalism", "Plant Medicine", "Cupping",
     "Reflexology", "Craniosacral", "Chakra Balancing"
   ],
 };
@@ -117,18 +122,21 @@ function EditFieldScreen() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
-  // Get current field value - FIXED
+  // Get current field value - FIXED for new structure
   const getCurrentFieldValue = () => {
     if (fieldName === "fullName") {
       return userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
     } else if (fieldName === "age") {
       return userData.age;
-    } else if (fieldName === "ConnectionPreferences") {
-      return userData.matchPreferences?.ConnectionPreferences || [];
+    } else if (fieldName === "connectionIntent") {
+      return userData.matchPreferences?.connectionIntent || "romantic";
+    } else if (fieldName === "connectionPreferences") {
+      return userData.matchPreferences?.connectionPreferences || [];
+    } else if (fieldName === "connectionStyles") {
+      return userData.matchPreferences?.connectionStyles || [];
     } else if (fieldName === "spiritualDraws") {
       return userData.spiritualProfile?.draws || [];
     } else if (fieldName === "spiritualPractices") {
-      // Check both direct field and nested structure
       return userData.spiritualProfile?.practices || [];
     } else if (fieldName === "healingModalities") {
       return userData.spiritualProfile?.healingModalities || [];
@@ -137,7 +145,7 @@ function EditFieldScreen() {
   };
 
   const currentFieldValue = getCurrentFieldValue();
-  const isHidden = (userData.hiddenFields as any)?.[fieldName as string] === false;
+  const isHidden = (userData.hiddenFields as any)?.[fieldName as string] === true;
 
   // State variables - FIXED initialization
   const [selectedItems, setSelectedItems] = useState<string[]>(
@@ -169,7 +177,6 @@ function EditFieldScreen() {
   // FIXED: Age initialization
   const [age, setAge] = useState(userData.age?.toString() || '');
   const [selectedHeight, setSelectedHeight] = useState(userData.height || 5.8);
-  const [customInput, setCustomInput] = useState('');
 
   // Location state
   const [mapRegion, setMapRegion] = useState(DEFAULT_REGION);
@@ -178,7 +185,9 @@ function EditFieldScreen() {
 
   const fieldTitleMap: Record<string, string> = {
     gender: "Gender",
-    ConnectionPreferences: "I'm Looking For",
+    connectionIntent: "Connection Type",
+    connectionPreferences: "Interested In",
+    connectionStyles: "Connection Style",
     fullName: "Name", 
     age: "Age",
     height: "Height",
@@ -269,11 +278,28 @@ function EditFieldScreen() {
           longitude: mapRegion.longitude,
         },
       };
-    } else if (fieldName === "ConnectionPreferences") {
+    } else if (fieldName === "connectionIntent") {
       updateData = {
         matchPreferences: {
           ...userData.matchPreferences,
-          ConnectionPreferences: selectedItems,
+          connectionIntent: selectedSingleItem,
+          // Reset preferences when changing intent
+          connectionPreferences: selectedSingleItem === "romantic" ? [] : ["Everyone"],
+          connectionStyles: [],
+        },
+      };
+    } else if (fieldName === "connectionPreferences") {
+      updateData = {
+        matchPreferences: {
+          ...userData.matchPreferences,
+          connectionPreferences: selectedItems,
+        },
+      };
+    } else if (fieldName === "connectionStyles") {
+      updateData = {
+        matchPreferences: {
+          ...userData.matchPreferences,
+          connectionStyles: selectedItems,
         },
       };
     } else if (fieldName === "spiritualDraws") {
@@ -284,9 +310,7 @@ function EditFieldScreen() {
         },
       };
     } else if (fieldName === "spiritualPractices") {
-      // Update both direct field and nested structure for compatibility
       updateData = {
-        spiritualPractices: selectedItems,
         spiritualProfile: {
           ...userData.spiritualProfile,
           practices: selectedItems,
@@ -321,7 +345,28 @@ function EditFieldScreen() {
     );
   };
 
-  // Custom Selection Component (replaces checkboxes)
+  const handleSingleSelection = (item: string) => {
+    setSelectedSingleItem(item);
+  };
+
+  // Get intent colors for dynamic theming
+  const getIntentColors = (intent: string) => {
+    if (intent === "romantic") {
+      return {
+        primary: '#EC4899',
+        secondary: '#FDF2F8',
+        accent: '#BE185D',
+      };
+    } else {
+      return {
+        primary: '#10B981',
+        secondary: '#F0FDF4',
+        accent: '#047857',
+      };
+    }
+  };
+
+  // Custom Selection Component
   const SelectionBubble = ({ isSelected, size = 20 }: { isSelected: boolean; size?: number }) => (
     <View style={[
       styles.selectionBubble,
@@ -339,94 +384,131 @@ function EditFieldScreen() {
     </View>
   );
 
+  // Render connection intent selector
+  const renderConnectionIntent = () => {
+    return (
+      <View style={styles.connectionIntentContainer}>
+        {FIELD_OPTIONS.connectionIntent.map((intent) => {
+          const isSelected = selectedSingleItem === intent.id;
+          const intentColors = getIntentColors(intent.id);
+          
+          return (
+            <TouchableOpacity
+              key={intent.id}
+              style={[
+                styles.modernOption,
+                { borderColor: colors.border, backgroundColor: colors.card },
+                isSelected && { 
+                  borderColor: intentColors.primary, 
+                  backgroundColor: intentColors.secondary 
+                }
+              ]}
+              onPress={() => handleSingleSelection(intent.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.optionContent}>
+                <View style={styles.intentHeader}>
+                  <Ionicons 
+                    name={intent.icon as any} 
+                    size={24} 
+                    color={isSelected ? intentColors.primary : colors.textMuted} 
+                  />
+                  <Text style={[styles.optionLabel, fonts.buttonFont, { 
+                    color: isSelected ? intentColors.primary : colors.textDark 
+                  }]}>
+                    {intent.label}
+                  </Text>
+                </View>
+                <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
+                  {intent.subtitle}
+                </Text>
+              </View>
+              <SelectionBubble isSelected={isSelected} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // Render connection preferences (only for romantic)
   const renderConnectionPreferences = () => {
-    const { mainOptions, otherOptions, allEnergyOption } = FIELD_OPTIONS.ConnectionPreferences;
+    return (
+      <View style={styles.connectionPreferencesContainer}>
+        {FIELD_OPTIONS.connectionPreferences.map((option) => {
+          const isSelected = selectedItems.includes(option.id);
+          
+          return (
+            <TouchableOpacity
+              key={option.id}
+              style={[
+                styles.modernOption,
+                { borderColor: colors.border, backgroundColor: colors.card },
+                isSelected && { 
+                  borderColor: colors.primary, 
+                  backgroundColor: colors.primary + '10' 
+                }
+              ]}
+              onPress={() => handleItemToggle(option.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
+                  {option.label}
+                </Text>
+                <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
+                  {option.subtitle}
+                </Text>
+              </View>
+              <SelectionBubble isSelected={isSelected} />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  // Render connection styles
+  const renderConnectionStyles = () => {
+    const currentIntent = userData.matchPreferences?.connectionIntent || "romantic";
+    const styles_options = FIELD_OPTIONS.connectionStyles[currentIntent as keyof typeof FIELD_OPTIONS.connectionStyles] || FIELD_OPTIONS.connectionStyles.romantic;
     
     return (
-      <View style={styles.ConnectionPreferencesContainer}>
-        {/* All Energies Option */}
-        <TouchableOpacity
-          style={[
-            styles.modernOption,
-            { borderColor: colors.border, backgroundColor: colors.card },
-            selectedItems.includes("Everyone") && { 
-              borderColor: colors.primary, 
-              backgroundColor: colors.primary + '10' 
-            }
-          ]}
-          onPress={() => handleItemToggle("Everyone")}
-          activeOpacity={0.7}
-        >
-          <View style={styles.optionContent}>
-            <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
-              {allEnergyOption.label}
-            </Text>
-            <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
-              {allEnergyOption.subtitle}
-            </Text>
-          </View>
-          <SelectionBubble isSelected={selectedItems.includes("Everyone")} />
-        </TouchableOpacity>
-
-        {/* Main Options */}
-        {mainOptions.map((option) => (
-          <TouchableOpacity
-            key={option.id}
-            style={[
-              styles.modernOption,
-              { borderColor: colors.border, backgroundColor: colors.card },
-              selectedItems.includes(option.id) && { 
-                borderColor: colors.primary, 
-                backgroundColor: colors.primary + '10' 
-              }
-            ]}
-            onPress={() => handleItemToggle(option.id)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.optionContent}>
-              <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
-                {option.label}
+      <View style={styles.spiritualGrid}>
+        {styles_options.map((style) => {
+          const isSelected = selectedItems.includes(style);
+          
+          return (
+            <TouchableOpacity
+              key={style}
+              style={[
+                styles.spiritualBubble,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                isSelected && { 
+                  borderColor: colors.primary, 
+                  backgroundColor: colors.primary + '15',
+                  transform: [{ scale: 1.02 }]
+                }
+              ]}
+              onPress={() => handleItemToggle(style)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.spiritualBubbleText, 
+                fonts.captionFont,
+                { color: colors.textDark },
+                isSelected && { color: colors.primary, fontWeight: Typography.weights.semibold }
+              ]}>
+                {style}
               </Text>
-              <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
-                {option.subtitle}
-              </Text>
-            </View>
-            <SelectionBubble isSelected={selectedItems.includes(option.id)} />
-          </TouchableOpacity>
-        ))}
-
-        {/* Other Options */}
-        <Text style={[styles.sectionLabel, fonts.buttonFont, { color: colors.textDark }]}>
-          Connection Types
-        </Text>
-        <View style={styles.pillContainer}>
-          {otherOptions.map((option) => {
-            const optionId = typeof option === 'string' ? option : option.id;
-            const isSelected = selectedItems.includes(optionId);
-            
-            return (
-              <TouchableOpacity
-                key={optionId}
-                style={[
-                  styles.spiritualPill,
-                  { borderColor: colors.border, backgroundColor: colors.background },
-                  isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '15' }
-                ]}
-                onPress={() => handleItemToggle(optionId)}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.pillText,
-                  fonts.captionFont,
-                  { color: colors.textMuted },
-                  isSelected && { color: colors.primary }
-                ]}>
-                  {typeof option === 'string' ? option : option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+              {isSelected && (
+                <View style={styles.selectedIndicator}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     );
   };
@@ -464,8 +546,8 @@ function EditFieldScreen() {
     );
   };
 
-  // IMPROVED: Clean spiritual practices/modalities design
-  const renderPracticesOrModalities = (items: string[], fieldType: string) => {
+  // Clean spiritual practices/modalities design
+  const renderPracticesOrModalities = (items: string[]) => {
     return (
       <View style={styles.spiritualGrid}>
         {items.map((item) => {
@@ -634,8 +716,16 @@ function EditFieldScreen() {
       );
     }
 
-    if (fieldName === "ConnectionPreferences") {
+    if (fieldName === "connectionIntent") {
+      return renderConnectionIntent();
+    }
+
+    if (fieldName === "connectionPreferences") {
       return renderConnectionPreferences();
+    }
+
+    if (fieldName === "connectionStyles") {
+      return renderConnectionStyles();
     }
 
     if (fieldName === "spiritualDraws") {
@@ -643,11 +733,11 @@ function EditFieldScreen() {
     }
 
     if (fieldName === "spiritualPractices") {
-      return renderPracticesOrModalities(FIELD_OPTIONS.spiritualPractices, 'practices');
+      return renderPracticesOrModalities(FIELD_OPTIONS.spiritualPractices);
     }
 
     if (fieldName === "healingModalities") {
-      return renderPracticesOrModalities(FIELD_OPTIONS.healingModalities, 'modalities');
+      return renderPracticesOrModalities(FIELD_OPTIONS.healingModalities);
     }
 
     if (fieldName === "gender") {
@@ -682,35 +772,37 @@ function EditFieldScreen() {
         {renderContent()}
       </ScrollView>
 
-      {/* FIXED: Visibility Toggle */}
-      <View style={[styles.visibilityContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <View style={styles.visibilityContent}>
-          <Ionicons 
-            name={isVisible ? "eye" : "eye-off"} 
-            size={20} 
-            color={isVisible ? colors.primary : colors.textMuted} 
-          />
-          <Text style={[styles.visibilityText, fonts.buttonFont, { color: colors.textDark }]}>
-            {isVisible ? "Visible" : "Hidden"} on profile
-          </Text>
+      {/* Visibility Toggle - only show for certain fields */}
+      {fieldName !== "fullName" && fieldName !== "connectionIntent" && (
+        <View style={[styles.visibilityContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+          <View style={styles.visibilityContent}>
+            <Ionicons 
+              name={isVisible ? "eye" : "eye-off"} 
+              size={20} 
+              color={isVisible ? colors.primary : colors.textMuted} 
+            />
+            <Text style={[styles.visibilityText, fonts.buttonFont, { color: colors.textDark }]}>
+              {isVisible ? "Visible" : "Hidden"} on profile
+            </Text>
+          </View>
+          <TouchableOpacity 
+            onPress={() => setIsVisible(!isVisible)}
+            style={[
+              styles.visibilityToggle, 
+              { backgroundColor: isVisible ? colors.primary : colors.textMuted + '40' }
+            ]}
+            activeOpacity={0.7}
+          >
+            <View style={[
+              styles.visibilityToggleThumb, 
+              { 
+                backgroundColor: colors.card,
+                transform: [{ translateX: isVisible ? 22 : 2 }]
+              }
+            ]} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          onPress={() => setIsVisible(!isVisible)}
-          style={[
-            styles.visibilityToggle, 
-            { backgroundColor: isVisible ? colors.primary : colors.textMuted + '40' }
-          ]}
-          activeOpacity={0.7}
-        >
-          <View style={[
-            styles.visibilityToggleThumb, 
-            { 
-              backgroundColor: colors.card,
-              transform: [{ translateX: isVisible ? 22 : 2 }]
-            }
-          ]} />
-        </TouchableOpacity>
-      </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -789,35 +881,22 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
   },
-  
-  // Date Preferences Styles
-  ConnectionPreferencesContainer: {
+
+  // Connection Intent Styles
+  connectionIntentContainer: {
     gap: Spacing.md,
   },
-  
-  sectionLabel: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  
-  pillContainer: {
+
+  intentHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   
-  spiritualPill: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
-  },
-  
-  pillText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
+  // Connection Preferences Styles
+  connectionPreferencesContainer: {
+    gap: Spacing.md,
   },
   
   // Spiritual Draws Styles
@@ -860,15 +939,6 @@ const createStyles = (colors: any) => StyleSheet.create({
   // Basic Options Styles
   basicOptionsContainer: {
     gap: Spacing.sm,
-  },
-  
-  customInput: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1.5,
-    fontSize: Typography.sizes.base,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
   },
   
   // Name Input Styles
@@ -971,11 +1041,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     height: 24,
     borderRadius: 12,
     position: 'absolute',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 });
 
