@@ -336,8 +336,8 @@ const SpiritualPartnershipScreen = () => {
           </View>
 
           {/* Hidden Field Toggle */}
-          <View style={styles.hiddenContainer}>
-            <Text style={styles.hiddenText}>Keep my partnership preferences private</Text>
+          <View style={styles.privacyContainer}>
+            <Text style={styles.privacyText}>Keep my partnership preferences private</Text>
             <View style={styles.orbCheckboxContainer}>
               <TouchableOpacity 
                 style={styles.orbCheckbox}
@@ -629,7 +629,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
-    hiddenContainer: {
+    privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -641,7 +641,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderWidth: 1,
       borderColor: colors.border,
     },
-    hiddenText: {
+    privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,

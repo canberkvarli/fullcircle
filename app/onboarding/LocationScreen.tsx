@@ -15,6 +15,7 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from '@expo/vector-icons';
+import Checkbox from "expo-checkbox";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -49,6 +50,9 @@ const LocationScreen = () => {
   );
   const [place, setPlace] = useState<Location.LocationGeocodedAddress[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
+    userData.hiddenFields || {}
+  );
 
   useEffect(() => {
     (async () => {
@@ -140,6 +144,13 @@ const LocationScreen = () => {
     }
   };
 
+  const toggleHidden = (fieldName: string) => {
+    setHiddenFields((prev) => ({
+      ...prev,
+      [fieldName]: !prev[fieldName],
+    }));
+  };
+
   const handleContinue = async () => {
     try {
       const placeDetails: Location.LocationGeocodedAddress =
@@ -159,6 +170,7 @@ const LocationScreen = () => {
         },
         latitude: region.latitude,
         longitude: region.longitude,
+        hiddenFields,
       });
       navigateToNextScreen();
     } catch (error) {
@@ -240,6 +252,16 @@ const LocationScreen = () => {
           )}
         </View>
 
+        <View style={styles.privacyContainer}>
+          <Text style={styles.privacyText}>Keep this private</Text>
+          <Checkbox
+            value={hiddenFields["location"] || false}
+            onValueChange={() => toggleHidden("location")}
+            style={styles.checkbox}
+            color={hiddenFields["location"] ? colors.primary : undefined}
+          />
+        </View>
+
         <Text style={styles.affirmation}>
           The best connections often happen close to{' '}
           <Text style={styles.highlightedWord}>home</Text>
@@ -261,9 +283,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
   
   // Calculate responsive map height based on screen size
   const getMapHeight = () => {
-    if (screenHeight < 700) return 220; // Small screens (iPhone SE, etc.)
-    if (screenHeight < 800) return 260; // Medium screens (iPhone 12/13)
-    return 270; // Large screens (iPhone Pro Max, etc.)
+    if (screenHeight < 700) return 200; // Slightly smaller for privacy option
+    if (screenHeight < 800) return 240; 
+    return 250; 
   };
 
   return StyleSheet.create({
@@ -417,6 +439,29 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.textMuted,
       fontStyle: "normal",
+    },
+    privacyContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: Spacing.xl,
+      marginHorizontal: Spacing.lg,
+      backgroundColor: colors.card,
+      padding: Spacing.lg,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    privacyText: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textDark,
+      fontSize: Typography.sizes.base,
+      fontStyle: "normal",
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 4,
     },
     affirmation: {
       ...fonts.elegantItalicFont,

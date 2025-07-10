@@ -237,8 +237,8 @@ function SpiritualPracticesScreen() {
           </View>
 
           {/* Privacy Toggle */}
-          <View style={styles.hiddenContainer}>
-            <Text style={styles.hiddenText}>Keep my spiritual practices private</Text>
+          <View style={styles.privacyContainer}>
+            <Text style={styles.privacyText}>Keep my spiritual practices private</Text>
             <View style={styles.orbCheckboxContainer}>
               <TouchableOpacity 
                 style={styles.orbCheckbox}
@@ -447,7 +447,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
-    hiddenContainer: {
+    privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -460,7 +460,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderWidth: 1,
       borderColor: colors.border,
     },
-    hiddenText: {
+    privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,

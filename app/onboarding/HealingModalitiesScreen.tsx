@@ -490,8 +490,8 @@ function HealingModalitiesScreen() {
           </View>
 
           {/* Hide Option */}
-          <View style={styles.hiddenContainer}>
-            <Text style={styles.hiddenText}>Keep my healing modalities private</Text>
+          <View style={styles.privacyContainer}>
+            <Text style={styles.privacyText}>Keep my healing modalities private</Text>
             <View style={styles.orbCheckboxContainer}>
               <TouchableOpacity 
                 style={styles.orbCheckbox}
@@ -752,7 +752,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       lineHeight: Typography.sizes.xs * 1.2,
       marginTop: Spacing.xs / 2,
     },
-    hiddenContainer: {
+    privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -764,7 +764,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderWidth: 1,
       borderColor: colors.border,
     },
-    hiddenText: {
+    privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,

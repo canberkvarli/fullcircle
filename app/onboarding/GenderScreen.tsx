@@ -330,8 +330,8 @@ function GenderScreen() {
             </View>
           )}
 
-          <View style={styles.hiddenContainer}>
-            <Text style={styles.hiddenText}>Keep this private</Text>
+          <View style={styles.privacyContainer}>
+            <Text style={styles.privacyText}>Keep this private</Text>
             <RoundedCheckbox
               value={hiddenFields["gender"] || false}
               onValueChange={() => toggleHidden("gender")}
@@ -560,7 +560,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       color: colors.textLight,
       fontStyle: "normal",
     },
-    hiddenContainer: {
+    privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -572,7 +572,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderWidth: 1,
       borderColor: colors.border,
     },
-    hiddenText: {
+    privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,

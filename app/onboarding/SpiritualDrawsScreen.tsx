@@ -233,8 +233,8 @@ function SpiritualDrawsScreen() {
           </View>
 
           {/* Hide Option */}
-          <View style={styles.hiddenContainer}>
-            <Text style={styles.hiddenText}>Keep my spiritual draws private</Text>
+          <View style={styles.privacyContainer}>
+            <Text style={styles.privacyText}>Keep my spiritual draws private</Text>
             <TouchableOpacity 
               style={[
                 styles.checkboxContainer,
@@ -440,7 +440,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontStyle: 'italic',
       lineHeight: Typography.sizes.base * 1.4,
     },
-    hiddenContainer: {
+    privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -452,7 +452,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderWidth: 1,
       borderColor: colors.border,
     },
-    hiddenText: {
+    privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,
