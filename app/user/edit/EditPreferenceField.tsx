@@ -17,7 +17,9 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
 const FIELD_TITLES: Record<string, string> = {
-  ConnectionPreferences: "Looking For",
+  connectionIntent: "Connection Type",
+  connectionPreferences: "Who You're Interested In",
+  connectionStyles: "Connection Style",
   preferredAgeRange: "Age Range",
   preferredDistance: "Maximum Distance",
   preferredHeightRange: "Height Range",
@@ -27,7 +29,9 @@ const FIELD_TITLES: Record<string, string> = {
 };
 
 const FIELD_DESCRIPTIONS: Record<string, string> = {
-  ConnectionPreferences: "Who you're interested in connecting with",
+  connectionIntent: "Choose between dating and friendship connections",
+  connectionPreferences: "Who you're interested in connecting with",
+  connectionStyles: "How you prefer to connect with others",
   preferredAgeRange: "Your preferred age range for connections",
   preferredDistance: "How far you're willing to connect",
   preferredHeightRange: "Your preferred height range",
@@ -52,6 +56,9 @@ function EditPreferenceField() {
   const [isVisible, setIsVisible] = useState<boolean>(
     userData?.hiddenFields?.[fieldName] === false || false
   );
+
+  // Get current connection intent to show appropriate options
+  const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
 
   useEffect(() => {
     if (currentValue) {
@@ -78,14 +85,28 @@ function EditPreferenceField() {
   }, [currentValue, userData, fieldName]);
 
   const handleSave = async () => {
-    // Clean the value based on field type
     let cleanedValue = value;
     
-    if (fieldName === "ConnectionPreferences") {
-      // ONLY the exact options from your ConnectionPreferenceScreen - NO OLD GENDER OPTIONS AT ALL
-      const mainOptions = ["Men", "Women"]; // from mainOptions.id
-      const otherOptionsWithId = ["Non-Binary"]; // from otherOptions with id  
-      const otherStringOptions = [
+    // Handle connection preferences based on current connection intent
+    if (fieldName === "connectionPreferences") {
+      if (connectionIntent === "romantic") {
+        // Romantic options - same as your ConnectionPreferenceScreen
+        const romanticOptions = ["Men", "Women", "Non-Binary", "Everyone"];
+        if (Array.isArray(value)) {
+          cleanedValue = value.filter(item => romanticOptions.includes(item));
+          if (cleanedValue.length === 0) cleanedValue = ["Everyone"];
+        } else {
+          cleanedValue = ["Everyone"];
+        }
+      } else {
+        // Friendship - automatically set to Everyone (no gender selection needed)
+        cleanedValue = ["Everyone"];
+      }
+    }
+
+    // Handle connection styles based on current connection intent
+    if (fieldName === "connectionStyles") {
+      const romanticStyles = [
         "Twin Flame Seeker",
         "Soul Mate Guided", 
         "Tantric Connection",
@@ -96,23 +117,26 @@ function EditPreferenceField() {
         "Spiritual Partnership",
         "Sacred Union",
         "Love Without Labels",
-      ]; // from otherOptions that are strings
-      const allEnergyOption = ["Everyone"]; // from allEnergyOption.id
-      
-      // Combine exactly as they appear in your onboarding
-      const validConnectionPreferenceOptions = [
-        ...mainOptions,
-        ...otherOptionsWithId,
-        ...otherStringOptions,
-        ...allEnergyOption
       ];
       
+      const friendshipStyles = [
+        "Practice Partners",
+        "Meditation Buddies",
+        "Adventure Seekers",
+        "Study Circles",
+        "Healing Circles",
+        "Creative Collaborators",
+        "Retreat Companions",
+        "Wisdom Sharers",
+        "Community Builders",
+        "Soul Supporters",
+      ];
+
+      const validStyles = connectionIntent === "romantic" ? romanticStyles : friendshipStyles;
       if (Array.isArray(value)) {
-        cleanedValue = value.filter(item => validConnectionPreferenceOptions.includes(item));
-        // Only default to "Everyone" if truly empty after filtering
-        if (cleanedValue.length === 0) cleanedValue = ["Everyone"];
+        cleanedValue = value.filter(item => validStyles.includes(item));
       } else {
-        cleanedValue = ["Everyone"];
+        cleanedValue = [];
       }
     }
 
@@ -133,7 +157,7 @@ function EditPreferenceField() {
           },
         };
 
-        // Handle spiritual compatibility fields differently
+        // Handle spiritual compatibility fields
         if (fieldName === "preferredSpiritualPractices" || 
             fieldName === "preferredSpiritualDraws" || 
             fieldName === "preferredHealingModalities") {
@@ -147,10 +171,16 @@ function EditPreferenceField() {
             [finalField]: cleanedValue,
           };
         } else {
+          // Handle new connection fields
           updatedData.matchPreferences[fieldName] = cleanedValue;
+          
+          // Also update legacy datePreferences for backward compatibility
+          if (fieldName === "connectionPreferences" && connectionIntent === "romantic") {
+            updatedData.matchPreferences.datePreferences = cleanedValue;
+          }
         }
 
-        console.log("Saving ConnectionPreferences:", cleanedValue); // Debug log
+        console.log(`Saving ${fieldName}:`, cleanedValue);
         await updateUserData(updatedData);
         await resetPotentialMatches();
       } catch (error) {
@@ -160,43 +190,36 @@ function EditPreferenceField() {
     router.back();
   };
 
-const handleCheckboxToggle = (
-  option: string,
-  options: string[],
-  allOption: string
-) => {
-  setValue((prev: string[] = []) => {
-    if (!Array.isArray(prev)) prev = [];
-    
-    if (option === allOption) {
-      // If clicking "Everyone", just toggle it
-      return prev.includes(allOption) ? [] : [allOption];
-    }
-
-    // For any other option
-    if (prev.includes(option)) {
-      // Remove this option
-      const updated = prev.filter((item) => item !== option);
-      return updated;
-    } else {
-      // Add this option
-      // Remove "Everyone" if it exists, then add the new option
-      const withoutEveryone = prev.filter(item => item !== allOption);
-      const newSelection = [...withoutEveryone, option];
+  const handleCheckboxToggle = (
+    option: string,
+    options: string[],
+    allOption: string
+  ) => {
+    setValue((prev: string[] = []) => {
+      if (!Array.isArray(prev)) prev = [];
       
-      // Check if we now have all individual options (excluding the "all" option)
-      const individualOptions = options.filter(opt => opt !== allOption);
-      const hasAllIndividualOptions = individualOptions.every(opt => newSelection.includes(opt));
-      
-      // If we have all individual options, replace with "Everyone"
-      if (hasAllIndividualOptions) {
-        return [allOption];
+      if (option === allOption) {
+        return prev.includes(allOption) ? [] : [allOption];
       }
-      
-      return newSelection;
-    }
-  });
-};
+
+      if (prev.includes(option)) {
+        const updated = prev.filter((item) => item !== option);
+        return updated;
+      } else {
+        const withoutAll = prev.filter(item => item !== allOption);
+        const newSelection = [...withoutAll, option];
+        
+        const individualOptions = options.filter(opt => opt !== allOption);
+        const hasAllIndividualOptions = individualOptions.every(opt => newSelection.includes(opt));
+        
+        if (hasAllIndividualOptions) {
+          return [allOption];
+        }
+        
+        return newSelection;
+      }
+    });
+  };
 
   const CheckboxList = ({
     options,
@@ -239,12 +262,90 @@ const handleCheckboxToggle = (
 
   const renderField = () => {
     switch (fieldName) {
-      case "ConnectionPreferences": {
-        const mainOptions = ["Men", "Women"];
-        const otherOptionsWithId = ["Non-Binary"];
-        const otherStringOptions = [
+      case "connectionIntent": {
+        const connectionIntents = ["romantic", "friendship"];
+        return (
+          <View style={styles.connectionIntentContainer}>
+            {connectionIntents.map((intent) => (
+              <TouchableOpacity
+                key={intent}
+                style={[
+                  styles.connectionIntentCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  value === intent && { 
+                    backgroundColor: colors.primary + '15', 
+                    borderColor: colors.primary,
+                    borderWidth: 2,
+                  },
+                ]}
+                onPress={() => setValue(intent)}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name={intent === "romantic" ? "heart" : "people"} 
+                  size={32} 
+                  color={value === intent ? colors.primary : colors.textMuted} 
+                />
+                <Text
+                  style={[
+                    styles.connectionIntentTitle,
+                    fonts.spiritualTitleFont,
+                    { color: value === intent ? colors.primary : colors.textDark },
+                  ]}
+                >
+                  {intent === "romantic" ? "Dating" : "Friendship"}
+                </Text>
+                <Text
+                  style={[
+                    styles.connectionIntentSubtitle,
+                    fonts.spiritualBodyFont,
+                    { color: colors.textLight },
+                  ]}
+                >
+                  {intent === "romantic" 
+                    ? "Seeking romantic & intimate connections"
+                    : "Building meaningful platonic bonds"
+                  }
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        );
+      }
+
+      case "connectionPreferences": {
+        // Only show gender options for romantic connections
+        if (connectionIntent === "romantic") {
+          const romanticOptions = ["Men", "Women", "Non-Binary", "Everyone"];
+          return (
+            <CheckboxList
+              options={romanticOptions}
+              selected={value && value.length > 0 ? value : ["Everyone"]}
+              onToggle={(option) =>
+                handleCheckboxToggle(option, romanticOptions, "Everyone")
+              }
+            />
+          );
+        } else {
+          // For friendship, just show a message
+          return (
+            <View style={styles.friendshipMessage}>
+              <Ionicons name="people" size={48} color={colors.primary} />
+              <Text style={[styles.friendshipTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                Open to All Connections
+              </Text>
+              <Text style={[styles.friendshipSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                Friendship connections are open to everyone in the circle, regardless of gender.
+              </Text>
+            </View>
+          );
+        }
+      }
+
+      case "connectionStyles": {
+        const romanticStyles = [
           "Twin Flame Seeker",
-          "Soul Mate Guided",
+          "Soul Mate Guided", 
           "Tantric Connection",
           "Heart-Centered",
           "Consciousness Explorer",
@@ -254,22 +355,34 @@ const handleCheckboxToggle = (
           "Sacred Union",
           "Love Without Labels",
         ];
-        const allEnergyOption = ["Everyone"];
         
-        const ConnectionPreferenceOptions = [
-          ...mainOptions,
-          ...otherOptionsWithId,
-          ...otherStringOptions,
-          ...allEnergyOption
+        const friendshipStyles = [
+          "Practice Partners",
+          "Meditation Buddies",
+          "Adventure Seekers",
+          "Study Circles",
+          "Healing Circles",
+          "Creative Collaborators",
+          "Retreat Companions",
+          "Wisdom Sharers",
+          "Community Builders",
+          "Soul Supporters",
         ];
+
+        const currentStyles = connectionIntent === "romantic" ? romanticStyles : friendshipStyles;
         
         return (
           <CheckboxList
-            options={ConnectionPreferenceOptions}
-            selected={value && value.length > 0 ? value : ["Everyone"]}
-            onToggle={(option) =>
-              handleCheckboxToggle(option, ConnectionPreferenceOptions, "Everyone")
-            }
+            options={currentStyles}
+            selected={value && value.length > 0 ? value : []}
+            onToggle={(option) => {
+              setValue((prev: string[] = []) => {
+                if (!Array.isArray(prev)) prev = [];
+                return prev.includes(option)
+                  ? prev.filter((item) => item !== option)
+                  : [...prev, option];
+              });
+            }}
           />
         );
       }
@@ -355,26 +468,22 @@ const handleCheckboxToggle = (
       
       case "preferredSpiritualPractices": {
         const spiritualPracticeOptions: string[] = [
-          "Hatha/Vinyasa Yoga",
-          "Kundalini Yoga", 
-          "Yin Yoga",
-          "Tantric Practices",
-          "Mindfulness Meditation",
-          "Breathwork",
-          "Reiki (Energy Work)",
-          "Chakra Healing",
-          "Qi Gong",
-          "Ayurveda",
-          "Astrology (Western)",
-          "Astrology (Vedic)", 
-          "Chinese Astrology",
-          "Human Design & Numerology",
-          "Tarot/Oracle Cards",
-          "Cacao Ceremony",
-          "Ayahuasca & Plant Medicine",
+          "Meditation",
+          "Yoga",
+          "Prayer",
+          "Journaling",
+          "Energy Healing",
+          "Crystal Work",
+          "Tarot & Oracle",
+          "Astrology",
+          "Nature Rituals",
           "Sound Healing",
-          "Ecstatic Dance",
-          "Crystal Healing",
+          "Breathwork",
+          "Sacred Dance",
+          "Plant Medicine",
+          "Shamanic Journey",
+          "Martial Arts",
+          "Fasting",
           "Open to All",
         ];
         return (
@@ -416,17 +525,17 @@ const handleCheckboxToggle = (
       
       case "preferredHealingModalities": {
         const healingModalityOptions: string[] = [
-          "Energy Healing",
+          "Reiki",
+          "Acupuncture",
           "Sound Therapy",
           "Crystal Healing",
           "Aromatherapy",
+          "Light Therapy",
           "Massage Therapy",
-          "Acupuncture",
-          "Herbal Medicine",
-          "Nutrition Therapy",
-          "Emotional Freedom Technique",
-          "Breathwork",
-          "Movement Therapy",
+          "Hypnotherapy",
+          "Homeopathy",
+          "Herbalism",
+          "Plant Medicine",
           "Open to All",
         ];
         return (
@@ -448,6 +557,7 @@ const handleCheckboxToggle = (
         );
     }
   };
+
   const styles = createStyles(colors, fonts);
 
   return (
@@ -522,6 +632,65 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
   },
+
+  connectionIntentContainer: {
+    gap: Spacing.lg,
+  },
+
+  connectionIntentCard: {
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+
+  connectionIntentTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+
+  connectionIntentSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  friendshipMessage: {
+    alignItems: 'center',
+    padding: Spacing.xl,
+    backgroundColor: colors.primary + '10',
+    borderRadius: BorderRadius.xl,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+
+  friendshipTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+
+  friendshipSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: Typography.sizes.base * 1.4,
+  },
   
   checkboxContainer: {
     flexDirection: "row",
@@ -534,11 +703,17 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    shadowColor: colors.textDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   
   checkboxText: {
@@ -568,37 +743,9 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     width: '90%',
   },
   
-  sliderTrack: {
-    height: 6,
-    borderRadius: 3,
-  },
-  
-  sliderSelectedTrack: {
-    borderRadius: 3,
-  },
-  
-  sliderMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: colors.card,
-    shadowColor: colors.textDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  
-  sliderMarkerPressed: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  
   bottomSpacing: {
     height: Spacing['2xl'],
   },
 });
 
-export default EditPreferenceField;;
+export default EditPreferenceField;
