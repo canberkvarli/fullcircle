@@ -30,10 +30,10 @@ export default function SacredSelf() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
+  const isFullCircle = userData.fullCircleSubscription;
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Animated header opacity based on scroll
   const headerOpacity = scrollY.interpolate({
     inputRange: [160, 290],
     outputRange: [0, 1],
@@ -66,28 +66,34 @@ export default function SacredSelf() {
     return 'Location not shared';
   };
 
-  const isFullCircle = userData.fullCircleSubscription;
+  const getNameFontSize = () => {
+    const nameLength = userData.firstName?.length || 0;
+    if (nameLength <= 6) return Typography.sizes.lg; 
+    if (nameLength <= 10) return Typography.sizes["2xl"];
+    return Typography.sizes.sm;
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
       
-      {/* Fixed Header with Animated Name */}
       <View style={[styles.header, { 
         backgroundColor: colors.background,
         borderBottomColor: colors.border 
       }]}>
         <View style={styles.headerLeft} />
         
-        {/* Animated Name in Center */}
         <Animated.Text style={[
           styles.animatedHeaderTitle, 
           fonts.spiritualTitleFont, 
           { 
             color: colors.textDark,
-            opacity: headerOpacity 
+            opacity: headerOpacity,
+            fontSize: getNameFontSize() // Dynamic font size based on name length
           }
-        ]}>
+        ]} 
+        numberOfLines={1}
+        >
           {userData.firstName}
         </Animated.Text>
         
@@ -114,7 +120,6 @@ export default function SacredSelf() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Section */}
         <View style={styles.profileSection}>
           <Link href={"/user/EditUserProfile" as any} asChild>
             <TouchableOpacity style={styles.profileImageContainer} activeOpacity={0.8}>
@@ -139,7 +144,7 @@ export default function SacredSelf() {
           <View style={styles.userInfoContainer}>
             <View style={styles.nameVerificationRow}>
               <Text style={[styles.userName, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                {userData.firstName}, {calculateAge()}
+                {userData.firstName}
               </Text>
               <TouchableOpacity 
                 style={[styles.verifyButton, { 
@@ -173,7 +178,6 @@ export default function SacredSelf() {
           </View>
         </View>
 
-        {/* Hinge-style Tab Navigation */}
         <View style={[styles.hingeTabsContainer, { backgroundColor: colors.background }]}>
           <TouchableOpacity
             style={[
@@ -212,11 +216,9 @@ export default function SacredSelf() {
           </TouchableOpacity>
         </View>
 
-        {/* Tab Content */}
         <View style={styles.tabContent}>
           {activeTab === "discover" ? (
             <>
-              {/* Full Circle Status Card */}
               {isFullCircle ? (
                 <View style={[styles.fullCircleActiveCard, { 
                   backgroundColor: '#8B4513' + '10',
@@ -224,40 +226,39 @@ export default function SacredSelf() {
                 }]}>
                   <View style={styles.fullCircleHeader}>
                     <View style={[styles.fullCircleIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                      <Ionicons name="infinite" size={28} color="#8B4513" />
+                      <Ionicons name="infinite" size={24} color="#8B4513" />
                     </View>
                     <View style={styles.fullCircleInfo}>
                       <Text style={[styles.fullCircleActiveTitle, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
                         Full Circle Active ∞
                       </Text>
                       <Text style={[styles.fullCircleActiveSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                        Your spiritual journey is enhanced
+                        Your experience is enhanced
                       </Text>
                     </View>
                   </View>
 
-                  {/* Full Circle Perks */}
                   <View style={styles.perksContainer}>
                     <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
-                      <Ionicons name="flash" size={20} color="#FFD700" />
+                      <Ionicons name="flash" size={18} color="#FFD700" />
                       <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                         Unlimited Boosts
                       </Text>
                     </View>
                     <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
-                      <Ionicons name="sparkles" size={20} color="#8B4513" />
+                      <Ionicons name="sparkles" size={18} color="#8B4513" />
                       <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                        {userData.numOfOrbs || 0} Sacred Orbs
+                        {userData.numOfOrbs || 0} Orbs
                       </Text>
                     </View>
                     <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
-                      <Ionicons name="eye" size={20} color="#9D4EDD" />
+                      <Ionicons name="eye" size={18} color="#9D4EDD" />
                       <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                         See Who Likes You
                       </Text>
                     </View>
                     <View style={[styles.perkItem, { backgroundColor: colors.card }]}>
-                      <Ionicons name="heart-circle" size={20} color="#FF6B6B" />
+                      <Ionicons name="heart-circle" size={18} color="#FF6B6B" />
                       <Text style={[styles.perkText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                         Unlimited Likes
                       </Text>
@@ -271,14 +272,14 @@ export default function SacredSelf() {
                 }]}>
                   <View style={styles.fullCircleContent}>
                     <View style={[styles.fullCircleIcon, { backgroundColor: '#8B4513' + '15' }]}>
-                      <Ionicons name="infinite" size={32} color="#8B4513" />
+                      <Ionicons name="infinite" size={24} color="#8B4513" />
                     </View>
                     <View style={styles.fullCircleTextContent}>
                       <Text style={[styles.fullCircleTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
                         Full Circle ∞
                       </Text>
                       <Text style={[styles.fullCircleSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                        Unlock your divine potential and connect with 3x more souls
+                        Unlock your full potential and connect with 3x more people
                       </Text>
                       <Link href={{ pathname: "user/FullCircleSubscription" as any }} asChild>
                         <TouchableOpacity 
@@ -296,10 +297,9 @@ export default function SacredSelf() {
                 </View>
               )}
 
-              {/* Sacred Tools - Available to all users */}
               <View style={styles.toolsContainer}>
                 <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  Sacred Tools
+                  Boost Tools
                 </Text>
                 
                 <TouchableOpacity
@@ -308,14 +308,14 @@ export default function SacredSelf() {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.toolIcon, { backgroundColor: '#FFD700' + '20' }]}>
-                    <Ionicons name="sunny" size={24} color="#FFD700" />
+                    <Ionicons name="sunny" size={20} color="#FFD700" />
                   </View>
                   <View style={styles.toolContent}>
                     <Text style={[styles.toolTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                       Day Pass
                     </Text>
                     <Text style={[styles.toolSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                      Unlock divine potential for 24 sacred hours
+                      Unlock full potential for 24 hours
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -328,14 +328,14 @@ export default function SacredSelf() {
                     activeOpacity={0.7}
                   >
                     <View style={[styles.toolIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
-                      <Ionicons name="flash" size={24} color="#FF6B6B" />
+                      <Ionicons name="flash" size={20} color="#FF6B6B" />
                     </View>
                     <View style={styles.toolContent}>
                       <Text style={[styles.toolTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                        Sacred Amplify
+                        Boost
                       </Text>
                       <Text style={[styles.toolSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                        Shine your light to 11x more souls
+                        Get seen by 11x more people
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -344,18 +344,18 @@ export default function SacredSelf() {
 
                 <TouchableOpacity
                   style={[styles.toolItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => console.log("Sacred Offering clicked")}
+                  onPress={() => console.log("Super Like clicked")}
                   activeOpacity={0.7}
                 >
                   <View style={[styles.toolIcon, { backgroundColor: '#9D4EDD' + '20' }]}>
-                    <Ionicons name="flower" size={24} color="#9D4EDD" />
+                    <Ionicons name="flower" size={20} color="#9D4EDD" />
                   </View>
                   <View style={styles.toolContent}>
                     <Text style={[styles.toolTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                      Sacred Offering
+                      Super Like
                     </Text>
                     <Text style={[styles.toolSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                      Double your chance of divine connection
+                      Double your chance of matching
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -366,13 +366,13 @@ export default function SacredSelf() {
             <View style={styles.circleContent}>
               <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.emptyIcon, { backgroundColor: '#8B4513' + '15' }]}>
-                  <Ionicons name="people-circle-outline" size={48} color="#8B4513" />
+                  <Ionicons name="people-circle-outline" size={32} color="#8B4513" />
                 </View>
                 <Text style={[styles.emptyTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  Your Sacred Circle
+                  Your Circle
                 </Text>
                 <Text style={[styles.emptySubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                  Here you'll see your closest connections, favorite souls, and meaningful conversations that transcend the ordinary.
+                  Here you'll see your closest connections, favorite people, and meaningful conversations.
                 </Text>
                 <TouchableOpacity 
                   style={[styles.connectButton, { backgroundColor: '#8B4513' }]}
@@ -389,7 +389,6 @@ export default function SacredSelf() {
           )}
         </View>
 
-        {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </SafeAreaView>
@@ -402,24 +401,42 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Platform.OS === 'ios' ? Spacing.md : Spacing.lg,
-    paddingBottom: Spacing.md,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
   },
   headerLeft: {
     flex: 1,
   },
+  headerTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    opacity: 0.8,
+  },
+  highlightedWord: {
+    color: '#8B4513',
+    textShadowColor: '#D2691E',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.5,
+  },
   animatedHeaderTitle: {
-    fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.bold,
     letterSpacing: 0.5,
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: 80, // Start after the headerLeft space
+    right: 80, // End before the headerIcons space
     textAlign: 'center',
+    maxWidth: screenWidth - 160, // Ensure it doesn't exceed container width
   },
   headerIcons: {
     flexDirection: 'row',
@@ -511,7 +528,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 0.2,
   },
-  // Hinge-style tabs
   hingeTabsContainer: {
     flexDirection: 'row',
     marginBottom: Spacing.xl,
@@ -535,7 +551,6 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
   },
-  // Full Circle Active Card
   fullCircleActiveCard: {
     borderRadius: 20,
     padding: Spacing.xl,
@@ -548,9 +563,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   fullCircleIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -589,7 +604,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.2,
   },
-  // Original Full Circle Card (for non-subscribers)
   fullCircleCard: {
     borderRadius: 20,
     padding: Spacing.xl,
@@ -665,9 +679,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   toolIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -696,9 +710,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   emptyIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.lg,
