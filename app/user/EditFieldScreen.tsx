@@ -29,8 +29,9 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.0421,
 };
 
-// Updated field options - using new connection structure
+// Updated field options - EXPANDED GENDER OPTIONS
 const FIELD_OPTIONS = {
+  // Gender options for user's own gender (limit 2)
   gender: [
     "Woman",
     "Man", 
@@ -39,6 +40,8 @@ const FIELD_OPTIONS = {
     "Agender",
     "Two-Spirit",
     "Genderfluid",
+    "Transgender",
+    "Questioning",
   ],
   
   connectionIntent: [
@@ -46,12 +49,18 @@ const FIELD_OPTIONS = {
     { id: "friendship", label: "Friendship", subtitle: "Building meaningful platonic bonds", icon: "people" },
   ],
 
-  // Romantic preferences (for when connection intent is romantic)
+  // Connection preferences (for dating - who you're interested in) - EXPANDED OPTIONS with limit 2
   connectionPreferences: [
-    { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
-    { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
-    { id: "Non-Binary", label: "Non-Binary Souls", subtitle: "Connected to fluid expressions" },
-    { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" },
+    "Woman",
+    "Man", 
+    "Non-binary",
+    "Genderqueer",
+    "Agender",
+    "Two-Spirit",
+    "Genderfluid",
+    "Transgender",
+    "Questioning",
+    "Everyone", // Special option that selects all
   ],
 
   // Connection styles
@@ -95,7 +104,6 @@ const FIELD_OPTIONS = {
     },
   ],
 
-  // Clean spiritual practices without emojis
   spiritualPractices: [
     "Meditation", "Yoga", "Prayer", "Journaling", "Energy Healing", 
     "Crystal Work", "Tarot & Oracle", "Astrology", "Nature Rituals", 
@@ -104,7 +112,6 @@ const FIELD_OPTIONS = {
     "Mindfulness", "Contemplation", "Sacred Geometry"
   ],
 
-  // Clean healing modalities without emojis (removed Ayahuasca and Kambo)
   healingModalities: [
     "Reiki", "Acupuncture", "Sound Therapy", "Crystal Healing", 
     "Aromatherapy", "Light Therapy", "Massage Therapy", "Hypnotherapy", 
@@ -122,7 +129,7 @@ function EditFieldScreen() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
-  // Get current field value - FIXED for new structure
+  // Get current field value
   const getCurrentFieldValue = () => {
     if (fieldName === "fullName") {
       return userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
@@ -147,16 +154,15 @@ function EditFieldScreen() {
   const currentFieldValue = getCurrentFieldValue();
   const isHidden = (userData.hiddenFields as any)?.[fieldName as string] === true;
 
-  // State variables - FIXED initialization
-  const [selectedItems, setSelectedItems] = useState<string[]>(
+  // State variables
+  const [selectedItems, setSelectedItems] = useState(
     Array.isArray(currentFieldValue) ? currentFieldValue : []
   );
-  const [selectedSingleItem, setSelectedSingleItem] = useState<string>(
+  const [selectedSingleItem, setSelectedSingleItem] = useState(
     typeof currentFieldValue === 'string' ? currentFieldValue : ''
   );
   const [isVisible, setIsVisible] = useState(!isHidden);
   
-  // FIXED: Proper initialization of name fields
   const [firstName, setFirstName] = useState(() => {
     if (fieldName === "fullName") {
       const fullName = userData.fullName || '';
@@ -174,7 +180,6 @@ function EditFieldScreen() {
     return userData.lastName || '';
   });
   
-  // FIXED: Age initialization
   const [age, setAge] = useState(userData.age?.toString() || '');
   const [selectedHeight, setSelectedHeight] = useState(userData.height || 5.8);
 
@@ -293,6 +298,8 @@ function EditFieldScreen() {
         matchPreferences: {
           ...userData.matchPreferences,
           connectionPreferences: selectedItems,
+          // Also update legacy datePreferences for backward compatibility
+          datePreferences: selectedItems,
         },
       };
     } else if (fieldName === "connectionStyles") {
@@ -323,11 +330,13 @@ function EditFieldScreen() {
           healingModalities: selectedItems,
         },
       };
+    } else if (fieldName === "gender") {
+      updateData = { gender: selectedItems };
     } else {
       updateData = { [fieldName as string]: selectedItems.length ? selectedItems : selectedSingleItem };
     }
 
-    // FIXED: Add hidden field setting with correct logic
+    // Add hidden field setting
     updateData.hiddenFields = {
       ...userData.hiddenFields,
       [fieldName as string]: !isVisible,
@@ -337,12 +346,43 @@ function EditFieldScreen() {
     router.back();
   };
 
+  // UPDATED: Handle item toggle with 2-person limit for gender and connection preferences
   const handleItemToggle = (item: string) => {
-    setSelectedItems(prev => 
-      prev.includes(item) 
-        ? prev.filter(i => i !== item)
-        : [...prev, item]
-    );
+    const isLimitedField = fieldName === "gender" || fieldName === "connectionPreferences";
+    const maxSelections = 2;
+
+    if (isLimitedField) {
+      setSelectedItems(prev => {
+        if (item === "Everyone") {
+          // If selecting "Everyone", clear all others and just select Everyone
+          return prev.includes("Everyone") ? [] : ["Everyone"];
+        }
+        
+        // If "Everyone" is currently selected and we're selecting something else, remove "Everyone"
+        let newSelection = prev.includes("Everyone") ? [] : prev;
+        
+        if (newSelection.includes(item)) {
+          // Remove the item
+          return newSelection.filter(i => i !== item);
+        } else {
+          // Add the item, but limit to maxSelections (excluding "Everyone")
+          const otherItems = newSelection.filter(i => i !== "Everyone");
+          if (otherItems.length >= maxSelections) {
+            // Replace the first item with the new one
+            return [otherItems[1], item];
+          } else {
+            return [...newSelection, item];
+          }
+        }
+      });
+    } else {
+      // Normal toggle logic for other fields
+      setSelectedItems(prev => 
+        prev.includes(item) 
+          ? prev.filter(i => i !== item)
+          : [...prev, item]
+      );
+    }
   };
 
   const handleSingleSelection = (item: string) => {
@@ -370,16 +410,16 @@ function EditFieldScreen() {
   const SelectionBubble = ({ isSelected, size = 20 }: { isSelected: boolean; size?: number }) => (
     <View style={[
       styles.selectionBubble,
-      { 
-        width: size, 
-        height: size, 
+      {
+        width: size,
+        height: size,
         borderRadius: size / 2,
         borderColor: isSelected ? colors.primary : colors.border,
         backgroundColor: isSelected ? colors.primary : 'transparent'
       }
     ]}>
       {isSelected && (
-        <Ionicons name="checkmark" size={size * 0.6} color="#FFFFFF" />
+        <Ionicons name="checkmark" size={size * 0.6} color="white" />
       )}
     </View>
   );
@@ -397,32 +437,25 @@ function EditFieldScreen() {
               key={intent.id}
               style={[
                 styles.modernOption,
-                { borderColor: colors.border, backgroundColor: colors.card },
-                isSelected && { 
-                  borderColor: intentColors.primary, 
-                  backgroundColor: intentColors.secondary 
+                {
+                  borderColor: isSelected ? intentColors.primary : colors.border,
+                  backgroundColor: isSelected ? intentColors.secondary : colors.card
                 }
               ]}
               onPress={() => handleSingleSelection(intent.id)}
               activeOpacity={0.7}
             >
-              <View style={styles.optionContent}>
-                <View style={styles.intentHeader}>
-                  <Ionicons 
-                    name={intent.icon as any} 
-                    size={24} 
-                    color={isSelected ? intentColors.primary : colors.textMuted} 
-                  />
-                  <Text style={[styles.optionLabel, fonts.buttonFont, { 
-                    color: isSelected ? intentColors.primary : colors.textDark 
-                  }]}>
+              <View style={styles.intentHeader}>
+                <Ionicons name={intent.icon as any} size={24} color={intentColors.primary} />
+                <View style={styles.optionContent}>
+                  <Text style={[styles.optionLabel, { color: colors.textDark }]}>
                     {intent.label}
                   </Text>
                 </View>
-                <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
-                  {intent.subtitle}
-                </Text>
               </View>
+              <Text style={[styles.optionSubtitle, { color: colors.textLight }]}>
+                {intent.subtitle}
+              </Text>
               <SelectionBubble isSelected={isSelected} />
             </TouchableOpacity>
           );
@@ -431,39 +464,74 @@ function EditFieldScreen() {
     );
   };
 
-  // Render connection preferences (only for romantic)
-  const renderConnectionPreferences = () => {
+  // UPDATED: Render gender or connection preferences with 2-person limit
+  const renderLimitedGenderOptions = (options: string[], isConnectionPrefs: boolean = false) => {
+    const maxSelections = 2;
+    const selectedCount = selectedItems.filter(item => item !== "Everyone").length;
+    const hasEveryone = selectedItems.includes("Everyone");
+    
     return (
       <View style={styles.connectionPreferencesContainer}>
-        {FIELD_OPTIONS.connectionPreferences.map((option) => {
-          const isSelected = selectedItems.includes(option.id);
+        {/* Selection Counter */}
+        <View style={[styles.selectionCounter, { backgroundColor: colors.primary + '15' }]}>
+          <Text style={[styles.counterText, { color: colors.primary }]}>
+            {hasEveryone 
+              ? (isConnectionPrefs ? "All gender identities selected" : "All genders selected")
+              : `${selectedCount}/${maxSelections} selected`
+            }
+          </Text>
+          {selectedCount === maxSelections && !hasEveryone && (
+            <Text style={[styles.limitText, { color: colors.textMuted }]}>
+              Maximum reached • Selecting another will replace the first
+            </Text>
+          )}
+        </View>
+
+        {options.map((option) => {
+          const isSelected = selectedItems.includes(option);
+          const isEveryone = option === "Everyone";
+          const isDisabled = !isSelected && hasEveryone && !isEveryone;
           
           return (
             <TouchableOpacity
-              key={option.id}
+              key={option}
               style={[
                 styles.modernOption,
-                { borderColor: colors.border, backgroundColor: colors.card },
-                isSelected && { 
-                  borderColor: colors.primary, 
-                  backgroundColor: colors.primary + '10' 
+                {
+                  borderColor: isSelected ? colors.primary : colors.border,
+                  backgroundColor: isSelected ? colors.primary + '10' : colors.card,
+                  opacity: isDisabled ? 0.5 : 1
                 }
               ]}
-              onPress={() => handleItemToggle(option.id)}
-              activeOpacity={0.7}
+              onPress={() => !isDisabled && handleItemToggle(option)}
+              activeOpacity={isDisabled ? 1 : 0.7}
+              disabled={isDisabled}
             >
               <View style={styles.optionContent}>
-                <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
-                  {option.label}
+                <Text style={[styles.optionLabel, { color: colors.textDark }]}>
+                  {option}
                 </Text>
-                <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
-                  {option.subtitle}
-                </Text>
+                {isEveryone && isConnectionPrefs && (
+                  <Text style={[styles.optionSubtitle, { color: colors.textMuted }]}>
+                    Open to all gender identities
+                  </Text>
+                )}
               </View>
               <SelectionBubble isSelected={isSelected} />
             </TouchableOpacity>
           );
         })}
+
+        {/* Help Text */}
+        <View style={styles.helpContainer}>
+          <Ionicons name="information-circle" size={16} color={colors.primary} />
+          <Text style={[styles.helpText, { color: colors.textMuted }]}>
+            {isConnectionPrefs 
+              ? "Select up to 2 gender identities you're interested in, or choose \"Everyone\" for all genders."
+              : "Select up to 2 gender identities that best describe you."
+            }
+          </Text>
+        </View>
       </View>
     );
   };
@@ -483,22 +551,15 @@ function EditFieldScreen() {
               key={style}
               style={[
                 styles.spiritualBubble,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { 
-                  borderColor: colors.primary, 
-                  backgroundColor: colors.primary + '15',
-                  transform: [{ scale: 1.02 }]
+                {
+                  borderColor: isSelected ? colors.primary : colors.border,
+                  backgroundColor: isSelected ? colors.primary + '15' : colors.card,
                 }
               ]}
               onPress={() => handleItemToggle(style)}
               activeOpacity={0.7}
             >
-              <Text style={[
-                styles.spiritualBubbleText, 
-                fonts.captionFont,
-                { color: colors.textDark },
-                isSelected && { color: colors.primary, fontWeight: Typography.weights.semibold }
-              ]}>
+              <Text style={[styles.spiritualBubbleText, { color: colors.textDark }]}>
                 {style}
               </Text>
               {isSelected && (
@@ -524,17 +585,19 @@ function EditFieldScreen() {
               key={draw.value}
               style={[
                 styles.modernOption,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { borderColor: draw.color, backgroundColor: draw.color + '10' }
+                {
+                  borderColor: isSelected ? draw.color : colors.border,
+                  backgroundColor: isSelected ? draw.color + '15' : colors.card,
+                }
               ]}
               onPress={() => handleItemToggle(draw.value)}
               activeOpacity={0.7}
             >
               <View style={styles.optionContent}>
-                <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
+                <Text style={[styles.optionLabel, { color: colors.textDark }]}>
                   {draw.label}
                 </Text>
-                <Text style={[styles.optionSubtitle, fonts.captionFont, { color: colors.textMuted }]}>
+                <Text style={[styles.optionSubtitle, { color: colors.textMuted }]}>
                   {draw.description}
                 </Text>
               </View>
@@ -558,22 +621,15 @@ function EditFieldScreen() {
               key={item}
               style={[
                 styles.spiritualBubble,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { 
-                  borderColor: colors.primary, 
-                  backgroundColor: colors.primary + '15',
-                  transform: [{ scale: 1.02 }]
+                {
+                  borderColor: isSelected ? colors.primary : colors.border,
+                  backgroundColor: isSelected ? colors.primary + '15' : colors.card,
                 }
               ]}
               onPress={() => handleItemToggle(item)}
               activeOpacity={0.7}
             >
-              <Text style={[
-                styles.spiritualBubbleText, 
-                fonts.captionFont,
-                { color: colors.textDark },
-                isSelected && { color: colors.primary, fontWeight: Typography.weights.semibold }
-              ]}>
+              <Text style={[styles.spiritualBubbleText, { color: colors.textDark }]}>
                 {item}
               </Text>
               {isSelected && (
@@ -588,53 +644,25 @@ function EditFieldScreen() {
     );
   };
 
-  const renderBasicOptions = (options: string[]) => {
-    return (
-      <View style={styles.basicOptionsContainer}>
-        {options.map((option) => {
-          const isSelected = selectedItems.includes(option);
-          
-          return (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.modernOption,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '10' }
-              ]}
-              onPress={() => handleItemToggle(option)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.optionLabel, fonts.buttonFont, { color: colors.textDark }]}>
-                {option}
-              </Text>
-              <SelectionBubble isSelected={isSelected} />
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
-
   const renderContent = () => {
     if (fieldName === "fullName") {
       return (
         <View style={styles.nameContainer}>
           <TextInput
-            style={[styles.nameInput, { borderColor: colors.border, color: colors.textDark }]}
-            placeholder="First Name"
+            style={[styles.nameInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.textDark }]}
+            placeholder="First name"
+            placeholderTextColor={colors.textMuted}
             value={firstName}
             onChangeText={setFirstName}
-            placeholderTextColor={colors.textMuted}
           />
           <TextInput
-            style={[styles.nameInput, { borderColor: colors.border, color: colors.textDark }]}
-            placeholder="Last Name (Optional)"
+            style={[styles.nameInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.textDark }]}
+            placeholder="Last name (optional)"
+            placeholderTextColor={colors.textMuted}
             value={lastName}
             onChangeText={setLastName}
-            placeholderTextColor={colors.textMuted}
           />
-          <Text style={[styles.helpText, fonts.captionFont, { color: colors.textMuted }]}>
+          <Text style={[styles.helpText, { color: colors.textMuted }]}>
             Last name is optional and only shared with matches.
           </Text>
         </View>
@@ -645,15 +673,15 @@ function EditFieldScreen() {
       return (
         <View style={styles.ageContainer}>
           <TextInput
-            style={[styles.ageInput, { borderColor: colors.border, color: colors.textDark }]}
-            placeholder="Enter your age"
+            style={[styles.ageInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.textDark }]}
+            placeholder="25"
+            placeholderTextColor={colors.textMuted}
             value={age}
             onChangeText={setAge}
             keyboardType="numeric"
             maxLength={2}
-            placeholderTextColor={colors.textMuted}
           />
-          <Text style={[styles.helpText, fonts.captionFont, { color: colors.textMuted }]}>
+          <Text style={[styles.helpText, { color: colors.textMuted }]}>
             Your age helps us find compatible matches.
           </Text>
         </View>
@@ -667,7 +695,6 @@ function EditFieldScreen() {
             min={3}
             max={8}
             step={0.1}
-            unit="ft"
             fractionDigits={1}
             initialValue={selectedHeight}
             onValueChange={(value) => setSelectedHeight(Number(value))}
@@ -679,7 +706,7 @@ function EditFieldScreen() {
     if (fieldName === "location") {
       return (
         <View style={styles.locationContainer}>
-          <Text style={[styles.regionName, fonts.buttonFont, { color: colors.textDark }]}>
+          <Text style={[styles.regionName, { color: colors.textDark }]}>
             {regionName}
           </Text>
           {loading ? (
@@ -695,20 +722,14 @@ function EditFieldScreen() {
               showsUserLocation
               showsMyLocationButton
             >
-              <Marker
-                coordinate={{
-                  latitude: mapRegion.latitude,
-                  longitude: mapRegion.longitude,
-                }}
-                title="You are here"
-              />
+              <Marker coordinate={mapRegion} />
             </MapView>
           )}
           <TouchableOpacity
             style={[styles.locationButton, { backgroundColor: colors.primary }]}
             onPress={initializeLocation}
           >
-            <Text style={[styles.locationButtonText, fonts.buttonFont]}>
+            <Text style={styles.locationButtonText}>
               Get Current Location
             </Text>
           </TouchableOpacity>
@@ -721,7 +742,7 @@ function EditFieldScreen() {
     }
 
     if (fieldName === "connectionPreferences") {
-      return renderConnectionPreferences();
+      return renderLimitedGenderOptions(FIELD_OPTIONS.connectionPreferences, true);
     }
 
     if (fieldName === "connectionStyles") {
@@ -741,7 +762,7 @@ function EditFieldScreen() {
     }
 
     if (fieldName === "gender") {
-      return renderBasicOptions(FIELD_OPTIONS.gender);
+      return renderLimitedGenderOptions(FIELD_OPTIONS.gender, false);
     }
 
     return null;
@@ -759,33 +780,35 @@ function EditFieldScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+        <Text style={[styles.headerTitle, { color: colors.textDark }]}>
           {fieldTitleMap[fieldName as string] || fieldName}
         </Text>
         
         <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={[styles.saveButtonText, { color: colors.primary }]}>Save</Text>
+          <Text style={[styles.saveButtonText, { color: colors.primary }]}>
+            Save
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollContainer}>
         {renderContent()}
       </ScrollView>
 
       {/* Visibility Toggle - only show for certain fields */}
       {fieldName !== "fullName" && fieldName !== "connectionIntent" && (
-        <View style={[styles.visibilityContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <View style={[styles.visibilityContainer, { borderTopColor: colors.border }]}>
           <View style={styles.visibilityContent}>
             <Ionicons 
               name={isVisible ? "eye" : "eye-off"} 
               size={20} 
-              color={isVisible ? colors.primary : colors.textMuted} 
+              color={colors.textMuted} 
             />
-            <Text style={[styles.visibilityText, fonts.buttonFont, { color: colors.textDark }]}>
+            <Text style={[styles.visibilityText, { color: colors.textDark }]}>
               {isVisible ? "Visible" : "Hidden"} on profile
             </Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setIsVisible(!isVisible)}
             style={[
               styles.visibilityToggle, 
@@ -793,13 +816,15 @@ function EditFieldScreen() {
             ]}
             activeOpacity={0.7}
           >
-            <View style={[
-              styles.visibilityToggleThumb, 
-              { 
-                backgroundColor: colors.card,
-                transform: [{ translateX: isVisible ? 22 : 2 }]
-              }
-            ]} />
+            <View 
+              style={[
+                styles.visibilityToggleThumb,
+                { 
+                  backgroundColor: 'white',
+                  left: isVisible ? 26 : 2
+                }
+              ]} 
+            />
           </TouchableOpacity>
         </View>
       )}
@@ -865,6 +890,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 2,
     marginBottom: Spacing.md,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   
   optionContent: {
@@ -898,6 +934,41 @@ const createStyles = (colors: any) => StyleSheet.create({
   connectionPreferencesContainer: {
     gap: Spacing.md,
   },
+
+  selectionCounter: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+
+  counterText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+
+  limitText: {
+    fontSize: Typography.sizes.xs,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  helpContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+  },
+
+  helpText: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    lineHeight: Typography.sizes.sm * 1.3,
+    flex: 1,
+  },
   
   // Spiritual Draws Styles
   spiritualDrawsContainer: {
@@ -922,6 +993,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     minHeight: 50,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   
   spiritualBubbleText: {
@@ -936,11 +1018,6 @@ const createStyles = (colors: any) => StyleSheet.create({
     right: 4,
   },
   
-  // Basic Options Styles
-  basicOptionsContainer: {
-    gap: Spacing.sm,
-  },
-  
   // Name Input Styles
   nameContainer: {
     gap: Spacing.md,
@@ -951,6 +1028,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 1.5,
     fontSize: Typography.sizes.base,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   
   // Age Input Styles
@@ -967,12 +1055,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     textAlign: 'center',
     width: 120,
     fontWeight: Typography.weights.bold,
-  },
-  
-  helpText: {
-    fontSize: Typography.sizes.sm,
-    fontStyle: 'italic',
-    textAlign: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   
   // Height Styles
@@ -1001,6 +1094,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.xl,
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   
   locationButtonText: {
