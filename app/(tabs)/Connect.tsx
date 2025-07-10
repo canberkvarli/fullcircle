@@ -54,6 +54,9 @@ const ConnectScreen: React.FC = () => {
   
   const orbButtonGlow = useRef(new Animated.Value(0)).current;
 
+  // Check if user has FullCircle subscription
+  const hasFullCircleSubscription = userData?.fullCircleSubscription || false;
+
 useEffect(() => {
   console.log('🖥️ ConnectScreen: Match state changed', {
     currentMatch: currentPotentialMatch?.userId,
@@ -253,7 +256,7 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }
   };
 
-// No more matches state
+// No more matches state - Different for subscribers vs non-subscribers
 if (noMoreMatches) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -271,41 +274,85 @@ if (noMoreMatches) {
       </View>
 
       <View style={styles.noLikesContainer}>
-        <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-          <Ionicons name="infinite" size={32} color="#B8860B" />
-        </View>
-        
-        <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-          More connections coming soon
-        </Text>
-        
-        <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-          We're preparing more meaningful matches for you. Expand your circle or adjust your preferences to discover new connections.
-        </Text>
-        
-        <View style={styles.actionContainer}>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
-            onPress={() => router.navigate('/user/FullCircleSubscription')}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-            <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-              Expand Your Circle
+        {hasFullCircleSubscription ? (
+          // FullCircle Subscriber Experience
+          <>
+            <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
+              <Ionicons name="infinite" size={32} color="#B8860B" />
+            </View>
+            
+            <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              You've explored your current circle
             </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
-            onPress={() => router.navigate('/user/ConnectingPreferences')}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
-            <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-              Adjust Preferences
+            
+            <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              As a FullCircle member, you've seen all available connections in your area. New members join daily - check back soon or expand your search radius.
             </Text>
-          </TouchableOpacity>
-        </View>
+            
+            <View style={styles.actionContainer}>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+                onPress={() => router.navigate('/user/EditUserProfile')}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="person" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                  Enhance Your Profile
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
+                onPress={() => router.navigate('/user/ConnectingPreferences')}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+                <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                  Adjust Preferences
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          // Non-Subscriber Experience
+          <>
+            <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
+              <Ionicons name="infinite" size={32} color="#B8860B" />
+            </View>
+            
+            <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              More connections coming soon
+            </Text>
+            
+            <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              We're preparing more meaningful matches for you. Expand your circle with FullCircle to discover more connections, or adjust your preferences.
+            </Text>
+            
+            <View style={styles.actionContainer}>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+                onPress={() => router.navigate('/user/FullCircleSubscription')}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                  Expand Your Circle
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
+                onPress={() => router.navigate('/user/ConnectingPreferences')}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+                <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                  Adjust Preferences
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
     </View>
   );
@@ -951,6 +998,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.3,
-  }}
-)
+  },
+});
+
 export default ConnectScreen;
