@@ -98,7 +98,7 @@ export default function SacredSelf() {
         </Animated.Text>
         
         <View style={styles.headerIcons}>
-          <Link href={{ pathname: "/user/DatingPreferences" as any }} asChild>
+          <Link href={{ pathname: "/user/ConnectingPreferences" as any }} asChild>
             <TouchableOpacity style={styles.iconButton}>
               <Ionicons name="options" size={22} color="#8B4513" />
             </TouchableOpacity>

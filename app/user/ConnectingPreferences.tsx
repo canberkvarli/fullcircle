@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-export default function DatingPreferences() {
+export default function ConnectingPreferences() {
   const router = useRouter();
   const { userData } = useUserContext();
   const colorScheme = useColorScheme() ?? 'light';
@@ -43,15 +43,36 @@ export default function DatingPreferences() {
     return value || defaultValue;
   };
 
-  // Updated preferences based on current UserDataType
+  // Get connection intent to show appropriate title
+  const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
+  const isRomantic = connectionIntent === "romantic";
+
+  // Updated preferences based on new connection structure
   const preferences = [
     {
-      label: "Looking For",
-      value: userData?.matchPreferences?.ConnectionPreferences,
+      label: "Connection Type",
+      value: connectionIntent === "romantic" ? "Dating" : "Friendship",
       isSubscriberField: false,
-      fieldName: "ConnectionPreferences",
+      fieldName: "connectionIntent",
+      icon: connectionIntent === "romantic" ? "heart" : "people",
+      description: `Looking for ${connectionIntent === "romantic" ? "romantic connections" : "meaningful friendships"}`
+    },
+    // Only show gender preferences for romantic connections
+    ...(isRomantic ? [{
+      label: "Interested In",
+      value: userData?.matchPreferences?.connectionPreferences,
+      isSubscriberField: false,
+      fieldName: "connectionPreferences",
       icon: "heart-circle",
       description: "Who you're interested in connecting with"
+    }] : []),
+    {
+      label: "Connection Style",
+      value: userData?.matchPreferences?.connectionStyles,
+      isSubscriberField: false,
+      fieldName: "connectionStyles",
+      icon: "sparkles-outline",
+      description: isRomantic ? "Your romantic connection style" : "How you like to connect with friends"
     },
     {
       label: "Age Range",
@@ -91,27 +112,27 @@ export default function DatingPreferences() {
     },
     {
       label: "Spiritual Practices",
-      value: userData?.matchPreferences?.spiritualCompatibility?.practices || "Open to All",
+      value: userData?.matchPreferences?.spiritualCompatibility?.practices || userData?.spiritualProfile?.practices || "Open to All",
       isSubscriberField: true,
       fieldName: "preferredSpiritualPractices",
-      icon: "sparkles",
-      description: "Preferred spiritual practices"
+      icon: "flower-outline",
+      description: "Preferred spiritual practices for deeper compatibility"
     },
     {
       label: "Spiritual Draws",
-      value: userData?.matchPreferences?.spiritualCompatibility?.spiritualDraws || "Open to All",
+      value: userData?.matchPreferences?.spiritualCompatibility?.spiritualDraws || userData?.spiritualProfile?.draws || "Open to All",
       isSubscriberField: true,
       fieldName: "preferredSpiritualDraws",
-      icon: "leaf",
-      description: "Preferred spiritual draws"
+      icon: "leaf-outline",
+      description: "Preferred spiritual interests and draws"
     },
     {
       label: "Healing Modalities",
-      value: userData?.matchPreferences?.spiritualCompatibility?.healingModalities || "Open to All",
+      value: userData?.matchPreferences?.spiritualCompatibility?.healingModalities || userData?.spiritualProfile?.healingModalities || "Open to All",
       isSubscriberField: true,
       fieldName: "preferredHealingModalities",
-      icon: "heart",
-      description: "Preferred healing modalities"
+      icon: "medical-outline",
+      description: "Preferred healing and wellness practices"
     },
   ];
 
@@ -130,6 +151,24 @@ export default function DatingPreferences() {
       params: { fieldName, currentValue: JSON.stringify(currentValue) },
     });
   };
+
+  const getIntentColors = (intent: string) => {
+    if (intent === "romantic") {
+      return {
+        primary: '#EC4899',
+        secondary: '#FDF2F8',
+        accent: '#BE185D',
+      };
+    } else {
+      return {
+        primary: '#10B981',
+        secondary: '#F0FDF4',
+        accent: '#047857',
+      };
+    }
+  };
+
+  const intentColors = getIntentColors(connectionIntent);
 
   const renderPreferenceItem = (
     label: string,
@@ -155,12 +194,13 @@ export default function DatingPreferences() {
       <View style={styles.fieldContent}>
         <View style={styles.fieldInfo}>
           <View style={styles.fieldHeader}>
-            <Ionicons 
-              name={icon as any} 
-              size={20} 
-              color={colors.primary} 
-              style={styles.fieldIcon}
-            />
+            <View style={[styles.iconContainer, { backgroundColor: intentColors.primary + '15' }]}>
+              <Ionicons 
+                name={icon as any} 
+                size={18} 
+                color={intentColors.primary} 
+              />
+            </View>
             <Text style={[styles.fieldLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
               {label}
             </Text>
@@ -194,7 +234,7 @@ export default function DatingPreferences() {
     router.back();
   };
 
-  const styles = createStyles(colors, fonts);
+  const styles = createStyles(colors, fonts, intentColors);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -211,13 +251,32 @@ export default function DatingPreferences() {
         contentContainerStyle={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        {/* Dynamic Header based on connection type */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerIconContainer}>
+            <View style={[styles.headerIcon, { backgroundColor: intentColors.secondary }]}>
+              <Ionicons 
+                name={isRomantic ? "heart" : "people"} 
+                size={32} 
+                color={intentColors.primary} 
+              />
+            </View>
+          </View>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            {isRomantic ? "Dating" : "Friendship"} Preferences
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            Customize your {isRomantic ? "romantic" : "friendship"} connection preferences
+          </Text>
+        </View>
+
         {/* Basic Preferences Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: intentColors.primary }]}>
             Connection Preferences
           </Text>
           <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Set your basic preferences for sacred connections
+            Set your basic preferences for meaningful connections
           </Text>
           
           {preferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
@@ -231,8 +290,10 @@ export default function DatingPreferences() {
         <View style={styles.section}>
           <View style={styles.premiumHeader}>
             <View style={styles.premiumTitleContainer}>
-              <Ionicons name="sparkles" size={24} color={colors.primary} />
-              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark, marginLeft: Spacing.sm }]}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+                <Ionicons name="sparkles" size={20} color={colors.primary} />
+              </View>
+              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.primary, marginLeft: Spacing.sm }]}>
                 FullCircle Preferences
               </Text>
             </View>
@@ -264,6 +325,17 @@ export default function DatingPreferences() {
           ))}
         </View>
 
+        {/* Affirmation */}
+        <View style={styles.affirmationContainer}>
+          <Text style={[styles.affirmation, fonts.affirmationFont, { color: colors.textLight }]}>
+            Your{' '}
+            <Text style={[styles.highlightedWord, { textShadowColor: intentColors.primary }]}>
+              preferences
+            </Text>
+            {' guide the universe in bringing you the perfect connections'}
+          </Text>
+        </View>
+
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -271,7 +343,7 @@ export default function DatingPreferences() {
   );
 }
 
-const createStyles = (colors: any, fonts: any) => StyleSheet.create({
+const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -280,12 +352,6 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: Spacing.md,
-  },
-  
-  headerTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    letterSpacing: 0.5,
   },
   
   closeButton: {
@@ -298,6 +364,49 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing['2xl'],
+  },
+
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+
+  headerIconContainer: {
+    marginBottom: Spacing.md,
+  },
+
+  headerIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: intentColors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+
+  headerTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+  },
+
+  headerSubtitle: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: Typography.sizes.base * 1.4,
   },
   
   section: {
@@ -335,11 +444,17 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   
   upgradeText: {
@@ -350,14 +465,20 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   
   fieldContainer: {
     padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     marginBottom: Spacing.md,
-    shadowColor: colors.textDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   
   fieldContent: {
@@ -373,10 +494,15 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   fieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
-  
-  fieldIcon: {
+
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: Spacing.sm,
   },
   
@@ -388,8 +514,9 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   
   fieldDescription: {
     fontSize: Typography.sizes.xs,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
     fontStyle: 'italic',
+    lineHeight: Typography.sizes.xs * 1.3,
   },
   
   fieldValue: {
@@ -410,6 +537,32 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   
   chevronIcon: {
     opacity: 0.6,
+  },
+
+  affirmationContainer: {
+    backgroundColor: intentColors.secondary,
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
+    borderLeftWidth: 4,
+    borderLeftColor: intentColors.primary,
+  },
+
+  affirmation: {
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontSize: Typography.sizes.base,
+    lineHeight: Typography.sizes.base * 1.5,
+    letterSpacing: 0.3,
+  },
+
+  highlightedWord: {
+    color: colors.textDark,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.5,
   },
   
   bottomSpacing: {

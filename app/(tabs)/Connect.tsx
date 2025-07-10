@@ -297,7 +297,7 @@ if (noMoreMatches) {
           
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
-            onPress={() => router.navigate('/user/DatingPreferences')}
+            onPress={() => router.navigate('/user/ConnectingPreferences')}
             activeOpacity={0.9}
           >
             <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
@@ -375,7 +375,7 @@ if (noMoreMatches) {
           styles.settingsFloating, 
           { backgroundColor: colors.card, borderColor: colors.border }
         ]}
-        onPress={() => router.push('/user/DatingPreferences')}
+        onPress={() => router.push('/user/ConnectingPreferences')}
         activeOpacity={0.7}
       >
         <Ionicons name="options" size={22} color="#B8860B" />
