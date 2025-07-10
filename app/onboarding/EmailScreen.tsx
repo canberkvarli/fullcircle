@@ -471,7 +471,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     modalContent: {
       backgroundColor: colors.card,
-      padding: Spacing['2xl'],
+      padding: Spacing.lg,
       borderRadius: BorderRadius.xl,
       width: "88%",
       maxWidth: 420,
@@ -509,7 +509,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: Spacing.lg,
-      paddingHorizontal: Spacing.md,
+      paddingHorizontal: Spacing.xl,
       width: "100%",
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
