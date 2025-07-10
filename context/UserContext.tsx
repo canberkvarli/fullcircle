@@ -92,10 +92,7 @@ export type UserDataType = {
     connectionIntent?: "romantic" | "friendship"; // Main connection type
     connectionPreferences?: string[]; // Who they want to connect with (Men, Women, Non-Binary, Everyone)
     connectionStyles?: string[]; // How they want to connect (Twin Flame, Practice Partners, etc.)
-    
-    // 🔄 DEPRECATED: Keeping for backward compatibility
-    datePreferences: string[]; // Will map to connectionPreferences when connectionIntent is "romantic"
-    
+
     // 🔮 Spiritual Matching Preferences (for later)
     spiritualCompatibility?: {
       spiritualDraws?: string[];
@@ -308,7 +305,14 @@ const initialUserData: UserDataType = {
       max: 8,
     },
     preferredDistance: 100,
-    datePreferences: [],
+    connectionIntent: undefined,
+    connectionPreferences: [],
+    connectionStyles: [],
+    spiritualCompatibility: {
+      spiritualDraws: [],
+      practices: [],
+      healingModalities: [],
+    }
   },
   settings: {
     isPaused: false,

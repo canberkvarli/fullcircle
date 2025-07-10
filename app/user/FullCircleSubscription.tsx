@@ -23,52 +23,24 @@ interface FeatureCardProps {
   title: string;
   description: string;
   isHighlighted?: boolean;
-  delay?: number;
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ 
   icon, 
   title, 
   description, 
-  isHighlighted = false,
-  delay = 0 
+  isHighlighted = false 
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const fonts = useFont();
 
-  useEffect(() => {
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, delay);
-  }, []);
-
-  const styles = createFeatureCardStyles(colorScheme, isHighlighted);
+  const styles = createFeatureCardStyles(colorScheme, isHighlighted, fonts);
 
   return (
-    <Animated.View 
-      style={[
-        styles.featureCard,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        }
-      ]}
-    >
+    <View style={styles.featureCard}>
       <View style={styles.iconContainer}>
-        <Ionicons name={icon as any} size={24} color={colors.primary} />
+        <Ionicons name={icon as any} size={22} color={colors.primary} />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.featureTitle}>{title}</Text>
@@ -76,10 +48,10 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
       </View>
       {isHighlighted && (
         <View style={styles.highlightBadge}>
-          <Text style={styles.badgeText}>✨</Text>
+          <Ionicons name="star" size={12} color="#FFFFFF" />
         </View>
       )}
-    </Animated.View>
+    </View>
   );
 };
 
@@ -88,26 +60,19 @@ export default function FullCircleSubscription() {
   const { userData } = useUserContext();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const styles = createStyles(colorScheme);
+  const fonts = useFont();
+  const styles = createStyles(colorScheme, fonts);
   
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
-  const headerAnim = useRef(new Animated.Value(-100)).current;
-  const contentAnim = useRef(new Animated.Value(0)).current;
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly'); // Default to yearly
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(headerAnim, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(contentAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Simple, subtle fade in
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const handleUpgrade = () => {
@@ -119,14 +84,19 @@ export default function FullCircleSubscription() {
   const premiumFeatures = [
     {
       icon: "infinite-outline",
-      title: "Unlimited Orbs",
-      description: "Send unlimited special likes to catch someone's attention",
+      title: "Unlimited Connections",
+      description: "Connect with as many souls as you wish without limits",
       isHighlighted: true
     },
     {
-      icon: "heart-outline",
-      title: "Unlimited Likes",
-      description: "Like as many profiles as your heart desires"
+      icon: "eye-outline", 
+      title: "See Who Likes You",
+      description: "Discover your admirers and make meaningful connections"
+    },
+    {
+      icon: "filter-outline",
+      title: "Advanced Spiritual Filters",
+      description: "Find perfect matches based on spiritual compatibility"
     },
     {
       icon: "rocket-outline",
@@ -134,220 +104,175 @@ export default function FullCircleSubscription() {
       description: "Get 5x more visibility with weekly profile boosts"
     },
     {
-      icon: "eye-outline",
-      title: "See Who Likes You",
-      description: "View all your admirers without the blur effect"
-    },
-    {
-      icon: "filter-outline",
-      title: "Advanced Filters",
-      description: "Fine-tune your preferences for perfect matches"
-    },
-    {
       icon: "sparkles-outline",
-      title: "Premium Badge",
-      description: "Stand out with an exclusive FullCircle member badge"
-    },
-    {
-      icon: "headset-outline",
-      title: "Priority Support",
-      description: "Get faster response times from our support team"
+      title: "FullCircle Badge",
+      description: "Stand out with an exclusive premium member badge"
     },
     {
       icon: "people-outline",
-      title: "Exclusive Community",
-      description: "Access to members-only events and features"
+      title: "Priority Matching",
+      description: "Get shown to the most compatible souls first"
     }
   ];
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <Animated.View 
-        style={[
-          styles.header,
-          { transform: [{ translateY: headerAnim }] }
-        ]}
-      >
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      {/* Simple Header */}
+      <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => router.back()}
         >
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>FullCircle</Text>
-        <TouchableOpacity 
-          style={styles.closeButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="close" size={24} color={colors.textDark} />
-        </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       <ScrollView 
         contentContainerStyle={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View 
-          style={[
-            styles.content,
-            { 
-              opacity: contentAnim,
-              transform: [{ scale: contentAnim }] 
-            }
-          ]}
-        >
-          {/* Hero Section */}
-          <View style={styles.heroSection}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="infinite" size={48} color={colors.primary} />
-            </View>
-            <Text style={styles.mainTitle}>Unlock Your Full Potential</Text>
-            <Text style={styles.subtitle}>
-              Experience deeper connections with FullCircle's premium features designed for spiritual souls
-            </Text>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.logoContainer}>
+            <Ionicons name="sparkles" size={32} color={colors.primary} />
           </View>
+          <Text style={styles.mainTitle}>Deepen Your Connections</Text>
+          <Text style={styles.subtitle}>
+            Unlock advanced features designed for meaningful spiritual connections
+          </Text>
+        </View>
 
-          {/* Features Grid */}
-          <View style={styles.featuresSection}>
-            <Text style={styles.sectionTitle}>What You'll Get</Text>
-            <View style={styles.featuresGrid}>
-              {premiumFeatures.map((feature, index) => (
-                <FeatureCard
-                  key={feature.title}
-                  icon={feature.icon}
-                  title={feature.title}
-                  description={feature.description}
-                  isHighlighted={feature.isHighlighted}
-                  delay={index * 100}
-                />
-              ))}
-            </View>
+        {/* Features Section */}
+        <View style={styles.featuresSection}>
+          <Text style={styles.sectionTitle}>Premium Features</Text>
+          <View style={styles.featuresGrid}>
+            {premiumFeatures.map((feature) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                isHighlighted={feature.isHighlighted}
+              />
+            ))}
           </View>
+        </View>
 
-          {/* Pricing Section */}
-          <View style={styles.pricingSection}>
-            <Text style={styles.sectionTitle}>Choose Your Plan</Text>
+        {/* Pricing Section */}
+        <View style={styles.pricingSection}>
+          <Text style={styles.sectionTitle}>Choose Your Plan</Text>
+          
+          {/* Plan Cards */}
+          <View style={styles.planContainer}>
+            {/* Monthly Plan */}
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                selectedPlan === 'monthly' && styles.planCardSelected
+              ]}
+              onPress={() => setSelectedPlan('monthly')}
+            >
+              <Text style={[
+                styles.planTitle,
+                selectedPlan === 'monthly' && styles.planTitleSelected
+              ]}>
+                Monthly
+              </Text>
+              <Text style={[
+                styles.planPrice,
+                selectedPlan === 'monthly' && styles.planPriceSelected
+              ]}>
+                $29.99
+              </Text>
+              <Text style={styles.planPeriod}>per month</Text>
+            </TouchableOpacity>
             
-            {/* Plan Selector */}
-            <View style={styles.planSelector}>
-              <TouchableOpacity
-                style={[
-                  styles.planOption,
-                  selectedPlan === 'monthly' && styles.planOptionSelected
-                ]}
-                onPress={() => setSelectedPlan('monthly')}
-              >
-                <Text style={[
-                  styles.planOptionText,
-                  selectedPlan === 'monthly' && styles.planOptionTextSelected
-                ]}>
-                  Monthly
-                </Text>
-                <Text style={[
-                  styles.planPrice,
-                  selectedPlan === 'monthly' && styles.planPriceSelected
-                ]}>
-                  $29.99
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.planOption,
-                  selectedPlan === 'yearly' && styles.planOptionSelected
-                ]}
-                onPress={() => setSelectedPlan('yearly')}
-              >
-                <View style={styles.popularBadge}>
-                  <Text style={styles.popularBadgeText}>POPULAR</Text>
-                </View>
-                <Text style={[
-                  styles.planOptionText,
-                  selectedPlan === 'yearly' && styles.planOptionTextSelected
-                ]}>
-                  Yearly
-                </Text>
+            {/* Yearly Plan */}
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                styles.planCardRecommended,
+                selectedPlan === 'yearly' && styles.planCardSelected
+              ]}
+              onPress={() => setSelectedPlan('yearly')}
+            >
+              <View style={styles.recommendedBadge}>
+                <Text style={styles.recommendedText}>BEST VALUE</Text>
+              </View>
+              <Text style={[
+                styles.planTitle,
+                selectedPlan === 'yearly' && styles.planTitleSelected
+              ]}>
+                Yearly
+              </Text>
+              <View style={styles.priceContainer}>
+                <Text style={styles.originalPrice}>$359.88</Text>
                 <Text style={[
                   styles.planPrice,
                   selectedPlan === 'yearly' && styles.planPriceSelected
                 ]}>
                   $199.99
                 </Text>
-                <Text style={styles.savings}>Save 44%</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* CTA Section */}
-          <View style={styles.ctaSection}>
-            <TouchableOpacity
-              style={styles.upgradeButton}
-              onPress={handleUpgrade}
-            >
-              <Text style={styles.upgradeButtonText}>
-                Start Your FullCircle Journey
-              </Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+              </View>
+              <Text style={styles.planPeriod}>per year</Text>
+              <Text style={styles.savings}>Save 44%</Text>
             </TouchableOpacity>
-            
-            <Text style={styles.ctaDescription}>
-              Join thousands of spiritual beings who've found their perfect match through FullCircle
-            </Text>
-            
-            <View style={styles.guaranteeSection}>
-              <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
-              <Text style={styles.guaranteeText}>
-                7-day money-back guarantee • Cancel anytime
-              </Text>
-            </View>
           </View>
+        </View>
 
-          {/* Social Proof */}
-          <View style={styles.socialProofSection}>
-            <Text style={styles.testimonialQuote}>
-              "FullCircle helped me find not just love, but my spiritual soulmate. The advanced matching is incredible!"
+        {/* CTA Section */}
+        <View style={styles.ctaSection}>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={handleUpgrade}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.upgradeButtonText}>
+              Start Your FullCircle Journey
             </Text>
-            <Text style={styles.testimonialAuthor}>- Sarah M., FullCircle Member</Text>
+            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          <View style={styles.guaranteeSection}>
+            <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+            <Text style={styles.guaranteeText}>
+              7-day money-back guarantee • Cancel anytime
+            </Text>
           </View>
-        </Animated.View>
+        </View>
+
+        {/* Simple Testimonial */}
+        <View style={styles.testimonialSection}>
+          <Text style={styles.testimonialText}>
+            "FullCircle's advanced matching helped me find my spiritual soulmate. The connection was instant and deep."
+          </Text>
+          <Text style={styles.testimonialAuthor}>— Sarah M.</Text>
+        </View>
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 
-const createFeatureCardStyles = (colorScheme: 'light' | 'dark', isHighlighted: boolean) => {
+const createFeatureCardStyles = (colorScheme: 'light' | 'dark', isHighlighted: boolean, fonts: any) => {
   const colors = Colors[colorScheme];
-  const { buttonFont, captionFont } = useFont();
   
   return StyleSheet.create({
     featureCard: {
-      backgroundColor: isHighlighted ? colors.primary + '15' : colors.card,
+      backgroundColor: isHighlighted ? colors.primary + '10' : colors.card,
       borderRadius: BorderRadius.lg,
-      padding: Spacing.md,
-      marginBottom: Spacing.sm,
+      padding: Spacing.lg,
+      marginBottom: Spacing.md,
       flexDirection: 'row',
-      alignItems: 'center',
-      borderWidth: isHighlighted ? 2 : 1,
-      borderColor: isHighlighted ? colors.primary : colors.border,
+      alignItems: 'flex-start',
+      borderWidth: 1,
+      borderColor: isHighlighted ? colors.primary + '30' : colors.border,
       position: 'relative',
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
     },
     iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: BorderRadius.full,
-      backgroundColor: colors.primary + '20',
+      width: 40,
+      height: 40,
+      borderRadius: BorderRadius.lg,
+      backgroundColor: colors.primary + '15',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: Spacing.md,
@@ -356,36 +281,34 @@ const createFeatureCardStyles = (colorScheme: 'light' | 'dark', isHighlighted: b
       flex: 1,
     },
     featureTitle: {
-      ...buttonFont,
-      color: colors.textDark, // FIXED: was colors.text (pure white)
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      fontWeight: Typography.weights.semibold,
+      color: colors.textDark,
       marginBottom: Spacing.xs,
-      fontWeight: '600',
     },
     featureDescription: {
-      ...captionFont,
-      color: colors.textMuted, // This was already correct
-      lineHeight: Typography.sizes.sm * 1.3,
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      color: colors.textLight,
+      lineHeight: Typography.sizes.sm * 1.4,
     },
     highlightBadge: {
       position: 'absolute',
-      top: -8,
-      right: -8,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      top: Spacing.sm,
+      right: Spacing.sm,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
     },
-    badgeText: {
-      fontSize: 12,
-    },
   });
 };
 
-const createStyles = (colorScheme: 'light' | 'dark') => {
+const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
   const colors = Colors[colorScheme];
-  const { logoFont, buttonFont, captionFont, affirmationFont, spiritualSubtitleFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -398,10 +321,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       paddingHorizontal: Spacing.lg,
       paddingTop: Platform.select({ ios: 50, android: 30 }),
-      paddingBottom: Spacing.md,
+      paddingBottom: Spacing.lg,
       backgroundColor: colors.background,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
     },
     backButton: {
       width: 40,
@@ -410,50 +331,47 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       backgroundColor: colors.card,
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     headerTitle: {
-      ...logoFont,
-      color: colors.textDark, // FIXED: was colors.text (pure white)
-      textAlign: 'center',
-    },
-    closeButton: {
-      width: 40,
-      height: 40,
-      borderRadius: BorderRadius.full,
-      backgroundColor: colors.card,
-      justifyContent: 'center',
-      alignItems: 'center',
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
     },
     scrollView: {
-      paddingBottom: Spacing.xl,
-    },
-    content: {
       paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing['2xl'],
     },
     
     // Hero Section
     heroSection: {
       alignItems: 'center',
-      paddingVertical: Spacing['2xl'],
+      paddingVertical: Spacing.sm,
+      marginBottom: Spacing.lg,
     },
     logoContainer: {
-      width: 80,
-      height: 80,
+      width: 60,
+      height: 60,
       borderRadius: BorderRadius.full,
-      backgroundColor: colors.primary + '20',
+      backgroundColor: colors.primary + '15',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: Spacing.lg,
     },
     mainTitle: {
-      ...logoFont,
-      color: colors.textDark, // FIXED: was colors.text (pure white)
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes['2xl'],
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
       textAlign: 'center',
       marginBottom: Spacing.sm,
     },
     subtitle: {
-      ...spiritualSubtitleFont,
-      color: colors.textLight, // FIXED: This was textMuted, now using the improved textLight
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.lg,
+      color: colors.textLight,
       textAlign: 'center',
       lineHeight: Typography.sizes.lg * 1.4,
       paddingHorizontal: Spacing.md,
@@ -461,93 +379,119 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     
     // Features Section
     featuresSection: {
-      marginBottom: Spacing['2xl'],
+      marginBottom: Spacing.xl,
     },
     sectionTitle: {
-      ...affirmationFont,
-      color: colors.textDark, // FIXED: was colors.text (pure white)
-      textAlign: 'center',
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
+      textAlign: 'left',
       marginBottom: Spacing.lg,
     },
     featuresGrid: {
-      gap: Spacing.xs,
+      // Grid container
     },
     
     // Pricing Section
     pricingSection: {
-      marginBottom: Spacing['2xl'],
+      marginBottom: Spacing.xl,
     },
-    planSelector: {
-      flexDirection: 'row',
+    planContainer: {
       gap: Spacing.md,
     },
-    planOption: {
-      flex: 1,
+    planCard: {
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.lg,
-      alignItems: 'center',
-      borderWidth: 2,
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.xl,
+      borderWidth: 1,
       borderColor: colors.border,
       position: 'relative',
     },
-    planOptionSelected: {
+    planCardRecommended: {
+      borderColor: colors.primary + '50',
+      backgroundColor: colors.primary + '05',
+    },
+    planCardSelected: {
       borderColor: colors.primary,
+      borderWidth: 2,
       backgroundColor: colors.primary + '10',
     },
-    planOptionText: {
-      ...buttonFont,
-      color: colors.textMuted,
+    recommendedBadge: {
+      position: 'absolute',
+      top: -12,
+      left: Spacing.lg,
+      backgroundColor: colors.primary,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.xs,
+      borderRadius: BorderRadius.md,
+    },
+    recommendedText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+      color: '#FFFFFF',
+      letterSpacing: 0.5,
+    },
+    planTitle: {
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.semibold,
+      color: colors.textDark,
+      marginBottom: Spacing.sm,
+    },
+    planTitleSelected: {
+      color: colors.primary,
+    },
+    priceContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
       marginBottom: Spacing.xs,
     },
-    planOptionTextSelected: {
-      color: colors.textDark, // FIXED: was colors.text (pure white)
-      fontWeight: '600',
+    originalPrice: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textMuted,
+      textDecorationLine: 'line-through',
     },
     planPrice: {
-      ...logoFont,
-      color: colors.textDark, // FIXED: was colors.text (pure white)
-      fontSize: Typography.sizes.xl,
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes['2xl'],
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
     },
     planPriceSelected: {
       color: colors.primary,
     },
-    popularBadge: {
-      position: 'absolute',
-      top: -12,
-      backgroundColor: colors.primary,
-      paddingHorizontal: Spacing.sm,
-      paddingVertical: Spacing.xs,
-      borderRadius: BorderRadius.sm,
-    },
-    popularBadgeText: {
-      ...captionFont,
-      color: '#FFFFFF',
-      fontSize: Typography.sizes.xs,
-      fontWeight: '700',
+    planPeriod: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      color: colors.textMuted,
+      marginBottom: Spacing.xs,
     },
     savings: {
-      ...captionFont,
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
       color: colors.primary,
-      marginTop: Spacing.xs,
-      fontWeight: '600',
+      fontWeight: Typography.weights.semibold,
     },
     
     // CTA Section
     ctaSection: {
       alignItems: 'center',
-      marginBottom: Spacing['2xl'],
+      marginBottom: Spacing.xl,
     },
     upgradeButton: {
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
-      paddingVertical: Spacing.md,
+      paddingVertical: Spacing.lg,
       paddingHorizontal: Spacing.xl,
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.sm,
       marginBottom: Spacing.lg,
-      minWidth: width * 0.8,
+      width: '100%',
       justifyContent: 'center',
       ...Platform.select({
         ios: {
@@ -562,55 +506,52 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     upgradeButtonText: {
-      ...buttonFont,
+      ...fonts.spiritualBodyFont,
       color: '#FFFFFF',
-      fontWeight: '600',
-      fontSize: Typography.sizes.base,
-    },
-    ctaDescription: {
-      ...spiritualSubtitleFont,
-      color: colors.textLight, // FIXED: was textMuted, now using improved textLight
-      textAlign: 'center',
-      lineHeight: Typography.sizes.base * 1.4,
-      marginBottom: Spacing.lg,
-      paddingHorizontal: Spacing.md,
+      fontWeight: Typography.weights.semibold,
+      fontSize: Typography.sizes.lg,
     },
     guaranteeSection: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.sm,
       backgroundColor: colors.card,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: Spacing.sm,
-      borderRadius: BorderRadius.md,
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderRadius: BorderRadius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     guaranteeText: {
-      ...captionFont,
+      ...fonts.spiritualBodyFont,
       color: colors.textMuted,
       fontSize: Typography.sizes.sm,
+      textAlign: 'center',
     },
     
-    // Social Proof
-    socialProofSection: {
+    // Testimonial
+    testimonialSection: {
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.lg,
-      alignItems: 'center',
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.xl,
       borderLeftWidth: 4,
       borderLeftColor: colors.primary,
     },
-    testimonialQuote: {
-      ...spiritualSubtitleFont,
-      color: colors.textDark, // FIXED: was colors.text (pure white)
+    testimonialText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
       textAlign: 'center',
       fontStyle: 'italic',
-      marginBottom: Spacing.sm,
-      lineHeight: Typography.sizes.lg * 1.4,
+      lineHeight: Typography.sizes.base * 1.5,
+      marginBottom: Spacing.md,
     },
     testimonialAuthor: {
-      ...captionFont,
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
       color: colors.textMuted,
       textAlign: 'center',
+      fontWeight: Typography.weights.medium,
     },
   });
 };

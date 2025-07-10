@@ -93,18 +93,6 @@ export default function ConnectionPreferences() {
       description: "Preferred age range for connections"
     },
     {
-      label: "Maximum Distance",
-      value: `${userData?.matchPreferences?.preferredDistance || 100} miles`,
-      isSubscriberField: false,
-      fieldName: "preferredDistance",
-      icon: "location",
-      description: "How far you're willing to connect"
-    },
-  ];
-
-  // Premium preferences for FullCircle subscribers
-  const premiumPreferences = [
-    {
       label: "Height Range",
       value: userData?.matchPreferences?.preferredHeightRange
         ? `${userData.matchPreferences.preferredHeightRange.min || 3}' - ${
@@ -116,6 +104,18 @@ export default function ConnectionPreferences() {
       icon: "resize",
       description: "Preferred height range"
     },
+    {
+      label: "Maximum Distance",
+      value: `${userData?.matchPreferences?.preferredDistance || 100} miles`,
+      isSubscriberField: false,
+      fieldName: "preferredDistance",
+      icon: "location",
+      description: "How far you're willing to connect"
+    },
+  ];
+
+  // Premium preferences for FullCircle subscribers
+  const premiumPreferences = [
     {
       label: "Spiritual Practices",
       value: userData?.matchPreferences?.spiritualCompatibility?.practices || userData?.spiritualProfile?.practices || "Open to All",
@@ -191,7 +191,6 @@ export default function ConnectionPreferences() {
           connectionStyles: [],
           // Ensure required fields are present
           preferredDistance: userData.matchPreferences?.preferredDistance || 100,
-          datePreferences: userData.matchPreferences?.datePreferences || [],
         },
       });
     } catch (error: any) {
