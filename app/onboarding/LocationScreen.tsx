@@ -327,7 +327,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       paddingBottom: 100, // Space for continue button
     },
     headerSection: {
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.sm,
     },
     title: {
       ...fonts.spiritualTitleFont,
@@ -444,7 +444,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.md,
       marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
