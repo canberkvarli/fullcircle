@@ -62,25 +62,28 @@ const SoulChats: React.FC = () => {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
-        {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Soul Chats
-          </Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Sacred conversations with kindred souls
-          </Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              Chats
+            </Text>
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Your{' '}
+              <Text style={styles.highlightedWord}>conversations</Text>
+              {' await'}
+            </Text>
+          </View>
         </View>
         
         <View style={styles.loadingContainer}>
           <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-            <Ionicons name="chatbubbles" size={40} color="#8B4513" />
+            <Ionicons name="chatbubbles" size={24} color="#8B4513" />
           </View>
           <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            Preparing Sacred Conversations
+            Loading Your Chats
           </Text>
           <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            The universe is aligning your soul connections
+            Getting your conversations ready
           </Text>
         </View>
       </View>
@@ -92,36 +95,40 @@ const SoulChats: React.FC = () => {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
-        {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Soul Chats
-          </Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Sacred conversations with kindred souls
-          </Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              Soul Chats
+            </Text>
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Your{' '}
+              <Text style={styles.highlightedWord}>conversations</Text>
+              {' await'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.noMatchesContainer}>
           <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="chatbubbles-outline" size={60} color="#8B4513" />
+            <Ionicons name="chatbubbles-outline" size={32} color="#8B4513" />
           </View>
           
           <Text style={[styles.noMatchesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Your Sacred Conversations Await
+            Your conversations await
           </Text>
           
           <Text style={[styles.noMatchesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Connect with kindred spirits and let your souls dance in meaningful conversation. Like profiles to create divine matches and begin sacred dialogues.
+            Connect with great people and start meaningful conversations. Like profiles to create matches and begin chatting.
           </Text>
           
           <TouchableOpacity
             style={[styles.connectButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}
             onPress={() => router.push('/Connect')}
+            activeOpacity={0.9}
           >
             <Ionicons name="sparkles" size={20} color="#FFFFFF" style={styles.buttonIcon} />
             <Text style={[styles.connectButtonText, fonts.spiritualBodyFont]}>
-              Discover Soul Connections ✨
+              Discover Connections ✨
             </Text>
           </TouchableOpacity>
         </View>
@@ -133,14 +140,17 @@ const SoulChats: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
       
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-          Soul Chats
-        </Text>
-        <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-          {matches.length} sacred conversation{matches.length !== 1 ? 's' : ''}
-        </Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Chats
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            {matches.length}{' '}
+            <Text style={styles.highlightedWord}>conversation</Text>
+            {matches.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
       </View>
       
       <ScrollView
@@ -148,9 +158,6 @@ const SoulChats: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {matches.map((match) => {
-          // Show as unread if:
-          // 1. There's a message and it's from the other user, OR
-          // 2. It's a new match with no messages (empty lastMessage)
           const isUnread = match.lastMessage
             ? match.lastMessageSender !== userData.userId
             : true;
@@ -217,7 +224,7 @@ const SoulChats: React.FC = () => {
                     ? match.lastMessage.length > 35
                       ? `${match.lastMessage.slice(0, 32)}...`
                       : match.lastMessage
-                    : `Begin your sacred conversation with ${match.firstName}`}
+                    : `Start your conversation with ${match.firstName}`}
                 </Text>
               </View>
               
@@ -232,14 +239,12 @@ const SoulChats: React.FC = () => {
           );
         })}
         
-        {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
   );
 };
 
-// Helper function to format timestamp
 const formatTime = (timestamp: any) => {
   if (!timestamp) return '';
   
@@ -266,16 +271,23 @@ const styles = StyleSheet.create({
   },
   
   header: {
-    paddingHorizontal: Spacing.xl,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
   },
   
+  headerLeft: {
+    flex: 1,
+  },
+  
   headerTitle: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
     letterSpacing: 0.5,
   },
   
@@ -283,7 +295,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
     opacity: 0.8,
-    letterSpacing: 0.3,
+  },
+  
+  highlightedWord: {
+    color: '#8B4513',
+    textShadowColor: '#D2691E',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.5,
   },
   
   scrollContainer: {
@@ -299,10 +319,10 @@ const styles = StyleSheet.create({
   },
   
   loadingMandala: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: Spacing.xl,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: Spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -331,8 +351,8 @@ const styles = StyleSheet.create({
   
   cosmicSymbol: {
     marginBottom: Spacing.xl,
-    padding: Spacing.xl,
-    borderRadius: 60,
+    padding: Spacing.lg,
+    borderRadius: 40,
     borderWidth: 1,
     borderColor: 'transparent',
   },

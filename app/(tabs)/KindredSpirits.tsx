@@ -55,33 +55,37 @@ const KindredSpirits: React.FC = () => {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
-        {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Kindred Spirits
-          </Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Souls who resonate with you
-          </Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              Kindred Spirits
+            </Text>
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              People who{' '}
+              <Text style={styles.highlightedWord}>appreciate</Text>
+              {' you'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.noLikesContainer}>
           <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="heart-outline" size={60} color="#8B4513" />
+            <Ionicons name="heart-outline" size={32} color="#8B4513" />
           </View>
           
           <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Your Energy Awaits Discovery
+            Your connections are coming
           </Text>
           
           <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Sacred souls are still discovering your divine light. Amplify your spiritual presence and connect with kindred spirits seeking your energy.
+            Great people are still discovering you. Boost your visibility and connect with those who appreciate your authentic self.
           </Text>
           
           <View style={styles.actionContainer}>
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}
               onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+              activeOpacity={0.9}
             >
               <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
               <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
@@ -92,6 +96,7 @@ const KindredSpirits: React.FC = () => {
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor: '#8B4513' }]}
               onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+              activeOpacity={0.9}
             >
               <Ionicons name="flash" size={18} color="#8B4513" style={styles.buttonIcon} />
               <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
@@ -110,26 +115,28 @@ const KindredSpirits: React.FC = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
       
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-          Kindred Spirits
-        </Text>
-        <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-          {likedByUsers.length} soul{likedByUsers.length !== 1 ? 's' : ''} resonating with your energy
-        </Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Kindred Spirits
+          </Text>
+          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            {likedByUsers.length} person{likedByUsers.length !== 1 ? 's' : ''} who{' '}
+            <Text style={styles.highlightedWord}>appreciate</Text>
+            {' you'}
+          </Text>
+        </View>
       </View>
       
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Featured Connection */}
         <View style={styles.featuredSection}>
           <View style={styles.featuredHeader}>
             <Ionicons name="star" size={20} color="#FFD700" />
             <Text style={[styles.featuredLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-              Latest Sacred Connection
+              Latest Connection
             </Text>
           </View>
           
@@ -147,13 +154,12 @@ const KindredSpirits: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Other Connections */}
         {rest.length > 0 && (
           <View style={styles.othersSection}>
             <View style={styles.sectionHeader}>
               <Ionicons name="people" size={20} color="#8B4513" />
               <Text style={[styles.sectionTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                Other Sacred Souls ({rest.length})
+                Other Connections ({rest.length})
               </Text>
             </View>
             
@@ -161,7 +167,7 @@ const KindredSpirits: React.FC = () => {
               <View style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
                 <Ionicons name="lock-closed" size={16} color="#B8860B" />
                 <Text style={[styles.unlockText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                  Unlock Full Circle to see all souls who appreciate your energy
+                  Unlock Full Circle to see everyone who appreciates you
                 </Text>
               </View>
             )}
@@ -187,7 +193,6 @@ const KindredSpirits: React.FC = () => {
           </View>
         )}
         
-        {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
@@ -200,16 +205,23 @@ const styles = StyleSheet.create({
   },
   
   header: {
-    paddingHorizontal: Spacing.xl,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
   },
   
+  headerLeft: {
+    flex: 1,
+  },
+  
   headerTitle: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
     letterSpacing: 0.5,
   },
   
@@ -217,7 +229,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
     opacity: 0.8,
-    letterSpacing: 0.3,
+  },
+  
+  highlightedWord: {
+    color: '#8B4513',
+    textShadowColor: '#D2691E',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.5,
   },
   
   scrollContainer: {
@@ -233,10 +253,10 @@ const styles = StyleSheet.create({
   },
   
   loadingMandala: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: Spacing.xl,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: Spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -265,8 +285,8 @@ const styles = StyleSheet.create({
   
   cosmicSymbol: {
     marginBottom: Spacing.xl,
-    padding: Spacing.xl,
-    borderRadius: 60,
+    padding: Spacing.lg,
+    borderRadius: 40,
     borderWidth: 1,
     borderColor: 'transparent',
   },
