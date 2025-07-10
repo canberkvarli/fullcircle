@@ -521,17 +521,6 @@ function EditFieldScreen() {
             </TouchableOpacity>
           );
         })}
-
-        {/* Help Text */}
-        <View style={styles.helpContainer}>
-          <Ionicons name="information-circle" size={16} color={colors.primary} />
-          <Text style={[styles.helpText, { color: colors.textMuted }]}>
-            {isConnectionPrefs 
-              ? "Select up to 2 gender identities you're interested in, or choose \"Everyone\" for all genders."
-              : "Select up to 2 gender identities that best describe you."
-            }
-          </Text>
-        </View>
       </View>
     );
   };
@@ -870,7 +859,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   scrollContainer: {
     flex: 1,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.sm,
     paddingBottom: Spacing.xl,
   },
 
@@ -952,15 +941,6 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: Typography.sizes.xs,
     textAlign: 'center',
     fontStyle: 'italic',
-  },
-
-  helpContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginTop: Spacing.sm,
   },
 
   helpText: {
