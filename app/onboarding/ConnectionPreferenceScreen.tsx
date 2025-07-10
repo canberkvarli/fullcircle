@@ -524,7 +524,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       backgroundColor: colors.background,
     },
     scrollViewContent: {
-      padding: Spacing.lg,
+      // padding: Spacing.lg,
       paddingBottom: 120,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
