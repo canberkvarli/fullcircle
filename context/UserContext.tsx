@@ -89,10 +89,13 @@ export type UserDataType = {
     preferredDistance: number;
     
     // 🌟 NEW: Connection Intent & Preferences
-    connectionIntent?: "romantic" | "friendship"; // Main connection type
+    connectionIntent?: "romantic" | "friendship" | "both"; // Main connection type - now supports "both"
     connectionPreferences?: string[]; // Who they want to connect with (Men, Women, Non-Binary, Everyone)
     connectionStyles?: string[]; // How they want to connect (Twin Flame, Practice Partners, etc.)
-
+    
+    // 🔄 DEPRECATED: Keeping for backward compatibility
+    datePreferences: string[]; // Will map to connectionPreferences when connectionIntent is "romantic"
+    
     // 🔮 Spiritual Matching Preferences (for later)
     spiritualCompatibility?: {
       spiritualDraws?: string[];
@@ -144,9 +147,12 @@ export type MatchPreferencesType = {
   preferredDistance: number;
   
   // 🌟 NEW: Connection Intent & Preferences
-  connectionIntent?: "romantic" | "friendship";
+  connectionIntent?: "romantic" | "friendship" | "both";
   connectionPreferences?: string[];
   connectionStyles?: string[];
+  
+  // 🔄 DEPRECATED: Keeping for backward compatibility
+  datePreferences: string[];
   
   desiredRelationship?: string;
   preferredSpiritualPractices?: string[];
@@ -160,7 +166,6 @@ export interface MatchType {
   lastMessageSender: string;
   lastUpdated: Date;
 }
-
 export interface LikeRecord {
   matchId: string;
   viaOrb: boolean;
@@ -302,13 +307,15 @@ const initialUserData: UserDataType = {
       max: 8,
     },
     preferredDistance: 100,
+    connectionIntent: "both",
     connectionPreferences: [],
     connectionStyles: [],
     spiritualCompatibility: {
       spiritualDraws: [],
       practices: [],
       healingModalities: [],
-    }
+    },
+    datePreferences: []
   },
   settings: {
     isPaused: false,

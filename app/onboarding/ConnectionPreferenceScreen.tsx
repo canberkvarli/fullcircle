@@ -1,4 +1,25 @@
-import React, { useState, useEffect } from "react";
+// Combined connection styles (pills for "both" option)
+const combinedStyles = [
+  // Romantic styles
+  "Twin Flame Seeker",
+  "Soul Mate Guided", 
+  "Tantric Connection",
+  "Heart-Centered",
+  "Polyamorous Soul",
+  "Monogamous Journey",
+  "Love Without Labels",
+  // Friendship styles
+  "Practice Partners",
+  "Meditation Buddies",
+  "Adventure Seekers",
+  "Study Circles",
+  "Healing Circles",
+  "Creative Collaborators",
+  "Retreat Companions",
+  "Wisdom Sharers",
+  "Community Builders",
+  "Soul Supporters",
+];import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   Text,
@@ -17,6 +38,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
+// Connection Intent Options
 const connectionIntents = [
   { 
     id: "romantic", 
@@ -30,8 +52,15 @@ const connectionIntents = [
     subtitle: "Building meaningful platonic bonds",
     icon: "people"
   },
+  { 
+    id: "both", 
+    label: "Both", 
+    subtitle: "Open to all types of meaningful connections",
+    icon: "infinite"
+  },
 ];
 
+// Romantic dating preferences (for when "romantic" is selected)
 const romanticOptions = [
   { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
   { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
@@ -39,6 +68,7 @@ const romanticOptions = [
   { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" },
 ];
 
+// Romantic connection styles (pills for romantic)
 const romanticStyles = [
   "Twin Flame Seeker",
   "Soul Mate Guided", 
@@ -52,6 +82,7 @@ const romanticStyles = [
   "Love Without Labels",
 ];
 
+// Friendship connection styles (pills for friendship)
 const friendshipStyles = [
   "Practice Partners",
   "Meditation Buddies",
@@ -78,14 +109,17 @@ const ConnectionPreferenceScreen = () => {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
+  // Connection intent state
   const [connectionIntent, setConnectionIntent] = useState<string>(
     userData?.matchPreferences?.connectionIntent || ""
   );
 
+  // Preferences based on connection intent
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
     userData?.matchPreferences?.connectionPreferences || []
   );
 
+  // Connection styles
   const [selectedStyles, setSelectedStyles] = useState<string[]>(
     userData?.matchPreferences?.connectionStyles || []
   );
@@ -112,51 +146,83 @@ const ConnectionPreferenceScreen = () => {
     }));
   };
 
+  // Helper function to get orb color based on option and intent
   const getOrbColor = (optionId: string, intent: string = connectionIntent) => {
     if (intent === "romantic") {
       switch (optionId) {
         case "Men":
-          return '#3B82F6';
+          return '#6366F1'; // Indigo for masculine energy
         case "Women":
-          return '#F59E0B';
+          return '#EC4899'; // Pink for feminine energy
         case "Non-Binary":
-          return '#8B5CF6';
+          return '#8B5CF6'; // Purple for non-binary
         case "Everyone":
-          return '#DC2626';
+          return '#F59E0B'; // Amber for all energies
         default:
-          return '#EF4444';
+          return '#F97316'; // Orange for romantic styles
       }
     } else if (intent === "friendship") {
-      return '#059669';
+      return '#10B981'; // Emerald for friendship
+    } else if (intent === "both") {
+      // Use purple/violet theme for "both"
+      switch (optionId) {
+        case "Men":
+          return '#6366F1'; // Indigo for masculine energy
+        case "Women":
+          return '#EC4899'; // Pink for feminine energy
+        case "Non-Binary":
+          return '#8B5CF6'; // Purple for non-binary
+        case "Everyone":
+          return '#F59E0B'; // Amber for all energies
+        default:
+          return '#8B5CF6'; // Purple for combined styles
+      }
     }
-    return '#06B6D4';
+    return '#06B6D4'; // Cyan default
   };
 
+  // Helper function to get selection color
   const getSelectionColor = (optionId: string, intent: string = connectionIntent) => {
     const orbColor = getOrbColor(optionId, intent);
-    return orbColor + '20';
+    return orbColor + '20'; // Add transparency
   };
 
+  // Get intent-specific colors
   const getIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
-        primary: '#B91C1C',
-        secondary: '#FEF2F2',
-        accent: '#7F1D1D',
-        gradient: ['#B91C1C', '#DC2626'],
+        primary: '#EC4899',
+        secondary: '#FDF2F8',
+        accent: '#BE185D',
+        gradient: ['#EC4899', '#F97316'],
+      };
+    } else if (intent === "friendship") {
+      return {
+        primary: '#10B981',
+        secondary: '#F0FDF4',
+        accent: '#047857',
+        gradient: ['#10B981', '#06B6D4'],
+      };
+    } else if (intent === "both") {
+      return {
+        primary: '#8B5CF6',
+        secondary: '#F5F3FF',
+        accent: '#7C3AED',
+        gradient: ['#8B5CF6', '#EC4899'],
       };
     } else {
       return {
-        primary: '#059669',
-        secondary: '#ECFDF5',
-        accent: '#047857',
-        gradient: ['#059669', '#10B981'],
+        primary: '#06B6D4',
+        secondary: '#F0F9FF',
+        accent: '#0891B2',
+        gradient: ['#06B6D4', '#8B5CF6'],
       };
     }
   };
 
   const toggleConnectionIntent = (intent: string) => {
     setConnectionIntent(intent);
+    // Reset preferences when switching intent
     setSelectedPreferences([]);
     setSelectedStyles([]);
   };
@@ -205,7 +271,8 @@ const ConnectionPreferenceScreen = () => {
       return;
     }
 
-    if (connectionIntent === "romantic" && selectedPreferences.length === 0) {
+    // For romantic and both, we need specific preferences
+    if ((connectionIntent === "romantic" || connectionIntent === "both") && selectedPreferences.length === 0) {
       Alert.alert("Dating Preferences", "Please select at least one preference");
       return;
     }
@@ -214,9 +281,11 @@ const ConnectionPreferenceScreen = () => {
       await updateUserData({
         matchPreferences: {
           ...userData.matchPreferences,
-          connectionIntent: connectionIntent as "romantic" | "friendship",
-          connectionPreferences: connectionIntent === "romantic" ? selectedPreferences : ["Everyone"],
+          connectionIntent: connectionIntent as "romantic" | "friendship" | "both",
+          connectionPreferences: (connectionIntent === "romantic" || connectionIntent === "both") ? selectedPreferences : ["Everyone"],
           connectionStyles: selectedStyles,
+          // Maintain backward compatibility
+          datePreferences: connectionIntent === "romantic" ? selectedPreferences : [],
           preferredDistance: userData.matchPreferences?.preferredDistance || 0,
           preferredAgeRange: userData.matchPreferences?.preferredAgeRange || { min: 18, max: 99 },
           preferredHeightRange: userData.matchPreferences?.preferredHeightRange || { min: 0, max: 300 },
@@ -228,11 +297,17 @@ const ConnectionPreferenceScreen = () => {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Error", "Unable to save your preferences: " + error.message);
+      Alert.alert(
+        "Cosmic Interference",
+        "The universe had trouble saving your preferences: " + error.message
+      );
     }
   };
 
-  const currentStyles = connectionIntent === "romantic" ? romanticStyles : friendshipStyles;
+  const currentStyles = connectionIntent === "romantic" ? romanticStyles 
+                     : connectionIntent === "friendship" ? friendshipStyles 
+                     : connectionIntent === "both" ? combinedStyles 
+                     : [];
   const intentColors = getIntentColors(connectionIntent);
 
   return (
@@ -242,6 +317,7 @@ const ConnectionPreferenceScreen = () => {
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={navigateToPreviousScreen}
@@ -249,14 +325,18 @@ const ConnectionPreferenceScreen = () => {
             <Ionicons name="chevron-back" size={24} color={colors.textDark} />
           </TouchableOpacity>
 
+          {/* Progress Bar */}
           <OnboardingProgressBar currentScreen="ConnectionPreferenceScreen" />
 
+          {/* Title */}
           <Text style={styles.title}>Connection Preferences</Text>
 
+          {/* Subtitle */}
           <Text style={styles.subtitle}>
             What type of meaningful connections are you seeking?
           </Text>
           
+          {/* Connection Intent Selection */}
           <View style={styles.intentContainer}>
             {connectionIntents.map((intent) => (
               <TouchableOpacity
@@ -272,20 +352,12 @@ const ConnectionPreferenceScreen = () => {
                 onPress={() => toggleConnectionIntent(intent.id)}
               >
                 <View style={styles.intentContent}>
-                  <View style={[
-                    styles.iconContainer,
-                    connectionIntent === intent.id && { 
-                      backgroundColor: getIntentColors(intent.id).primary + '20',
-                      borderColor: getIntentColors(intent.id).primary 
-                    }
-                  ]}>
-                    <Ionicons 
-                      name={intent.icon as any} 
-                      size={20} 
-                      color={connectionIntent === intent.id ? getIntentColors(intent.id).primary : colors.textMuted} 
-                    />
-                  </View>
-                  <View style={styles.textContainer}>
+                  <Ionicons 
+                    name={intent.icon as any} 
+                    size={24} 
+                    color={connectionIntent === intent.id ? getIntentColors(intent.id).primary : colors.textMuted} 
+                  />
+                  <View style={{ flex: 1 }}>
                     <Text style={[
                       styles.intentTitle,
                       connectionIntent === intent.id && { color: getIntentColors(intent.id).primary }
@@ -300,16 +372,15 @@ const ConnectionPreferenceScreen = () => {
                     </Text>
                   </View>
                   {connectionIntent === intent.id && (
-                    <View style={styles.orbSpace}>
-                      <View style={[styles.selectedOrb, { backgroundColor: getIntentColors(intent.id).primary }]} />
-                    </View>
+                    <View style={[styles.selectedOrb, { backgroundColor: getIntentColors(intent.id).primary }]} />
                   )}
                 </View>
               </TouchableOpacity>
             ))}
           </View>
 
-          {connectionIntent === "romantic" && (
+          {/* Connection Preferences - Show only if romantic or both intent is selected */}
+          {(connectionIntent === "romantic" || connectionIntent === "both") && (
             <>
               <Text style={[styles.sectionTitle, { color: intentColors.primary }]}>
                 Who are you interested in?
@@ -356,10 +427,15 @@ const ConnectionPreferenceScreen = () => {
             </>
           )}
 
+          {/* Connection Styles - Show for both romantic and friendship */}
           {connectionIntent && (
             <>
               <Text style={[styles.sectionTitle, { color: intentColors.primary }]}>
-                {connectionIntent === "romantic" ? "Connection Style" : "How do you want to connect?"}
+                {connectionIntent === "romantic" 
+                  ? "Connection Style" 
+                  : connectionIntent === "friendship" 
+                    ? "How do you want to connect?" 
+                    : "How do you want to connect?"}
               </Text>
 
               <View style={styles.pillsContainer}>
@@ -391,24 +467,25 @@ const ConnectionPreferenceScreen = () => {
                 ))}
               </View>
 
+              {/* Hidden Field Toggle */}
               <View style={styles.hiddenContainer}>
                 <Text style={styles.hiddenText}>Keep this private</Text>
-                <TouchableOpacity 
-                  style={[
-                    styles.checkboxContainer,
-                    hiddenFields.connectionPreferences && styles.checkboxSelected
-                  ]}
-                  onPress={() => toggleHidden("connectionPreferences")}
-                >
-                  {hiddenFields.connectionPreferences && (
-                    <Ionicons name="checkmark" size={16} color={colors.background} />
-                  )}
-                </TouchableOpacity>
+                <View style={styles.orbCheckboxContainer}>
+                  <TouchableOpacity 
+                    style={styles.orbCheckbox}
+                    onPress={() => toggleHidden("connectionPreferences")}
+                  >
+                    {hiddenFields.connectionPreferences && (
+                      <View style={[styles.selectedOrb, { backgroundColor: intentColors.primary }]} />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
 
+              {/* Affirmation */}
               <Text style={styles.affirmation}>
                 {connectionIntent === "romantic" 
-                  ? <>Open your <Text style={styles.highlightedWord}>heart</Text> to the dance of love and connection</>
+                  ? "Open your heart to the dance of love and connection"
                   : "Nurture the bonds that support your spiritual journey"
                 }
               </Text>
@@ -416,19 +493,21 @@ const ConnectionPreferenceScreen = () => {
           )}
         </ScrollView>
 
+        {/* Submit Button */}
         <TouchableOpacity 
           style={[
             styles.submitButton,
             !connectionIntent && styles.submitButtonDisabled,
-            (connectionIntent === "romantic" && selectedPreferences.length === 0) && styles.submitButtonDisabled,
+            ((connectionIntent === "romantic" || connectionIntent === "both") && selectedPreferences.length === 0) && styles.submitButtonDisabled,
+            connectionIntent && { backgroundColor: intentColors.primary }
           ]} 
           onPress={handleSubmit}
-          disabled={!connectionIntent || (connectionIntent === "romantic" && selectedPreferences.length === 0)}
+          disabled={!connectionIntent || ((connectionIntent === "romantic" || connectionIntent === "both") && selectedPreferences.length === 0)}
         >
           <Ionicons 
             name="chevron-forward" 
             size={24} 
-            color={connectionIntent && !(connectionIntent === "romantic" && selectedPreferences.length === 0) ? colors.background : colors.textMuted} 
+            color={connectionIntent && !((connectionIntent === "romantic" || connectionIntent === "both") && selectedPreferences.length === 0) ? colors.background : colors.textMuted} 
           />
         </TouchableOpacity>
       </SafeAreaView>
@@ -445,6 +524,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       backgroundColor: colors.background,
     },
     scrollViewContent: {
+      padding: Spacing.lg,
       paddingBottom: 120,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
@@ -493,117 +573,93 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     intentContainer: {
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-      gap: Spacing.md,
     },
     intentOption: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.md,
+      padding: Spacing.lg,
+      marginBottom: Spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       position: "relative",
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.08,
-          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
         },
         android: {
-          elevation: 3,
+          elevation: 4,
         },
       }),
     },
     intentSelected: {
       borderWidth: 2,
-      backgroundColor: colors.background,
+      transform: [{ scale: 1.02 }],
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
+          shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.15,
-          shadowRadius: 15,
+          shadowRadius: 16,
         },
         android: {
-          elevation: 6,
+          elevation: 8,
         },
       }),
     },
     intentContent: {
       flexDirection: 'row',
       alignItems: 'center',
-    },
-    iconContainer: {
-      width: 44,
-      height: 44,
-      borderRadius: BorderRadius.lg,
-      backgroundColor: colors.border + '20',
-      borderWidth: 1,
-      borderColor: colors.border + '60',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: Spacing.lg,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 3,
-        },
-        android: {
-          elevation: 1,
-        },
-      }),
-    },
-    textContainer: {
-      flex: 1,
+      position: 'relative',
     },
     intentTitle: {
-      ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.lg,
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.xl,
       color: colors.textDark,
+      marginLeft: Spacing.md,
       marginBottom: Spacing.xs,
-      fontWeight: Typography.weights.semibold,
+      fontWeight: Typography.weights.bold,
     },
     intentSubtitle: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.sm,
-      paddingRight: Spacing.lg,
+      fontSize: Typography.sizes.base,
       color: colors.textLight,
       fontStyle: "italic",
-      lineHeight: Typography.sizes.sm * 1.3,
+      marginLeft: Spacing.md,
     },
     sectionTitle: {
-      ...fonts.spiritualBodyFont,
+      ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.lg,
       marginBottom: Spacing.lg,
       paddingHorizontal: Spacing.lg,
-      fontWeight: Typography.weights.semibold,
+      fontWeight: Typography.weights.bold,
     },
     preferencesContainer: {
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
-      gap: Spacing.md,
     },
     preferenceOption: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.xl,
+      padding: Spacing.lg,
+      marginBottom: Spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       position: "relative",
       ...Platform.select({
         ios: {
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 3 },
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.08,
-          shadowRadius: 10,
+          shadowRadius: 8,
         },
         android: {
-          elevation: 3,
+          elevation: 2,
         },
       }),
     },
@@ -619,7 +675,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.base,
       color: colors.textLight,
       fontStyle: "italic",
-      lineHeight: Typography.sizes.base * 1.3,
     },
     optionContent: {
       flexDirection: 'row',
@@ -660,15 +715,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     pillsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
-      paddingHorizontal: Spacing.lg,
+      paddingHorizontal: Spacing.xs,
       marginBottom: Spacing.xl,
-      gap: Spacing.sm,
     },
     pillButton: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.full,
       paddingVertical: Spacing.md,
-      paddingHorizontal: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginRight: Spacing.sm,
+      marginBottom: Spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
       alignSelf: "flex-start",
@@ -679,8 +735,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         ios: {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
+          shadowOpacity: 0.06,
+          shadowRadius: 6,
         },
         android: {
           elevation: 2,
@@ -725,23 +781,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       justifyContent: "space-between",
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
-      marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
-      borderRadius: BorderRadius.xl,
+      borderRadius: BorderRadius.md,
       borderWidth: 1,
       borderColor: colors.border,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
     },
     hiddenText: {
       ...fonts.spiritualBodyFont,
@@ -752,44 +796,18 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     orbCheckboxContainer: {
       marginLeft: Spacing.md,
     },
-    checkboxContainer: {
+    orbCheckbox: {
       width: 24,
       height: 24,
-      borderRadius: BorderRadius.sm,
+      borderRadius: 12,
       borderWidth: 2,
       borderColor: colors.border,
       backgroundColor: colors.card,
       justifyContent: 'center',
       alignItems: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-        },
-        android: {
-          elevation: 1,
-        },
-      }),
-    },
-    checkboxSelected: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
     },
     affirmation: {
-      ...fonts.elegantItalicFont,
+      ...fonts.affirmationFont,
       textAlign: "center",
       fontStyle: "italic",
       color: colors.textLight,
@@ -797,14 +815,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-    },
-    highlightedWord: {
-      color: colors.textDark,
-      textShadowColor: '#FFD700',
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 8,
-      fontWeight: Typography.weights.medium,
-      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",
