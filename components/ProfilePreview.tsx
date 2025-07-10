@@ -78,59 +78,96 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
     return 'Location not shared';
   };
 
-  // Helper function to calculate age if not provided
-  const calculateAge = (user: UserDataType) => {
-    if (user.birthyear) {
-      return new Date().getFullYear() - parseInt(user.birthyear);
+  // Get connection intent for theming
+  const connectionIntent = userData.matchPreferences?.connectionIntent || "romantic";
+  const isRomantic = connectionIntent === "romantic";
+
+  // Get intent colors for dynamic theming
+  const getIntentColors = (intent: string) => {
+    if (intent === "romantic") {
+      return {
+        primary: '#EC4899',
+        secondary: '#FDF2F8',
+        accent: '#BE185D',
+        tertiary: '#F9A8D4',
+      };
+    } else {
+      return {
+        primary: '#10B981',
+        secondary: '#F0FDF4',
+        accent: '#047857',
+        tertiary: '#6EE7B7',
+      };
     }
-    if (user.age) return user.age;
-    return 'Age unknown';
   };
 
-  // Create meaningful details based on current user data
+  const intentColors = getIntentColors(connectionIntent);
+
+  // Create meaningful details based on current user data - UPDATED
   const getDetailsForPhoto = (index: number) => {
     const detailOptions = [
       {
-        title: "Basic Info",
-        content: `${userData.age || calculateAge(userData)} • ${getLocation(userData)}`,
-        icon: "person"
+        title: "About Me",
+        content: `${userData.age} • ${getLocation(userData)}`,
+        icon: "person-outline",
+        color: intentColors.primary
       },
       {
         title: "Spiritual Practices",
         content: userData?.spiritualProfile?.practices?.length 
           ? userData.spiritualProfile.practices.slice(0, 3).join(", ")
-          : 'Sacred practices not shared',
-        icon: "sparkles"
+          : 'Spiritual practices not shared',
+        icon: "flower-outline",
+        color: '#8B5CF6'
+      },
+      {
+        title: "Connection Type",
+        content: isRomantic ? "Looking for romantic connections" : "Looking for meaningful friendships",
+        icon: isRomantic ? "heart-outline" : "people-outline",
+        color: intentColors.primary
+      },
+      // Only show "Interested In" for romantic connections
+      ...(isRomantic ? [{
+        title: "Interested In",
+        content: userData.matchPreferences?.connectionPreferences?.length
+          ? userData.matchPreferences.connectionPreferences.join(", ")
+          : 'Open to connections',
+        icon: "heart-circle-outline",
+        color: intentColors.accent
+      }] : []),
+      {
+        title: "Connection Style",
+        content: userData.matchPreferences?.connectionStyles?.length
+          ? userData.matchPreferences.connectionStyles.slice(0, 2).join(", ")
+          : isRomantic ? 'Romantic style not set' : 'Friendship style not set',
+        icon: "sparkles-outline",
+        color: intentColors.tertiary
       },
       {
         title: "Healing Modalities",
         content: userData?.spiritualProfile?.healingModalities?.length
           ? userData.spiritualProfile.healingModalities.slice(0, 3).join(", ")
           : 'Healing path not shared',
-        icon: "heart"
+        icon: "medical-outline",
+        color: '#10B981'
       },
       {
         title: "Physical Details",
-        content: userData.height ? `${userData.height} ft` : 'Height not shared',
-        icon: "resize"
-      },
-      {
-        title: "Sacred Connections",
-        content: userData.matchPreferences?.ConnectionPreferences?.length
-          ? userData.matchPreferences.ConnectionPreferences.join(", ")
-          : 'Open to divine connections',
-        icon: "heart-circle"
+        content: userData.height ? `${userData.height} ft tall` : 'Height not shared',
+        icon: "resize-outline",
+        color: '#6B7280'
       },
       {
         title: "Spiritual Draws",
         content: userData?.spiritualProfile?.draws?.length
           ? userData.spiritualProfile.draws.slice(0, 3).join(", ")
           : 'Spiritual draws not shared',
-        icon: "leaf"
+        icon: "leaf-outline",
+        color: '#059669'
       }
     ];
 
-    return detailOptions[index] || detailOptions[0];
+    return detailOptions[index % detailOptions.length] || detailOptions[0];
   };
 
   // Helper function to get array for pills display
@@ -141,47 +178,81 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       return userData.spiritualProfile?.healingModalities || [];
     } else if (detail.title === "Spiritual Draws") {
       return userData.spiritualProfile?.draws || [];
+    } else if (detail.title === "Connection Style") {
+      return userData.matchPreferences?.connectionStyles || [];
+    } else if (detail.title === "Interested In" && isRomantic) {
+      return userData.matchPreferences?.connectionPreferences || [];
     }
     return [];
   };
 
-  const styles = createStyles(colors, fonts);
+  const styles = createStyles(colors, fonts, intentColors);
 
   if (loadingPhotos) {
     return (
       <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-          <Ionicons name="heart" size={40} color="#8B4513" />
+        <View style={[styles.loadingMandala, { backgroundColor: intentColors.secondary }]}>
+          <Ionicons 
+            name={isRomantic ? "heart" : "people"} 
+            size={40} 
+            color={intentColors.primary} 
+          />
         </View>
-        <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-          Loading Sacred Soul...
+        <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: intentColors.primary }]}>
+          Loading {isRomantic ? "Sacred Soul" : "Beautiful Spirit"}...
         </Text>
       </View>
     );
   }
 
-  // Create all available info sections
+  // Create all available info sections - UPDATED
   const createInfoSections = () => {
     const sections = [];
 
-    // Additional standalone info sections
+    // Gender Identity
     if (userData.gender && userData.gender.length > 0) {
       sections.push({
         type: 'info',
         title: "Gender Identity",
         icon: "person-outline",
         content: userData.gender.join(", "),
-        isPill: false
+        isPill: true,
+        color: '#6366F1'
       });
     }
 
-    if (userData.matchPreferences?.ConnectionPreferences && userData.matchPreferences.ConnectionPreferences.length > 0) {
+    // Connection Intent (Dating vs Friendship)
+    // sections.push({
+    //   type: 'info',
+    //   title: "Connection Intent",
+    //   icon: isRomantic ? "heart" : "people",
+    //   content: isRomantic ? "Dating" : "Friendship",
+    //   description: isRomantic ? "Seeking romantic connections" : "Building meaningful friendships",
+    //   isPill: false,
+    //   color: intentColors.primary
+    // });
+
+    // Only show connection preferences for romantic connections
+    // if (isRomantic && userData.matchPreferences?.connectionPreferences && userData.matchPreferences.connectionPreferences.length > 0) {
+    //   sections.push({
+    //     type: 'info',
+    //     title: "Interested In",
+    //     icon: "heart-circle-outline",
+    //     content: userData.matchPreferences.connectionPreferences.join(", "),
+    //     isPill: true,
+    //     color: intentColors.accent
+    //   });
+    // }
+
+    // Connection Styles
+    if (userData.matchPreferences?.connectionStyles && userData.matchPreferences.connectionStyles.length > 0) {
       sections.push({
         type: 'info',
-        title: "Seeking Connections With",
-        icon: "heart-outline",
-        content: userData.matchPreferences.ConnectionPreferences.join(", "),
-        isPill: false
+        title: isRomantic ? "Romantic Style" : "Connection Style",
+        icon: "sparkles-outline",
+        content: userData.matchPreferences.connectionStyles.join(", "),
+        isPill: true,
+        color: intentColors.tertiary
       });
     }
 
@@ -230,14 +301,38 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
   const renderInfoCard = (section: any) => (
     <View style={[styles.infoSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.detailHeader}>
-        <Ionicons name={section.icon as any} size={20} color="#8B4513" />
+        <View style={[styles.iconContainer, { backgroundColor: section.color + '15' }]}>
+          <Ionicons name={section.icon as any} size={20} color={section.color} />
+        </View>
         <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
           {section.title}
         </Text>
       </View>
-      <Text style={[styles.detailText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-        {section.content}
-      </Text>
+      
+      {section.description && (
+        <Text style={[styles.detailDescription, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+          {section.description}
+        </Text>
+      )}
+
+      {section.isPill && Array.isArray(section.content.split(", ")) ? (
+        <View style={styles.pillsContainer}>
+          {section.content.split(", ").map((item: string, pillIndex: number) => (
+            <View key={pillIndex} style={[styles.pill, { 
+              backgroundColor: section.color + '20',
+              borderColor: section.color + '40'
+            }]}>
+              <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: section.color }]}>
+                {item.trim()}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={[styles.detailText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+          {section.content}
+        </Text>
+      )}
     </View>
   );
 
@@ -254,7 +349,9 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
           borderColor: colors.border 
         }]}>
           <View style={styles.detailHeader}>
-            <Ionicons name={detail.icon as any} size={20} color="#8B4513" />
+            <View style={[styles.iconContainer, { backgroundColor: detail.color + '15' }]}>
+              <Ionicons name={detail.icon as any} size={20} color={detail.color} />
+            </View>
             <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
               {detail.title}
             </Text>
@@ -263,25 +360,37 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
           {/* Enhanced content display */}
           {(detail.title === "Spiritual Practices" || 
             detail.title === "Healing Modalities" || 
-            detail.title === "Spiritual Draws") && pillsArray.length > 0 ? (
+            detail.title === "Spiritual Draws" ||
+            detail.title === "Connection Style" ||
+            detail.title === "Interested In") && pillsArray.length > 0 ? (
             <View style={styles.pillsContainer}>
               {pillsArray.slice(0, 4).map((item: string, pillIndex: number) => (
                 <View key={pillIndex} style={[styles.pill, { 
-                  backgroundColor: '#8B4513' + '20',
-                  borderColor: '#8B4513' + '40'
+                  backgroundColor: detail.color + '20',
+                  borderColor: detail.color + '40'
                 }]}>
-                  <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                  <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: detail.color }]}>
                     {item}
                   </Text>
                 </View>
               ))}
+              {pillsArray.length > 4 && (
+                <View style={[styles.pill, { 
+                  backgroundColor: detail.color + '10',
+                  borderColor: detail.color + '30'
+                }]}>
+                  <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: detail.color }]}>
+                    +{pillsArray.length - 4} more
+                  </Text>
+                </View>
+              )}
             </View>
           ) : (
             <Text style={[styles.detailText, fonts.spiritualBodyFont, { 
               color: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
                                                 detail.title === "Healing Modalities" || 
                                                 detail.title === "Spiritual Draws") 
-                ? colors.textLight 
+                ? colors.textMuted 
                 : colors.textLight,
               fontStyle: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
                                                      detail.title === "Healing Modalities" || 
@@ -305,15 +414,18 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Text
-        style={[
-          styles.topName, 
-          fonts.spiritualTitleFont,
-          { color: colors.textDark }
-        ]}
-      >
-        {userData.firstName}, {calculateAge(userData)}
-      </Text>
+      {/* Header with Connection Type Badge */}
+      <View style={styles.headerContainer}>
+        <Text
+          style={[
+            styles.topName, 
+            fonts.spiritualTitleFont,
+            { color: colors.textDark }
+          ]}
+        >
+          {userData.firstName}
+        </Text>
+      </View>
 
       {/* Handle case when no photos */}
       {photoUrls.length === 0 && (
@@ -336,7 +448,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
   );
 };
 
-const createStyles = (colors: any, fonts: any) => StyleSheet.create({
+const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.create({
   scrollView: {
     flex: 1,
   },
@@ -345,12 +457,17 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xl,
   },
-  topName: {
-    marginLeft: Spacing.sm,
-    marginBottom: Spacing.md,
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
     marginTop: Spacing.sm,
+  },
+  topName: {
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
+    flex: 1,
   },
   photoCard: {
     marginBottom: Spacing.lg,
@@ -358,29 +475,47 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   photo: {
     width: Dimensions.get("window").width - (Spacing.lg * 2),
     height: 400,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.md,
   },
   detailCard: {
-    borderRadius: 12,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
     borderWidth: 1,
     position: "relative",
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   detailHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
   detailTitle: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
-    marginLeft: Spacing.sm,
+  },
+  detailDescription: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    marginBottom: Spacing.sm,
   },
   detailText: {
     fontSize: Typography.sizes.base,
@@ -393,9 +528,9 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     marginTop: Spacing.xs,
   },
   pill: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 20,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
   },
   pillText: {
@@ -403,15 +538,21 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     fontWeight: Typography.weights.medium,
   },
   infoSection: {
-    borderRadius: 12,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
     borderWidth: 1,
     marginBottom: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   loaderContainer: {
     flex: 1,
