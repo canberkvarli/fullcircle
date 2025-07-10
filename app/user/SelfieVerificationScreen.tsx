@@ -83,6 +83,7 @@ export default function SelfieVerification() {
 
     try {
       const result = await ImagePicker.launchCameraAsync({
+        // @ts-ignore - suppressing deprecation warning until library is updated
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         aspect: [1, 1],

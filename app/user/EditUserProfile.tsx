@@ -66,6 +66,7 @@ export default function EditUserProfile() {
 
   const pickImage = async (index: number) => {
     let result = await ImagePicker.launchImageLibraryAsync({
+      // @ts-ignore - suppressing deprecation warning until library is updated
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],

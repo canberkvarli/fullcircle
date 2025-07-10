@@ -113,7 +113,7 @@ const UserShow: React.FC = () => {
       });
     });
 
-    return () => unsub();
+    return () => unsub;
   }, [userData.userId]);
 
   useEffect(() => {
@@ -191,50 +191,104 @@ const UserShow: React.FC = () => {
     return 'Location not shared';
   };
 
-  // Create meaningful details based on current user data
+  // Get connection intent for theming
+  const connectionIntent = currentUser.matchPreferences?.connectionIntent || "romantic";
+
+  // Get intent colors for dynamic theming
+  const getIntentColors = (intent: string) => {
+    if (intent === "romantic") {
+      return {
+        primary: '#E11D48',
+        secondary: '#FFF1F2',
+        accent: '#BE123C',
+        tertiary: '#FB7185',
+      };
+    } else if (intent === "friendship") {
+      return {
+        primary: '#059669',
+        secondary: '#ECFDF5',
+        accent: '#047857',
+        tertiary: '#34D399',
+      };
+    } else if (intent === "both") {
+      return {
+        primary: '#7C3AED',
+        secondary: '#F5F3FF',
+        accent: '#6D28D9',
+        tertiary: '#A78BFA',
+      };
+    } else {
+      return {
+        primary: '#8B4513',
+        secondary: '#FDF6E3',
+        accent: '#D2691E',
+        tertiary: '#CD853F',
+      };
+    }
+  };
+
+  const intentColors = getIntentColors(connectionIntent);
+
+  // Create meaningful details based on current user data - UPDATED
   const getDetailsForPhoto = (index: number) => {
     const detailOptions = [
       {
-        title: "Basic Info",
+        title: "About Me",
         content: `${currentUser.age || calculateAge(currentUser)} • ${getLocation(currentUser)}`,
-        icon: "person"
+        icon: "person-outline",
+        color: intentColors.primary,
+        type: 'text'
       },
       {
         title: "Spiritual Practices",
-        content: currentUser?.spiritualProfile?.practices?.length 
-          ? currentUser.spiritualProfile.practices.slice(0, 3).join(", ")
-          : 'Sacred practices not shared',
-        icon: "sparkles"
+        content: currentUser?.spiritualProfile?.practices || [],
+        icon: "leaf-outline",
+        color: '#059669',
+        type: 'pills',
+        emptyText: 'Spiritual practices not shared'
+      },
+      {
+        title: "Connection Style",
+        content: currentUser.matchPreferences?.connectionStyles || [],
+        icon: "sparkles-outline",
+        color: intentColors.tertiary,
+        type: 'pills',
+        emptyText: 'Connection style not set'
       },
       {
         title: "Healing Modalities",
-        content: currentUser?.spiritualProfile?.healingModalities?.length
-          ? currentUser.spiritualProfile.healingModalities.slice(0, 3).join(", ")
-          : 'Healing path not shared',
-        icon: "heart"
+        content: currentUser?.spiritualProfile?.healingModalities || [],
+        icon: "medical-outline",
+        color: '#0891B2',
+        type: 'pills',
+        emptyText: 'Healing path not shared'
       },
       {
         title: "Physical Details",
-        content: currentUser.height ? `${currentUser.height} ft` : 'Height not shared',
-        icon: "resize"
-      },
-      {
-        title: "Sacred Connections",
-        content: currentUser.matchPreferences?.ConnectionPreferences?.length
-          ? currentUser.matchPreferences.ConnectionPreferences.join(", ")
-          : 'Open to divine connections',
-        icon: "heart-circle"
+        content: currentUser.height ? `${currentUser.height} ft tall` : 'Height not shared',
+        icon: "resize-outline",
+        color: '#6B7280',
+        type: 'text'
       },
       {
         title: "Spiritual Draws",
-        content: currentUser?.spiritualProfile?.draws?.length
-          ? currentUser.spiritualProfile.draws.slice(0, 3).join(", ")
-          : 'Spiritual draws not shared',
-        icon: "leaf"
+        content: currentUser?.spiritualProfile?.draws || [],
+        icon: "heart-outline",
+        color: '#DC2626',
+        type: 'pills',
+        emptyText: 'Spiritual draws not shared'
+      },
+      {
+        title: "Gender Identity",
+        content: currentUser.gender || [],
+        icon: "person-outline",
+        color: '#6366F1',
+        type: 'pills',
+        emptyText: 'Gender not shared'
       }
     ];
 
-    return detailOptions[index] || detailOptions[0];
+    return detailOptions[index % detailOptions.length] || detailOptions[0];
   };
 
   // Helper function to calculate age if not provided
@@ -246,16 +300,29 @@ const UserShow: React.FC = () => {
     return 'Age unknown';
   };
 
-  // Helper function to get array for pills display
+  // Helper function to get array for pills display - UPDATED
   const getPillsArray = (detail: any) => {
-    if (detail.title === "Spiritual Practices") {
-      return currentUser.spiritualProfile?.practices || [];
-    } else if (detail.title === "Healing Modalities") {
-      return currentUser.spiritualProfile?.healingModalities || [];
-    } else if (detail.title === "Spiritual Draws") {
-      return currentUser.spiritualProfile?.draws || [];
+    if (detail.type === 'pills' && Array.isArray(detail.content)) {
+      // Filter out any non-string values and empty strings
+      return detail.content.filter((item: unknown) => 
+        typeof item === 'string' && item.trim().length > 0
+      );
     }
     return [];
+  };
+
+  // Get connection type display for the user
+  const getConnectionTypeDisplay = (intent: string) => {
+    switch (intent) {
+      case "romantic":
+        return "Looking for romantic connections";
+      case "friendship":
+        return "Looking for meaningful friendships";
+      case "both":
+        return "Open to all types of connections";
+      default:
+        return "Open to connections";
+    }
   };
 
   const headerOpacity = scrollY.interpolate({
@@ -273,7 +340,7 @@ const UserShow: React.FC = () => {
   const onScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     {
-      useNativeDriver: true, // Use native driver consistently
+      useNativeDriver: true,
       listener: (e: any) => {
         const y = e.nativeEvent.contentOffset.y;
         const dy = y - lastY.current;
@@ -295,17 +362,24 @@ const UserShow: React.FC = () => {
     }
   );
 
-  const styles = createStyles(colors, fonts);
+  const styles = createStyles(colors, fonts, intentColors);
 
   return (
     <SafeAreaView style={[styles.wrapper, { backgroundColor: colors.background }]}>
       {loadingPhotos && (
         <View style={[styles.loaderOverlay, { backgroundColor: colors.background }]}>
-          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-            <Ionicons name="heart" size={40} color="#8B4513" />
+          <View style={[styles.loadingMandala, { backgroundColor: intentColors.secondary }]}>
+            <Ionicons 
+              name={connectionIntent === "romantic" ? "heart" 
+                   : connectionIntent === "friendship" ? "people" 
+                   : connectionIntent === "both" ? "infinite"
+                   : "sparkles"} 
+              size={40} 
+              color={intentColors.primary} 
+            />
           </View>
-          <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-            Loading Sacred Soul...
+          <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: intentColors.primary }]}>
+            Loading Beautiful Soul...
           </Text>
         </View>
       )}
@@ -322,8 +396,8 @@ const UserShow: React.FC = () => {
                 style={styles.backButton}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               >
-                <Ionicons name="chevron-back" size={24} color="#8B4513" />
-                <Text style={[styles.backText, fonts.spiritualBodyFont, { color: "#8B4513" }]}>
+                <Ionicons name="chevron-back" size={24} color={intentColors.primary} />
+                <Text style={[styles.backText, fonts.spiritualBodyFont, { color: intentColors.primary }]}>
                   Back
                 </Text>
               </TouchableOpacity>
@@ -357,15 +431,38 @@ const UserShow: React.FC = () => {
             onScroll={onScroll}
             scrollEventThrottle={16}
           >
-            <Animated.Text
-              style={[
-                styles.topName, 
-                fonts.spiritualTitleFont,
-                { opacity: leftNameOpacity, color: colors.textDark }
-              ]}
-            >
-              {currentUser.firstName}, {calculateAge(currentUser)}
-            </Animated.Text>
+            <Animated.View style={{ opacity: leftNameOpacity }}>
+              <Text
+                style={[
+                  styles.topName, 
+                  fonts.spiritualTitleFont,
+                  { color: colors.textDark }
+                ]}
+              >
+                {currentUser.firstName}, {calculateAge(currentUser)}
+              </Text>
+              
+              {/* Connection Intent Badge */}
+              <View style={[styles.connectionBadge, { 
+                backgroundColor: intentColors.secondary,
+                borderColor: intentColors.primary + '40'
+              }]}>
+                <Ionicons 
+                  name={connectionIntent === "romantic" ? "heart" 
+                       : connectionIntent === "friendship" ? "people" 
+                       : connectionIntent === "both" ? "infinite"
+                       : "sparkles"} 
+                  size={14} 
+                  color={intentColors.primary} 
+                />
+                <Text style={[styles.connectionBadgeText, { color: intentColors.primary }]}>
+                  {connectionIntent === "romantic" ? "Dating" 
+                   : connectionIntent === "friendship" ? "Friendship"
+                   : connectionIntent === "both" ? "Both"
+                   : "Open"}
+                </Text>
+              </View>
+            </Animated.View>
 
             {photoUrls.map((uri, i) => {
               const detail = getDetailsForPhoto(i);
@@ -380,42 +477,50 @@ const UserShow: React.FC = () => {
                     borderColor: colors.border 
                   }]}>
                     <View style={styles.detailHeader}>
-                      <Ionicons name={detail.icon as any} size={20} color="#8B4513" />
+                      <View style={[styles.iconContainer, { backgroundColor: detail.color + '15' }]}>
+                        <Ionicons name={detail.icon as any} size={18} color={detail.color} />
+                      </View>
                       <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                         {detail.title}
                       </Text>
                     </View>
                     
                     {/* Enhanced content display */}
-                    {(detail.title === "Spiritual Practices" || 
-                      detail.title === "Healing Modalities" || 
-                      detail.title === "Spiritual Draws") && pillsArray.length > 0 ? (
+                    {detail.type === 'pills' && pillsArray.length > 0 ? (
                       <View style={styles.pillsContainer}>
                         {pillsArray.slice(0, 4).map((item: string, pillIndex: number) => (
                           <View key={pillIndex} style={[styles.pill, { 
-                            backgroundColor: '#8B4513' + '20',
-                            borderColor: '#8B4513' + '40'
+                            backgroundColor: detail.color + '15',
+                            borderColor: detail.color + '30'
                           }]}>
-                            <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                            <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: detail.color }]}>
                               {item}
                             </Text>
                           </View>
                         ))}
+                        {pillsArray.length > 4 && (
+                          <View style={[styles.pill, { 
+                            backgroundColor: detail.color + '10',
+                            borderColor: detail.color + '20'
+                          }]}>
+                            <Text style={[styles.pillText, fonts.spiritualBodyFont, { color: detail.color }]}>
+                              +{pillsArray.length - 4} more
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     ) : (
                       <Text style={[styles.detailText, fonts.spiritualBodyFont, { 
-                        color: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
-                                                          detail.title === "Healing Modalities" || 
-                                                          detail.title === "Spiritual Draws") 
-                          ? colors.textLight 
+                        color: (detail.type === 'pills' && pillsArray.length === 0) 
+                          ? colors.textMuted 
                           : colors.textLight,
-                        fontStyle: pillsArray.length === 0 && (detail.title === "Spiritual Practices" || 
-                                                               detail.title === "Healing Modalities" || 
-                                                               detail.title === "Spiritual Draws") 
+                        fontStyle: (detail.type === 'pills' && pillsArray.length === 0) 
                           ? 'italic' 
                           : 'normal'
                       }]}>
-                        {detail.content}
+                        {detail.type === 'pills' && pillsArray.length === 0 
+                          ? detail.emptyText 
+                          : detail.content}
                       </Text>
                     )}
                   </View>
@@ -448,7 +553,7 @@ const UserShow: React.FC = () => {
               onPress={handleHeartPress}
               activeOpacity={0.8}
             >
-              <Ionicons name="heart" size={20} color="#8B4513" />
+              <Ionicons name="heart" size={20} color={intentColors.primary} />
             </TouchableOpacity>
           </View>
         </>
@@ -459,7 +564,7 @@ const UserShow: React.FC = () => {
   );
 };
 
-const createStyles = (colors: any, fonts: any) => StyleSheet.create({
+const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.create({
   wrapper: {
     flex: 1,
   },
@@ -469,7 +574,7 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     left: 0,
     right: 0,
     height: HEADER_HEIGHT,
-    zIndex: 1000, // Higher z-index to ensure it's on top
+    zIndex: 1000,
     borderBottomWidth: 1,
     borderBottomColor: colors.border + '40',
   },
@@ -479,8 +584,8 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingTop: Platform.select({ 
-      ios: 10, // Reduced from 45
-      android: 8 // Reduced from 35
+      ios: 10,
+      android: 8
     }),
   },
   backButton: {
@@ -488,7 +593,7 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     alignItems: "center",
     paddingVertical: Spacing.sm,
     paddingRight: Spacing.md,
-    zIndex: 1001, // Even higher z-index for the back button
+    zIndex: 1001,
   },
   backText: {
     marginLeft: 4,
@@ -501,7 +606,7 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     right: 0,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 999, // Lower than back button
+    zIndex: 999,
   },
   centerName: {
     fontSize: Typography.sizes.lg,
@@ -516,11 +621,27 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   topName: {
-    marginLeft: Spacing.sm, // Reduced margin
+    marginLeft: Spacing.sm,
     marginBottom: Spacing.md,
-    marginTop: Spacing.sm, // Added top margin
+    marginTop: Spacing.sm,
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
+  },
+  connectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    marginLeft: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  connectionBadgeText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.xs,
   },
   photoCard: {
     marginBottom: Spacing.lg,
@@ -528,18 +649,18 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   photo: {
     width: Dimensions.get("window").width - (Spacing.lg * 2),
     height: 400,
-    borderRadius: 16,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.md,
   },
   
   // Floating Action Buttons (like Connect screen)
   floatingButtons: {
     position: 'absolute',
-    bottom: TAB_BAR_HEIGHT + 20, // Above the sliding tab bar
+    bottom: TAB_BAR_HEIGHT + 20,
     left: 0,
     right: 0,
     height: 80,
-    zIndex: 100, // Lower than header
+    zIndex: 100,
   },
   
   floatingAction: {
@@ -567,25 +688,38 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     right: Spacing.xl,
   },
   detailCard: {
-    borderRadius: 12,
-    padding: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
     borderWidth: 1,
     position: "relative",
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   detailHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
   },
   detailTitle: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
-    marginLeft: Spacing.sm,
   },
   detailText: {
     fontSize: Typography.sizes.base,
@@ -594,24 +728,23 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   pillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
+    gap: Spacing.xs,
   },
   pill: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 20,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
   },
   pillText: {
-    fontSize: Typography.sizes.xs,
+    fontSize: Typography.sizes.sm,
     fontWeight: Typography.weights.medium,
   },
   loaderOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 2000, // Highest z-index for loading overlay
+    zIndex: 2000,
   },
   loadingMandala: {
     width: 120,

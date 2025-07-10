@@ -24,6 +24,14 @@ const UserLayout = () => {
         name="FullCircleSubscription"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TermsOfService"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 };

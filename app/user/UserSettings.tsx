@@ -23,7 +23,7 @@ import { useFont } from "@/hooks/useFont";
 
 export default function UserSettings() {
   const router = useRouter();
-  const { userData, updateUserSettings, signOut, updateUserData } = useUserContext();
+  const { userData, updateUserSettings, signOut, updateUserData, deleteAccount } = useUserContext();
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -41,6 +41,7 @@ export default function UserSettings() {
   const [verificationCode, setVerificationCode] = useState("");
   const [deleteAccountModal, setDeleteAccountModal] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  const [showPauseModal, setShowPauseModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   // Notification states
@@ -81,8 +82,21 @@ export default function UserSettings() {
 
   // Handle profile pause toggle
   const handlePauseToggle = async (value: boolean) => {
-    setIsPaused(value);
-    await updateUserSettings({ isPaused: value });
+    if (value && !isPaused) {
+      // Show confirmation modal when trying to pause
+      setShowPauseModal(true);
+    } else {
+      // Direct toggle when unpausing
+      setIsPaused(value);
+      await updateUserSettings({ isPaused: value });
+    }
+  };
+
+  // Confirm pause action
+  const confirmPause = async () => {
+    setIsPaused(true);
+    setShowPauseModal(false);
+    await updateUserSettings({ isPaused: true });
   };
 
   // Handle last active toggle
@@ -123,7 +137,7 @@ export default function UserSettings() {
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      Alert.alert("Sacred Connection", "Please enter a valid email address to maintain your cosmic flow.");
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
     }
     
@@ -132,9 +146,9 @@ export default function UserSettings() {
       // TODO: Send verification email via Firebase
       setEmailVerificationPending(true);
       setShowVerificationModal(true);
-      Alert.alert("Divine Verification", "Check your sacred inbox for the verification code.");
+      Alert.alert("Verification Sent", "Check your inbox for the verification code.");
     } catch (error) {
-      Alert.alert("Cosmic Interference", "Failed to send verification email.");
+      Alert.alert("Error", "Failed to send verification email.");
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +157,7 @@ export default function UserSettings() {
   // Handle verification code submission
   const handleVerificationSubmit = async () => {
     if (verificationCode.length !== 6) {
-      Alert.alert("Sacred Code", "Please enter the complete 6-digit verification code.");
+      Alert.alert("Invalid Code", "Please enter the complete 6-digit verification code.");
       return;
     }
     
@@ -155,11 +169,11 @@ export default function UserSettings() {
       setEmailVerificationPending(false);
       setShowVerificationModal(false);
       setEmailExpanded(false);
-      setVerificationCode(""); // Clear the verification code
-      setNewEmail(""); // Clear the new email input
-      Alert.alert("Divine Success", "Your email has been updated successfully! ✨");
+      setVerificationCode("");
+      setNewEmail("");
+      Alert.alert("Success", "Your email has been updated successfully!");
     } catch (error) {
-      Alert.alert("Cosmic Interference", "Invalid verification code.");
+      Alert.alert("Error", "Invalid verification code.");
     } finally {
       setIsLoading(false);
     }
@@ -168,25 +182,34 @@ export default function UserSettings() {
   // Handle account deletion
   const handleDeleteAccount = async () => {
     if (!deleteReason) {
-      Alert.alert("Sacred Feedback", "Please share why you're leaving our cosmic community.");
+      Alert.alert("Reason Required", "Please share why you're leaving.");
       return;
     }
     
     Alert.alert(
-      "Release Your Energy",
-      "Are you certain? This sacred journey cannot be retraced.",
+      "Delete Account",
+      "Are you sure? This action cannot be undone.",
       [
-        { text: "Keep Connecting", style: "cancel" },
+        { text: "Keep Account", style: "cancel" },
         {
-          text: "Release & Delete",
+          text: "Delete Account",
           style: "destructive",
           onPress: async () => {
             setIsLoading(true);
             try {
-              await deleteAccount();
-            } catch (error) {
-              Alert.alert("Cosmic Interference", "Unable to release your account at this time.");
+              await deleteAccount(deleteReason);
+              // If successful, the user will be navigated away automatically
+              // But just in case, close the modal
+              setDeleteAccountModal(false);
+              setDeleteReason("");
+            } catch (error: any) {
+              // Always close modal and reset state on error
+              setDeleteAccountModal(false);
+              setDeleteReason("");
               setIsLoading(false);
+              
+              // Show the specific error message from deleteAccount function
+              Alert.alert("Unable to Delete Account", error.message || "Please try again later.");
             }
           },
         },
@@ -195,11 +218,11 @@ export default function UserSettings() {
   };
 
   const deleteReasons = [
-    "I found my soul connection",
-    "Taking a spiritual break",
-    "The energy didn't align",
-    "Too many cosmic notifications",
-    "Not enough sacred matches",
+    "I found someone special",
+    "Taking a break",
+    "Not enough matches",
+    "Too many notifications", 
+    "Privacy concerns",
     "Prefer not to share",
     "Other reasons",
   ];
@@ -209,7 +232,7 @@ export default function UserSettings() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft} />
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>Sacred Settings</Text>
+        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>Settings</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={colors.textDark} />
         </TouchableOpacity>
@@ -218,13 +241,13 @@ export default function UserSettings() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>SACRED PROFILE</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>PROFILE</Text>
           
           <View style={styles.row}>
             <View style={styles.rowContent}>
-              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Pause Your Journey</Text>
+              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Pause Profile</Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>
-                Pausing conceals your divine light from new souls while maintaining connections with current matches.
+                Pausing hides your profile from new people while keeping current matches.
               </Text>
             </View>
             <Switch
@@ -239,11 +262,11 @@ export default function UserSettings() {
           
           <View style={styles.row}>
             <View style={styles.rowContent}>
-              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Last Active Aura</Text>
+              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Show Last Active</Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>
                 {showLastActive 
-                  ? "Share your cosmic presence timing with seeking souls. Matches won't see this sacred information."
-                  : "Keep your spiritual timeline private from all souls."
+                  ? "Share when you were last active with people you haven't matched with yet."
+                  : "Keep your activity status private."
                 }
               </Text>
             </View>
@@ -258,7 +281,7 @@ export default function UserSettings() {
 
         {/* Safety Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>SACRED SAFETY</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>SAFETY</Text>
           
           <TouchableOpacity 
             style={styles.row}
@@ -266,15 +289,15 @@ export default function UserSettings() {
           >
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
-                Divine Verification
+                Photo Verification
                 {userData.settings?.isSelfieVerified && (
                   <Text> ✨</Text>
                 )}
               </Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>
                 {userData.settings?.isSelfieVerified 
-                  ? "Your divine essence is verified"
-                  : "Verify your sacred self to build trust and attract more connections"
+                  ? "Your photos are verified"
+                  : "Verify your photos to build trust and get more matches"
                 }
               </Text>
             </View>
@@ -284,12 +307,12 @@ export default function UserSettings() {
 
         {/* Phone & Email Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>COSMIC COMMUNICATION</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>CONTACT INFO</Text>
           
           <TouchableOpacity style={styles.row} onPress={togglePhoneExpand}>
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
-                {userData.phoneNumber || "Sacred Contact"}
+                {userData.phoneNumber || "Phone Number"}
               </Text>
             </View>
             <Ionicons 
@@ -312,7 +335,7 @@ export default function UserSettings() {
             ]}
           >
             <Text style={[styles.expandedText, fonts.captionFont]}>
-              Your sacred phone number is eternally bound to your cosmic identity and cannot be altered.
+              Your phone number is permanently linked to your account and cannot be changed.
             </Text>
           </Animated.View>
 
@@ -321,7 +344,7 @@ export default function UserSettings() {
           <TouchableOpacity style={styles.row} onPress={toggleEmailExpand}>
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
-                {userData.email || "Divine Email"}
+                {userData.email || "Email Address"}
               </Text>
             </View>
             <Text style={[styles.editText, fonts.buttonFont]}>Edit</Text>
@@ -333,7 +356,7 @@ export default function UserSettings() {
               {
                 maxHeight: emailAnimation.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, 120],
+                  outputRange: [0, 150], // Increased height to prevent cut-off
                 }),
                 opacity: emailAnimation,
               },
@@ -343,7 +366,7 @@ export default function UserSettings() {
               style={[styles.emailInput, fonts.inputFont]}
               value={newEmail}
               onChangeText={setNewEmail}
-              placeholder="Enter your new cosmic email"
+              placeholder="Enter your new email"
               placeholderTextColor={colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -356,7 +379,7 @@ export default function UserSettings() {
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={[styles.updateButtonText, fonts.buttonFont]}>Update Sacred Email</Text>
+                <Text style={[styles.updateButtonText, fonts.buttonFont]}>Update Email</Text>
               )}
             </TouchableOpacity>
           </Animated.View>
@@ -366,51 +389,64 @@ export default function UserSettings() {
               style={styles.verifyRow}
               onPress={() => setShowVerificationModal(true)}
             >
-              <Text style={[styles.verifyText, fonts.spiritualBodyFont]}>Verify your divine email address ✨</Text>
+              <Text style={[styles.verifyText, fonts.spiritualBodyFont]}>Verify your email address ✨</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Notifications Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>COSMIC NOTIFICATIONS</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>NOTIFICATIONS</Text>
           
           <TouchableOpacity 
             style={styles.row}
             onPress={() => router.navigate("/user/PushNotifications" as any)}
           >
-            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Divine Messages</Text>
+            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Push Notifications</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* Subscription Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>SACRED SUBSCRIPTION</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>SUBSCRIPTION</Text>
           
-          <TouchableOpacity 
-            style={styles.row}
-            onPress={() => router.navigate("/user/FullCircleSubscription" as any)}
-          >
-            <View style={styles.rowContent}>
-              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Full Circle Journey</Text>
-              <Text style={[styles.rowDescription, fonts.captionFont]}>
-                {userData.fullCircleSubscription 
-                  ? "You are embracing the complete cosmic experience ✨"
-                  : "Unlock your full spiritual potential"
-                }
-              </Text>
+          {userData.fullCircleSubscription ? (
+            <View style={[styles.row, styles.goldSubscriptionRow]}>
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowTitle, fonts.spiritualBodyFont, styles.goldText]}>
+                  Full Circle ✨
+                </Text>
+                <Text style={[styles.rowDescription, fonts.captionFont, styles.goldText]}>
+                  You have premium access
+                </Text>
+              </View>
+              <View style={styles.goldBadge}>
+                <Text style={[styles.goldBadgeText, fonts.captionFont]}>ACTIVE</Text>
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={styles.row}
+              onPress={() => router.navigate("/user/FullCircleSubscription" as any)}
+            >
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Upgrade to Full Circle</Text>
+                <Text style={[styles.rowDescription, fonts.captionFont]}>
+                  Unlock premium features and enhance your experience
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Connected Accounts Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>CONNECTED ENERGIES</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>CONNECTED ACCOUNTS</Text>
           
           <View style={styles.row}>
-            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Google Harmony</Text>
+            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Google</Text>
             <Switch
               value={userData.settings?.connectedAccounts?.google || false}
               onValueChange={() => console.log("Toggle Google")}
@@ -422,7 +458,7 @@ export default function UserSettings() {
           <View style={styles.separator} />
           
           <View style={styles.row}>
-            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Apple Essence</Text>
+            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Apple</Text>
             <Switch
               value={userData.settings?.connectedAccounts?.apple || false}
               onValueChange={() => console.log("Toggle Apple")}
@@ -434,17 +470,23 @@ export default function UserSettings() {
 
         {/* Legal Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, fonts.captionFont]}>SACRED AGREEMENTS</Text>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>LEGAL</Text>
           
-          <TouchableOpacity style={styles.row}>
-            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Privacy Covenant</Text>
+          <TouchableOpacity 
+            style={styles.row}
+            onPress={() => router.navigate("/user/PrivacyPolicy" as any)}
+          >
+            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Privacy Policy</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
           <View style={styles.separator} />
           
-          <TouchableOpacity style={styles.row}>
-            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Terms of Sacred Service</Text>
+          <TouchableOpacity 
+            style={styles.row}
+            onPress={() => router.navigate("/user/TermsOfService" as any)}
+          >
+            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Terms of Service</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
@@ -452,17 +494,45 @@ export default function UserSettings() {
         {/* Log Out & Delete Account */}
         <View style={styles.bottomSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-            <Text style={[styles.logoutText, fonts.spiritualBodyFont]}>Release Session</Text>
+            <Text style={[styles.logoutText, fonts.spiritualBodyFont]}>Log Out</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.deleteButton} 
             onPress={() => setDeleteAccountModal(true)}
           >
-            <Text style={[styles.deleteText, fonts.captionFont]}>Release Sacred Account</Text>
+            <Text style={[styles.deleteText, fonts.captionFont]}>Delete Account</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Pause Confirmation Modal */}
+      <Modal
+        visible={showPauseModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPauseModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Pause Your Profile?</Text>
+            <Text style={[styles.modalDescription, fonts.spiritualBodyFont]}>
+              Pausing will hide your profile from new people. You can still chat with current matches and unpause anytime.
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.modalButton}
+              onPress={confirmPause}
+            >
+              <Text style={[styles.modalButtonText, fonts.buttonFont]}>Yes, Pause Profile</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => setShowPauseModal(false)}>
+              <Text style={[styles.modalCancelText, fonts.captionFont]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Email Verification Modal */}
       <Modal
@@ -473,9 +543,9 @@ export default function UserSettings() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Sacred Verification Code</Text>
+            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Verification Code</Text>
             <Text style={[styles.modalDescription, fonts.spiritualBodyFont]}>
-              We sent divine numerology to {newEmail}
+              We sent a verification code to {newEmail}
             </Text>
             
             <TextInput
@@ -496,7 +566,7 @@ export default function UserSettings() {
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={[styles.modalButtonText, fonts.buttonFont]}>Verify Sacred Code</Text>
+                <Text style={[styles.modalButtonText, fonts.buttonFont]}>Verify Code</Text>
               )}
             </TouchableOpacity>
             
@@ -516,7 +586,7 @@ export default function UserSettings() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Why are you leaving our sacred circle?</Text>
+            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Why are you leaving?</Text>
             
             {deleteReasons.map((reason, index) => (
               <TouchableOpacity
@@ -545,12 +615,12 @@ export default function UserSettings() {
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={[styles.modalButtonText, fonts.buttonFont]}>Release My Sacred Journey</Text>
+                <Text style={[styles.modalButtonText, fonts.buttonFont]}>Delete Account</Text>
               )}
             </TouchableOpacity>
             
             <TouchableOpacity onPress={() => setDeleteAccountModal(false)}>
-              <Text style={[styles.modalCancelText, fonts.captionFont]}>Continue My Journey</Text>
+              <Text style={[styles.modalCancelText, fonts.captionFont]}>Keep Account</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -621,6 +691,25 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderWidth: 1,
       borderColor: colors.border,
     },
+    goldSubscriptionRow: {
+      borderColor: '#FFD700',
+      borderWidth: 2,
+      backgroundColor: '#FFD700' + '10',
+    },
+    goldBadge: {
+      backgroundColor: '#FFD700',
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      borderRadius: BorderRadius.md,
+    },
+    goldBadgeText: {
+      color: '#FFFFFF',
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+    },
+    goldText: {
+      color: '#B8860B',
+    },
     rowContent: {
       flex: 1,
       marginRight: Spacing.md,
@@ -636,7 +725,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontSize: Typography.sizes.sm,
       color: colors.textLight,
       lineHeight: 20,
-      fontStyle: 'italic',
     },
     separator: {
       height: 1,
@@ -661,7 +749,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.textLight,
       lineHeight: 20,
       padding: Spacing.md,
-      fontStyle: 'italic',
     },
     emailInput: {
       borderWidth: 1,
@@ -757,7 +844,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.textLight,
       marginBottom: Spacing.xl,
       textAlign: "center",
-      fontStyle: 'italic',
     },
     verificationInput: {
       borderWidth: 1,

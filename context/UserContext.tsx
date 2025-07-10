@@ -257,6 +257,7 @@ type UserContextType = {
   ) => any;
   unmatchUser: (userId: string) => any;
   updateUserSettings: (settings: Partial<UserSettings>) => Promise<void>;
+  deleteAccount: (reason?: string) => Promise<void>;
 }
 
 // Initial screens and initial user data
@@ -2164,6 +2165,160 @@ const fetchChatMatches = async (
     }
   }, [userData.userId, userData.onboardingCompleted, matchingInitialized, initializeMatches]);
 
+
+const deleteAccount = async (reason?: string) => {
+  if (!userData.userId || !currentUser) {
+    throw new Error("No user logged in");
+  }
+
+  try {
+    const userId = userData.userId;
+    
+    // 1. Create a batch for atomic operations
+    const batch = FIRESTORE.batch();
+    
+    // 2. Log the deletion reason if provided
+    if (reason) {
+      const deletionLogRef = FIRESTORE.collection("deletionLogs").doc();
+      
+      // Calculate account age safely
+      let accountAge = null;
+      if (userData.createdAt && userData.createdAt.toDate) {
+        try {
+          accountAge = new Date().getTime() - userData.createdAt.toDate().getTime();
+        } catch (dateError) {
+          console.warn("Error calculating account age:", dateError);
+        }
+      }
+      
+      batch.set(deletionLogRef, {
+        userId: userId,
+        reason: reason,
+        deletedAt: firestore.FieldValue.serverTimestamp(),
+        userEmail: userData.email,
+        accountAge: accountAge,
+      });
+    }
+    
+    // 3. Get user's matches to clean up related data
+    const userMatches = userData.matches || [];
+    
+    // 4. Clean up matches and conversations
+    for (const matchId of userMatches) {
+      try {
+        // Remove from other user's matches array
+        const otherUserRef = FIRESTORE.collection("users").doc(matchId);
+        batch.update(otherUserRef, {
+          matches: firestore.FieldValue.arrayRemove(userId),
+        });
+        
+        // Delete match records
+        const matchDocRef = FIRESTORE.collection("users").doc(matchId).collection("matches").doc(userId);
+        batch.delete(matchDocRef);
+        
+        const myMatchDocRef = FIRESTORE.collection("users").doc(userId).collection("matches").doc(matchId);
+        batch.delete(myMatchDocRef);
+        
+        // Delete chat if exists
+        const chatId = [userId, matchId].sort().join("_");
+        const chatRef = FIRESTORE.collection("chats").doc(chatId);
+        batch.delete(chatRef);
+      } catch (matchError) {
+        console.warn(`Error cleaning up match ${matchId}:`, matchError);
+        // Continue with other matches
+      }
+    }
+    
+    // 5. Delete user's subcollections
+    const subcollections = [
+      "matches", 
+      "likesGiven", 
+      "likesReceived", 
+      "reports"
+    ];
+    
+    for (const subcollection of subcollections) {
+      try {
+        const subcollectionSnapshot = await FIRESTORE.collection("users")
+          .doc(userId)
+          .collection(subcollection)
+          .get();
+        
+        subcollectionSnapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+      } catch (subcollectionError) {
+        console.warn(`Error deleting ${subcollection}:`, subcollectionError);
+        // Continue with other subcollections
+      }
+    }
+    
+    // 6. Delete user's photos from storage (with better error handling)
+    if (userData.photos && userData.photos.length > 0) {
+      for (const photoUrl of userData.photos) {
+        try {
+          // Only try to delete if it's actually a Firebase storage URL
+          if (photoUrl && photoUrl.includes("firebasestorage.googleapis.com")) {
+            const photoRef = STORAGE.refFromURL(photoUrl);
+            await photoRef.delete();
+            console.log(`Deleted photo: ${photoUrl}`);
+          }
+        } catch (storageError: any) {
+          // Log but don't fail the entire deletion for missing photos
+          if (storageError.code === 'storage/object-not-found') {
+            console.warn(`Photo already deleted or not found: ${photoUrl}`);
+          } else {
+            console.warn(`Error deleting photo ${photoUrl}:`, storageError);
+          }
+        }
+      }
+    }
+    
+    // 7. Delete the main user document
+    const userDocRef = FIRESTORE.collection("users").doc(userId);
+    batch.delete(userDocRef);
+    
+    // 8. Commit all Firestore deletions
+    await batch.commit();
+    console.log("Firestore data deleted successfully");
+    
+    // 9. Delete Firebase Auth account
+    await currentUser.delete();
+    console.log("Firebase Auth account deleted successfully");
+    
+    // 10. Clear local state
+    setUserData(initialUserData);
+    setCurrentUser(null);
+    
+    // 11. Sign out from Google if connected
+    if (userData.GoogleSSOEnabled) {
+      try {
+        await GoogleSignin.signOut();
+      } catch (googleError) {
+        console.warn("Error signing out from Google:", googleError);
+      }
+    }
+    
+    console.log("Account successfully deleted");
+    
+    // 12. Navigate to login screen
+    router.navigate("onboarding/LoginSignupScreen" as any);
+    
+  } catch (error: any) {
+    console.error("Error deleting account:", error);
+    
+    // Provide specific error messages based on the error type
+    if (error.code === 'auth/requires-recent-login') {
+      throw new Error("For security, please log out and log back in within the last few minutes, then try deleting your account again.");
+    } else if (error.message) {
+      throw new Error(error.message);
+    } else {
+      throw new Error("Failed to delete account. Please try again later.");
+    }
+  }
+};
+
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -2214,7 +2369,8 @@ const fetchChatMatches = async (
     reportUser,
     unmatchUser,
     updateUserSettings,
-    exclusionsLoaded
+    exclusionsLoaded,
+    deleteAccount
   };
 
   if (initializing) {

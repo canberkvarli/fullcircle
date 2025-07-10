@@ -116,6 +116,7 @@ function PhotosScreen() {
 
   const handleSelectPhoto = async (index: number) => {
     const result = await ImagePicker.launchImageLibraryAsync({
+      // @ts-ignore - suppressing deprecation warning until library is updated
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 5],
