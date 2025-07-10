@@ -89,7 +89,7 @@ const KindredSpirits: React.FC = () => {
             >
               <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
               <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-                Embrace Full Circle ✨
+                Embrace Full Circle
               </Text>
             </TouchableOpacity>
             
@@ -100,7 +100,7 @@ const KindredSpirits: React.FC = () => {
             >
               <Ionicons name="flash" size={18} color="#8B4513" style={styles.buttonIcon} />
               <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-                Send Sacred Boost 🔥
+                Send Sacred Boost
               </Text>
             </TouchableOpacity>
           </View>

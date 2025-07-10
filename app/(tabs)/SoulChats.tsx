@@ -128,7 +128,7 @@ const SoulChats: React.FC = () => {
           >
             <Ionicons name="sparkles" size={20} color="#FFFFFF" style={styles.buttonIcon} />
             <Text style={[styles.connectButtonText, fonts.spiritualBodyFont]}>
-              Discover Connections ✨
+              Discover Connections
             </Text>
           </TouchableOpacity>
         </View>
