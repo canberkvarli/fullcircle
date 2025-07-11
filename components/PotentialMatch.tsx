@@ -118,15 +118,17 @@ const generateInfoCards = (user: UserDataType) => {
   // 1. Basic Demographics (no title, just the info in column format)
   const age = calculateAge(user);
   const location = getLocation(user);
+  const warmNeutral = '#8B7355'; // Warm brown-gray color for all basic info
+  
   const basicItems = [
-    { icon: "calendar-outline", text: age ? `${age}` : "Age not shared", color: '#8B5CF6' },
-    { icon: "swap-vertical-outline", text: user.height ? `${user.height}` : "Height not shared", color: '#06B6D4' },
-    { icon: "location-outline", text: location, color: '#10B981' }
+    { icon: "calendar-outline", text: age ? `${age}` : "Age not shared", color: warmNeutral },
+    { icon: "swap-vertical-outline", text: user.height ? `${user.height}` : "Height not shared", color: warmNeutral },
+    { icon: "location-outline", text: location, color: warmNeutral }
   ];
   
   // Add identity to basic info if available
   if (user.gender && user.gender.length > 0) {
-    basicItems.push({ icon: "person-outline", text: user.gender.join(", "), color: '#6366F1' });
+    basicItems.push({ icon: "person-outline", text: user.gender.join(", "), color: warmNeutral });
   }
   
   cards.push({
@@ -332,7 +334,7 @@ const PotentialMatch: React.FC<Props> = ({
       }
 
       return (
-        <Text style={{color: colors.textLight}}>
+        <Text style={{ color: colors.textLight }}>
           {content}
         </Text>
       );
@@ -360,6 +362,7 @@ const PotentialMatch: React.FC<Props> = ({
             />
           )}
         </View>
+        
         <View>
           {renderContent()}
         </View>
@@ -489,6 +492,8 @@ const PotentialMatch: React.FC<Props> = ({
                : "Open to meaningful connections"}
             </Text>
           </View>
+
+          <View style={[styles.headerDivider, { backgroundColor: connectionColors.primary }]} />
         </View>
       )}
 
