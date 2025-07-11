@@ -17,6 +17,7 @@ import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { RulerPicker } from "react-native-ruler-picker";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RoundedCheckbox from "@/components/RoundedCheckbox";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -80,22 +81,6 @@ function HeightScreen() {
       [fieldName]: !prev[fieldName],
     }));
   };
-
-  const RoundedCheckbox = ({ value, onValueChange }: { value: boolean; onValueChange: () => void }) => (
-    <TouchableOpacity
-      style={[styles.customCheckbox, value && styles.customCheckboxChecked]}
-      onPress={onValueChange}
-      activeOpacity={0.7}
-    >
-      {value && (
-        <Ionicons 
-          name="checkmark" 
-          size={16} 
-          color={colors.background} 
-        />
-      )}
-    </TouchableOpacity>
-  );
 
   // Calculate compact ruler dimensions
   const rulerWidth = Math.min(screenWidth - 60, 280); // Smaller, more reasonable size
@@ -294,42 +279,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontSize: Typography.sizes.base,
       fontStyle: "normal",
       marginRight: Spacing.md,
-    },
-    customCheckbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-        },
-        android: {
-          elevation: 1,
-        },
-      }),
-    },
-    customCheckboxChecked: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
     },
     affirmation: {
       ...fonts.elegantItalicFont,

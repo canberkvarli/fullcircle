@@ -1,3 +1,23 @@
+import React, { useState, useEffect } from "react";
+import {
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  View,
+  useColorScheme,
+  Platform,
+  StyleSheet,
+} from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { useUserContext } from "@/context/UserContext";
+import OnboardingProgressBar from "@/components/OnboardingProgressBar";
+import RoundedCheckbox from "@/components/RoundedCheckbox";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useFont } from "@/hooks/useFont";
+
 // Combined connection styles (pills for "both" option)
 const combinedStyles = [
   // Romantic styles
@@ -19,24 +39,7 @@ const combinedStyles = [
   "Wisdom Sharers",
   "Community Builders",
   "Soul Supporters",
-];import React, { useState, useEffect } from "react";
-import {
-  SafeAreaView,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  View,
-  useColorScheme,
-  Platform,
-  StyleSheet,
-} from "react-native";
-import { Ionicons } from '@expo/vector-icons';
-import { useUserContext } from "@/context/UserContext";
-import OnboardingProgressBar from "@/components/OnboardingProgressBar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
-import { useFont } from "@/hooks/useFont";
+];
 
 // Connection Intent Options
 const connectionIntents = [
@@ -467,19 +470,13 @@ const ConnectionPreferenceScreen = () => {
                 ))}
               </View>
 
-              {/* Hidden Field Toggle */}
+              {/* Hidden Field Toggle - Using standard checkbox */}
               <View style={styles.privacyContainer}>
                 <Text style={styles.privacyText}>Keep this private</Text>
-                <View style={styles.orbCheckboxContainer}>
-                  <TouchableOpacity 
-                    style={styles.orbCheckbox}
-                    onPress={() => toggleHidden("connectionPreferences")}
-                  >
-                    {hiddenFields.connectionPreferences && (
-                      <View style={[styles.selectedOrb, { backgroundColor: intentColors.primary }]} />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <RoundedCheckbox
+                  value={hiddenFields["connectionPreferences"] || false}
+                  onValueChange={() => toggleHidden("connectionPreferences")}
+                />
               </View>
 
               {/* Affirmation */}
@@ -524,7 +521,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       backgroundColor: colors.background,
     },
     scrollViewContent: {
-      // padding: Spacing.lg,
       paddingBottom: 120,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
@@ -715,7 +711,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     pillsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
-      paddingHorizontal: Spacing.xs,
+      paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
     },
     pillButton: {
@@ -723,7 +719,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderRadius: BorderRadius.full,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.lg,
-      marginRight: Spacing.sm,
+      marginRight: Spacing.xs,
       marginBottom: Spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
@@ -780,10 +776,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: "center",
       justifyContent: "space-between",
       marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.lg,
+      marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
-      borderRadius: BorderRadius.md,
+      borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -791,20 +787,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,
-      fontStyle: "italic",
-    },
-    orbCheckboxContainer: {
-      marginLeft: Spacing.md,
-    },
-    orbCheckbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      justifyContent: 'center',
-      alignItems: 'center',
+      fontWeight: Typography.weights.medium,
     },
     affirmation: {
       ...fonts.affirmationFont,

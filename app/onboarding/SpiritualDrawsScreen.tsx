@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RoundedCheckbox from "@/components/RoundedCheckbox";
 
 const spiritualDraws = [
   { 
@@ -235,17 +236,10 @@ function SpiritualDrawsScreen() {
           {/* Hide Option */}
           <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>Keep my spiritual draws private</Text>
-            <TouchableOpacity 
-              style={[
-                styles.checkboxContainer,
-                hiddenFields["spiritualProfile"] && styles.checkboxSelected
-              ]}
-              onPress={() => toggleHidden("spiritualProfile")}
-            >
-              {hiddenFields["spiritualProfile"] && (
-                <Ionicons name="checkmark" size={16} color={colors.background} />
-              )}
-            </TouchableOpacity>
+            <RoundedCheckbox
+              value={hiddenFields["spiritualProfile"] || false}
+              onValueChange={() => toggleHidden("spiritualProfile")}
+            />
           </View>
 
           {/* Affirmation */}
@@ -457,20 +451,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       color: colors.textDark,
       fontSize: Typography.sizes.base,
       fontStyle: 'italic',
-    },
-    checkboxContainer: {
-      width: 24,
-      height: 24,
-      borderRadius: BorderRadius.sm,
-      borderWidth: 2,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    checkboxSelected: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
     },
     affirmation: {
       ...fonts.elegantItalicFont,

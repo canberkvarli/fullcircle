@@ -18,6 +18,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RoundedCheckbox from "@/components/RoundedCheckbox";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -491,17 +492,11 @@ function HealingModalitiesScreen() {
 
           {/* Hide Option */}
           <View style={styles.privacyContainer}>
-            <Text style={styles.privacyText}>Keep my healing modalities private</Text>
-            <View style={styles.orbCheckboxContainer}>
-              <TouchableOpacity 
-                style={styles.orbCheckbox}
-                onPress={() => toggleHidden("spiritualProfile")}
-              >
-                {hiddenFields["spiritualProfile"] && (
-                  <View style={styles.selectedCheckboxOrb} />
-                )}
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.privacyText}>Keep my healing modalities private  </Text>
+            <RoundedCheckbox
+              value={hiddenFields["spiritualProfile"] || false}
+              onValueChange={() => toggleHidden("spiritualProfile")}
+            />
           </View>
 
           {/* Affirmation */}
@@ -769,36 +764,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.textDark,
       fontSize: Typography.sizes.base,
       fontStyle: 'italic',
-    },
-    orbCheckboxContainer: {
-      marginLeft: Spacing.md,
-    },
-    orbCheckbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    selectedCheckboxOrb: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      backgroundColor: '#FFD700',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#FFD700',
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.8,
-          shadowRadius: 6,
-        },
-        android: {
-          elevation: 6,
-        },
-      }),
     },
     affirmation: {
       ...fonts.elegantItalicFont,

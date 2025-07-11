@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RoundedCheckbox from "@/components/RoundedCheckbox";
 
 const spiritualPractices = [
   { name: "Meditation", category: "mindfulness", icon: "flower-outline" },
@@ -239,16 +240,10 @@ function SpiritualPracticesScreen() {
           {/* Privacy Toggle */}
           <View style={styles.privacyContainer}>
             <Text style={styles.privacyText}>Keep my spiritual practices private</Text>
-            <View style={styles.orbCheckboxContainer}>
-              <TouchableOpacity 
-                style={styles.orbCheckbox}
-                onPress={() => toggleHidden("spiritualProfile")}
-              >
-                {hiddenFields["spiritualProfile"] && (
-                  <View style={styles.selectedOrb} />
-                )}
-              </TouchableOpacity>
-            </View>
+              <RoundedCheckbox
+                value={hiddenFields["spiritualProfile"] || false}
+                onValueChange={() => toggleHidden("spiritualProfile")}
+              />
           </View>
 
           <Text style={styles.affirmation}>
@@ -465,19 +460,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.textDark,
       fontSize: Typography.sizes.base,
       fontStyle: "italic",
-    },
-    orbCheckboxContainer: {
-      marginLeft: Spacing.md,
-    },
-    orbCheckbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     affirmation: {
       ...fonts.elegantItalicFont,

@@ -20,6 +20,7 @@ import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RoundedCheckbox from "@/components/RoundedCheckbox";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -254,11 +255,9 @@ const LocationScreen = () => {
 
         <View style={styles.privacyContainer}>
           <Text style={styles.privacyText}>Keep this private</Text>
-          <Checkbox
+          <RoundedCheckbox
             value={hiddenFields["location"] || false}
             onValueChange={() => toggleHidden("location")}
-            style={styles.checkbox}
-            color={hiddenFields["location"] ? colors.primary : undefined}
           />
         </View>
 
@@ -461,7 +460,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     checkbox: {
       width: 20,
       height: 20,
-      borderRadius: 4,
+      borderRadius: 10,
     },
     affirmation: {
       ...fonts.elegantItalicFont,
