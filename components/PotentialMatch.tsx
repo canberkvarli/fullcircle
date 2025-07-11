@@ -6,7 +6,12 @@ import {
   Dimensions,
   ImageBackground,
   useColorScheme,
+  Image,
+  Platform,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import InfoCard from "@/components/InfoCard";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -42,84 +47,139 @@ const getLocation = (user: UserDataType) => {
   } else if (user.location?.region) {
     return user.location.region;
   }
-  return null;
+  return 'Location not shared';
 };
 
-// Generate info cards data for a user
+// Get connection intent colors and styling
+const getConnectionIntentColors = (intent: string) => {
+  if (intent === "romantic") {
+    return {
+      primary: '#E11D48', // Rose-600
+      secondary: '#FFF1F2', // Rose-50
+      accent: '#BE123C', // Rose-700
+      tertiary: '#FB7185', // Rose-400
+    };
+  } else if (intent === "friendship") {
+    return {
+      primary: '#059669', // Emerald-600
+      secondary: '#ECFDF5', // Emerald-50
+      accent: '#047857', // Emerald-700
+      tertiary: '#34D399', // Emerald-400
+    };
+  } else if (intent === "both") {
+    return {
+      primary: '#7C3AED', // Violet-600
+      secondary: '#F5F3FF', // Violet-50
+      accent: '#6D28D9', // Violet-700
+      tertiary: '#A78BFA', // Violet-400
+    };
+  } else {
+    return {
+      primary: '#0891B2', // Cyan-600
+      secondary: '#F0F9FF', // Cyan-50
+      accent: '#0E7490', // Cyan-700
+      tertiary: '#22D3EE', // Cyan-400
+    };
+  }
+};
+
+// Get what they're looking for text
+const getConnectionIntentText = (user: UserDataType) => {
+  const intent = user.matchPreferences?.connectionIntent || "romantic";
+  const preferences = user.matchPreferences?.connectionPreferences || user.matchPreferences?.datePreferences || [];
+  
+  let baseText = "";
+  switch (intent) {
+    case "romantic":
+      baseText = "Looking for romance";
+      break;
+    case "friendship":
+      baseText = "Looking for friendship";
+      break;
+    case "both":
+      baseText = "Open to romance & friendship";
+      break;
+    default:
+      baseText = "Open to connections";
+  }
+  
+  if (preferences.length > 0) {
+    baseText += ` with ${preferences.join(", ")}`;
+  }
+  
+  return baseText;
+};
+
+// Generate organized info cards for interleaving with photos
 const generateInfoCards = (user: UserDataType) => {
   const cards = [];
+  const connectionColors = getConnectionIntentColors(user.matchPreferences?.connectionIntent || "romantic");
 
-  // Basic Info Card
+  // 1. Basic Demographics (no title, just the info in column format)
   const age = calculateAge(user);
   const location = getLocation(user);
-  const basicInfo = [age && `${age} years old`, location].filter(Boolean).join(" • ");
+  const basicItems = [
+    { icon: "calendar-outline", text: age ? `${age}` : "Age not shared", color: '#8B5CF6' },
+    { icon: "swap-vertical-outline", text: user.height ? `${user.height}` : "Height not shared", color: '#06B6D4' },
+    { icon: "location-outline", text: location, color: '#10B981' }
+  ];
   
-  if (basicInfo) {
+  // Add identity to basic info if available
+  if (user.gender && user.gender.length > 0) {
+    basicItems.push({ icon: "person-outline", text: user.gender.join(", "), color: '#6366F1' });
+  }
+  
+  cards.push({
+    title: "", // No title for basic info
+    items: basicItems,
+    type: 'basic-info'
+  });
+
+  // 2. Connection Styles using InfoCard - only show the pills, no connection preferences text
+  if (user.matchPreferences?.connectionStyles && user.matchPreferences.connectionStyles.length > 0) {
     cards.push({
-      title: "About",
-      content: basicInfo,
-      icon: "person-circle",
-      pillsData: [],
+      title: "Connection Style",
+      content: "", // No content text
+      icon: "heart-outline",
+      pillsData: user.matchPreferences.connectionStyles,
+      color: connectionColors.primary, // Use connection intent color
+      type: 'info-card'
     });
   }
 
-  // Spiritual Practices
+  // 3. Spiritual Practices using InfoCard with specific colors
   if (user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
     cards.push({
       title: "Spiritual Practices",
       content: user.spiritualProfile.practices.slice(0, 3).join(", "),
-      icon: "sparkles",
+      icon: "leaf-outline",
       pillsData: user.spiritualProfile.practices,
+      color: '#059669', // Emerald green for practices
+      type: 'info-card'
     });
   }
 
-  // Healing Modalities
+  // 4. Healing Modalities using InfoCard with specific colors
   if (user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
     cards.push({
-      title: "Healing Modalities",
+      title: "Healing Path",
       content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
-      icon: "heart",
+      icon: "medical-outline",
       pillsData: user.spiritualProfile.healingModalities,
+      color: '#0891B2', // Cyan for healing
+      type: 'info-card'
     });
   }
 
-  // Spiritual Draws
+  // 5. Spiritual Draws using InfoCard with specific colors
   if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
     cards.push({
       title: "Spiritual Draws",
       content: user.spiritualProfile.draws.slice(0, 3).join(", "),
-      icon: "leaf",
+      icon: "heart-outline",
       pillsData: user.spiritualProfile.draws,
-    });
-  }
-
-  // Physical Details
-  if (user.height) {
-    cards.push({
-      title: "Physical",
-      content: `${user.height} ft tall`,
-      icon: "resize",
-      pillsData: [],
-    });
-  }
-
-  // Connection Preferences
-  if (user.matchPreferences?.ConnectionPreferences && user.matchPreferences.ConnectionPreferences.length > 0) {
-    cards.push({
-      title: "Looking For",
-      content: user.matchPreferences.ConnectionPreferences.join(", "),
-      icon: "heart-circle",
-      pillsData: user.matchPreferences.ConnectionPreferences,
-    });
-  }
-
-  // Gender Identity
-  if (user.gender && user.gender?.length > 0) {
-    cards.push({
-      title: "Identity",
-      content: user.gender.join(", "),
-      icon: "person",
-      pillsData: user.gender,
+      color: '#DC2626', // Red for draws
+      type: 'info-card'
     });
   }
 
@@ -156,60 +216,318 @@ const PotentialMatch: React.FC<Props> = ({
   if (isPhotoLoading) return null;
 
   const infoCards = generateInfoCards(currentPotentialMatch);
-  const age = calculateAge(currentPotentialMatch);
+  const connectionColors = getConnectionIntentColors(currentPotentialMatch.matchPreferences?.connectionIntent || "romantic");
   
-  const styles = createStyles(colors, fonts);
+  const styles = createStyles(colors, fonts, connectionColors);
 
-  return (
-    <View style={styles.container}>
-      {/* User Name Header */}
-      {!isMatched && (
-        <View style={styles.headerContainer}>
-          <Text style={styles.userName}>
-            {currentPotentialMatch.firstName}
-            {age && `, ${age}`}
+  // Render pills with proper styling
+  const renderPills = (items: string[], color: string) => (
+    <View style={styles.pillsContainer}>
+      {items.slice(0, 6).map((item, index) => (
+        <View key={index} style={[styles.pill, { 
+          backgroundColor: color + '15',
+          borderColor: color + '30'
+        }]}>
+          <Text style={[styles.pillText, { color: color }]}>
+            {item}
           </Text>
-          <View style={styles.headerDivider} />
+        </View>
+      ))}
+      {items.length > 6 && (
+        <View style={[styles.pill, styles.morePill, { 
+          backgroundColor: color + '10',
+          borderColor: color + '20'
+        }]}>
+          <Text style={[styles.pillText, { color: color, opacity: 0.7 }]}>
+            +{items.length - 6} more
+          </Text>
         </View>
       )}
+    </View>
+  );
 
-      {/* Photos and Info Cards */}
-      {photoUrls.map((url, photoIndex) => {
-        // Get the info card for this photo (cycling through available cards)
-        const cardIndex = photoIndex % infoCards.length;
-        const currentCard = infoCards[cardIndex];
+  // Render basic info items in a card container (no header since you removed it)
+  const renderBasicInfo = (items: any[]) => (
+    <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+      <View style={styles.basicInfoColumn}>
+        {items.map((item, index) => (
+          <View key={index} style={styles.basicInfoItem}>
+            <Ionicons name={item.icon as any} size={18} color={item.color} />
+            <Text style={[styles.basicInfoText, { color: colors.textLight }]}>
+              {item.text}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 
+  // Render info card based on type
+  const renderInfoCard = (card: any) => {
+    // For basic info, render without a container (no title)
+    if (card.type === 'basic-info') {
+      return renderBasicInfo(card.items);
+    }
+    
+    // For InfoCard compatible items, use the InfoCard component with custom colors
+    if (card.type === 'info-card') {
+      return (
+        <InfoCardWithColor
+          title={card.title}
+          content={card.content}
+          icon={card.icon}
+          pillsData={card.pillsData}
+          customColor={card.color}
+        />
+      );
+    }
+    
+    return null;
+  };
+
+  // Custom InfoCard component that accepts color override
+  const InfoCardWithColor: React.FC<{
+    title: string;
+    content: string;
+    icon: string;
+    pillsData: string[];
+    customColor?: string;
+  }> = ({ title, content, icon, pillsData, customColor }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const shouldTruncate = pillsData.length > 4 || content.length > 120;
+    const canExpand = shouldTruncate;
+    const cardColor = customColor || colors.primary;
+
+    const renderContent = () => {
+      if (pillsData.length > 0) {
+        const displayItems = isExpanded ? pillsData : pillsData.slice(0, 4);
+        const hasMore = pillsData.length > 4;
+        
         return (
-          <View key={photoIndex} style={styles.photoSection}>
-            {/* Clean Photo Display */}
-            <View style={styles.photoContainer}>
-              <ImageBackground
-                source={{ uri: url }}
-                style={styles.photoBackground}
-                imageStyle={styles.photo}
+          <View style={styles.pillsContainer}>
+            {displayItems.map((item, index) => (
+              <View key={index} style={[styles.pill, { 
+                backgroundColor: cardColor + '20',
+                borderColor: cardColor + '40'
+              }]}>
+                <Text style={[styles.pillText, { color: cardColor }]}>{item}</Text>
+              </View>
+            ))}
+            {hasMore && !isExpanded && (
+              <TouchableOpacity 
+                style={[styles.pill, {
+                  backgroundColor: cardColor + '15',
+                  borderColor: cardColor + '30'
+                }]}
+                onPress={() => setIsExpanded(true)}
+                activeOpacity={0.7}
               >
-                {/* Subtle gradient overlay for depth */}
-                <View style={styles.photoOverlay} />
-              </ImageBackground>
-            </View>
-
-            {/* Info Card below photo */}
-            {currentCard && (
-              <InfoCard
-                title={currentCard.title}
-                content={currentCard.content}
-                icon={currentCard.icon}
-                pillsData={currentCard.pillsData}
-              />
+                <Text style={[styles.pillText, { color: cardColor, fontStyle: 'italic' }]}>
+                  +{pillsData.length - 4} more
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         );
-      })}
+      }
+
+      return (
+        <Text style={{color: colors.textLight}}>
+          {content}
+        </Text>
+      );
+    };
+
+    return (
+      <TouchableOpacity 
+        style={[styles.infoCard, { backgroundColor: colors.card }]}
+        onPress={() => canExpand && setIsExpanded(!isExpanded)}
+        activeOpacity={canExpand ? 0.95 : 1}
+        disabled={!canExpand}
+      >
+        <View style={styles.infoHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: cardColor + '15' }]}>
+            <Ionicons name={icon as any} size={18} color={cardColor} />
+          </View>
+          <Text style={[styles.infoTitle, { color: colors.textDark }]}>
+            {title}
+          </Text>
+          {canExpand && (
+            <Ionicons
+              name={isExpanded ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={colors.textMuted}
+            />
+          )}
+        </View>
+        <View>
+          {renderContent()}
+        </View>
+
+        {isExpanded && (
+          <TouchableOpacity 
+            onPress={() => setIsExpanded(false)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: colors.textMuted }}>
+              Tap to show less
+            </Text>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  // Create content array - FIXED: properly sprinkle InfoCards between photos
+  const createContent = () => {
+    const content = [];
+    const totalPhotos = photoUrls.length;
+    
+    // Separate the basic info from InfoCard items
+    const basicInfoCard = infoCards.find(card => card.type === 'basic-info');
+    const infoCardItems = infoCards.filter(card => card.type === 'info-card');
+
+    let photoIndex = 0;
+
+    // Always start with first photo if available
+    if (photoIndex < totalPhotos) {
+      content.push({
+        type: 'photo',
+        uri: photoUrls[photoIndex],
+        index: photoIndex
+      });
+      photoIndex++;
+    }
+
+    // Add basic info after first photo
+    if (basicInfoCard) {
+      content.push({
+        type: 'info',
+        card: basicInfoCard,
+        index: 'basic-info'
+      });
+    }
+
+    // Now properly distribute remaining photos and InfoCards
+    // Rule: Always add a photo before each InfoCard (if photos available)
+    for (let i = 0; i < infoCardItems.length; i++) {
+      // Add photo before InfoCard if available
+      if (photoIndex < totalPhotos) {
+        content.push({
+          type: 'photo',
+          uri: photoUrls[photoIndex],
+          index: photoIndex
+        });
+        photoIndex++;
+      }
+
+      // Then add the InfoCard
+      content.push({
+        type: 'info',
+        card: infoCardItems[i],
+        index: `info-card-${i}`
+      });
+    }
+
+    // Add any remaining photos at the end
+    while (photoIndex < totalPhotos) {
+      content.push({
+        type: 'photo',
+        uri: photoUrls[photoIndex],
+        index: photoIndex
+      });
+      photoIndex++;
+    }
+
+    return content;
+  };
+
+  const content = createContent();
+
+  return (
+    <View style={styles.container}>
+      {/* Header with name and verification */}
+      {!isMatched && (
+        <View style={styles.headerContainer}>
+          {/* Name Row */}
+          <View style={styles.nameRow}>
+            <Text style={[styles.userName, { color: colors.textDark }]}>
+              {currentPotentialMatch.firstName}
+            </Text>
+          </View>
+          
+          {/* Verification Status */}
+          <View style={styles.verificationContainer}>
+            <Ionicons 
+              name={currentPotentialMatch.settings?.isSelfieVerified ? "checkmark-circle" : "checkmark-circle-outline"} 
+              size={16} 
+              color={currentPotentialMatch.settings?.isSelfieVerified ? '#8B4513' : colors.textMuted} 
+            />
+            <Text style={[styles.verificationText, { 
+              color: currentPotentialMatch.settings?.isSelfieVerified ? '#8B4513' : colors.textMuted 
+            }]}>
+              {currentPotentialMatch.settings?.isSelfieVerified ? 'Verified' : 'Not verified'}
+            </Text>
+          </View>
+
+          {/* Connection Intent Description */}
+          <View style={[styles.connectionIntentRow, { 
+            backgroundColor: connectionColors.secondary,
+          }]}>
+            <Ionicons 
+              name={currentPotentialMatch.matchPreferences?.connectionIntent === "romantic" ? "heart" 
+                   : currentPotentialMatch.matchPreferences?.connectionIntent === "friendship" ? "people" 
+                   : currentPotentialMatch.matchPreferences?.connectionIntent === "both" ? "infinite"
+                   : "sparkles"} 
+              size={14} 
+              color={connectionColors.primary} 
+            />
+            <Text style={[styles.connectionIntentDescription, { color: connectionColors.primary }]}>
+              {currentPotentialMatch.matchPreferences?.connectionIntent === "romantic" ? "Looking for romantic connections" 
+               : currentPotentialMatch.matchPreferences?.connectionIntent === "friendship" ? "Looking for meaningful friendships"
+               : currentPotentialMatch.matchPreferences?.connectionIntent === "both" ? "Open to romance and friendship"
+               : "Open to meaningful connections"}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Interleaved Photos and Info Cards */}
+      {content.map((item, index) => (
+        <View key={index} style={styles.contentSection}>
+          {item.type === 'photo' && (
+            <View style={styles.photoContainer}>
+              <Image
+                source={{ uri: item.uri }}
+                style={styles.photo}
+              />
+            </View>
+          )}
+          
+          {item.type === 'info' && (
+            <View style={styles.infoWrapper}>
+              {renderInfoCard(item.card)}
+            </View>
+          )}
+        </View>
+      ))}
+
+      {/* Handle case when no photos */}
+      {photoUrls.length === 0 && (
+        <View style={styles.noPhotosContainer}>
+          <View style={[styles.noPhotosIcon, { backgroundColor: connectionColors.secondary }]}>
+            <Ionicons name="camera-outline" size={40} color={connectionColors.primary} />
+          </View>
+          <Text style={[styles.noPhotosText, { color: colors.textMuted }]}>
+            No photos to preview
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
 
-const createStyles = (colors: any, fonts: any) => StyleSheet.create({
+const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSheet.create({
   container: {
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
@@ -217,36 +535,65 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
   },
   
   headerContainer: {
-    alignItems: "center",
+    alignItems: "flex-start", // Left aligned as requested
     marginBottom: Spacing.xl,
     width: "100%",
+  },
+  
+  nameRow: {
+    width: '100%',
+    marginBottom: Spacing.sm,
   },
   
   userName: {
     ...fonts.spiritualTitleFont,
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
-    color: colors.textDark,
-    textAlign: "center",
+    textAlign: "left",
+  },
+  
+  connectionIntentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  
+  connectionIntentDescription: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  
+  verificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: Spacing.md,
+  },
+  
+  verificationText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.xs,
   },
   
   headerDivider: {
     width: 60,
     height: 2,
-    backgroundColor: colors.primary,
     borderRadius: BorderRadius.full,
   },
   
-  photoSection: {
+  contentSection: {
     marginBottom: Spacing.xl,
-    alignItems: "center",
     width: "100%",
+    alignItems: "center",
   },
   
   photoContainer: {
-    position: "relative",
-    marginBottom: Spacing.lg,
     alignItems: "center",
     width: MAX_PHOTO_SIZE,
     shadowColor: colors.textDark,
@@ -256,20 +603,114 @@ const createStyles = (colors: any, fonts: any) => StyleSheet.create({
     elevation: 10,
   },
   
-  photoBackground: {
-    width: MAX_PHOTO_SIZE,
-    height: MAX_PHOTO_SIZE * 1.2, // Slightly taller for better proportions
-    overflow: "hidden",
-  },
-  
   photo: {
+    width: MAX_PHOTO_SIZE,
+    height: MAX_PHOTO_SIZE * 1.2,
     borderRadius: BorderRadius.xl,
   },
   
-  photoOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.05)', // Very subtle overlay for depth
+  infoCard: {
+    width: '100%',
     borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  
+  infoTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+  },
+  
+  basicInfoColumn: {
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  
+  basicInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    width: '100%',
+    justifyContent: 'flex-start', // LEFT ALIGNED
+  },
+  
+  basicInfoText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'left', // LEFT ALIGNED
+  },
+  
+  pillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  
+  pill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+  },
+  
+  morePill: {
+    opacity: 0.7,
+  },
+  
+  pillText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+  },
+  
+  noPhotosContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xl * 2,
+  },
+  
+  noPhotosIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  
+  noPhotosText: {
+    fontSize: Typography.sizes.lg,
+    fontStyle: 'italic',
+  },
+  
+  infoWrapper: {
+    width: '100%',
   },
 });
 
