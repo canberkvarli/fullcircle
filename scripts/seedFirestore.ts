@@ -6,13 +6,64 @@ import { v4 as uuidv4 } from "uuid";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-// Initialize Firebase Admin SDK
-admin.initializeApp({
-  credential: admin.credential.cert(
-    require("../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-049b194953.json")
-  ),
-  storageBucket: "fullcircle-3d01a.appspot.com",
-});
+// Initialize Firebase Admin SDK - Multiple options for flexibility
+let app: admin.app.App;
+
+try {
+  // Option 1: Try service account key file
+  const serviceAccountPath = path.resolve(__dirname, "../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-049b194953.json");
+  app = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccountPath),
+    storageBucket: "fullcircle-3d01a.appspot.com",
+  });
+  console.log("✅ Firebase initialized with service account key file");
+} catch (error) {
+  try {
+    // Option 2: Try with environment variables (with better private key handling)
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      // Clean up the private key - remove quotes and ensure proper line breaks
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      
+      // Remove surrounding quotes if they exist
+      privateKey = privateKey.replace(/^["']|["']$/g, '');
+      
+      // Replace \\n with actual newlines
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      // Ensure it starts and ends correctly
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error("Invalid private key format");
+      }
+
+      app = admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          privateKey: privateKey,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        }),
+        storageBucket: "fullcircle-3d01a.appspot.com",
+      });
+      console.log("✅ Firebase initialized with environment variables");
+    } else {
+      throw new Error("Firebase credentials not found");
+    }
+  } catch (envError) {
+    // Option 3: Try default application credentials (if running on Google Cloud or with GOOGLE_APPLICATION_CREDENTIALS)
+    try {
+      app = admin.initializeApp({
+        storageBucket: "fullcircle-3d01a.appspot.com",
+      });
+      console.log("✅ Firebase initialized with default application credentials");
+    } catch (defaultError) {
+      console.error("❌ Could not initialize Firebase. Please ensure you have:");
+      console.error("1. Service account key file at: ../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-049b194953.json");
+      console.error("2. OR environment variables: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
+      console.error("3. OR GOOGLE_APPLICATION_CREDENTIALS environment variable");
+      console.error("\nPrivate key error details:", envError);
+      process.exit(1);
+    }
+  }
+}
 
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
@@ -34,12 +85,20 @@ const genders = [
   "Other",
 ];
 
-const ConnectionPreferencesArray = [
+// Updated connection intents and preferences
+const connectionIntents = ["romantic", "friendship", "both"];
+
+const connectionPreferences = [
   "Men",
-  "Women",
+  "Women", 
   "Non-Binary",
+  "Everyone",
+];
+
+// Connection styles for romantic
+const romanticStyles = [
   "Twin Flame Seeker",
-  "Soul Mate Guided",
+  "Soul Mate Guided", 
   "Tantric Connection",
   "Heart-Centered",
   "Consciousness Explorer",
@@ -48,8 +107,24 @@ const ConnectionPreferencesArray = [
   "Spiritual Partnership",
   "Sacred Union",
   "Love Without Labels",
-  "Everyone",
 ];
+
+// Connection styles for friendship
+const friendshipStyles = [
+  "Practice Partners",
+  "Meditation Buddies",
+  "Adventure Seekers",
+  "Study Circles",
+  "Healing Circles",
+  "Creative Collaborators",
+  "Retreat Companions",
+  "Wisdom Sharers",
+  "Community Builders",
+  "Soul Supporters",
+];
+
+// Combined styles for "both"
+const combinedStyles = [...romanticStyles, ...friendshipStyles];
 
 // 🔮 Spiritual Data Arrays (EXACT from your screens)
 const spiritualDrawsArray = [
@@ -89,19 +164,7 @@ const healingModalitiesArray = [
   "Hypnotherapy",
   "Homeopathy",
   "Herbalism",
-  "Ayahuasca",
-  "Kambo",
-];
-
-const partnershipStylesArray = [
-  "Monogamous Journey",
-  "Polyamorous Soul",
-  "Sacred Union",
-  "Spiritual Partnership",
-  "Heart-Centered Connection",
-  "Twin Flame Journey",
-  "Tantric Partnership",
-  "Open Sacred Love",
+  "Plant Medicine",
 ];
 
 // --- Helper: Fetch Unsplash images with rate limiting ---
@@ -114,7 +177,22 @@ const fetchUnsplashImages = async (
     const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
     if (!UNSPLASH_ACCESS_KEY) {
       console.warn("No Unsplash API key found, using placeholder images");
-      return Array(count).fill("https://via.placeholder.com/400x400");
+      // Generate diverse placeholder images instead
+      const placeholderColors = [
+        "FF6B6B/FFFFFF", // Red
+        "4ECDC4/FFFFFF", // Teal  
+        "45B7D1/FFFFFF", // Blue
+        "96CEB4/FFFFFF", // Green
+        "FFEAA7/333333", // Yellow
+        "DDA0DD/FFFFFF", // Plum
+        "98D8C8/333333", // Mint
+        "F7DC6F/333333", // Gold
+      ];
+      
+      return Array(count).fill(null).map((_, index) => {
+        const colorCombo = placeholderColors[index % placeholderColors.length];
+        return `https://via.placeholder.com/400x400/${colorCombo}?text=User+${index + 1}`;
+      });
     }
 
     // Add delay to avoid rate limiting
@@ -155,29 +233,6 @@ const getGenderSpecificPhotos = async (
   count: number,
   page: number
 ): Promise<string[]> => {
-  // // For now, just use diverse placeholder images to avoid API limits
-  // const placeholderColors = [
-  //   "FF6B6B/FFFFFF", // Red
-  //   "4ECDC4/FFFFFF", // Teal  
-  //   "45B7D1/FFFFFF", // Blue
-  //   "96CEB4/FFFFFF", // Green
-  //   "FFEAA7/333333", // Yellow
-  //   "DDA0DD/FFFFFF", // Plum
-  //   "98D8C8/333333", // Mint
-  //   "F7DC6F/333333", // Gold
-  // ];
-  
-  // const primaryGender = gender[0] || "Person";
-  
-  // // Create diverse placeholder photos
-  // const photos = Array(count).fill(null).map((_, index) => {
-  //   const colorCombo = placeholderColors[index % placeholderColors.length];
-  //   return `https://via.placeholder.com/400x400/${colorCombo}?text=${encodeURIComponent(primaryGender)}+${index + 1}`;
-  // });
-  
-  // return photos;
-  
-  // COMMENTED OUT: Enable this when you want to use real Unsplash photos
   const primaryGender = gender[0]?.toLowerCase() || "";
   let query = "portrait";
   
@@ -208,19 +263,14 @@ const getGenderSpecificPhotos = async (
   }
   
   return photos.slice(0, count); // Ensure we don't exceed the requested count
-  
 };
 
-// --- Helper: Upload to Storage (with fallback) ---
+// --- Helper: Upload to Storage
 const uploadPhotoToStorage = async (
   photoUrl: string,
   userId: string,
   index: number
 ): Promise<string> => {
-  // If it's already a placeholder, just return it
-  if (photoUrl.includes("placeholder.com")) {
-    return photoUrl;
-  }
 
   try {
     const res = await fetch(photoUrl);
@@ -242,10 +292,10 @@ const uploadPhotoToStorage = async (
 const generateHeight = (): number => {
   const feet = faker.number.int({ min: 4, max: 7 });
   const inches = faker.number.int({ min: 0, max: 11 });
-  return parseFloat(`${feet}.${inches}`);
+  return parseFloat(`${feet}.${inches < 10 ? '0' + inches : inches}`);
 };
 
-// --- Generate Phone Number Components (FIXED) ---
+// --- Generate Phone Number Components ---
 const generatePhoneComponents = () => {
   const areaCode = faker.string.numeric(3);
   const number = faker.string.numeric(7);
@@ -255,6 +305,72 @@ const generatePhoneComponents = () => {
     areaCode: areaCode,
     number: number,
     phoneNumber: `+1${fullNumber}`,
+  };
+};
+
+// --- Generate Match Preferences Based on Connection Intent ---
+const generateMatchPreferences = (connectionIntent: string) => {
+  const basePreferences = {
+    preferredAgeRange: {
+      min: faker.number.int({ min: 18, max: 25 }),
+      max: faker.number.int({ min: 30, max: 65 }),
+    },
+    preferredHeightRange: {
+      min: faker.number.int({ min: 3, max: 5 }),
+      max: faker.number.int({ min: 6, max: 8 }),
+    },
+    preferredDistance: faker.number.int({ min: 5, max: 100 }),
+    connectionIntent: connectionIntent as "romantic" | "friendship" | "both",
+  };
+
+  // Connection preferences based on intent
+  let connectionPrefs: string[] = [];
+  if (connectionIntent === "romantic" || connectionIntent === "both") {
+    connectionPrefs = faker.helpers.arrayElements(
+      connectionPreferences,
+      faker.number.int({ min: 1, max: 3 })
+    );
+  } else {
+    connectionPrefs = ["Everyone"]; // Friendship is generally open to all
+  }
+
+  // Connection styles based on intent
+  let connectionStylesArray: string[] = [];
+  if (connectionIntent === "romantic") {
+    connectionStylesArray = romanticStyles;
+  } else if (connectionIntent === "friendship") {
+    connectionStylesArray = friendshipStyles;
+  } else {
+    connectionStylesArray = combinedStyles;
+  }
+
+  const connectionStyles = faker.helpers.arrayElements(
+    connectionStylesArray,
+    faker.number.int({ min: 1, max: 4 })
+  );
+
+  // Spiritual compatibility preferences
+  const spiritualCompatibility = {
+    spiritualDraws: faker.helpers.arrayElements(
+      spiritualDrawsArray,
+      faker.number.int({ min: 0, max: 2 })
+    ),
+    practices: faker.helpers.arrayElements(
+      spiritualPracticesArray,
+      faker.number.int({ min: 0, max: 4 })
+    ),
+    healingModalities: faker.helpers.arrayElements(
+      healingModalitiesArray,
+      faker.number.int({ min: 0, max: 3 })
+    ),
+  };
+
+  return {
+    ...basePreferences,
+    connectionPreferences: connectionPrefs,
+    connectionStyles: connectionStyles,
+    datePreferences: connectionIntent === "romantic" ? connectionPrefs : [], // Backward compatibility
+    spiritualCompatibility,
   };
 };
 
@@ -278,10 +394,15 @@ async function seedFirestore(numUsers: number) {
     const currentYear = new Date().getFullYear();
     const age = currentYear - birthDate.getFullYear();
     
-    // Format birth components
-    const birthday = birthDate.getDate().toString().padStart(2, '0');
-    const birthmonth = (birthDate.getMonth() + 1).toString().padStart(2, '0');
+    // Format birth components properly
+    const birthMonths = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    const birthday = birthDate.getDate().toString();
+    const birthmonth = birthMonths[birthDate.getMonth()];
     const birthyear = birthDate.getFullYear().toString();
+    const birthdate = `${birthmonth} ${birthday}, ${birthyear}`;
 
     // Gender selection (now array format)
     const primaryGender = faker.helpers.arrayElement(genders);
@@ -349,43 +470,11 @@ async function seedFirestore(numUsers: number) {
         healingModalitiesArray,
         faker.number.int({ min: 1, max: 5 })
       ),
-      partnershipStyle: faker.helpers.arrayElement(partnershipStylesArray),
     };
 
-    // Match Preferences Generation (FIXED - NO MORE MATH ERRORS)
-    const matchPreferences = {
-      preferredAgeRange: {
-        min: 18,
-        max: 65,
-      },
-      preferredHeightRange: {
-        min: 4.0,
-        max: 7.0,
-      },
-      preferredDistance: faker.number.int({ min: 5, max: 100 }),
-      ConnectionPreferences: faker.helpers.arrayElements(
-        ConnectionPreferencesArray,
-        faker.number.int({ min: 1, max: 3 })
-      ),
-      spiritualCompatibility: {
-        spiritualDraws: faker.helpers.arrayElements(
-          spiritualDrawsArray,
-          faker.number.int({ min: 0, max: 2 })
-        ),
-        practices: faker.helpers.arrayElements(
-          spiritualPracticesArray,
-          faker.number.int({ min: 0, max: 4 })
-        ),
-        healingModalities: faker.helpers.arrayElements(
-          healingModalitiesArray,
-          faker.number.int({ min: 0, max: 3 })
-        ),
-        partnershipStyle: faker.helpers.arrayElements(
-          partnershipStylesArray,
-          faker.number.int({ min: 0, max: 2 })
-        ),
-      },
-    };
+    // Generate connection intent and match preferences
+    const connectionIntent = faker.helpers.arrayElement(connectionIntents);
+    const matchPreferences = generateMatchPreferences(connectionIntent);
 
     // Settings generation
     const settings = {
@@ -409,9 +498,15 @@ async function seedFirestore(numUsers: number) {
       },
     };
 
-    // Hidden fields generation (ONLY for fields that actually exist)
+    // Hidden fields generation (matching your actual field names)
     const hiddenFields: { [key: string]: boolean } = {};
-    const fieldsToHide = ['gender', 'spiritualProfile', 'height', 'ConnectionPreferences'];
+    const fieldsToHide = [
+      'gender', 
+      'height', 
+      'connectionPreferences', 
+      'location',
+      'spiritualProfile'
+    ];
     fieldsToHide.forEach(field => {
       hiddenFields[field] = faker.datatype.boolean(0.2); // 20% chance to hide each field
     });
@@ -424,7 +519,7 @@ async function seedFirestore(numUsers: number) {
     );
 
     // Orb system data
-    const numOfOrbs = faker.number.int({ min: 5, max: 50 });
+    const numOfOrbs = faker.number.int({ min: 1, max: 50 });
     const lastOrbAssignedAt = numOfOrbs > 0 ? 
       admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 7 })) : null;
 
@@ -437,7 +532,7 @@ async function seedFirestore(numUsers: number) {
       isSeedUser: true,
       numOfOrbs,
       lastOrbAssignedAt,
-      currentOnboardingScreen: "",
+      currentOnboardingScreen: "Connect", // Completed onboarding
       
       // Contact Info
       phoneNumber: phoneComponents.phoneNumber,
@@ -448,11 +543,11 @@ async function seedFirestore(numUsers: number) {
       GoogleSSOEnabled: faker.datatype.boolean(0.3),
       marketingRequested: faker.datatype.boolean(0.6),
 
-      // Personal Info (ONLY fields that exist in your schema)
+      // Personal Info
       firstName,
       lastName,
       fullName: `${firstName} ${lastName}`,
-      birthdate: `${birthmonth}/${birthday}/${birthyear}`,
+      birthdate,
       birthday,
       birthmonth,
       birthyear,
@@ -469,10 +564,12 @@ async function seedFirestore(numUsers: number) {
       // 🔮 Spiritual Profile Section
       spiritualProfile,
 
-      // Subscription & Engagement (ONLY fields that exist)
+      // Subscription & Engagement
       fullCircleSubscription: faker.datatype.boolean(0.25),
       likesGivenCount: 0,
       likesReceivedCount: 0,
+      dislikesGivenCount: 0,
+      dislikesReceivedCount: 0,
       matches: [],
       onboardingCompleted: true,
       onboardingCompletedAt: admin.firestore.Timestamp.fromDate(
@@ -488,7 +585,6 @@ async function seedFirestore(numUsers: number) {
   }
   console.groupEnd();
 
-  // Mark some users as radiant souls (already done above, but logging)
   console.group("2) Writing user documents to Firestore");
   for (const [id, data] of Object.entries(userDataList)) {
     console.info(`  ↳ Writing user ${id} to Firestore`);
@@ -510,7 +606,7 @@ async function seedFirestore(numUsers: number) {
       likeCount
     );
 
-    // Update counters (ONLY for fields that exist)
+    // Update counters
     await db
       .collection("users")
       .doc(fromUserId)
@@ -561,7 +657,7 @@ async function seedFirestore(numUsers: number) {
 // Run the seeding
 seedFirestore(50)
   .then(() => {
-    console.log("🎉 Done seeding Firestore with updated spiritual schema.");
+    console.log("🎉 Done seeding Firestore with updated schema.");
     process.exit(0);
   })
   .catch((err) => {
