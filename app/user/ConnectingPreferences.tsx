@@ -114,7 +114,7 @@ export default function ConnectionPreferences() {
     },
   ];
 
-  // Premium preferences for FullCircle subscribers
+  // Premium preferences for FullCircle subscribers - moved outside container
   const premiumPreferences = [
     {
       label: "Spiritual Practices",
@@ -344,8 +344,8 @@ export default function ConnectionPreferences() {
             ))}
           </View>
 
-          {/* FullCircle Section */}
-          <View style={[styles.premiumSection, { backgroundColor: colors.card }]}>
+          {/* FullCircle Header Section */}
+          <View style={styles.premiumHeaderSection}>
             <View style={styles.premiumHeader}>
               <Ionicons name="sparkles" size={24} color={colors.primary} />
               <Text style={[styles.premiumTitle, fonts.spiritualTitleFont, { color: colors.primary }]}>
@@ -362,27 +362,29 @@ export default function ConnectionPreferences() {
             
             {!fullCircleSubscription && (
               <TouchableOpacity
-                style={[styles.upgradeButton, { backgroundColor: colors.primary }]}
+                style={styles.upgradeButton}
                 onPress={() => router.navigate("/user/FullCircleSubscription")}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.upgradeText, fonts.spiritualBodyFont, { color: 'white' }]}>
+                <View style={styles.goldenGlow} />
+                <Text style={[styles.upgradeText, fonts.spiritualBodyFont]}>
                   Upgrade to FullCircle
                 </Text>
                 <Ionicons name="arrow-forward" size={16} color="white" style={styles.upgradeIcon} />
               </TouchableOpacity>
             )}
+          </View>
 
-            {/* Premium Preferences */}
-            <View style={styles.premiumPreferences}>
-              {premiumPreferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
-                <React.Fragment key={fieldName}>
-                  {renderPreferenceItem(label, value, isSubscriberField, fieldName, icon, description)}
-                </React.Fragment>
-              ))}
-            </View>
+          {/* Premium Preferences - Now directly in main flow */}
+          <View style={styles.section}>
+            {premiumPreferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
+              <React.Fragment key={fieldName}>
+                {renderPreferenceItem(label, value, isSubscriberField, fieldName, icon, description)}
+              </React.Fragment>
+            ))}
           </View>
         </Animated.View>
+        
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -436,23 +438,8 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     marginBottom: Spacing.lg,
   },
 
-  premiumSection: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    marginBottom: Spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+  premiumHeaderSection: {
+    marginBottom: Spacing.lg,
   },
 
   premiumHeader: {
@@ -482,31 +469,56 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     marginBottom: Spacing.lg,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: colors.primary, // Use theme primary color
+    borderWidth: 2,
+    borderColor: '#FFD700', // Golden border
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
+      },
+    }),
+  },
+
+  goldenGlow: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'transparent',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 25,
+      },
+      android: {
+        elevation: 12,
       },
     }),
   },
 
   upgradeText: {
     fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
+    fontWeight: Typography.weights.bold,
     letterSpacing: 0.5,
+    color: 'white',
+    zIndex: 1,
   },
 
   upgradeIcon: {
     marginLeft: Spacing.sm,
-  },
-
-  premiumPreferences: {
-    // Container for premium preference items
+    zIndex: 1,
   },
   
   fieldContainer: {
