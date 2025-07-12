@@ -191,6 +191,7 @@ export default function ConnectionPreferences() {
           connectionStyles: [],
           // Ensure required fields are present
           preferredDistance: userData.matchPreferences?.preferredDistance || 100,
+          datePreferences: [], // Initialize with empty array instead of undefined
         },
       });
     } catch (error: any) {
