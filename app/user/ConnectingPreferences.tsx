@@ -99,7 +99,7 @@ export default function ConnectionPreferences() {
             userData.matchPreferences.preferredHeightRange.max || 8
           }' tall`
         : "3' - 8' tall",
-      isSubscriberField: true,
+      isSubscriberField: false,
       fieldName: "preferredHeightRange",
       icon: "resize",
       description: "Preferred height range"
