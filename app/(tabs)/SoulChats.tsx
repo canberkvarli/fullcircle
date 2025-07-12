@@ -157,85 +157,112 @@ const SoulChats: React.FC = () => {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {matches.map((match) => {
+        {matches.map((match, index) => {
           const isUnread = match.lastMessage
             ? match.lastMessageSender !== userData.userId
             : true;
 
           return (
-            <TouchableOpacity
-              key={match.userId}
-              style={[styles.matchRow, { borderBottomColor: colors.border }]}
-              onPress={() => handleChatPress(match)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.avatarWrapper}>
-                <View style={[
-                  styles.avatarContainer, 
-                  { 
-                    backgroundColor: colors.border,
-                    borderColor: isUnread ? '#FFD700' : '#8B4513' + '20',
-                    borderWidth: isUnread ? 2.5 : 2,
-                    shadowColor: isUnread ? '#FFD700' : 'transparent',
-                    shadowOpacity: isUnread ? 0.4 : 0,
-                    shadowRadius: isUnread ? 4 : 0,
-                    elevation: isUnread ? 4 : 0,
-                  }
-                ]}>
-                  {match.photos[0] ? (
-                    <Image
-                      source={{ uri: match.photos[0] }}
-                      style={styles.photo}
-                    />
-                  ) : (
-                    <Ionicons name="person" size={32} color={colors.textMuted} />
+            <View key={match.userId}>
+              <TouchableOpacity
+                style={[
+                  styles.matchRow, 
+                  { backgroundColor: isUnread ? '#FFD700' + '08' : 'transparent' }
+                ]}
+                onPress={() => handleChatPress(match)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.avatarWrapper}>
+                  {/* Enhanced unread indicator */}
+                  {isUnread && (
+                    <>
+                      <View style={styles.unreadGlow} />
+                      <View style={styles.unreadRing} />
+                    </>
                   )}
-                </View>
-              </View>
-              
-              <View style={styles.matchInfo}>
-                <View style={styles.matchHeader}>
-                  <Text style={[
-                    styles.matchName, 
-                    fonts.spiritualBodyFont,
-                    { color: colors.textDark },
-                    isUnread && styles.unreadText
+                  
+                  <View style={[
+                    styles.avatarContainer, 
+                    { 
+                      backgroundColor: colors.border,
+                      borderColor: isUnread ? '#FFD700' : colors.border,
+                      borderWidth: isUnread ? 3 : 2,
+                    }
                   ]}>
-                    {match.firstName}
-                  </Text>
-                  {match.lastMessageTimestamp && (
-                    <Text style={[styles.timeText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                      {formatTime(match.lastMessageTimestamp)}
-                    </Text>
+                    {match.photos[0] ? (
+                      <Image
+                        source={{ uri: match.photos[0] }}
+                        style={styles.photo}
+                      />
+                    ) : (
+                      <Ionicons name="person" size={36} color={colors.textMuted} />
+                    )}
+                  </View>
+                  
+                  {/* Enhanced unread dot */}
+                  {isUnread && (
+                    <View style={styles.unreadDot}>
+                      <View style={styles.unreadDotInner} />
+                    </View>
                   )}
                 </View>
                 
-                <Text
-                  style={[
-                    styles.conversationText,
-                    fonts.spiritualBodyFont,
-                    { color: colors.textMuted },
-                    isUnread && styles.unreadMessageText
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {match.lastMessage
-                    ? match.lastMessage.length > 35
-                      ? `${match.lastMessage.slice(0, 32)}...`
-                      : match.lastMessage
-                    : `Start your conversation with ${match.firstName}`}
-                </Text>
-              </View>
+                <View style={styles.matchInfo}>
+                  <View style={styles.matchHeader}>
+                    <Text style={[
+                      styles.matchName, 
+                      fonts.spiritualBodyFont,
+                      { color: colors.textDark },
+                      isUnread && styles.unreadText
+                    ]}>
+                      {match.firstName}
+                    </Text>
+                    {match.lastMessageTimestamp && (
+                      <Text style={[
+                        styles.timeText, 
+                        fonts.spiritualBodyFont, 
+                        { color: isUnread ? '#B8860B' : colors.textMuted },
+                        isUnread && styles.unreadTimeText
+                      ]}>
+                        {formatTime(match.lastMessageTimestamp)}
+                      </Text>
+                    )}
+                  </View>
+                  
+                  <Text
+                    style={[
+                      styles.conversationText,
+                      fonts.spiritualBodyFont,
+                      { color: isUnread ? colors.textDark : colors.textMuted },
+                      isUnread && styles.unreadMessageText
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {match.lastMessage
+                      ? match.lastMessage.length > 35
+                        ? `${match.lastMessage.slice(0, 32)}...`
+                        : match.lastMessage
+                      : `Start your conversation with ${match.firstName}`}
+                  </Text>
+                </View>
+                
+                <View style={styles.chatIcon}>
+                  <Ionicons 
+                    name="chevron-forward" 
+                    size={18} 
+                    color={isUnread ? '#B8860B' : colors.textMuted}
+                  />
+                </View>
+              </TouchableOpacity>
               
-              <View style={styles.chatIcon}>
-                <Ionicons 
-                  name="chevron-forward" 
-                  size={16} 
-                  color={colors.textMuted} 
-                />
-              </View>
-            </TouchableOpacity>
+              {/* Enhanced Divider */}
+              {index < matches.length - 1 && (
+                <View style={styles.dividerContainer}>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                </View>
+              )}
+            </View>
           );
         })}
         
@@ -307,8 +334,8 @@ const styles = StyleSheet.create({
   },
   
   scrollContainer: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
   },
   
   loadingContainer: {
@@ -402,8 +429,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.lg,
-    borderBottomWidth: 1,
-    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.xs,
   },
   
   avatarWrapper: {
@@ -412,12 +440,35 @@ const styles = StyleSheet.create({
   },
   
   avatarContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72, // Increased from 64
+    height: 72, // Increased from 64
+    borderRadius: 36, // Increased from 32
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  
+  unreadGlow: {
+    position: 'absolute',
+    top: -6,
+    left: -6,
+    right: -6,
+    bottom: -6,
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    borderRadius: 42,
+    zIndex: 0,
+  },
+  
+  unreadRing: {
+    position: 'absolute',
+    top: -3,
+    left: -3,
+    right: -3,
+    bottom: -3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.4)',
+    borderRadius: 39,
+    zIndex: 1,
   },
   
   photo: {
@@ -427,13 +478,27 @@ const styles = StyleSheet.create({
   
   unreadDot: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    top: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+    zIndex: 10,
+  },
+  
+  unreadDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFD700',
   },
   
   matchInfo: {
@@ -468,14 +533,31 @@ const styles = StyleSheet.create({
   
   unreadText: {
     fontWeight: Typography.weights.bold,
+    color: '#2C2C2C',
+  },
+  
+  unreadTimeText: {
+    fontWeight: Typography.weights.bold,
   },
   
   unreadMessageText: {
-    fontWeight: Typography.weights.semibold,
+    fontWeight: Typography.weights.bold,
   },
   
   chatIcon: {
     padding: Spacing.xs,
+  },
+  
+  // Enhanced Divider
+  dividerContainer: {
+    paddingVertical: Spacing.xs,
+    alignItems: 'center',
+  },
+  
+  divider: {
+    height: 1,
+    width: '85%',
+    opacity: 0.3,
   },
   
   bottomSpacing: {
