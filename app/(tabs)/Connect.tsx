@@ -249,9 +249,9 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
 
   const getActionText = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
-      case 'like': return 'Heart Sent';
+      case 'like': return 'Heart Shared';
       case 'pass': return 'Released with Love';
-      case 'orb': return 'Sacred Orb Sent';
+      case 'orb': return 'Orb Sent';
       default: return 'Energy Shared';
     }
   };
@@ -999,6 +999,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.3,
   },
+  
 });
 
 export default ConnectScreen;

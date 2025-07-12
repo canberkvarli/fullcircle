@@ -121,7 +121,7 @@ const KindredSpirits: React.FC = () => {
             Kindred Spirits
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            {likedByUsers.length} person{likedByUsers.length !== 1 ? 's' : ''} who{' '}
+            {likedByUsers.length} soul{likedByUsers.length !== 1 ? 's' : ''} who{' '}
             <Text style={styles.highlightedWord}>appreciate</Text>
             {' you'}
           </Text>
@@ -146,7 +146,6 @@ const KindredSpirits: React.FC = () => {
           >
             <UserCard
               user={firstUser}
-              variant="default"
               isBlurred={false}
               style={styles.largeCard}
               isOrbLike={firstUser.viaOrb}
@@ -164,12 +163,14 @@ const KindredSpirits: React.FC = () => {
             </View>
             
             {!userData.fullCircleSubscription && (
-              <View style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
+              <TouchableOpacity 
+              onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+              style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
                 <Ionicons name="lock-closed" size={16} color="#B8860B" />
                 <Text style={[styles.unlockText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
                   Unlock Full Circle to see everyone who appreciates you
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
             
             <View style={styles.gridContainer}>
@@ -181,7 +182,6 @@ const KindredSpirits: React.FC = () => {
                   >
                     <UserCard
                       user={user}
-                      variant="default"
                       isBlurred={!userData.fullCircleSubscription}
                       style={styles.smallCard}
                       isOrbLike={user.viaOrb}

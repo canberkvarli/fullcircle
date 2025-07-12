@@ -143,7 +143,7 @@ const SoulChats: React.FC = () => {
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Chats
+            Soul Chats
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
             {matches.length}{' '}
