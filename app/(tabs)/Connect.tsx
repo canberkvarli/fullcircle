@@ -22,15 +22,16 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
+  
   const {
     likeMatch,
     dislikeMatch,
-    currentPotentialMatch,
-    loadingNextBatch,
-    userData,
-    noMoreMatches,
     orbLike,
-    exclusionsLoaded
+    loadNextMatch,
+    resetMatching,
+    currentPotentialMatch,
+    matchingState,
+    userData,
   } = useUserContext();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -57,89 +58,123 @@ const ConnectScreen: React.FC = () => {
   // Check if user has FullCircle subscription
   const hasFullCircleSubscription = userData?.fullCircleSubscription || false;
 
-useEffect(() => {
-  console.log('🖥️ ConnectScreen: Match state changed', {
-    currentMatch: currentPotentialMatch?.userId,
-    firstName: currentPotentialMatch?.firstName,
-    loading: loadingNextBatch,
-    noMore: noMoreMatches,
-  });
-}, [currentPotentialMatch, loadingNextBatch, noMoreMatches]);
+  // 🔄 UPDATED: Monitor the new consolidated state
+  useEffect(() => {
+    console.log('🖥️ ConnectScreen: Detailed state debug', {
+      // Basic state
+      currentMatch: currentPotentialMatch?.userId,
+      firstName: currentPotentialMatch?.firstName,
+      
+      // Matching state details
+      matchingStateExists: !!matchingState,
+      totalMatches: matchingState?.potentialMatches?.length || 0,
+      currentIndex: matchingState?.currentIndex || 0,
+      initialized: matchingState?.initialized || false,
+      loading: matchingState?.loadingBatch || false,
+      noMore: matchingState?.noMoreMatches || false,
+      
+      // First match details
+      firstMatch: matchingState?.potentialMatches?.[0] ? {
+        userId: matchingState.potentialMatches[0].userId,
+        firstName: matchingState.potentialMatches[0].firstName,
+      } : null,
+      
+      // Current index match
+      currentIndexMatch: matchingState?.potentialMatches?.[matchingState?.currentIndex || 0] ? {
+        userId: matchingState.potentialMatches[matchingState.currentIndex || 0].userId,
+        firstName: matchingState.potentialMatches[matchingState.currentIndex || 0].firstName,
+      } : null,
+    });
+  }, [currentPotentialMatch, matchingState]);
 
-const handleAction = async (action: 'like' | 'pass' | 'orb') => {
-  if (actionInProgress || !currentPotentialMatch) return;
-  
-  if (action === 'orb' && (!userData?.numOfOrbs || userData.numOfOrbs <= 0)) {
-    showDivineOrbModal();
-    return;
-  }
-  
-  setActionInProgress(true);
-  setLastAction(action);
-  
-  Animated.parallel([
-    Animated.timing(overlayOpacity, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }),
-    Animated.spring(overlayScale, {
-      toValue: 1,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true,
-    }),
-    Animated.timing(contentOpacity, {
-      toValue: 0.3,
-      duration: 300,
-      useNativeDriver: true,
-    }),
-  ]).start();
-
-  const userId = currentPotentialMatch.userId;
-  try {
-    if (action === 'pass') {
-      await dislikeMatch(userId);
-    } else if (action === 'orb') {
-      await orbLike(userId);
-    } else {
-      await likeMatch(userId);
+  const handleAction = async (action: 'like' | 'pass' | 'orb') => {
+    if (actionInProgress || !currentPotentialMatch) return;
+    
+    if (action === 'orb' && (!userData?.numOfOrbs || userData.numOfOrbs <= 0)) {
+      showDivineOrbModal();
+      return;
     }
-  } catch (error) {
-    console.error('Action failed:', error);
-    setActionInProgress(false);
-    setLastAction(null);
-    contentOpacity.setValue(1);
-    overlayOpacity.setValue(0);
-    overlayScale.setValue(0.8);
-    return;
-  }
-
-  scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-
-  setTimeout(() => {
+    
+    setActionInProgress(true);
+    setLastAction(action);
+    
+    // Start animation
     Animated.parallel([
       Animated.timing(overlayOpacity, {
-        toValue: 0,
-        duration: 400,
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(overlayScale, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
         useNativeDriver: true,
       }),
       Animated.timing(contentOpacity, {
-        toValue: 1,
-        duration: 500,
-        delay: 200,
+        toValue: 0.3,
+        duration: 300,
         useNativeDriver: true,
       }),
-    ]).start(() => {
+    ]).start();
+
+    const userId = currentPotentialMatch.userId;
+    
+    try {
+      // 🔄 UPDATED: Use new optimized functions
+      switch (action) {
+        case 'pass':
+          await dislikeMatch(userId);
+          break;
+        case 'orb':
+          await orbLike(userId); // 🔄 NEW: Use optimized orb function
+          break;
+        case 'like':
+          await likeMatch(userId);
+          break;
+      }
+      
+      // Note: loadNextMatch is now called inside the optimized functions
+      // So we don't need to call it manually here
+      
+    } catch (error) {
+      console.error('Action failed:', error);
       setActionInProgress(false);
       setLastAction(null);
-      setPhotosLoaded(false);
+      contentOpacity.setValue(1);
+      overlayOpacity.setValue(0);
       overlayScale.setValue(0.8);
-      buttonsOpacity.setValue(0);
-    });
-  }, 800);
-};
+      return;
+    }
 
+    // Reset scroll position
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+
+    // Complete animation
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(contentOpacity, {
+          toValue: 1,
+          duration: 500,
+          delay: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setActionInProgress(false);
+        setLastAction(null);
+        setPhotosLoaded(false);
+        overlayScale.setValue(0.8);
+        buttonsOpacity.setValue(0);
+      });
+    }, 800);
+  };
+
+  // Divine orb modal functions (unchanged)
   const showDivineOrbModal = () => {
     setShowOrbModal(true);
     
@@ -197,6 +232,7 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }, 500);
   };
 
+  // Photos loaded handler (unchanged)
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
     Animated.timing(buttonsOpacity, {
@@ -218,6 +254,7 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }
   };
 
+  // Reset animations when match changes (unchanged)
   useEffect(() => {
     if (currentPotentialMatch && !actionInProgress) {
       contentOpacity.setValue(1);
@@ -229,11 +266,12 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }
   }, [currentPotentialMatch?.userId]);
 
+  // Helper functions for action feedback (unchanged)
   const getActionColor = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
-      case 'like': return '#B8860B'; // Rusty gold
-      case 'pass': return '#8B7355'; // Rusty brown
-      case 'orb': return '#CD853F'; // Peru/rusty gold
+      case 'like': return '#B8860B';
+      case 'pass': return '#8B7355';
+      case 'orb': return '#CD853F';
       default: return '#CD853F';
     }
   };
@@ -256,110 +294,117 @@ const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     }
   };
 
-// No more matches state - Different for subscribers vs non-subscribers
-if (noMoreMatches) {
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
-      
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Circle</Text>
-          <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Meaningful{' '}
-            <Text style={styles.highlightedWord}>connections</Text>
-            {' await'}
-          </Text>
+  // 🔄 UPDATED: Use new state for no more matches condition
+  if (matchingState.noMoreMatches) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+        
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Circle</Text>
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Meaningful{' '}
+              <Text style={styles.highlightedWord}>connections</Text>
+              {' await'}
+            </Text>
+          </View>
+          
+          {/* 🔄 NEW: Add debug reset button in development */}
+          {__DEV__ && (
+            <TouchableOpacity onPress={resetMatching} style={styles.debugButton}>
+              <Ionicons name="refresh" size={20} color="#B8860B" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.noLikesContainer}>
+          {hasFullCircleSubscription ? (
+            // FullCircle Subscriber Experience
+            <>
+              <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
+                <Ionicons name="infinite" size={32} color="#B8860B" />
+              </View>
+              
+              <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                You've explored your current circle
+              </Text>
+              
+              <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                As a FullCircle member, you've seen all available connections in your area. New members join daily - check back soon or expand your search radius.
+              </Text>
+              
+              <View style={styles.actionContainer}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+                  onPress={() => router.navigate('/user/EditUserProfile')}
+                  activeOpacity={0.9}
+                >
+                  <Ionicons name="person" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                    Enhance Your Profile
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
+                  onPress={() => router.navigate('/user/ConnectingPreferences')}
+                  activeOpacity={0.9}
+                >
+                  <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+                  <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                    Adjust Preferences
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            // Non-Subscriber Experience
+            <>
+              <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
+                <Ionicons name="infinite" size={32} color="#B8860B" />
+              </View>
+              
+              <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                More connections coming soon
+              </Text>
+              
+              <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                We're preparing more meaningful matches for you. Expand your circle with FullCircle to discover more connections, or adjust your preferences.
+              </Text>
+              
+              <View style={styles.actionContainer}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+                  onPress={() => router.navigate('/user/FullCircleSubscription')}
+                  activeOpacity={0.9}
+                >
+                  <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                    Expand Your Circle
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
+                  onPress={() => router.navigate('/user/ConnectingPreferences')}
+                  activeOpacity={0.9}
+                >
+                  <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+                  <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                    Adjust Preferences
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
       </View>
+    );
+  }
 
-      <View style={styles.noLikesContainer}>
-        {hasFullCircleSubscription ? (
-          // FullCircle Subscriber Experience
-          <>
-            <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-              <Ionicons name="infinite" size={32} color="#B8860B" />
-            </View>
-            
-            <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              You've explored your current circle
-            </Text>
-            
-            <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              As a FullCircle member, you've seen all available connections in your area. New members join daily - check back soon or expand your search radius.
-            </Text>
-            
-            <View style={styles.actionContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
-                onPress={() => router.navigate('/user/EditUserProfile')}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="person" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-                  Enhance Your Profile
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
-                onPress={() => router.navigate('/user/ConnectingPreferences')}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
-                <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                  Adjust Preferences
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          // Non-Subscriber Experience
-          <>
-            <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-              <Ionicons name="infinite" size={32} color="#B8860B" />
-            </View>
-            
-            <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              More connections coming soon
-            </Text>
-            
-            <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              We're preparing more meaningful matches for you. Expand your circle with FullCircle to discover more connections, or adjust your preferences.
-            </Text>
-            
-            <View style={styles.actionContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
-                onPress={() => router.navigate('/user/FullCircleSubscription')}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-                  Expand Your Circle
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
-                onPress={() => router.navigate('/user/ConnectingPreferences')}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
-                <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                  Adjust Preferences
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </View>
-    </View>
-  );
-}
-
-  // Loading state
-  if (loadingNextBatch || !currentPotentialMatch || !exclusionsLoaded) {
+  // 🔄 UPDATED: Use new state for loading condition  
+  if (matchingState.loadingBatch || !currentPotentialMatch || !matchingState.initialized) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -382,16 +427,26 @@ if (noMoreMatches) {
             <Ionicons name="heart" size={24} color="#B8860B" />
           </View>
           <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
-            {loadingNextBatch ? "Finding Your Matches" : "Preparing Your Journey"}
+            {matchingState.loadingBatch ? "Finding Your Matches" : "Preparing Your Journey"}
           </Text>
           <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            {loadingNextBatch ? "We're preparing your next connection" : "Getting everything ready"}
+            {matchingState.loadingBatch ? "We're preparing your next connection" : "Getting everything ready"}
           </Text>
+          
+          {/* 🔄 NEW: Show additional debug info in development */}
+          {__DEV__ && (
+            <Text style={[styles.debugText, { color: colors.textLight, marginTop: 20 }]}>
+              Debug: {matchingState.potentialMatches.length} matches loaded, 
+              index: {matchingState.currentIndex}, 
+              initialized: {matchingState.initialized.toString()}
+            </Text>
+          )}
         </View>
       </View>
     );
   }
 
+  // Main render - mostly unchanged, just cleaner state references
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -455,42 +510,43 @@ if (noMoreMatches) {
           </TouchableOpacity>
 
           <View style={styles.orbButtonContainer}>
-          {userData?.numOfOrbs && userData.numOfOrbs > 0 && (
-            <Animated.View 
+            {userData?.numOfOrbs && userData.numOfOrbs > 0 && (
+              <Animated.View 
+                style={[
+                  styles.orbGlow,
+                  {
+                    shadowOpacity: orbButtonGlow.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.3, 0.8, 0.3]
+                    }),
+                  }
+                ]}
+              />
+            )}
+            <TouchableOpacity 
               style={[
-                styles.orbGlow,
-                {
-                  shadowOpacity: orbButtonGlow.interpolate({
-                    inputRange: [0, 0.5, 1],
-                    outputRange: [0.3, 0.8, 0.3]
-                  }),
+                styles.actionButton, 
+                styles.centerAction,
+                { 
+                  backgroundColor: '#8B4513',
+                  shadowColor: '#CD853F',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 8,
                 }
               ]}
-            />
-          )}
-          <TouchableOpacity 
-            style={[
-              styles.actionButton, 
-              styles.centerAction,
-              { 
-                backgroundColor: '#8B4513',
-                shadowColor: '#CD853F',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-                elevation: 8,
-              }
-            ]}
-            onPress={() => handleAction('orb')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="sparkles" size={22} color="#CD853F" />
-            <View style={[styles.orbRing, { borderColor: '#CD853F' + '60' }]} />
-          </TouchableOpacity>
+              onPress={() => handleAction('orb')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="sparkles" size={22} color="#CD853F" />
+              <View style={[styles.orbRing, { borderColor: '#CD853F' + '60' }]} />
+            </TouchableOpacity>
           </View>
         </Animated.View>
       )}
 
+      {/* Divine Orb Modal - unchanged */}
       {showOrbModal && (
         <Animated.View 
           style={[
@@ -580,6 +636,7 @@ if (noMoreMatches) {
         </Animated.View>
       )}
 
+      {/* Action Feedback Overlay - unchanged */}
       {lastAction && (
         <Animated.View 
           style={[
@@ -1000,6 +1057,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
+  // 🔄 NEW: Debug styles for development
+  debugButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#B8860B' + '20',
+  },
+  
+  debugText: {
+    fontSize: 12,
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
 });
 
 export default ConnectScreen;

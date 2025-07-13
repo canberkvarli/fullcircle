@@ -10,6 +10,8 @@ import {
   StatusBar,
   Alert,
   Animated,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
@@ -26,9 +28,17 @@ export default function ConnectionPreferences() {
 
   const fullCircleSubscription = userData?.fullCircleSubscription || false;
 
-  // Animation values for smooth transitions
+  const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
+  const isRomantic = connectionIntent === "romantic";
+  const isFriendship = connectionIntent === "friendship";
+
+  // Modal state
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(connectionIntent);
+  
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
+  const [modalAnimation] = useState(new Animated.Value(0));
 
   const formatValue = (value: any, defaultValue = "Open to All") => {
     if (Array.isArray(value)) {
@@ -49,28 +59,50 @@ export default function ConnectionPreferences() {
     return value || defaultValue;
   };
 
-  // Get connection intent to show appropriate title
-  const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
-  const isRomantic = connectionIntent === "romantic";
+  // Connection intent options
+  const connectionOptions = [
+    {
+      id: "romantic",
+      title: "Dating",
+      subtitle: "Looking for romantic connections",
+      icon: "heart",
+      color: '#EC4899',
+      gradient: ['#EC4899', '#F97316'],
+    },
+    {
+      id: "friendship", 
+      title: "Friendship",
+      subtitle: "Looking for platonic connections",
+      icon: "people",
+      color: '#10B981',
+      gradient: ['#10B981', '#06B6D4'],
+    },
+    {
+      id: "both",
+      title: "Both",
+      subtitle: "Open to all types of connections",
+      icon: "infinite",
+      color: '#8B5CF6',
+      gradient: ['#8B5CF6', '#EC4899', '#F97316'],
+    }
+  ];
 
-  // Updated preferences based on new connection structure
   const preferences = [
     {
       label: "Connection Type",
-      value: connectionIntent === "romantic" ? "Dating" : "Friendship",
+      value: connectionIntent === "romantic" ? "Dating" : connectionIntent === "friendship" ? "Friendship" : "Both",
       isSubscriberField: false,
       fieldName: "connectionIntent",
-      icon: connectionIntent === "romantic" ? "heart" : "people",
-      description: `Switch between dating and friendship connections anytime`
+      icon: connectionIntent === "romantic" ? "heart" : connectionIntent === "friendship" ? "people" : "infinite",
+      description: `Switch between dating, friendship, and both connections anytime`
     },
-    // Only show gender preferences for romantic connections
     ...(isRomantic ? [{
       label: "Interested In",
       value: userData?.matchPreferences?.connectionPreferences,
       isSubscriberField: false,
       fieldName: "connectionPreferences",
       icon: "heart-circle",
-      description: "Who you're interested in connecting with"
+      description: "Who you're interested in connecting with romantically"
     }] : []),
     {
       label: "Connection Style",
@@ -78,7 +110,7 @@ export default function ConnectionPreferences() {
       isSubscriberField: false,
       fieldName: "connectionStyles",
       icon: "sparkles-outline",
-      description: isRomantic ? "Your romantic connection style" : "How you like to connect with friends"
+      description: isRomantic ? "Your romantic connection style" : isFriendship ? "How you like to connect with friends" : "Your connection style preferences"
     },
     {
       label: "Age Range",
@@ -114,7 +146,7 @@ export default function ConnectionPreferences() {
     },
   ];
 
-  // Premium preferences for FullCircle subscribers - moved outside container
+  // Premium preferences for FullCircle subscribers
   const premiumPreferences = [
     {
       label: "Spiritual Practices",
@@ -143,9 +175,15 @@ export default function ConnectionPreferences() {
   ];
 
   const handleEditField = (fieldName: string, currentValue: any) => {
-    // Special handling for connection intent - toggle right here
     if (fieldName === "connectionIntent") {
-      handleConnectionIntentToggle();
+      setSelectedOption(connectionIntent); // Reset to current value when opening
+      setShowConnectionModal(true);
+      Animated.spring(modalAnimation, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8,
+      }).start();
       return;
     }
 
@@ -164,55 +202,81 @@ export default function ConnectionPreferences() {
     });
   };
 
-  const handleConnectionIntentToggle = async () => {
+  const handleConnectionIntentChange = async (newIntent: "romantic" | "friendship" | "both") => {
+    setSelectedOption(newIntent);
+  };
+
+  const handleSaveSelection = async () => {
     try {
-      const newIntent = connectionIntent === "romantic" ? "friendship" : "romantic";
-      
-      // Subtle slide animation
-      Animated.timing(fadeAnim, {
-        toValue: 0.7,
-        duration: 150,
+      Animated.timing(modalAnimation, {
+        toValue: 0,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => {
-        // Content changes here, then fade back in
+        setShowConnectionModal(false);
+      });
+
+      if (selectedOption !== connectionIntent) {
         Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
+          toValue: 0.7,
+          duration: 150,
           useNativeDriver: true,
-        }).start();
-      });
-      
-      await updateUserData({
-        matchPreferences: {
-          ...userData.matchPreferences,
-          connectionIntent: newIntent,
-          // Reset connection preferences when switching
-          connectionPreferences: newIntent === "romantic" ? [] : ["Everyone"],
-          connectionStyles: [],
-          // Ensure required fields are present
-          preferredDistance: userData.matchPreferences?.preferredDistance || 100,
-          datePreferences: [], // Initialize with empty array instead of undefined
-        },
-      });
+        }).start(() => {
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        });
+        
+        await updateUserData({
+          matchPreferences: {
+            ...userData.matchPreferences,
+            connectionIntent: selectedOption,
+            connectionPreferences: selectedOption === "friendship" ? ["Everyone"] : [],
+            connectionStyles: [],
+            preferredDistance: userData.matchPreferences?.preferredDistance || 100,
+            datePreferences: [],
+          },
+        });
+      }
     } catch (error: any) {
       Alert.alert("Error", "Unable to update connection type: " + error.message);
     }
   };
 
+  const handleCancelSelection = () => {
+    setSelectedOption(connectionIntent);
+    Animated.timing(modalAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowConnectionModal(false);
+    });
+  };
+
   const getIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
-        primary: '#EC4899', // Vibrant pink
-        secondary: '#FDF2F8', // Light pink background
-        accent: '#BE185D', // Deep pink
-        tertiary: '#F9A8D4', // Medium pink
+        primary: '#EC4899', 
+        secondary: '#FDF2F8', 
+        accent: '#BE185D', 
+        tertiary: '#F9A8D4', 
       };
-    } else {
+    } else if (intent === "friendship") {
       return {
-        primary: '#10B981', // Vibrant emerald
-        secondary: '#F0FDF4', // Light green background  
-        accent: '#047857', // Deep emerald
-        tertiary: '#6EE7B7', // Medium emerald
+        primary: '#10B981', 
+        secondary: '#F0FDF4', 
+        accent: '#047857', 
+        tertiary: '#6EE7B7', 
+      };
+    } else { 
+      return {
+        primary: '#8B5CF6', 
+        secondary: '#FAF5FF', 
+        accent: '#7C3AED', 
+        tertiary: '#C4B5FD', 
       };
     }
   };
@@ -251,29 +315,23 @@ export default function ConnectionPreferences() {
         <View style={styles.fieldContent}>
           <View style={styles.fieldInfo}>
             <View style={styles.fieldHeader}>
-              <View style={[
-                styles.iconContainer, 
-                { backgroundColor: itemColors.primary + '15' }
-              ]}>
-                <Ionicons 
-                  name={icon as any} 
-                  size={18} 
-                  color={itemColors.primary} 
-                />
-              </View>
-              <Text style={[styles.fieldLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+              <Text style={[styles.fieldLabel, fonts.modalBodyFont, { color: colors.textDark }]}>
                 {label}
               </Text>
               {isConnectionType && (
-                <View style={[styles.switchBadge, { backgroundColor: intentColors.tertiary }]}>
-                  <Ionicons name="swap-horizontal" size={12} color={intentColors.accent} />
+                <View style={[styles.connectionBadge, { backgroundColor: intentColors.tertiary }]}>
+                  <Ionicons 
+                    name={connectionIntent === "romantic" ? "heart" : connectionIntent === "friendship" ? "people" : "infinite"} 
+                    size={14} 
+                    color={intentColors.accent} 
+                  />
                 </View>
               )}
             </View>
-            <Text style={[styles.fieldDescription, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+            <Text style={[styles.fieldDescription, fonts.modalBodyFont, { color: colors.textMuted }]}>
               {description}
             </Text>
-            <Text style={[styles.fieldValue, fonts.spiritualBodyFont, { 
+            <Text style={[styles.fieldValue, fonts.modalBodyFont, { 
               color: isConnectionType ? intentColors.primary : colors.textLight,
               fontWeight: isConnectionType ? Typography.weights.semibold : Typography.weights.medium
             }]}>
@@ -288,7 +346,7 @@ export default function ConnectionPreferences() {
               </View>
             )}
             <Ionicons 
-              name={isConnectionType ? "swap-horizontal" : "chevron-forward"} 
+              name={isConnectionType ? "options" : "chevron-forward"} 
               size={18} 
               color={isConnectionType ? intentColors.primary : colors.textMuted}
               style={styles.chevronIcon}
@@ -322,10 +380,10 @@ export default function ConnectionPreferences() {
       >
         {/* Single Header */}
         <View style={styles.headerSection}>
-          <Text style={[styles.mainTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text style={[styles.mainTitle, fonts.modalTitleFont, { color: colors.textDark }]}>
             Connection Preferences
           </Text>
-          <Text style={[styles.mainSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+          <Text style={[styles.mainSubtitle, fonts.modalBodyFont, { color: colors.textLight }]}>
             Customize how you connect with others in the circle
           </Text>
         </View>
@@ -348,12 +406,12 @@ export default function ConnectionPreferences() {
           <View style={styles.premiumHeaderSection}>
             <View style={styles.premiumHeader}>
               <Ionicons name="sparkles" size={24} color={colors.primary} />
-              <Text style={[styles.premiumTitle, fonts.spiritualTitleFont, { color: colors.primary }]}>
+              <Text style={[styles.premiumTitle, fonts.modalTitleFont, { color: colors.primary }]}>
                 FullCircle
               </Text>
             </View>
             
-            <Text style={[styles.premiumDescription, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            <Text style={[styles.premiumDescription, fonts.modalBodyFont, { color: colors.textLight }]}>
               {fullCircleSubscription 
                 ? "Advanced spiritual compatibility preferences"
                 : "Unlock deeper spiritual matching and advanced filters"
@@ -367,7 +425,7 @@ export default function ConnectionPreferences() {
                 activeOpacity={0.8}
               >
                 <View style={styles.goldenGlow} />
-                <Text style={[styles.upgradeText, fonts.spiritualBodyFont]}>
+                <Text style={[styles.upgradeText, fonts.modalBodyFont]}>
                   Upgrade to FullCircle
                 </Text>
                 <Ionicons name="arrow-forward" size={16} color="white" style={styles.upgradeIcon} />
@@ -375,7 +433,7 @@ export default function ConnectionPreferences() {
             )}
           </View>
 
-          {/* Premium Preferences - Now directly in main flow */}
+          {/* Premium Preferences */}
           <View style={styles.section}>
             {premiumPreferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
               <React.Fragment key={fieldName}>
@@ -384,10 +442,122 @@ export default function ConnectionPreferences() {
             ))}
           </View>
         </Animated.View>
-        
-        {/* Bottom Spacing */}
+
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Connection Type Modal */}
+      <Modal
+        visible={showConnectionModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={handleCancelSelection}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={handleCancelSelection}
+        >
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                transform: [
+                  {
+                    scale: modalAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                  },
+                ],
+                opacity: modalAnimation,
+              }
+            ]}
+          >
+            <TouchableOpacity activeOpacity={1}>
+              <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+                <Text style={[styles.modalTitle, fonts.modalTitleFont, { color: colors.textDark }]}>
+                  Choose Connection Type
+                </Text>
+                <Text style={[styles.modalSubtitle, fonts.modalBodyFont, { color: colors.textMuted }]}>
+                  Select how you'd like to connect with others
+                </Text>
+
+                <View style={styles.optionsContainer}>
+                  {connectionOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[
+                        styles.optionButton,
+                        {
+                          backgroundColor: selectedOption === option.id 
+                            ? option.color + '15' 
+                            : colors.background,
+                          borderColor: selectedOption === option.id 
+                            ? option.color 
+                            : colors.border,
+                          borderWidth: selectedOption === option.id ? 2 : 1,
+                        }
+                      ]}
+                      onPress={() => handleConnectionIntentChange(option.id as "romantic" | "friendship" | "both")}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.optionContent}>
+                        <View style={styles.optionLeft}>
+                          <View style={[styles.optionIcon, { backgroundColor: option.color + '20' }]}>
+                            <Ionicons 
+                              name={option.icon as any} 
+                              size={24} 
+                              color={option.color} 
+                            />
+                          </View>
+                          <View style={styles.optionText}>
+                            <Text style={[styles.optionTitle, fonts.modalBodyFont, { 
+                              color: selectedOption === option.id ? option.color : colors.textDark,
+                              fontWeight: selectedOption === option.id ? Typography.weights.bold : Typography.weights.semibold
+                            }]}>
+                              {option.title}
+                            </Text>
+                            <Text style={[styles.optionSubtitle, fonts.modalBodyFont, { color: colors.textMuted }]}>
+                              {option.subtitle}
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.checkmarkContainer}>
+                          {selectedOption === option.id && (
+                            <Ionicons name="checkmark-circle" size={24} color={option.color} />
+                          )}
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={handleCancelSelection}
+                  >
+                    <Text style={[styles.cancelButtonText, fonts.modalBodyFont, { color: colors.textMuted }]}>
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                    onPress={handleSaveSelection}
+                  >
+                    <Text style={[styles.saveButtonText, fonts.modalBodyFont]}>
+                      Save
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -471,9 +641,9 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     marginBottom: Spacing.lg,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: colors.primary, // Use theme primary color
+    backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: '#FFD700', // Golden border
+    borderColor: '#FFD700',
     ...Platform.select({
       ios: {
         shadowColor: '#FFD700',
@@ -556,23 +726,18 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     position: 'relative',
   },
 
-  switchBadge: {
+  connectionBadge: {
     position: 'absolute',
     right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  iconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.sm,
+  },
+
+  connectionEmoji: {
+    fontSize: 16,
   },
   
   fieldLabel: {
@@ -585,7 +750,6 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     fontSize: Typography.sizes.xs,
     marginBottom: Spacing.sm,
     fontStyle: 'italic',
-    lineHeight: Typography.sizes.xs * 1.3,
   },
   
   fieldValue: {
@@ -607,33 +771,142 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
   chevronIcon: {
     opacity: 0.6,
   },
-
-  affirmationContainer: {
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.xl,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xl,
-    borderLeftWidth: 4,
-    borderLeftColor: intentColors.primary,
-  },
-
-  affirmation: {
-    textAlign: 'center',
-    fontStyle: 'italic',
-    fontSize: Typography.sizes.base,
-    lineHeight: Typography.sizes.base * 1.5,
-    letterSpacing: 0.3,
-  },
-
-  highlightedWord: {
-    color: colors.textDark,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-    fontWeight: Typography.weights.medium,
-    letterSpacing: 0.5,
-  },
   
   bottomSpacing: {
     height: Spacing.xl,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+
+  modalContainer: {
+    width: '100%',
+    maxWidth: 400,
+  },
+
+  modalContent: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+
+  modalTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+
+  modalSubtitle: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+    opacity: 0.8,
+  },
+
+  optionsContainer: {
+    marginBottom: Spacing.xl,
+  },
+
+  optionButton: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    marginBottom: Spacing.md,
+    width: '100%',
+    borderWidth: 1,
+  },
+
+  optionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  optionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+  },
+
+  optionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+    flexShrink: 0,
+  },
+
+  optionText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  optionTitle: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.xs,
+  },
+
+  optionSubtitle: {
+    fontSize: Typography.sizes.sm,
+    opacity: 0.8,
+  },
+
+  checkmarkContainer: {
+    width:40, 
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  cancelButton: {
+    borderWidth: 1,
+  },
+
+  saveButton: {
+    // No additional styles needed - background color set inline
+  },
+
+  cancelButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+  },
+
+  saveButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    color: 'white',
   },
 });

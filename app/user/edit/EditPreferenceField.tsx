@@ -63,7 +63,7 @@ function EditPreferenceField() {
   }>();
   
   const router = useRouter();
-  const { updateUserData, userData, resetPotentialMatches } = useUserContext();
+  const { updateUserData, userData, resetMatching } = useUserContext();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
@@ -131,6 +131,7 @@ function EditPreferenceField() {
         "Spiritual Partnership",
         "Sacred Union",
         "Love Without Labels",
+        "Open to All",
       ];
       
       const friendshipStyles = [
@@ -144,6 +145,7 @@ function EditPreferenceField() {
         "Wisdom Sharers",
         "Community Builders",
         "Soul Supporters",
+        "Open to All",
       ];
 
       const validStyles = connectionIntent === "romantic" ? romanticStyles : friendshipStyles;
@@ -191,7 +193,7 @@ function EditPreferenceField() {
 
         console.log(`Saving ${fieldName}:`, cleanedValue);
         await updateUserData(updatedData);
-        await resetPotentialMatches();
+        await resetMatching();
       } catch (error) {
         console.error("Error updating preferences:", error);
       }
@@ -362,6 +364,7 @@ function EditPreferenceField() {
           "Spiritual Partnership",
           "Sacred Union",
           "Love Without Labels",
+          "Open to All",
         ];
         
         const friendshipStyles = [
@@ -375,6 +378,7 @@ function EditPreferenceField() {
           "Wisdom Sharers",
           "Community Builders",
           "Soul Supporters",
+          "Open to All",
         ];
 
         const currentStyles = connectionIntent === "romantic" ? romanticStyles : friendshipStyles;
@@ -382,14 +386,10 @@ function EditPreferenceField() {
         return (
           <CheckboxList
             options={currentStyles}
-            selected={value && value.length > 0 ? value : []}
+            selected={value && value.length > 0 ? value : ["Open to All"]} // Default to "Open to All"
             onToggle={(option) => {
-              setValue((prev: string[] = []) => {
-                if (!Array.isArray(prev)) prev = [];
-                return prev.includes(option)
-                  ? prev.filter((item) => item !== option)
-                  : [...prev, option];
-              });
+              // Use the same pattern as other "Open to All" fields
+              handleCheckboxToggle(option, currentStyles, "Open to All");
             }}
           />
         );

@@ -16,6 +16,7 @@ import InfoCard from "@/components/InfoCard";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import { getSpiritualDrawLabels } from "@/constants/spiritualMappings"
 
 const { width: screenWidth } = Dimensions.get("window");
 const IMAGE_MARGIN = Spacing.xl;
@@ -175,11 +176,13 @@ const generateInfoCards = (user: UserDataType) => {
 
   // 5. Spiritual Draws using InfoCard with specific colors
   if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
+    const spiritualDrawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
+    
     cards.push({
       title: "Spiritual Draws",
-      content: user.spiritualProfile.draws.slice(0, 3).join(", "),
+      content: spiritualDrawLabels.slice(0, 3).join(", "), // Use labels instead of values
       icon: "heart-outline",
-      pillsData: user.spiritualProfile.draws,
+      pillsData: spiritualDrawLabels, // Use labels instead of values
       color: '#DC2626', // Red for draws
       type: 'info-card'
     });
