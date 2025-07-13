@@ -1351,15 +1351,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [userData.matchPreferences, debouncedPreferencesUpdate]);
 
-  const resetMatching = useCallback(() => {
+  const resetMatching = useCallback(async () => {
     console.log('🔄 Manual reset of matching system');
     
-    // 🔧 FIX: Always keep your own userId in exclusionSet during reset
-    const baseExclusionSet = new Set<string>();
-    if (userData.userId) {
-      baseExclusionSet.add(userData.userId);
-      console.log('🚫 Preserving self-exclusion during reset:', userData.userId);
+    if (!userData.userId) {
+      console.log('🔄 No user ID, cannot reset');
+      return;
     }
+    
+    // 🔧 FIX: Rebuild exclusion set from Firebase instead of starting fresh
+    console.log('🔄 Rebuilding exclusion set from Firebase...');
+    const freshExclusions = await buildExclusionSet(userData.userId);
+    console.log('🚫 Fresh exclusions from Firebase:', Array.from(freshExclusions));
+    console.log('🚫 Fresh exclusion set size:', freshExclusions.size);
     
     setMatchingState({
       potentialMatches: [],
@@ -1367,11 +1371,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       lastFetchedDoc: null,
       loadingBatch: false,
       noMoreMatches: false,
-      exclusionSet: baseExclusionSet, // ✅ Start with self excluded instead of empty Set()
+      exclusionSet: freshExclusions, // ✅ Use fresh exclusions from Firebase
       initialized: false,
       preferencesHash: '',
     });
-  }, [userData.userId]); // Add userData.userId as dependency
+  }, [userData.userId, buildExclusionSet]); // Add buildExclusionSet as dependency
 
   function debounce<T extends (...args: any[]) => any>(
     func: T,

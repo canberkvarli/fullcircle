@@ -23,14 +23,20 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
   
+  // 🔄 UPDATED: Use new consolidated state from UserContext
   const {
+    // New consolidated functions
     likeMatch,
     dislikeMatch,
     orbLike,
     loadNextMatch,
     resetMatching,
+    
+    // New consolidated state
     currentPotentialMatch,
-    matchingState,
+    matchingState, // { potentialMatches, currentIndex, loadingBatch, noMoreMatches, etc. }
+    
+    // Existing userData
     userData,
   } = useUserContext();
 
@@ -38,12 +44,25 @@ const ConnectScreen: React.FC = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
+  // 🆕 NEW: Enhanced loading state management
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasMinimumLoadingTime, setHasMinimumLoadingTime] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  
+  // Local component state (unchanged)
   const [photosLoaded, setPhotosLoaded] = useState(false);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [lastAction, setLastAction] = useState<'like' | 'pass' | 'orb' | null>(null);
   const [showOrbModal, setShowOrbModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   
+  // 🆕 NEW: Loading animation refs
+  const loadingPulse = useRef(new Animated.Value(0)).current;
+  const loadingRotation = useRef(new Animated.Value(0)).current;
+  const loadingFadeIn = useRef(new Animated.Value(0)).current;
+  const contentFadeIn = useRef(new Animated.Value(0)).current;
+  
+  // Animation refs (unchanged)
   const contentOpacity = useRef(new Animated.Value(1)).current;
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -58,12 +77,100 @@ const ConnectScreen: React.FC = () => {
   // Check if user has FullCircle subscription
   const hasFullCircleSubscription = userData?.fullCircleSubscription || false;
 
+  // 🆕 NEW: Enhanced loading state logic with minimum display time
+  useEffect(() => {
+    const actuallyLoading = matchingState.loadingBatch || 
+                           !currentPotentialMatch || 
+                           !matchingState.initialized;
+    
+    console.log('🔄 Loading state check:', {
+      loadingBatch: matchingState.loadingBatch,
+      hasCurrentMatch: !!currentPotentialMatch,
+      initialized: matchingState.initialized,
+      actuallyLoading,
+      hasMinimumLoadingTime,
+      isLoading,
+      showContent
+    });
+    
+    // Set minimum loading time (2 seconds)
+    const timer = setTimeout(() => {
+      setHasMinimumLoadingTime(true);
+    }, 2000);
+
+    if (actuallyLoading) {
+      setIsLoading(true);
+      setShowContent(false);
+      
+      // Start loading animations
+      Animated.parallel([
+        Animated.timing(loadingFadeIn, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.loop(
+          Animated.timing(loadingPulse, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          { resetBeforeIteration: true }
+        ),
+        Animated.loop(
+          Animated.timing(loadingRotation, {
+            toValue: 1,
+            duration: 3000,
+            useNativeDriver: true,
+          })
+        ),
+      ]).start();
+    } else if (hasMinimumLoadingTime) {
+      // Only stop loading if minimum time has passed AND data is ready
+      console.log('🎯 Transitioning to content...');
+      
+      // Smooth transition to content
+      Animated.sequence([
+        Animated.timing(loadingFadeIn, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(contentFadeIn, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setIsLoading(false);
+        setShowContent(true);
+        console.log('✅ Content transition complete');
+      });
+    }
+
+    return () => clearTimeout(timer);
+  }, [matchingState.loadingBatch, currentPotentialMatch, matchingState.initialized, hasMinimumLoadingTime]);
+
+  // 🆕 NEW: Reset loading states when component mounts or remounts
+  useEffect(() => {
+    setHasMinimumLoadingTime(false);
+    loadingPulse.setValue(0);
+    loadingRotation.setValue(0);
+    loadingFadeIn.setValue(0);
+    contentFadeIn.setValue(0);
+  }, []);
+
   // 🔄 UPDATED: Monitor the new consolidated state
   useEffect(() => {
     console.log('🖥️ ConnectScreen: Detailed state debug', {
       // Basic state
       currentMatch: currentPotentialMatch?.userId,
       firstName: currentPotentialMatch?.firstName,
+      
+      // Loading states
+      isLoading,
+      hasMinimumLoadingTime,
+      showContent,
       
       // Matching state details
       matchingStateExists: !!matchingState,
@@ -72,21 +179,10 @@ const ConnectScreen: React.FC = () => {
       initialized: matchingState?.initialized || false,
       loading: matchingState?.loadingBatch || false,
       noMore: matchingState?.noMoreMatches || false,
-      
-      // First match details
-      firstMatch: matchingState?.potentialMatches?.[0] ? {
-        userId: matchingState.potentialMatches[0].userId,
-        firstName: matchingState.potentialMatches[0].firstName,
-      } : null,
-      
-      // Current index match
-      currentIndexMatch: matchingState?.potentialMatches?.[matchingState?.currentIndex || 0] ? {
-        userId: matchingState.potentialMatches[matchingState.currentIndex || 0].userId,
-        firstName: matchingState.potentialMatches[matchingState.currentIndex || 0].firstName,
-      } : null,
     });
-  }, [currentPotentialMatch, matchingState]);
+  }, [currentPotentialMatch, matchingState, isLoading, hasMinimumLoadingTime, showContent]);
 
+  // 🔄 UPDATED: Use new optimized action handlers with loading feedback
   const handleAction = async (action: 'like' | 'pass' | 'orb') => {
     if (actionInProgress || !currentPotentialMatch) return;
     
@@ -256,7 +352,7 @@ const ConnectScreen: React.FC = () => {
 
   // Reset animations when match changes (unchanged)
   useEffect(() => {
-    if (currentPotentialMatch && !actionInProgress) {
+    if (currentPotentialMatch && !actionInProgress && showContent) {
       contentOpacity.setValue(1);
       buttonsOpacity.setValue(0);
       overlayOpacity.setValue(0);
@@ -264,7 +360,7 @@ const ConnectScreen: React.FC = () => {
       orbButtonGlow.setValue(0);
       setPhotosLoaded(false);
     }
-  }, [currentPotentialMatch?.userId]);
+  }, [currentPotentialMatch?.userId, showContent]);
 
   // Helper functions for action feedback (unchanged)
   const getActionColor = (action: 'like' | 'pass' | 'orb') => {
@@ -403,12 +499,13 @@ const ConnectScreen: React.FC = () => {
     );
   }
 
-  // 🔄 UPDATED: Use new state for loading condition  
-  if (matchingState.loadingBatch || !currentPotentialMatch || !matchingState.initialized) {
+  // 🆕 NEW: Enhanced loading screen with smooth animations
+  if (isLoading || (!showContent && !matchingState.noMoreMatches)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
+        {/* Always show header to avoid white screen */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -422,56 +519,148 @@ const ConnectScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={styles.centeredContainer}>
-          <View style={[styles.loadingMandala, { backgroundColor: '#B8860B' + '10' }]}>
-            <Ionicons name="heart" size={24} color="#B8860B" />
+        {/* Always show settings button */}
+        <TouchableOpacity 
+          style={[
+            styles.settingsFloating, 
+            { backgroundColor: colors.card, borderColor: colors.border }
+          ]}
+          onPress={() => router.push('/user/ConnectingPreferences')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="options" size={22} color="#B8860B" />
+        </TouchableOpacity>
+
+        <Animated.View 
+          style={[
+            styles.centeredContainer,
+            { opacity: loadingFadeIn }
+          ]}
+        >
+          <View style={styles.loadingContainer}>
+            {/* 🆕 NEW: Enhanced loading mandala with multiple animation layers */}
+            <Animated.View 
+              style={[
+                styles.loadingMandala,
+                { 
+                  backgroundColor: '#B8860B' + '10',
+                  transform: [
+                    {
+                      rotate: loadingRotation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '360deg'],
+                      }),
+                    },
+                  ],
+                }
+              ]}
+            >
+              <Animated.View
+                style={[
+                  styles.innerPulse,
+                  {
+                    opacity: loadingPulse.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.4, 1, 0.4],
+                    }),
+                    transform: [
+                      {
+                        scale: loadingPulse.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [0.8, 1.2, 0.8],
+                        }),
+                      },
+                    ],
+                  }
+                ]}
+              >
+                <Ionicons name="heart" size={24} color="#B8860B" />
+              </Animated.View>
+              
+              {/* 🆕 NEW: Secondary rotating elements */}
+              <Animated.View
+                style={[
+                  styles.outerRing,
+                  {
+                    transform: [
+                      {
+                        rotate: loadingRotation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['360deg', '0deg'], // Counter-rotation
+                        }),
+                      },
+                    ],
+                  }
+                ]}
+              >
+                <View style={[styles.ringDot, { top: 0, left: '45%' }]} />
+                <View style={[styles.ringDot, { bottom: 0, right: '45%' }]} />
+                <View style={[styles.ringDot, { left: 0, top: '45%' }]} />
+                <View style={[styles.ringDot, { right: 0, bottom: '45%' }]} />
+              </Animated.View>
+            </Animated.View>
           </View>
-          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+          
+          <Animated.Text 
+            style={[
+              styles.loadingText, 
+              fonts.spiritualTitleFont, 
+              { 
+                color: '#B8860B',
+                opacity: loadingPulse.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.7, 1],
+                }),
+              }
+            ]}
+          >
             {matchingState.loadingBatch ? "Finding Your Matches" : "Preparing Your Journey"}
-          </Text>
+          </Animated.Text>
+          
           <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
             {matchingState.loadingBatch ? "We're preparing your next connection" : "Getting everything ready"}
           </Text>
+          
+          {/* 🆕 NEW: Loading progress dots */}
+          <View style={styles.loadingDots}>
+            {[0, 1, 2].map((index) => (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.loadingDot,
+                  {
+                    opacity: loadingPulse.interpolate({
+                      inputRange: [0, 0.3, 0.6, 1],
+                      outputRange: index === 0 ? [0.3, 1, 0.3, 0.3] :
+                                   index === 1 ? [0.3, 0.3, 1, 0.3] :
+                                                 [0.3, 0.3, 0.3, 1],
+                    }),
+                  }
+                ]}
+              />
+            ))}
+          </View>
           
           {/* 🔄 NEW: Show additional debug info in development */}
           {__DEV__ && (
             <Text style={[styles.debugText, { color: colors.textLight, marginTop: 20 }]}>
               Debug: {matchingState.potentialMatches.length} matches loaded, 
               index: {matchingState.currentIndex}, 
-              initialized: {matchingState.initialized.toString()}
+              initialized: {matchingState.initialized.toString()},
+              showContent: {showContent.toString()}
             </Text>
           )}
-        </View>
+        </Animated.View>
       </View>
     );
   }
 
-  // Main render - mostly unchanged, just cleaner state references
+  // 🆕 NEW: Content with fade-in animation - Always render the structure to avoid white screen
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
-      
-      <Animated.View 
-        style={[
-          styles.contentContainer,
-          { opacity: contentOpacity }
-        ]}
-      >
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={true}
-        >
-          <PotentialMatch
-            currentPotentialMatch={currentPotentialMatch}
-            isMatched={false}
-            onPhotosLoaded={handlePhotosLoaded}
-          />
-        </ScrollView>
-      </Animated.View>
 
+      {/* Always show settings button */}
       <TouchableOpacity 
         style={[
           styles.settingsFloating, 
@@ -482,8 +671,42 @@ const ConnectScreen: React.FC = () => {
       >
         <Ionicons name="options" size={22} color="#B8860B" />
       </TouchableOpacity>
+      
+      <Animated.View 
+        style={[
+          styles.contentContainer,
+          { 
+            opacity: showContent ? contentFadeIn : 0.3 // Show dimmed content while transitioning
+          }
+        ]}
+      >
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          {/* Only render PotentialMatch when we have content AND it's ready to show */}
+          {showContent && currentPotentialMatch ? (
+            <PotentialMatch
+              currentPotentialMatch={currentPotentialMatch}
+              isMatched={false}
+              onPhotosLoaded={handlePhotosLoaded}
+            />
+          ) : (
+            // Show placeholder to maintain layout during transitions
+            <View style={styles.contentPlaceholder}>
+              <Text style={[styles.placeholderText, { color: colors.textLight }]}>
+                {!currentPotentialMatch ? "Loading matches..." : "Preparing profile..."}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </Animated.View>
 
-      {photosLoaded && !actionInProgress && (
+      {/* Only show buttons when content is ready */}
+      {photosLoaded && !actionInProgress && showContent && currentPotentialMatch && (
         <Animated.View style={[styles.buttonsContainer, { opacity: buttonsOpacity }]}>
           <TouchableOpacity 
             style={[
@@ -636,7 +859,7 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       )}
 
-      {/* Action Feedback Overlay - unchanged */}
+      {/* Action Feedback Overlay */}
       {lastAction && (
         <Animated.View 
           style={[
@@ -801,8 +1024,85 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
     borderWidth: 1,
+    zIndex: 1,
+  },
+
+  // Enhanced loading styles
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   
+  loadingMandala: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: Spacing.xl,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    borderWidth: 2,
+    borderColor: '#B8860B' + '20',
+  },
+
+  innerPulse: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#B8860B' + '10',
+  },
+
+  outerRing: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    top: 10,
+    left: 10,
+  },
+
+  ringDot: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#B8860B',
+    opacity: 0.6,
+  },
+
+  loadingDots: {
+    flexDirection: 'row',
+    marginTop: Spacing.lg,
+    gap: Spacing.sm,
+  },
+
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#B8860B',
+  },
+  
+  loadingText: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.sm,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  
+  loadingSubtext: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    marginBottom: Spacing.md,
+  },
+  
+  // Divine orb modal styles
   divineModalOverlay: {
     position: 'absolute',
     top: 0,
@@ -931,6 +1231,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
+  // Action feedback styles
   actionOverlay: {
     position: 'absolute',
     top: 0,
@@ -961,35 +1262,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   
+  // No more matches styles
   cosmicSymbol: {
     marginBottom: Spacing.xl,
     padding: Spacing.lg,
     borderRadius: 40,
     borderWidth: 1,
     borderColor: 'transparent',
-  },
-  
-  loadingMandala: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: Spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  loadingText: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.sm,
-    letterSpacing: 0.5,
-  },
-  
-  loadingSubtext: {
-    fontSize: Typography.sizes.sm,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    letterSpacing: 0.3,
   },
   
   noLikesContainer: {
@@ -1057,7 +1336,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  // 🔄 NEW: Debug styles for development
   debugButton: {
     padding: 8,
     borderRadius: 20,
@@ -1068,6 +1346,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     fontFamily: 'monospace',
+  },
+
+  // Content placeholder styles to prevent white screen
+  contentPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // minHeight: 400,
+    paddingHorizontal: Spacing.xl,
+  },
+
+  placeholderText: {
+    fontSize: Typography.sizes.base,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    opacity: 0.6,
   },
 });
 
