@@ -125,6 +125,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .set({
         matchId: toUserId,
         viaOrb: faker.datatype.boolean(0.2), // 20% chance via orb
+        viaRadiant: faker.datatype.boolean(0.2), // 20% chance via radiant
         timestamp: FieldValue.serverTimestamp(),
       });
     await db
@@ -135,6 +136,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .set({
         matchId: fromUserId,
         viaOrb: faker.datatype.boolean(0.2), // 20% chance via orb
+        viaRadiant: faker.datatype.boolean(0.2), // 20% chance via radiant
         timestamp: FieldValue.serverTimestamp(),
       });
       
@@ -162,11 +164,13 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .set({
         matchId: CURRENT_USER_ID,
         viaOrb: faker.datatype.boolean(0.1),
+        viaRadiant: faker.datatype.boolean(0.1),
         timestamp: FieldValue.serverTimestamp(),
       });
     await currentUserRef.collection("likesReceived").doc(otherId).set({
       matchId: otherId,
       viaOrb: faker.datatype.boolean(0.1),
+      viaRadiant: faker.datatype.boolean(0.1),
       timestamp: FieldValue.serverTimestamp(),
     });
 
@@ -179,6 +183,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     await currentUserRef.collection("likesGiven").doc(otherId).set({
       matchId: otherId,
       viaOrb: faker.datatype.boolean(0.1),
+      viaRadiant: faker.datatype.boolean(0.1),
       timestamp: FieldValue.serverTimestamp(),
     });
     await db
@@ -189,6 +194,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .set({
         matchId: CURRENT_USER_ID,
         viaOrb: faker.datatype.boolean(0.1),
+        viaRadiant: faker.datatype.boolean(0.1),
         timestamp: FieldValue.serverTimestamp(),
       });
 

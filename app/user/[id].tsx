@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-
 import {
   View,
   Text,
@@ -19,6 +18,7 @@ import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import SlidingTabBar from "@/components/SlidingTabBar";
+import { getSpiritualDrawLabels } from "@/constants/spiritualMappings"
 
 const HEADER_HEIGHT = 100;
 const HEADER_FADE_START = 80;
@@ -300,16 +300,18 @@ const UserShow: React.FC = () => {
     }
 
     // 5. Spiritual Draws
-    if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
-      cards.push({
-        title: "Spiritual Draws",
-        content: user.spiritualProfile.draws.slice(0, 3).join(", "),
-        icon: "heart-outline",
-        pillsData: user.spiritualProfile.draws,
-        color: '#DC2626',
-        type: 'info-card'
-      });
-    }
+  if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
+    const drawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
+    
+    cards.push({
+      title: "Spiritual Draws",
+      content: drawLabels.slice(0, 3).join(", "), // UPDATED: Use labels instead of values
+      icon: "heart-outline",
+      pillsData: drawLabels, // UPDATED: Use labels instead of values
+      color: '#DC2626',
+      type: 'info-card'
+    });
+  }
 
     return cards;
   };

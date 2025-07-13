@@ -107,7 +107,16 @@ export type UserDataType = {
   lastLikeResetDate?: any;
   DAILY_LIKE_LIMIT?: number;
   settings?: UserSettings;
+  activeBoosts?: number; // Current number of boosts available
+  boostExpiresAt?: any; // When current boost expires (Firebase timestamp)
+  boostPurchases?: BoostPurchase[]; // Purchase history
 };
+export interface BoostPurchase {
+  boostCount: number;
+  totalPrice: number;
+  purchaseDate: any;
+  transactionId: string;
+}
 
 export type UserSettings = {
   isPaused?: boolean;
@@ -171,6 +180,7 @@ export interface MatchType {
 export interface LikeRecord {
   matchId: string;
   viaOrb: boolean;
+  viaRadiance?: boolean;
   timestamp: FirebaseFirestoreTypes.Timestamp;
 }
 
@@ -268,6 +278,17 @@ type UserContextType = {
   resetMatching: () => void;
   getRemainingDailyLikes: () => number;
   DAILY_LIKE_LIMIT: number;
+  purchaseRadiance: (boostCount: number, totalPrice: number) => Promise<void>;
+  activateRadiance: () => Promise<void>;
+  getRadianceTimeRemaining: () => number;
+  hasActiveRadiance: (userData: UserDataType) => boolean;
+  getRadianceStatus: () => {
+    isActive: boolean;
+    timeRemaining: number;
+    expiresAt: any;
+    formattedTime: string | null;
+  };
+  formatRadianceTime: (seconds: number) => string;
 }
 
 // Initial screens and initial user data
@@ -1476,6 +1497,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return Math.max(0, DAILY_LIKE_LIMIT - used);
   };
 
+    // Get remaining time for active boost
+  const getRadianceTimeRemaining = (): number => {
+    if (!userData.boostExpiresAt) return 0;
+    
+    const expiresAt = userData.boostExpiresAt.toDate 
+      ? userData.boostExpiresAt.toDate()
+      : new Date(userData.boostExpiresAt);
+    
+    const now = new Date();
+    const remainingMs = expiresAt.getTime() - now.getTime();
+    
+    return Math.max(0, Math.floor(remainingMs / 1000)); // Return seconds
+  };
+
   const optimizedLikeMatch = useCallback(async (matchId: string) => {
     console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
     
@@ -1490,6 +1525,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
+      // Check if user has active Sacred Radiance
+      const hasActiveRadiance = getRadianceTimeRemaining && getRadianceTimeRemaining() > 0;
+      
+      console.log(`🌟 Sacred Radiance Status:`, {
+        hasActiveRadiance,
+        timeRemaining: hasActiveRadiance ? getRadianceTimeRemaining() : 0,
+        boostExpiresAt: userData.boostExpiresAt
+      });
+
       console.log(`🚫 Adding ${matchId} to exclusion set BEFORE like action`);
       
       setMatchingState(prev => {
@@ -1502,13 +1546,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       });
       
-      // Perform like action
-      await recordLikeWithBatch(userData.userId, matchId, false);
+      // Perform like action with Sacred Radiance detection
+      await recordLikeWithBatch(
+        userData.userId, 
+        matchId, 
+        false, // viaOrb = false for regular likes
+        hasActiveRadiance // viaRadiance = true if boost is active
+      );
+      
+      // Log connection method for debugging
+      console.log(`✨ Like sent with method:`, {
+        userId: matchId,
+        viaOrb: false,
+        viaRadiance: hasActiveRadiance,
+        connectionType: hasActiveRadiance ? 'Sacred Radiance' : 'Regular'
+      });
       
       // Move to next match
       await loadNextMatch();
       
-      console.log(`✅ Optimized like completed for ${matchId}`);
+      console.log(`✅ Optimized like completed for ${matchId}${hasActiveRadiance ? ' ✨ (with Sacred Radiance)' : ''}`);
       
     } catch (error: any) {
       console.error('❌ Error in optimized like:', error);
@@ -1525,8 +1582,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       throw error;
     }
-  }, [userData.userId, userData.fullCircleSubscription, userData.dailyLikesCount, userData.lastLikeResetDate, loadNextMatch, getRemainingDailyLikes]);
-
+  }, [
+    userData.userId, 
+    userData.fullCircleSubscription, 
+    userData.dailyLikesCount, 
+    userData.lastLikeResetDate,
+    userData.boostExpiresAt, // NEW: Add boost expiration to dependencies
+    loadNextMatch, 
+    getRemainingDailyLikes,
+    getRadianceTimeRemaining // NEW: Add radiance time function to dependencies
+  ]);
 
   const optimizedDislikeMatch = useCallback(async (matchId: string) => {
     console.log(`👎 OPTIMIZED DISLIKING USER: ${matchId}`); // 🔧 Added "OPTIMIZED"
@@ -1635,9 +1700,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const recordLikeWithBatch = async (
     fromUserId: string,
     toUserId: string,
-    viaOrb: boolean = false
+    viaOrb: boolean = false,
+    viaRadiance: boolean = false // NEW: Sacred Radiance parameter
   ): Promise<void> => {
-    console.log('🔥 Using batch approach for like...');
+    console.log('🔥 Using batch approach for like...', { viaOrb, viaRadiance });
     
     try {
       const fromRef = FIRESTORE.collection("users").doc(fromUserId);
@@ -1665,7 +1731,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         fromExists: fromSnap.exists, 
         toExists: toSnap.exists, 
         hadLikedUs,
-        fromLikesGiven: fromData.likesGivenCount 
+        fromLikesGiven: fromData.likesGivenCount,
+        hasActiveRadiance: hasActiveRadiance(fromData) // Check if user has active boost
       });
       
       // Check orb allowance
@@ -1676,23 +1743,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // Prepare batch
       const batch = FIRESTORE.batch();
       
-      // Set like records
-      batch.set(givenRef, {
+      // Set like records with connection method tracking
+      const likeData = {
         matchId: toUserId,
         viaOrb,
+        viaRadiance, // NEW: Track radiance connections
         timestamp: firestore.FieldValue.serverTimestamp(),
-      });
+      };
       
-      batch.set(receivedRef, {
+      batch.set(givenRef, likeData);
+      
+      // For received likes, we need to track how the sender connected
+      const receivedLikeData = {
         matchId: fromUserId,
         viaOrb,
+        viaRadiance, // NEW: Track how this person liked us
         timestamp: firestore.FieldValue.serverTimestamp(),
-      });
+      };
+      
+      batch.set(receivedRef, receivedLikeData);
       
       const fromUpdates: any = {
         likesGivenCount: (fromData.likesGivenCount ?? 0) + 1,
       };
 
+      // Handle daily likes for non-subscribers
       if (!fromData.fullCircleSubscription && !__DEV__) {
         const needsReset = shouldResetDailyLikes(fromData.lastLikeResetDate);
         if (needsReset) {
@@ -1703,12 +1778,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
       
+      // Handle orb consumption
       if (viaOrb && !fromData.fullCircleSubscription) {
         fromUpdates.numOfOrbs = Math.max(0, (fromData.numOfOrbs ?? 0) - 1);
       }
       
+      // Handle mutual match creation
       if (hadLikedUs) {
         console.log('🔥 MUTUAL LIKE DETECTED - Creating match...');
+        
+        // Get the original like data to preserve connection method
+        const incomingLikeData = incomingSnap.data();
+        const originalViaOrb = incomingLikeData?.viaOrb || false;
+        const originalViaRadiance = incomingLikeData?.viaRadiance || false;
         
         batch.delete(incomingRef);
         fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
@@ -1716,17 +1798,43 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const myMatchRef = fromRef.collection("matches").doc(toUserId);
         const theirMatchRef = toRef.collection("matches").doc(fromUserId);
         
-        batch.set(myMatchRef, {
+        // Store match data with connection methods from both sides
+        const matchData = {
           timestamp: firestore.FieldValue.serverTimestamp(),
-        });
-        batch.set(theirMatchRef, {
+          // Track how the match was formed (from current user's perspective)
+          myConnectionMethod: {
+            viaOrb,
+            viaRadiance
+          },
+          // Track how they originally liked us
+          theirConnectionMethod: {
+            viaOrb: originalViaOrb,
+            viaRadiance: originalViaRadiance
+          }
+        };
+        
+        const theirMatchData = {
           timestamp: firestore.FieldValue.serverTimestamp(),
-        });
+          // From their perspective (reversed)
+          myConnectionMethod: {
+            viaOrb: originalViaOrb,
+            viaRadiance: originalViaRadiance
+          },
+          theirConnectionMethod: {
+            viaOrb,
+            viaRadiance
+          }
+        };
+        
+        batch.set(myMatchRef, matchData);
+        batch.set(theirMatchRef, theirMatchData);
         
         fromUpdates.matches = firestore.FieldValue.arrayUnion(toUserId);
         
+        // Create chat with connection method metadata
         const chatId = [fromUserId, toUserId].sort().join("_");
         const chatRef = FIRESTORE.collection("chats").doc(chatId);
+        
         batch.set(chatRef, {
           participants: [fromUserId, toUserId],
           messages: [],
@@ -1734,6 +1842,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           lastMessageSender: "",
           createdAt: firestore.FieldValue.serverTimestamp(),
           lastUpdated: firestore.FieldValue.serverTimestamp(),
+          // NEW: Store connection metadata for chat UI
+          connectionMethods: {
+            [fromUserId]: { viaOrb, viaRadiance },
+            [toUserId]: { viaOrb: originalViaOrb, viaRadiance: originalViaRadiance }
+          }
         });
         
         batch.update(toRef, {
@@ -1742,7 +1855,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1), // They liked us first
         });
         
-        console.log('🔥 Match and chat will be created');
+        console.log('🔥 Match and chat will be created with connection methods:', {
+          current: { viaOrb, viaRadiance },
+          original: { viaOrb: originalViaOrb, viaRadiance: originalViaRadiance }
+        });
       } else {
         batch.update(toRef, {
           likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
@@ -1755,6 +1871,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       await batch.commit();
       console.log('✅ Batch committed successfully');
       
+      // Update local state
       if (viaOrb && !userData.fullCircleSubscription) {
         setUserData((prev) => ({
           ...prev,
@@ -1769,7 +1886,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       if (hadLikedUs) {
-        console.log('🎉 MUTUAL MATCH CREATED!');
+        console.log('🎉 MUTUAL MATCH CREATED WITH CONNECTION TRACKING!');
       }
       
       console.log('🔥 Local state updated');
@@ -2213,63 +2330,37 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       .onSnapshot(async (snapshot) => {
         const likeRecords = snapshot.docs.map((doc) => ({
           userId: doc.id,
-          ...doc.data(),
+          viaOrb: doc.data().viaOrb || false,
+          viaRadiance: doc.data().viaRadiance || false, // NEW
+          timestamp: doc.data().timestamp,
         }));
 
         // Fetch user data for each like
         const usersWithData = await Promise.all(
-          likeRecords.map(
-            async (record: {
-              userId: string;
-              viaOrb?: boolean;
-              timestamp?: any;
-            }) => {
-              const userDoc = await FIRESTORE.collection("users")
+          likeRecords.map(async (record) => {
+            try {
+              const userSnap = await FIRESTORE.collection("users")
                 .doc(record.userId)
                 .get();
-
-              if (userDoc.exists) {
-                const userData = userDoc.data();
-
-                // Resolve photo URLs
-                let resolvedPhotos: string[] = [];
-                if (userData?.photos && Array.isArray(userData.photos)) {
-                  resolvedPhotos = (
-                    await Promise.all(
-                      userData.photos.map((photoPath: string) =>
-                        getImageUrl(photoPath)
-                      )
-                    )
-                  ).filter((url): url is string => !!url);
-                }
-
+              
+              if (userSnap.exists) {
                 return {
-                  ...userData,
+                  ...userSnap.data(),
                   userId: record.userId,
-                  photos: resolvedPhotos, // Use resolved photos
-                  viaOrb: record.viaOrb || false, // Include viaOrb flag
-                  likeTimestamp: record.timestamp, // Include timestamp for sorting
+                  viaOrb: record.viaOrb,
+                  viaRadiance: record.viaRadiance, // NEW
+                  timestamp: record.timestamp,
                 };
               }
               return null;
+            } catch (error) {
+              console.error("Error fetching user data:", error);
+              return null;
             }
-          )
+          })
         );
 
-        // Filter out nulls and sort: orb likes first (newest to oldest), then regular likes
-        const validUsers = usersWithData
-          .filter((user): user is any => user !== null)
-          .sort((a, b) => {
-            // First sort by orb status
-            if (a.viaOrb && !b.viaOrb) return -1;
-            if (!a.viaOrb && b.viaOrb) return 1;
-
-            // Then sort by timestamp (newest first)
-            const timeA = a.likeTimestamp?.toMillis() || 0;
-            const timeB = b.likeTimestamp?.toMillis() || 0;
-            return timeB - timeA;
-          });
-
+        const validUsers = usersWithData.filter(user => user !== null);
         callback(validUsers);
       });
 
@@ -2673,6 +2764,120 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const purchaseRadiance = async (boostCount: number, totalPrice: number) => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User ID is required");
+      }
+
+      // Here you would integrate with your payment system (Apple Pay, Stripe, etc.)
+      // For now, we'll simulate a successful purchase
+      
+      const purchase = {
+        boostCount,
+        totalPrice,
+        purchaseDate: firestore.FieldValue.serverTimestamp(),
+        transactionId: `radiance_${Date.now()}_${userData.userId}`, // Generate unique ID
+      };
+
+      const userRef = FIRESTORE.collection("users").doc(userData.userId);
+      
+      await FIRESTORE.runTransaction(async (transaction) => {
+        const userSnap = await transaction.get(userRef);
+        const currentData = userSnap.data() as UserDataType;
+        
+        const updatedData = {
+          activeBoosts: (currentData.activeBoosts || 0) + boostCount,
+          boostPurchases: firestore.FieldValue.arrayUnion(purchase)
+        };
+        
+        transaction.update(userRef, updatedData);
+      });
+
+      // Update local state
+      setUserData(prevData => ({
+        ...prevData,
+        activeBoosts: (prevData.activeBoosts || 0) + boostCount,
+        boostPurchases: [
+          ...(prevData.boostPurchases || []),
+          purchase
+        ]
+      }));
+
+      console.log(`Successfully purchased ${boostCount} Sacred Radiance boosts`);
+    } catch (error) {
+      console.error("Failed to purchase Sacred Radiance:", error);
+      throw error;
+    }
+  };
+
+  const activateRadiance = async () => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User ID is required");
+      }
+
+      if ((userData.activeBoosts || 0) < 1) {
+        throw new Error("No Sacred Radiance boosts available");
+      }
+
+      const userRef = FIRESTORE.collection("users").doc(userData.userId);
+      const boostDuration = 60 * 60 * 1000; // 1 hour in milliseconds
+      const expiresAt = new Date(Date.now() + boostDuration);
+
+      await FIRESTORE.runTransaction(async (transaction) => {
+        const userSnap = await transaction.get(userRef);
+        const currentData = userSnap.data() as UserDataType;
+        
+        transaction.update(userRef, {
+          activeBoosts: Math.max(0, (currentData.activeBoosts || 1) - 1),
+          boostExpiresAt: firestore.Timestamp.fromDate(expiresAt),
+          lastActive: firestore.FieldValue.serverTimestamp() // Update last active for priority matching
+        });
+      });
+
+      // Update local state
+      setUserData(prevData => ({
+        ...prevData,
+        activeBoosts: Math.max(0, (prevData.activeBoosts || 1) - 1),
+        boostExpiresAt: firestore.Timestamp.fromDate(expiresAt)
+      }));
+
+      console.log("Sacred Radiance activated for 1 hour");
+    } catch (error) {
+      console.error("Failed to activate Sacred Radiance:", error);
+      throw error;
+    }
+  };
+
+  const hasActiveRadiance = (userData: any): boolean => {
+    if (!userData.boostExpiresAt) return false;
+    
+    const expiresAt = userData.boostExpiresAt.toDate 
+      ? userData.boostExpiresAt.toDate()
+      : new Date(userData.boostExpiresAt);
+    
+    return new Date() < expiresAt;
+  };
+
+  const getRadianceStatus = useCallback(() => {
+    const timeRemaining = getRadianceTimeRemaining ? getRadianceTimeRemaining() : 0;
+    const isActive = timeRemaining > 0;
+    
+    return {
+      isActive,
+      timeRemaining,
+      expiresAt: userData.boostExpiresAt,
+      formattedTime: isActive ? formatRadianceTime(timeRemaining) : null
+    };
+  }, [userData.boostExpiresAt, getRadianceTimeRemaining]);
+
+  // Helper function to format radiance time
+  const formatRadianceTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   const contextValue: UserContextType = {
     currentOnboardingScreen,
@@ -2726,6 +2931,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     loadingNextBatch: matchingState.loadingBatch,
     getRemainingDailyLikes,
     DAILY_LIKE_LIMIT,
+    purchaseRadiance,
+    activateRadiance,
+    getRadianceTimeRemaining,
+    hasActiveRadiance,
+    getRadianceStatus,
+    formatRadianceTime,
   };
 
   if (initializing) {

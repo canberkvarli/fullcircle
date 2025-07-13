@@ -16,6 +16,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RadianceScreen from "@/components/RadianceScreen";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -56,11 +57,13 @@ const SORT_OPTIONS: SortConfig[] = [
 ];
 
 const KindredSpirits: React.FC = () => {
-  const { userData, subscribeToReceivedLikes } = useUserContext();
+  const { userData, subscribeToReceivedLikes, getRadianceTimeRemaining, getImageUrl } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [sortedUsers, setSortedUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
+  const [showRadianceModal, setShowRadianceModal] = useState(false);
+  const [radianceTimeRemaining, setRadianceTimeRemaining] = useState<number>(0);
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -77,6 +80,20 @@ const KindredSpirits: React.FC = () => {
     return unsubscribe;
   }, [userData.userId, subscribeToReceivedLikes]);
 
+  // Check radiance time remaining
+  useEffect(() => {
+    const checkRadianceTime = () => {
+      if (userData.boostExpiresAt && getRadianceTimeRemaining) {
+        const remaining = getRadianceTimeRemaining();
+        setRadianceTimeRemaining(remaining);
+      }
+    };
+
+    checkRadianceTime();
+    const interval = setInterval(checkRadianceTime, 1000); // Update every second
+    return () => clearInterval(interval);
+  }, [userData.boostExpiresAt, getRadianceTimeRemaining]);
+
   // Sort users whenever likedByUsers or selectedSort changes
   useEffect(() => {
     if (likedByUsers.length === 0) {
@@ -87,28 +104,23 @@ const KindredSpirits: React.FC = () => {
     const sorted = [...likedByUsers].sort((a, b) => {
       switch (selectedSort) {
         case 'recent':
-          // Sort by timestamp (most recent likes first)
           const aTime = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
           const bTime = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
           return new Date(bTime).getTime() - new Date(aTime).getTime();
           
         case 'lastActive':
-          // Sort by lastActive (most recently active first)
           const aActive = a.lastActive?.toDate?.() || a.lastActive || new Date(0);
           const bActive = b.lastActive?.toDate?.() || b.lastActive || new Date(0);
           return new Date(bActive).getTime() - new Date(aActive).getTime();
           
         case 'newest':
-          // Sort by createdAt (newest profiles first)
           const aCreated = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
           const bCreated = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
           return new Date(bCreated).getTime() - new Date(aCreated).getTime();
           
         case 'viaOrb':
-          // Orb likes first, then by recent
           if (a.viaOrb && !b.viaOrb) return -1;
           if (!a.viaOrb && b.viaOrb) return 1;
-          // If both same orb status, sort by recent
           const aTimeOrb = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
           const bTimeOrb = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
           return new Date(bTimeOrb).getTime() - new Date(aTimeOrb).getTime();
@@ -134,11 +146,14 @@ const KindredSpirits: React.FC = () => {
 
   const handleSortPress = (sortKey: SortOption) => {
     if (!userData.fullCircleSubscription && sortKey !== 'recent') {
-      // If not subscribed, redirect to upgrade for advanced sorting
       router.navigate({ pathname: "/user/FullCircleSubscription" });
       return;
     }
     setSelectedSort(sortKey);
+  };
+
+  const handleRadiancePress = () => {
+    setShowRadianceModal(true);
   };
 
   const isRecentlyActive = (user: any): boolean => {
@@ -147,7 +162,7 @@ const KindredSpirits: React.FC = () => {
     
     const now = new Date();
     const diffHours = (now.getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60);
-    return diffHours <= 24; // Active within last 24 hours
+    return diffHours <= 24;
   };
 
   const getTimeSinceActive = (user: any): string => {
@@ -159,13 +174,19 @@ const KindredSpirits: React.FC = () => {
     
     if (diffMinutes < 60) {
       return 'Active now';
-    } else if (diffMinutes < 1440) { // 24 hours
+    } else if (diffMinutes < 1440) {
       const hours = Math.floor(diffMinutes / 60);
       return `Active ${hours}h ago`;
     } else {
       const days = Math.floor(diffMinutes / 1440);
       return `Active ${days}d ago`;
     }
+  };
+
+  const formatRadianceTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   if (sortedUsers.length === 0) {
@@ -185,56 +206,6 @@ const KindredSpirits: React.FC = () => {
             </Text>
           </View>
         </View>
-
-        {/* Horizontal Sort Row - Only show if we have likes */}
-        {likedByUsers.length > 0 && (
-          <View style={[styles.sortContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.sortScrollContainer}
-            >
-              {SORT_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[
-                    styles.sortChip,
-                    { 
-                      backgroundColor: selectedSort === option.key ? '#8B4513' : colors.background,
-                      borderColor: selectedSort === option.key ? '#8B4513' : colors.border
-                    }
-                  ]}
-                  onPress={() => handleSortPress(option.key)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons 
-                    name={option.icon as any} 
-                    size={16} 
-                    color={selectedSort === option.key ? '#FFFFFF' : '#8B4513'} 
-                  />
-                  <Text style={[
-                    styles.sortChipText, 
-                    fonts.spiritualBodyFont, 
-                    { 
-                      color: selectedSort === option.key ? '#FFFFFF' : colors.textDark,
-                      marginLeft: Spacing.xs
-                    }
-                  ]}>
-                    {option.label}
-                  </Text>
-                  {!userData.fullCircleSubscription && option.key !== 'recent' && (
-                    <Ionicons 
-                      name="lock-closed" 
-                      size={12} 
-                      color={selectedSort === option.key ? '#FFFFFF' : '#B8860B'} 
-                      style={{ marginLeft: Spacing.xs }}
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
         <View style={styles.noLikesContainer}>
           <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
@@ -262,17 +233,23 @@ const KindredSpirits: React.FC = () => {
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: '#8B4513' }]}
-              onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+              style={[styles.secondaryButton, { borderColor: '#D4AF37' }]}
+              onPress={handleRadiancePress}
               activeOpacity={0.9}
             >
-              <Ionicons name="flash" size={18} color="#8B4513" style={styles.buttonIcon} />
-              <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-                Send Sacred Boost
+              <Ionicons name="radio-outline" size={18} color="#D4AF37" style={styles.buttonIcon} />
+              <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#D4AF37' }]}>
+                Send Sacred Radiance
               </Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Sacred Radiance Modal */}
+        <RadianceScreen
+          visible={showRadianceModal}
+          onClose={() => setShowRadianceModal(false)}
+        />
       </View>
     );
   }
@@ -294,6 +271,34 @@ const KindredSpirits: React.FC = () => {
             {' you'}
           </Text>
         </View>
+        
+        {/* Radiance Button */}
+        <TouchableOpacity
+          style={[
+            styles.radianceButton,
+            { 
+              backgroundColor: radianceTimeRemaining > 0 ? '#D4AF37' : colors.background,
+              borderColor: radianceTimeRemaining > 0 ? '#D4AF37' : colors.border
+            }
+          ]}
+          onPress={handleRadiancePress}
+          activeOpacity={0.8}
+        >
+          <Ionicons 
+            name="radio-outline" 
+            size={16} 
+            color={radianceTimeRemaining > 0 ? '#FFFFFF' : '#D4AF37'} 
+          />
+          {radianceTimeRemaining > 0 ? (
+            <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: '#FFFFFF' }]}>
+              {formatRadianceTime(radianceTimeRemaining)}
+            </Text>
+          ) : (
+            <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: '#D4AF37' }]}>
+              Radiance
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Horizontal Sort Row */}
@@ -359,6 +364,8 @@ const KindredSpirits: React.FC = () => {
                 isBlurred={false}
                 style={styles.largeCard}
                 isOrbLike={firstUser.viaOrb}
+                isRadianceLike={firstUser.viaRadiance || firstUser.viaBoost}
+                getImageUrl={getImageUrl}
               />
               
               {/* Activity Badge */}
@@ -367,16 +374,6 @@ const KindredSpirits: React.FC = () => {
                   <Ionicons name="radio" size={12} color="#FFFFFF" />
                   <Text style={[styles.activityBadgeText, fonts.spiritualBodyFont]}>
                     {getTimeSinceActive(firstUser)}
-                  </Text>
-                </View>
-              )}
-              
-              {/* Orb Badge */}
-              {firstUser.viaOrb && (
-                <View style={[styles.orbBadge, { backgroundColor: '#8B4513' }]}>
-                  <Ionicons name="planet" size={12} color="#FFFFFF" />
-                  <Text style={[styles.orbBadgeText, fonts.spiritualBodyFont]}>
-                    Sacred Orb
                   </Text>
                 </View>
               )}
@@ -417,19 +414,14 @@ const KindredSpirits: React.FC = () => {
                         isBlurred={!userData.fullCircleSubscription}
                         style={styles.smallCard}
                         isOrbLike={user.viaOrb}
+                        isRadianceLike={user.viaRadiance || user.viaBoost}
+                        getImageUrl={getImageUrl}
                       />
                       
                       {/* Activity Badge for small cards */}
                       {!user.isBlurred && isRecentlyActive(user) && (
                         <View style={[styles.activityBadgeSmall, { backgroundColor: '#4CAF50' }]}>
                           <Ionicons name="radio" size={8} color="#FFFFFF" />
-                        </View>
-                      )}
-                      
-                      {/* Orb Badge for small cards */}
-                      {user.viaOrb && (
-                        <View style={[styles.orbBadgeSmall, { backgroundColor: '#8B4513' }]}>
-                          <Ionicons name="planet" size={8} color="#FFFFFF" />
                         </View>
                       )}
                     </View>
@@ -442,6 +434,12 @@ const KindredSpirits: React.FC = () => {
         
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Sacred Radiance Modal */}
+      <RadianceScreen
+        visible={showRadianceModal}
+        onClose={() => setShowRadianceModal(false)}
+      />
     </View>
   );
 };
@@ -463,6 +461,27 @@ const styles = StyleSheet.create({
   
   headerLeft: {
     flex: 1,
+  },
+
+  // Radiance Button Styles
+  radianceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+
+  radianceButtonText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.xs,
   },
   
   headerTitle: {
@@ -689,29 +708,6 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.semibold,
     marginLeft: 4,
   },
-
-  orbBadge: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  orbBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: Typography.weights.semibold,
-    marginLeft: 4,
-  },
   
   gridContainer: {
     flexDirection: 'row',
@@ -739,22 +735,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-
-  orbBadgeSmall: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
     width: 16,
     height: 16,
     borderRadius: 8,

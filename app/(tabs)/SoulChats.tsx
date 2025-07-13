@@ -57,6 +57,34 @@ const SoulChats: React.FC = () => {
     router.navigate(`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`);
   };
 
+  // Helper function to get connection methods for this match
+  const getConnectionMethods = (match: any) => {
+    // Check multiple possible data sources for connection method
+    return {
+      // How they connected to us (from their match record)
+      theirMethod: {
+        viaOrb: match.theirConnectionMethod?.viaOrb || 
+                match.connectionMethods?.[match.userId]?.viaOrb || 
+                match.viaOrb || 
+                false,
+        viaRadiance: match.theirConnectionMethod?.viaRadiance || 
+                     match.connectionMethods?.[match.userId]?.viaRadiance || 
+                     match.viaRadiance || 
+                     match.viaBoost || 
+                     false
+      },
+      // How we connected to them (from our match record)
+      ourMethod: {
+        viaOrb: match.myConnectionMethod?.viaOrb || 
+                match.connectionMethods?.[userData.userId]?.viaOrb || 
+                false,
+        viaRadiance: match.myConnectionMethod?.viaRadiance || 
+                     match.connectionMethods?.[userData.userId]?.viaRadiance || 
+                     false
+      }
+    };
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -162,6 +190,8 @@ const SoulChats: React.FC = () => {
             ? match.lastMessageSender !== userData.userId
             : true;
 
+          const connectionMethods = getConnectionMethods(match);
+
           return (
             <View key={match.userId}>
               <TouchableOpacity
@@ -199,6 +229,22 @@ const SoulChats: React.FC = () => {
                     )}
                   </View>
                   
+                  {/* Connection Method Indicators - Top Right of Avatar */}
+                  {(connectionMethods.theirMethod.viaOrb || connectionMethods.theirMethod.viaRadiance) && (
+                    <View style={styles.connectionIndicators}>
+                      {connectionMethods.theirMethod.viaOrb && (
+                        <View style={[styles.connectionBadge, styles.orbIndicator]}>
+                          <Ionicons name="planet" size={10} color="#FFFFFF" />
+                        </View>
+                      )}
+                      {connectionMethods.theirMethod.viaRadiance && (
+                        <View style={[styles.connectionBadge, styles.radianceIndicator]}>
+                          <Ionicons name="radio" size={10} color="#FFFFFF" />
+                        </View>
+                      )}
+                    </View>
+                  )}
+                  
                   {/* Enhanced unread dot */}
                   {isUnread && (
                     <View style={styles.unreadDot}>
@@ -209,14 +255,33 @@ const SoulChats: React.FC = () => {
                 
                 <View style={styles.matchInfo}>
                   <View style={styles.matchHeader}>
-                    <Text style={[
-                      styles.matchName, 
-                      fonts.spiritualBodyFont,
-                      { color: colors.textDark },
-                      isUnread && styles.unreadText
-                    ]}>
-                      {match.firstName}
-                    </Text>
+                    <View style={styles.nameRow}>
+                      <Text style={[
+                        styles.matchName, 
+                        fonts.spiritualBodyFont,
+                        { color: colors.textDark },
+                        isUnread && styles.unreadText
+                      ]}>
+                        {match.firstName}
+                      </Text>
+                      
+                      {/* Connection icons next to name */}
+                      {(connectionMethods.theirMethod.viaOrb || connectionMethods.theirMethod.viaRadiance) && (
+                        <View style={styles.nameConnectionIcons}>
+                          {connectionMethods.theirMethod.viaOrb && (
+                            <View style={styles.nameConnectionIcon}>
+                              <Ionicons name="planet" size={12} color="#8B4513" />
+                            </View>
+                          )}
+                          {connectionMethods.theirMethod.viaRadiance && (
+                            <View style={styles.nameConnectionIcon}>
+                              <Ionicons name="radio" size={12} color="#D4AF37" />
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                    
                     {match.lastMessageTimestamp && (
                       <Text style={[
                         styles.timeText, 
@@ -440,9 +505,9 @@ const styles = StyleSheet.create({
   },
   
   avatarContainer: {
-    width: 72, // Increased from 64
-    height: 72, // Increased from 64
-    borderRadius: 36, // Increased from 32
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -474,6 +539,39 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
+  },
+  
+  // NEW: Connection indicators on avatar (top-right)
+  connectionIndicators: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    flexDirection: 'row',
+    gap: 2,
+    zIndex: 5,
+  },
+  
+  connectionBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  
+  orbIndicator: {
+    backgroundColor: '#8B4513',
+  },
+  
+  radianceIndicator: {
+    backgroundColor: '#D4AF37',
   },
   
   unreadDot: {
@@ -513,10 +611,38 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   
+  // NEW: Name row with connection icons
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  
   matchName: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
     letterSpacing: 0.3,
+  },
+  
+  // NEW: Connection icons next to name
+  nameConnectionIcons: {
+    flexDirection: 'row',
+    marginLeft: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  
+  nameConnectionIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   
   timeText: {
@@ -548,7 +674,6 @@ const styles = StyleSheet.create({
     padding: Spacing.xs,
   },
   
-  // Enhanced Divider
   dividerContainer: {
     paddingVertical: Spacing.xs,
     alignItems: 'center',
