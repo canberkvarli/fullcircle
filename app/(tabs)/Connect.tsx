@@ -34,9 +34,8 @@ const ConnectScreen: React.FC = () => {
     
     // New consolidated state
     currentPotentialMatch,
-    matchingState, // { potentialMatches, currentIndex, loadingBatch, noMoreMatches, etc. }
-    
-    // Existing userData
+    matchingState,
+    DAILY_LIKE_LIMIT,
     userData,
   } = useUserContext();
 
@@ -55,6 +54,11 @@ const ConnectScreen: React.FC = () => {
   const [lastAction, setLastAction] = useState<'like' | 'pass' | 'orb' | null>(null);
   const [showOrbModal, setShowOrbModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
+  const dailyLimitModalOpacity = useRef(new Animated.Value(0)).current;
+  const dailyLimitModalScale = useRef(new Animated.Value(0.8)).current;
+  const dailyLimitGlow = useRef(new Animated.Value(0)).current
   
   // 🆕 NEW: Loading animation refs
   const loadingPulse = useRef(new Animated.Value(0)).current;
@@ -217,24 +221,33 @@ const ConnectScreen: React.FC = () => {
     const userId = currentPotentialMatch.userId;
     
     try {
-      // 🔄 UPDATED: Use new optimized functions
       switch (action) {
         case 'pass':
           await dislikeMatch(userId);
           break;
         case 'orb':
-          await orbLike(userId); // 🔄 NEW: Use optimized orb function
+          await orbLike(userId);
           break;
         case 'like':
           await likeMatch(userId);
           break;
       }
       
-      // Note: loadNextMatch is now called inside the optimized functions
-      // So we don't need to call it manually here
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Action failed:', error);
+      
+      // Handle daily limit error specifically
+      if (error.message === "DAILY_LIMIT_REACHED") {
+        setActionInProgress(false);
+        setLastAction(null);
+        contentOpacity.setValue(1);
+        overlayOpacity.setValue(0);
+        overlayScale.setValue(0.8);
+        showDailyLimitModalFunc();
+        return;
+      }
+      
+      // Handle other errors
       setActionInProgress(false);
       setLastAction(null);
       contentOpacity.setValue(1);
@@ -388,6 +401,63 @@ const ConnectScreen: React.FC = () => {
       case 'orb': return 'Orb Sent';
       default: return 'Energy Shared';
     }
+  };
+
+  const showDailyLimitModalFunc = () => {
+    setShowDailyLimitModal(true);
+    
+    Animated.parallel([
+      Animated.timing(dailyLimitModalOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(dailyLimitModalScale, {
+        toValue: 1,
+        tension: 80,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(dailyLimitGlow, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(dailyLimitGlow, {
+            toValue: 0.3,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+        ])
+      ),
+    ]).start();
+  };
+
+  const closeDailyLimitModal = () => {
+    Animated.parallel([
+      Animated.timing(dailyLimitModalOpacity, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(dailyLimitModalScale, {
+        toValue: 0.8,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowDailyLimitModal(false);
+      dailyLimitGlow.setValue(0);
+    });
+  };
+
+  const navigateToFullCircle = () => {
+    closeDailyLimitModal();
+    setTimeout(() => {
+      router.push('/user/FullCircleSubscription');
+    }, 500);
   };
 
   // 🔄 UPDATED: Use new state for no more matches condition
@@ -893,6 +963,107 @@ const ConnectScreen: React.FC = () => {
           </View>
         </Animated.View>
       )}
+    {/* Daily Limit Modal */}
+    {showDailyLimitModal && (
+      <Animated.View 
+        style={[
+          styles.divineModalOverlay,
+          { opacity: dailyLimitModalOpacity }
+        ]}
+      >
+        <Animated.View 
+          style={[
+            styles.divineModal,
+            {
+              transform: [{ scale: dailyLimitModalScale }],
+              backgroundColor: colors.card,
+              borderColor: '#B8860B',
+              shadowColor: '#B8860B',
+            }
+          ]}
+        >
+          <Animated.View 
+            style={[
+              styles.divineGlow,
+              {
+                opacity: dailyLimitGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.05, 0.15],
+                }),
+                backgroundColor: '#B8860B',
+              }
+            ]}
+          />
+          
+          <View style={styles.divineContent}>
+            <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
+              <Ionicons name="heart" size={36} color="#B8860B" />
+            </View>
+            
+            <Text style={[
+              styles.divineTitle, 
+              fonts.spiritualTitleFont, 
+              { color: colors.textDark }
+            ]}>
+              Daily Hearts Used
+            </Text>
+            
+            <Text style={[
+              styles.divineMessage, 
+              fonts.spiritualBodyFont, 
+              { color: colors.textLight }
+            ]}>
+              You've shared all {DAILY_LIKE_LIMIT} of your daily hearts. Your energy resets at midnight, or join FullCircle for unlimited connections.
+            </Text>
+            
+            {/* Show remaining time until reset */}
+            <Text style={[
+              styles.resetTimeText,
+              fonts.spiritualBodyFont,
+              { color: '#B8860B', marginBottom: Spacing.lg }
+            ]}>
+              ✨ Hearts reset at midnight
+            </Text>
+            
+            <View style={styles.divineActions}>
+              <TouchableOpacity 
+                style={[
+                  styles.divineButton, 
+                  { 
+                    backgroundColor: '#B8860B',
+                    shadowColor: '#B8860B'
+                  }
+                ]}
+                onPress={navigateToFullCircle}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
+                  Get Unlimited Hearts
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.divineSecondaryButton,
+                  { borderColor: colors.border }
+                ]}
+                onPress={closeDailyLimitModal}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.divineSecondaryText, 
+                  fonts.spiritualBodyFont,
+                  { color: colors.textLight }
+                ]}>
+                  Continue Tomorrow
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      </Animated.View>
+    )}
     </View>
   );
 };
@@ -1362,6 +1533,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     opacity: 0.6,
+  },
+  resetTimeText: {
+    fontSize: Typography.sizes.sm,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    fontWeight: Typography.weights.medium,
   },
 });
 

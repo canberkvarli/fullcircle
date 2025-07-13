@@ -103,7 +103,9 @@ export type UserDataType = {
       healingModalities?: string[];
     };
   };
-  
+  dailyLikesCount?: number;
+  lastLikeResetDate?: any;
+  DAILY_LIKE_LIMIT?: number;
   settings?: UserSettings;
 };
 
@@ -264,6 +266,8 @@ type UserContextType = {
     preferencesHash: string;
   };
   resetMatching: () => void;
+  getRemainingDailyLikes: () => number;
+  DAILY_LIKE_LIMIT: number;
 }
 
 // Initial screens and initial user data
@@ -391,6 +395,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     initialized: false,
     preferencesHash: '',
   });
+  const DAILY_LIKE_LIMIT = 8;
 
   useEffect(() => {
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
@@ -1444,17 +1449,52 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [matchingState, fetchPotentialMatches]);
 
+  const shouldResetDailyLikes = (lastResetDate: any): boolean => {
+    if (!lastResetDate) return true;
+    
+    const lastReset = lastResetDate.toDate ? lastResetDate.toDate() : new Date(lastResetDate);
+    const today = new Date();
+    
+    // Reset if it's a new day
+    return (
+      lastReset.getDate() !== today.getDate() ||
+      lastReset.getMonth() !== today.getMonth() ||
+      lastReset.getFullYear() !== today.getFullYear()
+    );
+  };
+
+  const getRemainingDailyLikes = (): number => {
+    if (userData.fullCircleSubscription || __DEV__) {
+      return -1; // Unlimited
+    }
+    
+    if (shouldResetDailyLikes(userData.lastLikeResetDate)) {
+      return DAILY_LIKE_LIMIT;
+    }
+    
+    const used = userData.dailyLikesCount || 0;
+    return Math.max(0, DAILY_LIKE_LIMIT - used);
+  };
 
   const optimizedLikeMatch = useCallback(async (matchId: string) => {
     console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
     
     try {
+      // Check daily limit for non-FullCircle users in production
+      if (!userData.fullCircleSubscription && !__DEV__) {
+        const remaining = getRemainingDailyLikes();
+        
+        if (remaining <= 0) {
+          // Return a special error that the UI can catch
+          throw new Error("DAILY_LIMIT_REACHED");
+        }
+      }
+
       console.log(`🚫 Adding ${matchId} to exclusion set BEFORE like action`);
       
       setMatchingState(prev => {
         const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
         console.log(`🚫 New exclusion set size: ${newExclusionSet.size}`);
-        console.log(`🚫 New exclusions include:`, Array.from(newExclusionSet));
         
         return {
           ...prev,
@@ -1470,19 +1510,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       console.log(`✅ Optimized like completed for ${matchId}`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error in optimized like:', error);
       
-      setMatchingState(prev => {
-        const newSet = new Set(prev.exclusionSet);
-        newSet.delete(matchId);
-        console.log(`🔄 Rolled back exclusion for ${matchId}`);
-        return { ...prev, exclusionSet: newSet };
-      });
+      // Don't rollback exclusion for daily limit errors
+      if (error.message !== "DAILY_LIMIT_REACHED") {
+        setMatchingState(prev => {
+          const newSet = new Set(prev.exclusionSet);
+          newSet.delete(matchId);
+          console.log(`🔄 Rolled back exclusion for ${matchId}`);
+          return { ...prev, exclusionSet: newSet };
+        });
+      }
       
       throw error;
     }
-  }, [userData.userId, loadNextMatch]);
+  }, [userData.userId, userData.fullCircleSubscription, userData.dailyLikesCount, userData.lastLikeResetDate, loadNextMatch, getRemainingDailyLikes]);
 
 
   const optimizedDislikeMatch = useCallback(async (matchId: string) => {
@@ -1649,6 +1692,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const fromUpdates: any = {
         likesGivenCount: (fromData.likesGivenCount ?? 0) + 1,
       };
+
+      if (!fromData.fullCircleSubscription && !__DEV__) {
+        const needsReset = shouldResetDailyLikes(fromData.lastLikeResetDate);
+        if (needsReset) {
+          fromUpdates.dailyLikesCount = 1;
+          fromUpdates.lastLikeResetDate = firestore.FieldValue.serverTimestamp();
+        } else {
+          fromUpdates.dailyLikesCount = (fromData.dailyLikesCount ?? 0) + 1;
+        }
+      }
       
       if (viaOrb && !fromData.fullCircleSubscription) {
         fromUpdates.numOfOrbs = Math.max(0, (fromData.numOfOrbs ?? 0) - 1);
@@ -2671,6 +2724,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     currentPotentialMatch,
     likesGivenCount: userData.likesGivenCount,
     loadingNextBatch: matchingState.loadingBatch,
+    getRemainingDailyLikes,
+    DAILY_LIKE_LIMIT,
   };
 
   if (initializing) {
