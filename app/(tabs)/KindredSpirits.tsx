@@ -19,10 +19,48 @@ import { useFont } from "@/hooks/useFont";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+type SortOption = 'recent' | 'lastActive' | 'newest' | 'viaOrb';
+
+interface SortConfig {
+  key: SortOption;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+const SORT_OPTIONS: SortConfig[] = [
+  {
+    key: 'recent',
+    label: 'Most Recent',
+    icon: 'time-outline',
+    description: 'Latest likes first'
+  },
+  {
+    key: 'lastActive',
+    label: 'Recently Active',
+    icon: 'radio-outline',
+    description: 'Active users first'
+  },
+  {
+    key: 'newest',
+    label: 'New Souls',
+    icon: 'sparkles-outline',
+    description: 'Newest members first'
+  },
+  {
+    key: 'viaOrb',
+    label: 'Orb Connections',
+    icon: 'planet-outline',
+    description: 'Sacred orb likes first'
+  }
+];
+
 const KindredSpirits: React.FC = () => {
   const { userData, subscribeToReceivedLikes } = useUserContext();
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
+  const [sortedUsers, setSortedUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -39,6 +77,50 @@ const KindredSpirits: React.FC = () => {
     return unsubscribe;
   }, [userData.userId, subscribeToReceivedLikes]);
 
+  // Sort users whenever likedByUsers or selectedSort changes
+  useEffect(() => {
+    if (likedByUsers.length === 0) {
+      setSortedUsers([]);
+      return;
+    }
+
+    const sorted = [...likedByUsers].sort((a, b) => {
+      switch (selectedSort) {
+        case 'recent':
+          // Sort by timestamp (most recent likes first)
+          const aTime = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
+          const bTime = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
+          return new Date(bTime).getTime() - new Date(aTime).getTime();
+          
+        case 'lastActive':
+          // Sort by lastActive (most recently active first)
+          const aActive = a.lastActive?.toDate?.() || a.lastActive || new Date(0);
+          const bActive = b.lastActive?.toDate?.() || b.lastActive || new Date(0);
+          return new Date(bActive).getTime() - new Date(aActive).getTime();
+          
+        case 'newest':
+          // Sort by createdAt (newest profiles first)
+          const aCreated = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
+          const bCreated = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
+          return new Date(bCreated).getTime() - new Date(aCreated).getTime();
+          
+        case 'viaOrb':
+          // Orb likes first, then by recent
+          if (a.viaOrb && !b.viaOrb) return -1;
+          if (!a.viaOrb && b.viaOrb) return 1;
+          // If both same orb status, sort by recent
+          const aTimeOrb = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
+          const bTimeOrb = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
+          return new Date(bTimeOrb).getTime() - new Date(aTimeOrb).getTime();
+          
+        default:
+          return 0;
+      }
+    });
+
+    setSortedUsers(sorted);
+  }, [likedByUsers, selectedSort]);
+
   const handleCardPress = (user: any, isFirst: boolean) => {
     if (userData.fullCircleSubscription || isFirst) {
       router.navigate({
@@ -50,7 +132,43 @@ const KindredSpirits: React.FC = () => {
     }
   };
 
-  if (likedByUsers.length === 0) {
+  const handleSortPress = (sortKey: SortOption) => {
+    if (!userData.fullCircleSubscription && sortKey !== 'recent') {
+      // If not subscribed, redirect to upgrade for advanced sorting
+      router.navigate({ pathname: "/user/FullCircleSubscription" });
+      return;
+    }
+    setSelectedSort(sortKey);
+  };
+
+  const isRecentlyActive = (user: any): boolean => {
+    const lastActive = user.lastActive?.toDate?.() || user.lastActive;
+    if (!lastActive) return false;
+    
+    const now = new Date();
+    const diffHours = (now.getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60);
+    return diffHours <= 24; // Active within last 24 hours
+  };
+
+  const getTimeSinceActive = (user: any): string => {
+    const lastActive = user.lastActive?.toDate?.() || user.lastActive;
+    if (!lastActive) return '';
+    
+    const now = new Date();
+    const diffMinutes = (now.getTime() - new Date(lastActive).getTime()) / (1000 * 60);
+    
+    if (diffMinutes < 60) {
+      return 'Active now';
+    } else if (diffMinutes < 1440) { // 24 hours
+      const hours = Math.floor(diffMinutes / 60);
+      return `Active ${hours}h ago`;
+    } else {
+      const days = Math.floor(diffMinutes / 1440);
+      return `Active ${days}d ago`;
+    }
+  };
+
+  if (sortedUsers.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -67,6 +185,56 @@ const KindredSpirits: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        {/* Horizontal Sort Row - Only show if we have likes */}
+        {likedByUsers.length > 0 && (
+          <View style={[styles.sortContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sortScrollContainer}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[
+                    styles.sortChip,
+                    { 
+                      backgroundColor: selectedSort === option.key ? '#8B4513' : colors.background,
+                      borderColor: selectedSort === option.key ? '#8B4513' : colors.border
+                    }
+                  ]}
+                  onPress={() => handleSortPress(option.key)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons 
+                    name={option.icon as any} 
+                    size={16} 
+                    color={selectedSort === option.key ? '#FFFFFF' : '#8B4513'} 
+                  />
+                  <Text style={[
+                    styles.sortChipText, 
+                    fonts.spiritualBodyFont, 
+                    { 
+                      color: selectedSort === option.key ? '#FFFFFF' : colors.textDark,
+                      marginLeft: Spacing.xs
+                    }
+                  ]}>
+                    {option.label}
+                  </Text>
+                  {!userData.fullCircleSubscription && option.key !== 'recent' && (
+                    <Ionicons 
+                      name="lock-closed" 
+                      size={12} 
+                      color={selectedSort === option.key ? '#FFFFFF' : '#B8860B'} 
+                      style={{ marginLeft: Spacing.xs }}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <View style={styles.noLikesContainer}>
           <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
@@ -109,7 +277,7 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  const [firstUser, ...rest] = likedByUsers;
+  const [firstUser, ...rest] = sortedUsers;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -121,11 +289,59 @@ const KindredSpirits: React.FC = () => {
             Kindred Spirits
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            {likedByUsers.length} soul{likedByUsers.length !== 1 ? 's' : ''} who{' '}
+            {sortedUsers.length} soul{sortedUsers.length !== 1 ? 's' : ''} who{' '}
             <Text style={styles.highlightedWord}>appreciate</Text>
             {' you'}
           </Text>
         </View>
+      </View>
+
+      {/* Horizontal Sort Row */}
+      <View style={[styles.sortContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sortScrollContainer}
+        >
+          {SORT_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.key}
+              style={[
+                styles.sortChip,
+                { 
+                  backgroundColor: selectedSort === option.key ? '#8B4513' : colors.background,
+                  borderColor: selectedSort === option.key ? '#8B4513' : colors.border
+                }
+              ]}
+              onPress={() => handleSortPress(option.key)}
+              activeOpacity={0.8}
+            >
+              <Ionicons 
+                name={option.icon as any} 
+                size={16} 
+                color={selectedSort === option.key ? '#FFFFFF' : '#8B4513'} 
+              />
+              <Text style={[
+                styles.sortChipText, 
+                fonts.spiritualBodyFont, 
+                { 
+                  color: selectedSort === option.key ? '#FFFFFF' : colors.textDark,
+                  marginLeft: Spacing.xs
+                }
+              ]}>
+                {option.label}
+              </Text>
+              {!userData.fullCircleSubscription && option.key !== 'recent' && (
+                <Ionicons 
+                  name="lock-closed" 
+                  size={12} 
+                  color={selectedSort === option.key ? '#FFFFFF' : '#B8860B'} 
+                  style={{ marginLeft: Spacing.xs }}
+                />
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
       
       <ScrollView
@@ -133,23 +349,38 @@ const KindredSpirits: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.featuredSection}>
-          <View style={styles.featuredHeader}>
-            <Ionicons name="star" size={20} color="#FFD700" />
-            <Text style={[styles.featuredLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-              Latest Connection
-            </Text>
-          </View>
-          
           <TouchableOpacity 
             onPress={() => handleCardPress(firstUser, true)}
             activeOpacity={0.9}
           >
-            <UserCard
-              user={firstUser}
-              isBlurred={false}
-              style={styles.largeCard}
-              isOrbLike={firstUser.viaOrb}
-            />
+            <View style={styles.cardContainer}>
+              <UserCard
+                user={firstUser}
+                isBlurred={false}
+                style={styles.largeCard}
+                isOrbLike={firstUser.viaOrb}
+              />
+              
+              {/* Activity Badge */}
+              {isRecentlyActive(firstUser) && (
+                <View style={[styles.activityBadge, { backgroundColor: '#4CAF50' }]}>
+                  <Ionicons name="radio" size={12} color="#FFFFFF" />
+                  <Text style={[styles.activityBadgeText, fonts.spiritualBodyFont]}>
+                    {getTimeSinceActive(firstUser)}
+                  </Text>
+                </View>
+              )}
+              
+              {/* Orb Badge */}
+              {firstUser.viaOrb && (
+                <View style={[styles.orbBadge, { backgroundColor: '#8B4513' }]}>
+                  <Ionicons name="planet" size={12} color="#FFFFFF" />
+                  <Text style={[styles.orbBadgeText, fonts.spiritualBodyFont]}>
+                    Sacred Orb
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -180,12 +411,28 @@ const KindredSpirits: React.FC = () => {
                     onPress={() => handleCardPress(user, false)}
                     activeOpacity={0.9}
                   >
-                    <UserCard
-                      user={user}
-                      isBlurred={!userData.fullCircleSubscription}
-                      style={styles.smallCard}
-                      isOrbLike={user.viaOrb}
-                    />
+                    <View style={styles.cardContainer}>
+                      <UserCard
+                        user={user}
+                        isBlurred={!userData.fullCircleSubscription}
+                        style={styles.smallCard}
+                        isOrbLike={user.viaOrb}
+                      />
+                      
+                      {/* Activity Badge for small cards */}
+                      {!user.isBlurred && isRecentlyActive(user) && (
+                        <View style={[styles.activityBadgeSmall, { backgroundColor: '#4CAF50' }]}>
+                          <Ionicons name="radio" size={8} color="#FFFFFF" />
+                        </View>
+                      )}
+                      
+                      {/* Orb Badge for small cards */}
+                      {user.viaOrb && (
+                        <View style={[styles.orbBadgeSmall, { backgroundColor: '#8B4513' }]}>
+                          <Ionicons name="planet" size={8} color="#FFFFFF" />
+                        </View>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -239,41 +486,41 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.5,
   },
+
+  // Sort Container Styles
+  sortContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+  },
+
+  sortScrollContainer: {
+    paddingRight: Spacing.lg,
+    gap: Spacing.sm,
+  },
+
+  sortChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+
+  sortChipText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+  },
   
   scrollContainer: {
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.lg,
-  },
-  
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  
-  loadingMandala: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: Spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  loadingText: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.sm,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  
-  loadingSubtext: {
-    fontSize: Typography.sizes.sm,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    letterSpacing: 0.3,
   },
   
   noLikesContainer: {
@@ -403,6 +650,11 @@ const styles = StyleSheet.create({
     flex: 1,
     letterSpacing: 0.3,
   },
+
+  // Card Container and Badge Styles
+  cardContainer: {
+    position: 'relative',
+  },
   
   largeCard: {
     width: screenWidth - (Spacing.xl * 2),
@@ -413,6 +665,52 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+
+  activityBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  activityBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: Typography.weights.semibold,
+    marginLeft: 4,
+  },
+
+  orbBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  orbBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: Typography.weights.semibold,
+    marginLeft: 4,
   },
   
   gridContainer: {
@@ -434,6 +732,38 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
+    elevation: 2,
+  },
+
+  activityBadgeSmall: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  orbBadgeSmall: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     elevation: 2,
   },
   

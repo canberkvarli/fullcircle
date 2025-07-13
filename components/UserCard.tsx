@@ -86,7 +86,7 @@ const UserCard: React.FC<UserCardProps> = ({
         {/* User name header */}
         <View style={dynamicStyles.header}>
           <Text style={[dynamicStyles.userName, { color: colors.textDark }]}>
-            {user.firstName || "Unknown"}, {user.age || "?"}
+            {user.firstName || "Unknown"}
           </Text>
         </View>
 
@@ -237,9 +237,9 @@ const createStyles = (colors: any, fonts: any, isOrbLike: boolean) => StyleSheet
   },
 
   header: {
-    marginLeft: 15,
     marginBottom: 12,
     zIndex: 1,
+    alignItems: 'flex-start',
   },
 
   userName: {
