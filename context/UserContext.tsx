@@ -1833,7 +1833,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // Prepare batch
       const batch = FIRESTORE.batch();
       
-      // Set like records with connection method tracking
+      // Always set the likesGiven record with connection method tracking
       const likeData = {
         matchId: toUserId,
         viaOrb,
@@ -1842,16 +1842,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       
       batch.set(givenRef, likeData);
-      
-      // For received likes, we need to track how the sender connected
-      const receivedLikeData = {
-        matchId: fromUserId,
-        viaOrb,
-        viaRadiance, // NEW: Track how this person liked us
-        timestamp: firestore.FieldValue.serverTimestamp(),
-      };
-      
-      batch.set(receivedRef, receivedLikeData);
       
       const fromUpdates: any = {
         likesGivenCount: (fromData.likesGivenCount ?? 0) + 1,
@@ -1882,6 +1872,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const originalViaOrb = incomingLikeData?.viaOrb || false;
         const originalViaRadiance = incomingLikeData?.viaRadiance || false;
         
+        // Remove the incoming like since we're creating a match
         batch.delete(incomingRef);
         fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
         
@@ -1939,9 +1930,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         });
         
+        // Update the other user for the match
         batch.update(toRef, {
           matches: firestore.FieldValue.arrayUnion(fromUserId),
-          likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
+          // DON'T increment likesReceivedCount for mutual matches - they become matches immediately
+          // likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1, // REMOVED
           likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1), // They liked us first
         });
         
@@ -1950,11 +1943,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           original: { viaOrb: originalViaOrb, viaRadiance: originalViaRadiance }
         });
       } else {
+        // Only for NON-MUTUAL likes: create received like record and increment counter
+        console.log('🔥 Creating received like record (not mutual)');
+        
+        // For received likes, we need to track how the sender connected
+        const receivedLikeData = {
+          matchId: fromUserId,
+          viaOrb,
+          viaRadiance, // NEW: Track how this person liked us
+          timestamp: firestore.FieldValue.serverTimestamp(),
+        };
+        
+        batch.set(receivedRef, receivedLikeData);
+        
+        // Increment the receiver's likesReceivedCount
         batch.update(toRef, {
           likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
         });
       }
       
+      // Always update the sender (fromUser)
       batch.update(fromRef, fromUpdates);
       
       console.log('🔥 Committing batch...');

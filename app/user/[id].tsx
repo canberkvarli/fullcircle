@@ -728,7 +728,6 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   },
   headerOverlay: {
     position: "absolute",
-    top: 50,
     left: 0,
     right: 0,
     height: HEADER_HEIGHT,
