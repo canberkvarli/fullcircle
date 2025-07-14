@@ -440,7 +440,7 @@ export default function ConnectingPreferences() {
             )}
           </View>
 
-          {/*  Preferences */}
+          {/* Premium Preferences */}
           <View style={styles.section}>
             {premiumPreferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
               <React.Fragment key={fieldName}>
@@ -641,14 +641,27 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
   upgradeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
-    borderRadius: 16,
-    shadowColor: '#8B4513',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    marginBottom: Spacing.lg,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
 
   goldenGlow: {
