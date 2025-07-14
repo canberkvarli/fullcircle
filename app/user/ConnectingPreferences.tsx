@@ -19,7 +19,7 @@ import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-export default function ConnectionPreferences() {
+export default function ConnectingPreferences() {
   const router = useRouter();
   const { userData, updateUserData } = useUserContext();
   const colorScheme = useColorScheme() ?? 'light';
@@ -146,11 +146,11 @@ export default function ConnectionPreferences() {
     },
   ];
 
-  // Premium preferences for FullCircle subscribers
+  // Premium preferences for FullCircle subscribers - FIXED to use matchPreferences.spiritualCompatibility
   const premiumPreferences = [
     {
       label: "Spiritual Practices",
-      value: userData?.matchPreferences?.spiritualCompatibility?.practices || userData?.spiritualProfile?.practices || "Open to All",
+      value: userData?.matchPreferences?.spiritualCompatibility?.practices || [],
       isSubscriberField: true,
       fieldName: "preferredSpiritualPractices",
       icon: "flower-outline",
@@ -158,7 +158,7 @@ export default function ConnectionPreferences() {
     },
     {
       label: "Spiritual Draws",
-      value: userData?.matchPreferences?.spiritualCompatibility?.spiritualDraws || userData?.spiritualProfile?.draws || "Open to All",
+      value: userData?.matchPreferences?.spiritualCompatibility?.spiritualDraws || [],
       isSubscriberField: true,
       fieldName: "preferredSpiritualDraws",
       icon: "leaf-outline",
@@ -166,7 +166,7 @@ export default function ConnectionPreferences() {
     },
     {
       label: "Healing Modalities",
-      value: userData?.matchPreferences?.spiritualCompatibility?.healingModalities || userData?.spiritualProfile?.healingModalities || "Open to All",
+      value: userData?.matchPreferences?.spiritualCompatibility?.healingModalities || [],
       isSubscriberField: true,
       fieldName: "preferredHealingModalities",
       icon: "medical-outline",
@@ -294,6 +294,13 @@ export default function ConnectionPreferences() {
     const isConnectionType = fieldName === "connectionIntent";
     const itemColors = isConnectionType ? intentColors : { primary: colors.primary };
     
+    // FIXED: Check if value is empty array and handle FullCircle subscription requirement properly
+    const isEmptyArray = Array.isArray(value) && value.length === 0;
+    const shouldShowLocked = isSubscriberField && !fullCircleSubscription;
+    const displayValue = isEmptyArray && isSubscriberField 
+      ? "Open to All" 
+      : formatValue(value);
+    
     return (
       <TouchableOpacity
         style={[
@@ -302,11 +309,11 @@ export default function ConnectionPreferences() {
             backgroundColor: colors.card,
             borderColor: isConnectionType ? intentColors.primary + '30' : colors.border,
             borderWidth: isConnectionType ? 2 : 1,
-            opacity: isSubscriberField && !fullCircleSubscription ? 0.6 : 1
+            opacity: shouldShowLocked ? 0.6 : 1
           }
         ]}
         onPress={() =>
-          isSubscriberField && !fullCircleSubscription
+          shouldShowLocked
             ? router.navigate("/user/FullCircleSubscription")
             : handleEditField(fieldName, value)
         }
@@ -335,12 +342,12 @@ export default function ConnectionPreferences() {
               color: isConnectionType ? intentColors.primary : colors.textLight,
               fontWeight: isConnectionType ? Typography.weights.semibold : Typography.weights.medium
             }]}>
-              {formatValue(value)}
+              {displayValue}
             </Text>
           </View>
           
           <View style={styles.fieldActions}>
-            {isSubscriberField && !fullCircleSubscription && (
+            {shouldShowLocked && (
               <View style={[styles.lockContainer, { backgroundColor: colors.primary + '15' }]}>
                 <Ionicons name="lock-closed" size={16} color={colors.primary} />
               </View>
@@ -433,7 +440,7 @@ export default function ConnectionPreferences() {
             )}
           </View>
 
-          {/* Premium Preferences */}
+          {/*  Preferences */}
           <View style={styles.section}>
             {premiumPreferences.map(({ label, value, isSubscriberField, fieldName, icon, description }) => (
               <React.Fragment key={fieldName}>
@@ -634,27 +641,14 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
   upgradeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.full,
-    marginBottom: Spacing.lg,
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: '#FFD700',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 16,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
 
   goldenGlow: {

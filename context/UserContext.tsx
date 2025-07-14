@@ -312,7 +312,6 @@ const initialScreens = [
   "PhotosScreen",
 ];
 
-// Updated initialUserData to include boost/radiance fields
 const initialUserData: UserDataType = {
   userId: "",
   createdAt: firestore.FieldValue.serverTimestamp(),
