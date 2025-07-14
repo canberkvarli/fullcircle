@@ -448,14 +448,6 @@ const KindredSpirits: React.FC = () => {
               ]}>
                 {option.label}
               </Text>
-              {!userData.fullCircleSubscription && option.key !== 'recent' && (
-                <Ionicons 
-                  name="lock-closed" 
-                  size={12} 
-                  color={selectedSort === option.key ? '#FFFFFF' : '#B8860B'} 
-                  style={{ marginLeft: Spacing.xs }}
-                />
-              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
