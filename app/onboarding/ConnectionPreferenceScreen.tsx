@@ -479,12 +479,10 @@ const ConnectionPreferenceScreen = () => {
                 />
               </View>
 
-              {/* Affirmation */}
               <Text style={styles.affirmation}>
-                {connectionIntent === "romantic" 
-                  ? "Open your heart to the dance of love and connection"
-                  : "Nurture the bonds that support your spiritual journey"
-                }
+                Open your heart to the 
+                <Text style={styles.highlightedWord}> dance </Text> 
+                of love and connection
               </Text>
             </>
           )}
@@ -790,14 +788,21 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontWeight: Typography.weights.medium,
     },
     affirmation: {
-      ...fonts.affirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.xl,
+      opacity: 0.8,
+    },
+    highlightedWord: {
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     submitButton: {
       position: "absolute",

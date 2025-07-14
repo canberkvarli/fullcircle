@@ -289,6 +289,8 @@ type UserContextType = {
     formattedTime: string | null;
   };
   formatRadianceTime: (seconds: number) => string;
+  isUserBoosted: (userData: UserDataType) => boolean;
+  isUserRecentlyActive: (userData: UserDataType) => boolean;
 }
 
 // Initial screens and initial user data
@@ -310,12 +312,14 @@ const initialScreens = [
   "PhotosScreen",
 ];
 
+// Updated initialUserData to include boost/radiance fields
 const initialUserData: UserDataType = {
   userId: "",
   createdAt: firestore.FieldValue.serverTimestamp(),
   lastActive: null,
   isSeedUser: false,
   numOfOrbs: 1,
+  lastOrbAssignedAt: null,
   phoneNumber: "",
   email: "",
   firstName: "",
@@ -329,6 +333,13 @@ const initialUserData: UserDataType = {
   currentOnboardingScreen: initialScreens[0],
   hiddenFields: {},
   fullCircleSubscription: false,
+  activeBoosts: 0,
+  boostExpiresAt: null, 
+  boostPurchases: [],
+  dailyLikesCount: 0,
+  lastLikeResetDate: null,
+  DAILY_LIKE_LIMIT: 8,
+  
   matchPreferences: {
     preferredAgeRange: {
       min: 18,
@@ -961,122 +972,198 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   });
 
   const applySpiritualFilter = useCallback((user: UserDataType): { passes: boolean; score: number; reason?: string } => {
-    const userSpiritualPrefs = userData.matchPreferences?.spiritualCompatibility;
-    const candidateProfile = user.spiritualProfile;
-    
-    // 🎯 DEFAULT BEHAVIOR: If user has NO spiritual preferences, show everyone
-    if (!userSpiritualPrefs || 
-        (!userSpiritualPrefs.spiritualDraws?.length && 
-        !userSpiritualPrefs.practices?.length && 
-        !userSpiritualPrefs.healingModalities?.length)) {
-      console.log(`✅ ${user.firstName} - User has no spiritual preferences (showing everyone)`);
-      return { passes: true, score: 0 };
-    }
-    
-    // 🎯 NEW: If user has "Open to All" in any category, show everyone for that category
-    const hasOpenToAllPractices = userSpiritualPrefs.practices?.includes("Open to All");
-    const hasOpenToAllDraws = userSpiritualPrefs.spiritualDraws?.includes("Open to All");
-    const hasOpenToAllHealing = userSpiritualPrefs.healingModalities?.includes("Open to All");
-    
-    // If ALL categories are "Open to All", show everyone
-    if (hasOpenToAllPractices && hasOpenToAllDraws && hasOpenToAllHealing) {
-      console.log(`✅ ${user.firstName} - User is open to all spiritual preferences (showing everyone)`);
-      return { passes: true, score: 0 };
-    }
-    
-    // If user has only "Open to All" selections (no specific preferences), show everyone
-    const hasSpecificPractices = userSpiritualPrefs.practices?.length && !hasOpenToAllPractices;
-    const hasSpecificDraws = userSpiritualPrefs.spiritualDraws?.length && !hasOpenToAllDraws;
-    const hasSpecificHealing = userSpiritualPrefs.healingModalities?.length && !hasOpenToAllHealing;
-    
-    if (!hasSpecificPractices && !hasSpecificDraws && !hasSpecificHealing) {
-      console.log(`✅ ${user.firstName} - User has only 'Open to All' preferences (showing everyone)`);
-      return { passes: true, score: 0 };
-    }
-    
-    // 🎯 If candidate has NO spiritual profile, they pass (open to all)
-    if (!candidateProfile || 
-        (!candidateProfile.draws?.length && 
-        !candidateProfile.practices?.length && 
-        !candidateProfile.healingModalities?.length)) {
-      console.log(`✅ ${user.firstName} - No spiritual profile (open to all)`);
-      return { passes: true, score: 0 };
-    }
-    
-    // 🔮 DETAILED COMPATIBILITY SCORING (only for specific preferences)
-    let score = 0;
-    let totalCategories = 0;
-    const matchDetails: string[] = [];
-    
-    // Check spiritual draws compatibility (only if user has specific draws preferences)
-    if (hasSpecificDraws && candidateProfile.draws?.length) {
-      const commonDraws = userSpiritualPrefs.spiritualDraws!.filter(draw => 
-        draw !== "Open to All" && candidateProfile?.draws?.includes(draw)
-      );
+      const userSpiritualPrefs = userData.matchPreferences?.spiritualCompatibility;
+      const candidateProfile = user.spiritualProfile;
       
-      if (commonDraws.length > 0) {
-        score += 1;
-        matchDetails.push(`Draws: ${commonDraws.join(', ')}`);
+      // 🎯 DEFAULT BEHAVIOR: If user has NO spiritual preferences, show everyone
+      if (!userSpiritualPrefs || 
+          (!userSpiritualPrefs.spiritualDraws?.length && 
+          !userSpiritualPrefs.practices?.length && 
+          !userSpiritualPrefs.healingModalities?.length)) {
+        console.log(`✅ ${user.firstName} - User has no spiritual preferences (showing everyone)`);
+        return { passes: true, score: 0 };
       }
-      totalCategories += 1;
       
-      console.log(`🔮 ${user.firstName} - Draws check: ${commonDraws.length > 0 ? '✅' : '❌'} (${commonDraws.join(', ')})`);
-    }
-    
-    // Check practices compatibility (only if user has specific practices preferences)
-    if (hasSpecificPractices && candidateProfile.practices?.length) {
-      const commonPractices = userSpiritualPrefs.practices!.filter(practice =>
-        practice !== "Open to All" && candidateProfile?.practices?.includes(practice)
-      );
+      // 🎯 NEW: If user has "Open to All" in any category, show everyone for that category
+      const hasOpenToAllPractices = userSpiritualPrefs.practices?.includes("Open to All");
+      const hasOpenToAllDraws = userSpiritualPrefs.spiritualDraws?.includes("Open to All");
+      const hasOpenToAllHealing = userSpiritualPrefs.healingModalities?.includes("Open to All");
       
-      if (commonPractices.length > 0) {
-        score += 1;
-        matchDetails.push(`Practices: ${commonPractices.join(', ')}`);
+      // If ALL categories are "Open to All", show everyone
+      if (hasOpenToAllPractices && hasOpenToAllDraws && hasOpenToAllHealing) {
+        console.log(`✅ ${user.firstName} - User is open to all spiritual preferences (showing everyone)`);
+        return { passes: true, score: 0 };
       }
-      totalCategories += 1;
       
-      console.log(`🔮 ${user.firstName} - Practices check: ${commonPractices.length > 0 ? '✅' : '❌'} (${commonPractices.join(', ')})`);
-    }
-    
-    // Check healing modalities compatibility (only if user has specific healing preferences)
-    if (hasSpecificHealing && candidateProfile.healingModalities?.length) {
-      const commonModalities = userSpiritualPrefs.healingModalities!.filter(modality =>
-        modality !== "Open to All" && candidateProfile?.healingModalities?.includes(modality)
-      );
+      // If user has only "Open to All" selections (no specific preferences), show everyone
+      const hasSpecificPractices = userSpiritualPrefs.practices?.length && !hasOpenToAllPractices;
+      const hasSpecificDraws = userSpiritualPrefs.spiritualDraws?.length && !hasOpenToAllDraws;
+      const hasSpecificHealing = userSpiritualPrefs.healingModalities?.length && !hasOpenToAllHealing;
       
-      if (commonModalities.length > 0) {
-        score += 1;
-        matchDetails.push(`Healing: ${commonModalities.join(', ')}`);
+      if (!hasSpecificPractices && !hasSpecificDraws && !hasSpecificHealing) {
+        console.log(`✅ ${user.firstName} - User has only 'Open to All' preferences (showing everyone)`);
+        return { passes: true, score: 0 };
       }
-      totalCategories += 1;
       
-      console.log(`🔮 ${user.firstName} - Healing modalities check: ${commonModalities.length > 0 ? '✅' : '❌'} (${commonModalities.join(', ')})`);
-    }
-    
-    const compatibilityScore = totalCategories > 0 ? score / totalCategories : 0;
-    
-    // 🎯 COMPATIBILITY LOGIC
-    if (totalCategories === 0) {
-      // User has spiritual preferences but candidate has no matching categories
-      console.log(`✅ ${user.firstName} - No overlapping spiritual categories (showing anyway)`);
-      return { passes: true, score: 0 };
-    }
-    
-    // Must have at least ONE shared spiritual interest (or be open to all)
-    const passes = score > 0;
-    
-    if (passes) {
-      console.log(`✅ ${user.firstName} - Spiritual match! Score: ${(compatibilityScore * 100).toFixed(0)}% (${matchDetails.join('; ')})`);
-    } else {
-      console.log(`❌ ${user.firstName} - No spiritual compatibility`);
-    }
-    
-    return { 
-      passes, 
-      score: compatibilityScore,
-      reason: passes ? matchDetails.join('; ') : 'No shared spiritual interests'
-    };
-  }, [userData.matchPreferences]);
+      // 🎯 If candidate has NO spiritual profile, they pass (open to all)
+      if (!candidateProfile || 
+          (!candidateProfile.draws?.length && 
+          !candidateProfile.practices?.length && 
+          !candidateProfile.healingModalities?.length)) {
+        console.log(`✅ ${user.firstName} - No spiritual profile (open to all)`);
+        return { passes: true, score: 0 };
+      }
+      
+      // 🔮 DETAILED COMPATIBILITY SCORING (only for specific preferences)
+      let score = 0;
+      let totalCategories = 0;
+      const matchDetails: string[] = [];
+      
+      // Check spiritual draws compatibility (only if user has specific draws preferences)
+      if (hasSpecificDraws && candidateProfile.draws?.length) {
+        const commonDraws = userSpiritualPrefs.spiritualDraws!.filter(draw => 
+          draw !== "Open to All" && candidateProfile?.draws?.includes(draw)
+        );
+        
+        if (commonDraws.length > 0) {
+          score += 1;
+          matchDetails.push(`Draws: ${commonDraws.join(', ')}`);
+        }
+        totalCategories += 1;
+        
+        console.log(`🔮 ${user.firstName} - Draws check: ${commonDraws.length > 0 ? '✅' : '❌'} (${commonDraws.join(', ')})`);
+      }
+      
+      // Check practices compatibility (only if user has specific practices preferences)
+      if (hasSpecificPractices && candidateProfile.practices?.length) {
+        const commonPractices = userSpiritualPrefs.practices!.filter(practice =>
+          practice !== "Open to All" && candidateProfile?.practices?.includes(practice)
+        );
+        
+        if (commonPractices.length > 0) {
+          score += 1;
+          matchDetails.push(`Practices: ${commonPractices.join(', ')}`);
+        }
+        totalCategories += 1;
+        
+        console.log(`🔮 ${user.firstName} - Practices check: ${commonPractices.length > 0 ? '✅' : '❌'} (${commonPractices.join(', ')})`);
+      }
+      
+      // Check healing modalities compatibility (only if user has specific healing preferences)
+      if (hasSpecificHealing && candidateProfile.healingModalities?.length) {
+        const commonModalities = userSpiritualPrefs.healingModalities!.filter(modality =>
+          modality !== "Open to All" && candidateProfile?.healingModalities?.includes(modality)
+        );
+        
+        if (commonModalities.length > 0) {
+          score += 1;
+          matchDetails.push(`Healing: ${commonModalities.join(', ')}`);
+        }
+        totalCategories += 1;
+        
+        console.log(`🔮 ${user.firstName} - Healing modalities check: ${commonModalities.length > 0 ? '✅' : '❌'} (${commonModalities.join(', ')})`);
+      }
+      
+      const compatibilityScore = totalCategories > 0 ? score / totalCategories : 0;
+      
+      // 🎯 COMPATIBILITY LOGIC
+      if (totalCategories === 0) {
+        // User has spiritual preferences but candidate has no matching categories
+        console.log(`✅ ${user.firstName} - No overlapping spiritual categories (showing anyway)`);
+        return { passes: true, score: 0 };
+      }
+      
+      // Must have at least ONE shared spiritual interest (or be open to all)
+      const passes = score > 0;
+      
+      if (passes) {
+        console.log(`✅ ${user.firstName} - Spiritual match! Score: ${(compatibilityScore * 100).toFixed(0)}% (${matchDetails.join('; ')})`);
+      } else {
+        console.log(`❌ ${user.firstName} - No spiritual compatibility`);
+      }
+      
+      return { 
+        passes, 
+        score: compatibilityScore,
+        reason: passes ? matchDetails.join('; ') : 'No shared spiritual interests'
+      };
+    }, [userData.matchPreferences]);
+
+    // Helper to check if user has active boost
+  const isUserBoosted = useCallback((user: UserDataType): boolean => {
+      if (!user.boostExpiresAt) return false;
+      
+      const expiresAt = user.boostExpiresAt.toDate 
+        ? user.boostExpiresAt.toDate()
+        : new Date(user.boostExpiresAt);
+      
+      return new Date() < expiresAt;
+    }, []);
+
+    // Helper to check if user is recently active (last 24 hours)
+  const isUserRecentlyActive = useCallback((user: UserDataType): boolean => {
+      if (!user.lastActive) return false;
+      
+      const lastActive = user.lastActive?.toDate?.() || new Date(user.lastActive);
+      const now = new Date();
+      const diffHours = (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60);
+      
+      return diffHours <= 24;
+    }, []);
+
+  const applyBoostPrioritySorting = useCallback((users: UserDataType[]): UserDataType[] => {
+      if (!users.length) return users;
+      
+      console.log(`🚀 Applying boost priority sorting to ${users.length} users`);
+      
+      const sortedUsers = [...users].sort((a, b) => {
+        // 1. HIGHEST PRIORITY: Active boost status
+        const aHasActiveBoost = isUserBoosted(a);
+        const bHasActiveBoost = isUserBoosted(b);
+        
+        if (aHasActiveBoost && !bHasActiveBoost) {
+          console.log(`🚀 ${a.firstName} boosted above ${b.firstName} (active radiance)`);
+          return -1;
+        }
+        if (!aHasActiveBoost && bHasActiveBoost) {
+          console.log(`🚀 ${b.firstName} boosted above ${a.firstName} (active radiance)`);
+          return 1;
+        }
+        
+        // 2. SECOND PRIORITY: Recent activity
+        const aRecentlyActive = isUserRecentlyActive(a);
+        const bRecentlyActive = isUserRecentlyActive(b);
+        
+        if (aRecentlyActive && !bRecentlyActive) return -1;
+        if (!aRecentlyActive && bRecentlyActive) return 1;
+        
+        // 3. THIRD PRIORITY: Likes received (popularity)
+        const aLikes = a.likesReceivedCount || 0;
+        const bLikes = b.likesReceivedCount || 0;
+        
+        if (aLikes !== bLikes) {
+          return bLikes - aLikes;
+        }
+        
+        // 4. FOURTH PRIORITY: Account newness
+        const aCreated = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+        const bCreated = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+        
+        return bCreated.getTime() - aCreated.getTime();
+      });
+      
+      // Log top 5 for debugging
+      console.log('🚀 Top 5 prioritized matches:');
+      sortedUsers.slice(0, 5).forEach((user, index) => {
+        const hasBoost = isUserBoosted(user);
+        const isActive = isUserRecentlyActive(user);
+        const likes = user.likesReceivedCount || 0;
+        
+        console.log(`  ${index + 1}. ${user.firstName} - ${hasBoost ? '🚀 BOOSTED' : '⭐'} ${isActive ? '🟢 ACTIVE' : '⚪'} ${likes} likes`);
+      });
+      
+      return sortedUsers;
+    }, [isUserBoosted, isUserRecentlyActive]);
 
   const applyAllFilters = useCallback((users: UserDataType[]): UserDataType[] => {
     const prefs = userData.matchPreferences;
@@ -1207,8 +1294,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     }
 
-    return sortedUsers;
-  }, [userData.matchPreferences, userData.latitude, userData.longitude, matchingState.exclusionSet, applySpiritualFilter]);
+    const finalSortedUsers = applyBoostPrioritySorting(sortedUsers);
+    console.log(`📊 FINAL PRIORITIZED USERS: ${finalSortedUsers.length} out of ${users.length} raw users`);
+
+    return finalSortedUsers;
+
+  }, [userData.matchPreferences, userData.latitude, userData.longitude, matchingState.exclusionSet, applySpiritualFilter, applyBoostPrioritySorting]);
 
 
   const fetchPotentialMatches = useCallback(async (
@@ -2832,7 +2923,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         transaction.update(userRef, {
           activeBoosts: Math.max(0, (currentData.activeBoosts || 1) - 1),
           boostExpiresAt: firestore.Timestamp.fromDate(expiresAt),
-          lastActive: firestore.FieldValue.serverTimestamp() // Update last active for priority matching
+          lastActive: firestore.FieldValue.serverTimestamp() // 🔥 Update for priority matching
         });
       });
 
@@ -2840,10 +2931,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setUserData(prevData => ({
         ...prevData,
         activeBoosts: Math.max(0, (prevData.activeBoosts || 1) - 1),
-        boostExpiresAt: firestore.Timestamp.fromDate(expiresAt)
+        boostExpiresAt: firestore.Timestamp.fromDate(expiresAt),
+        lastActive: firestore.FieldValue.serverTimestamp() // 🔥 NEW: Update local lastActive
       }));
 
-      console.log("Sacred Radiance activated for 1 hour");
+      // 🔥 NEW: Trigger a refresh so others see this user prioritized
+      console.log("🚀 Sacred Radiance activated - triggering match refresh for better visibility");
+      
+      // Optional: Reset matching to get fresh prioritized batch
+      setTimeout(async () => {
+        console.log("🚀 Refreshing matches with boost priority...");
+        await resetMatching();
+      }, 1000);
+
+      console.log("🚀 Sacred Radiance activated for 1 hour with priority matching!");
     } catch (error) {
       console.error("Failed to activate Sacred Radiance:", error);
       throw error;
@@ -2937,6 +3038,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     hasActiveRadiance,
     getRadianceStatus,
     formatRadianceTime,
+    isUserBoosted,
+    isUserRecentlyActive,
   };
 
   if (initializing) {

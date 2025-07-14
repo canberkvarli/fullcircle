@@ -20,11 +20,10 @@ interface UserCardProps {
   variant?: "default" | "radiant";
   onPress?: () => void;
   showDetails?: boolean;
-  onHeartPress?: () => void;
-  getImageUrl?: (photoPath: string) => Promise<string | null>; // FIXED: Allow null return
+  getImageUrl?: (photoPath: string) => Promise<string | null>;
   isOrbLike?: boolean;
-  isRadianceLike?: boolean; // NEW: For boost/radiance likes
-  showConnectionBadges?: boolean; // NEW: Show connection method badges
+  isRadianceLike?: boolean;
+  showConnectionBadges?: boolean;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -34,7 +33,6 @@ const UserCard: React.FC<UserCardProps> = ({
   variant = "default",
   onPress,
   showDetails = false,
-  onHeartPress,
   getImageUrl,
   isOrbLike = false,
   isRadianceLike = false,
@@ -83,12 +81,11 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
-        {/* Connection Method Badges */}
         {showConnectionBadges && (isOrbLike || isRadianceLike) && (
           <View style={styles.connectionBadgesContainer}>
             {isOrbLike && (
               <View style={[styles.connectionBadge, styles.orbBadge]}>
-                <Ionicons name="planet" size={12} color="#FFFFFF" />
+                <Ionicons name="star" size={12} color="#FFFFFF" />
               </View>
             )}
             {isRadianceLike && (
@@ -103,21 +100,6 @@ const UserCard: React.FC<UserCardProps> = ({
         {variant === "default" && (
           <View style={styles.headerDefault}>
             <View style={styles.nameRow}>
-              {/* Connection icons next to name */}
-              {(isOrbLike || isRadianceLike) && (
-                <View style={styles.nameIconsContainer}>
-                  {isOrbLike && (
-                    <View style={styles.nameIcon}>
-                      <Ionicons name="planet" size={14} color="#8B4513" />
-                    </View>
-                  )}
-                  {isRadianceLike && (
-                    <View style={styles.nameIcon}>
-                      <Ionicons name="radio" size={14} color="#D4AF37" />
-                    </View>
-                  )}
-                </View>
-              )}
               <Text style={styles.headerTextDefault}>
                 {user.firstName || "Unknown"}
               </Text>
@@ -134,7 +116,11 @@ const UserCard: React.FC<UserCardProps> = ({
             />
           ) : (
             <View style={styles.photoFallback}>
-              <Ionicons name="person" size={50} color="#ccc" />
+              <Ionicons 
+                name="person" 
+                size={50} 
+                color="#ccc" 
+              />
             </View>
           )}
         </View>
@@ -144,28 +130,20 @@ const UserCard: React.FC<UserCardProps> = ({
           <View style={styles.footer}>
             <View style={styles.avatarContainer}>
               {avatarPhoto ? (
-                <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
+                <Image 
+                  source={{ uri: avatarPhoto }} 
+                  style={styles.avatar} 
+                />
               ) : (
-                <Ionicons name="person" size={30} color="#ccc" />
+                <Ionicons 
+                  name="person" 
+                  size={30} 
+                  color="#ccc" 
+                />
               )}
             </View>
             <View style={styles.nameAndBadges}>
               <View style={styles.radiantNameRow}>
-                {/* Connection icons next to name for radiant variant */}
-                {(isOrbLike || isRadianceLike) && (
-                  <View style={styles.nameIconsContainer}>
-                    {isOrbLike && (
-                      <View style={styles.nameIcon}>
-                        <Ionicons name="planet" size={12} color="#8B4513" />
-                      </View>
-                    )}
-                    {isRadianceLike && (
-                      <View style={styles.nameIcon}>
-                        <Ionicons name="radio" size={12} color="#D4AF37" />
-                      </View>
-                    )}
-                  </View>
-                )}
                 <Text style={styles.userName}>
                   {user.firstName || "Unknown"}
                 </Text>
@@ -231,6 +209,7 @@ const styles = StyleSheet.create({
     height: height * 0.66,
     flexDirection: "column",
     justifyContent: "space-between",
+    overflow: 'hidden',
   },
   radiantCard: {
     backgroundColor: "#EDE9E3",
@@ -241,16 +220,19 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
+
   mainPhotoContainer: {
     width: "100%",
     aspectRatio: 1,
     borderRadius: 10,
     overflow: "hidden",
+    position: 'relative',
   },
   mainPhoto: {
     width: "100%",
     height: "100%",
   },
+
   photoFallback: {
     width: "100%",
     height: "100%",
@@ -281,9 +263,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
+
   orbBadge: {
-    backgroundColor: "#8B4513",
+    backgroundColor: "#FFD700",
+    shadowColor: "#FFD700",
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
   },
+
   radianceBadge: {
     backgroundColor: "#D4AF37",
   },
@@ -292,6 +282,7 @@ const styles = StyleSheet.create({
   headerDefault: {
     paddingHorizontal: 8,
     paddingVertical: 4,
+    zIndex: 5,
   },
   nameRow: {
     flexDirection: "row",
@@ -303,32 +294,13 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 
-  // Name icons (next to name)
-  nameIconsContainer: {
-    flexDirection: "row",
-    marginRight: 8,
-    gap: 4,
-  },
-  nameIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-
   // Footer for radiant variant
   footer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
     paddingHorizontal: 10,
+    zIndex: 5,
   },
   avatarContainer: {
     width: 80,
@@ -340,10 +312,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
   avatar: {
     width: "100%",
     height: "100%",
   },
+
   nameAndBadges: {
     flex: 1,
   },
@@ -361,6 +335,7 @@ const styles = StyleSheet.create({
   detailsContainer: {
     marginTop: 10,
     width: "100%",
+    zIndex: 5,
   },
   detailRow: {
     flexDirection: "row",

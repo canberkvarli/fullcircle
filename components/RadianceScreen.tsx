@@ -47,61 +47,51 @@ const BoostOption: React.FC<BoostOptionProps> = ({
       style={[
         styles.boostOption,
         { 
-          backgroundColor: isSelected ? colors.primary + '15' : colors.card,
-          borderColor: isSelected ? colors.primary : colors.border,
-          borderWidth: isSelected ? 2 : 1
+          backgroundColor: isSelected ? '#D4AF37' + '10' : colors.card,
+          borderColor: isSelected ? '#B8860B' : '#D4AF37' + '40',
+          borderWidth: 2
         }
       ]}
       onPress={onSelect}
       activeOpacity={0.8}
     >
       {tag && (
-        <View style={[styles.tagBadge, { backgroundColor: colors.primary }]}>
+        <View style={[styles.tagBadge, { backgroundColor: '#FF6B35' }]}>
           <Text style={[styles.tagText, fonts.spiritualBodyFont]}>{tag}</Text>
         </View>
       )}
       
       <View style={styles.boostHeader}>
         <View style={styles.boostIconContainer}>
-          <Ionicons name="radio-outline" size={24} color={colors.primary} />
+          <Ionicons name="radio-outline" size={20} color="#B8860B" />
           <Text style={[styles.boostCount, fonts.spiritualTitleFont, { color: colors.textDark }]}>
             {boostCount}
           </Text>
         </View>
-        <Text style={[styles.boostLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-          Sacred Radiance{boostCount > 1 ? 's' : ''}
-        </Text>
       </View>
 
       <View style={styles.pricingContainer}>
         <Text style={[styles.pricePerBoost, fonts.spiritualBodyFont, { color: colors.textLight }]}>
           ${pricePerBoost.toFixed(2)} each
         </Text>
-        <Text style={[styles.totalPrice, fonts.spiritualTitleFont, { color: colors.primary }]}>
+        <Text style={[styles.totalPrice, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
           ${totalPrice.toFixed(2)}
         </Text>
       </View>
 
-      <TouchableOpacity
+      <View
         style={[
-          styles.selectButton,
+          styles.selectIndicator,
           { 
-            backgroundColor: isSelected ? colors.primary : colors.card,
-            borderColor: colors.primary,
-            borderWidth: 1
+            backgroundColor: isSelected ? '#B8860B' : 'transparent',
+            borderColor: isSelected ? '#B8860B' : '#D4AF37' + '60',
           }
         ]}
-        onPress={onSelect}
-        activeOpacity={0.9}
       >
-        <Text style={[
-          styles.selectButtonText,
-          fonts.spiritualBodyFont,
-          { color: isSelected ? '#FFFFFF' : colors.primary }
-        ]}>
-          Get {boostCount} for ${totalPrice.toFixed(2)}
-        </Text>
-      </TouchableOpacity>
+        {isSelected && (
+          <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -113,13 +103,21 @@ interface RadianceScreenProps {
 
 const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => {
   const router = useRouter();
-  const { userData, purchaseRadiance } = useUserContext();
+  const { 
+    userData, 
+    purchaseRadiance, 
+    activateRadiance, 
+    getRadianceTimeRemaining,
+    getRadianceStatus 
+  } = useUserContext();
+  
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
   
   const [selectedOption, setSelectedOption] = useState<number>(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [radianceStatus, setRadianceStatus] = useState({ isActive: false, timeRemaining: 0, formattedTime: null });
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const boostOptions = [
@@ -143,6 +141,37 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   ];
 
+  // Check radiance status
+  useEffect(() => {
+    const updateRadianceStatus = () => {
+      if (getRadianceStatus) {
+        const status = getRadianceStatus();
+        setRadianceStatus({
+          isActive: status.isActive,
+          timeRemaining: status.timeRemaining,
+          formattedTime: null
+        });
+      } else if (getRadianceTimeRemaining) {
+        const timeRemaining = getRadianceTimeRemaining();
+        setRadianceStatus({
+          isActive: timeRemaining > 0,
+          timeRemaining,
+          formattedTime: null
+        });
+      }
+    };
+
+    updateRadianceStatus();
+    const interval = setInterval(updateRadianceStatus, 1000);
+    return () => clearInterval(interval);
+  }, [getRadianceStatus, getRadianceTimeRemaining]);
+
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     if (visible) {
       Animated.timing(fadeAnim, {
@@ -153,12 +182,27 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   }, [visible]);
 
+  const handleActivateExistingBoost = async () => {
+    if (!userData.activeBoosts || userData.activeBoosts < 1) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await activateRadiance();
+      onClose();
+    } catch (error) {
+      console.error('Activation failed:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handlePurchase = async () => {
     setIsProcessing(true);
     const option = boostOptions[selectedOption];
     
     try {
-      // This would integrate with your payment system
       await purchaseRadiance(option.boostCount, option.totalPrice);
       onClose();
     } catch (error) {
@@ -168,6 +212,10 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   };
 
+  // Determine what to show
+  const hasActiveRadiance = radianceStatus.isActive;
+  const hasAvailableBoosts = (userData.activeBoosts || 0) > 0;
+
   return (
     <Modal
       visible={visible}
@@ -176,7 +224,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       onRequestClose={onClose}
     >
       <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
-        {/* Header */}
+        {/* Simple Header - No Title */}
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity 
             style={[styles.closeButton, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -184,9 +232,6 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
           >
             <Ionicons name="close" size={24} color={colors.textDark} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Sacred Radiance
-          </Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -194,115 +239,183 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
           contentContainerStyle={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
-          {/* Hero Section */}
-          <View style={styles.heroSection}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
-              <Ionicons name="radio-outline" size={40} color={colors.primary} />
-            </View>
-            <Text style={[styles.mainTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              Radiate Your Energy
-            </Text>
-            <Text style={[styles.subtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Each Sacred Radiance gets you seen by 11x more souls for one sacred hour
-            </Text>
-          </View>
-
-          {/* Boost Options */}
-          <View style={styles.optionsSection}>
-            {boostOptions.map((option, index) => (
-              <BoostOption
-                key={index}
-                boostCount={option.boostCount}
-                pricePerBoost={option.pricePerBoost}
-                totalPrice={option.totalPrice}
-                tag={option.tag}
-                isSelected={selectedOption === index}
-                onSelect={() => setSelectedOption(index)}
-              />
-            ))}
-          </View>
-
-          {/* How it Works */}
-          <View style={styles.infoSection}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              How Sacred Radiance Works
-            </Text>
-            
-            <View style={styles.infoList}>
-              <View style={styles.infoItem}>
-                <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                  <Ionicons name="trending-up" size={16} color={colors.primary} />
+          {/* Active Radiance Status */}
+          {hasActiveRadiance && (
+            <View style={styles.activeRadianceSection}>
+              <View style={[styles.activeRadianceCard, { backgroundColor: '#D4AF37' + '08', borderColor: '#B8860B' }]}>
+                <View style={styles.activeRadianceHeader}>
+                  <Ionicons name="radio" size={24} color="#B8860B" />
+                  <Text style={[styles.activeRadianceTitle, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+                    Sacred Radiance Active
+                  </Text>
                 </View>
-                <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Your profile appears first in discovery for 60 minutes
+                <Text style={[styles.activeRadianceTime, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  {radianceStatus.formattedTime || '00:00'}
                 </Text>
-              </View>
-              
-              <View style={styles.infoItem}>
-                <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                  <Ionicons name="people" size={16} color={colors.primary} />
-                </View>
-                <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Get 11x more profile views from compatible souls
-                </Text>
-              </View>
-              
-              <View style={styles.infoItem}>
-                <View style={[styles.infoIcon, { backgroundColor: colors.primary + '15' }]}>
-                  <Ionicons name="heart" size={16} color={colors.primary} />
-                </View>
-                <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Track radiance-powered connections in Kindred Spirits
+                <Text style={[styles.activeRadianceSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                  Your profile is being prioritized in discovery
                 </Text>
               </View>
             </View>
-          </View>
+          )}
 
-          {/* Purchase Button */}
-          <TouchableOpacity
-            style={[
-              styles.purchaseButton,
-              { 
-                backgroundColor: isProcessing ? colors.textMuted : colors.primary,
-                shadowColor: colors.primary
-              }
-            ]}
-            onPress={handlePurchase}
-            disabled={isProcessing}
-            activeOpacity={0.8}
-          >
-            {isProcessing ? (
-              <View style={styles.processingContainer}>
-                <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
-                  Activating Radiance...
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.purchaseContainer}>
-                <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
-                  Activate Sacred Radiance
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Trust Indicators */}
-          <View style={styles.trustSection}>
-            <View style={styles.trustItem}>
-              <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
-              <Text style={[styles.trustText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                Secure payment
+          {/* Available Boosts to Activate */}
+          {!hasActiveRadiance && hasAvailableBoosts && (
+            <View style={styles.availableBoostsSection}>
+              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                Activate Your Sacred Radiance
+              </Text>
+              <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                You have {userData.activeBoosts} boost{userData.activeBoosts !== 1 ? 's' : ''} ready to activate
+              </Text>
+              
+              <TouchableOpacity
+                style={[styles.activateButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+                onPress={handleActivateExistingBoost}
+                disabled={isProcessing}
+                activeOpacity={0.8}
+              >
+                {isProcessing ? (
+                  <View style={styles.processingContainer}>
+                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                    <Text style={[styles.activateButtonText, fonts.spiritualBodyFont]}>
+                      Activating...
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.activateContainer}>
+                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                    <Text style={[styles.activateButtonText, fonts.spiritualBodyFont]}>
+                      Activate for 1 Hour
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              
+              <Text style={[styles.orText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                Or get more Sacred Radiance below
               </Text>
             </View>
-            <View style={styles.trustItem}>
-              <Ionicons name="refresh" size={16} color={colors.primary} />
-              <Text style={[styles.trustText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                Cancel anytime
-              </Text>
-            </View>
-          </View>
+          )}
+
+          {/* Purchase Options - Only show if no active radiance or as additional options */}
+          {(!hasActiveRadiance || hasActiveRadiance) && (
+            <>
+              <View style={styles.purchaseSection}>
+                <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  {hasActiveRadiance ? "Get More Sacred Radiance" : "Sacred Radiance"}
+                </Text>
+                <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                  Appear first in discovery and get 11x more connections
+                </Text>
+              </View>
+
+              {/* Horizontal Boost Options */}
+              <View style={styles.optionsSection}>
+                <ScrollView 
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.optionsScrollView}
+                  snapToInterval={width * 0.7}
+                  decelerationRate="fast"
+                >
+                  {boostOptions.map((option, index) => (
+                    <BoostOption
+                      key={index}
+                      boostCount={option.boostCount}
+                      pricePerBoost={option.pricePerBoost}
+                      totalPrice={option.totalPrice}
+                      tag={option.tag}
+                      isSelected={selectedOption === index}
+                      onSelect={() => setSelectedOption(index)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* How it Works */}
+              <View style={styles.infoSection}>
+                <Text style={[styles.infoTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  How It Works
+                </Text>
+                
+                <View style={styles.infoList}>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.infoIcon, { backgroundColor: '#D4AF37' + '15' }]}>
+                      <Ionicons name="trending-up" size={16} color="#B8860B" />
+                    </View>
+                    <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                      Your profile appears first in discovery for 60 minutes
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.infoItem}>
+                    <View style={[styles.infoIcon, { backgroundColor: '#D4AF37' + '15' }]}>
+                      <Ionicons name="people" size={16} color="#B8860B" />
+                    </View>
+                    <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                      Get 11x more profile views from compatible souls
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.infoItem}>
+                    <View style={[styles.infoIcon, { backgroundColor: '#D4AF37' + '15' }]}>
+                      <Ionicons name="heart" size={16} color="#B8860B" />
+                    </View>
+                    <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                      Track radiance connections in Kindred Spirits
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Purchase Button */}
+              <TouchableOpacity
+                style={[
+                  styles.purchaseButton,
+                  { 
+                    backgroundColor: isProcessing ? colors.textMuted : '#B8860B',
+                    shadowColor: '#B8860B'
+                  }
+                ]}
+                onPress={handlePurchase}
+                disabled={isProcessing}
+                activeOpacity={0.8}
+              >
+                {isProcessing ? (
+                  <View style={styles.processingContainer}>
+                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                    <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
+                      Processing...
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.purchaseContainer}>
+                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                    <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
+                      Get {boostOptions[selectedOption].boostCount} for ${boostOptions[selectedOption].totalPrice.toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Trust Indicators */}
+              <View style={styles.trustSection}>
+                <View style={styles.trustItem}>
+                  <Ionicons name="shield-checkmark" size={16} color="#B8860B" />
+                  <Text style={[styles.trustText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                    Secure payment
+                  </Text>
+                </View>
+                <View style={styles.trustItem}>
+                  <Ionicons name="refresh" size={16} color="#B8860B" />
+                  <Text style={[styles.trustText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                    Cancel anytime
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
         </ScrollView>
       </Animated.View>
     </Modal>
@@ -333,62 +446,134 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   
-  headerTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-  },
-  
   scrollView: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['2xl'],
   },
-  
-  // Hero Section
-  heroSection: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    marginBottom: Spacing.lg,
+
+  // Active Radiance Section
+  activeRadianceSection: {
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.lg,
   },
-  
-  iconContainer: {
-    width: 80,
-    height: 80,
+
+  activeRadianceCard: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+
+  activeRadianceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+
+  activeRadianceTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    marginLeft: Spacing.sm,
+  },
+
+  activeRadianceTime: {
+    fontSize: Typography.sizes['3xl'],
+    fontWeight: Typography.weights.bold,
+    marginBottom: Spacing.sm,
+  },
+
+  activeRadianceSubtext: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+  },
+
+  // Available Boosts Section
+  availableBoostsSection: {
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.lg,
+    alignItems: 'center',
+  },
+
+  activateButton: {
     borderRadius: BorderRadius.full,
-    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    marginVertical: Spacing.lg,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+
+  activateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+
+  activateButtonText: {
+    color: '#FFFFFF',
+    fontWeight: Typography.weights.semibold,
+    fontSize: Typography.sizes.lg,
+  },
+
+  orText: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: Spacing.md,
+  },
+
+  // Purchase Section
+  purchaseSection: {
     marginBottom: Spacing.lg,
+    alignItems: 'center',
   },
   
-  mainTitle: {
-    fontSize: Typography.sizes['2xl'],
+  sectionTitle: {
+    fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
-  
-  subtitle: {
-    fontSize: Typography.sizes.lg,
+
+  sectionSubtitle: {
+    fontSize: Typography.sizes.base,
     textAlign: 'center',
-    lineHeight: Typography.sizes.lg * 1.4,
-    paddingHorizontal: Spacing.md,
+    lineHeight: Typography.sizes.base * 1.4,
   },
   
-  // Options Section
+  // Options Section - Horizontal
   optionsSection: {
     marginBottom: Spacing.xl,
+  },
+
+  optionsScrollView: {
+    paddingLeft: Spacing.md,
     gap: Spacing.md,
   },
   
   boostOption: {
+    width: width * 0.65,
     borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
     position: 'relative',
+    alignItems: 'center',
+    marginRight: Spacing.md,
   },
   
   tagBadge: {
     position: 'absolute',
-    top: -8,
-    left: Spacing.lg,
+    right: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.md,
@@ -403,13 +588,12 @@ const styles = StyleSheet.create({
   
   boostHeader: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   
   boostIconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
   },
   
   boostCount: {
@@ -418,14 +602,9 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   
-  boostLabel: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-  },
-  
   pricingContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   
   pricePerBoost: {
@@ -434,20 +613,17 @@ const styles = StyleSheet.create({
   },
   
   totalPrice: {
-    fontSize: Typography.sizes['2xl'],
+    fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
   },
-  
-  selectButton: {
-    borderRadius: BorderRadius.full,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+
+  selectIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  
-  selectButtonText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
   },
   
   // Info Section
@@ -455,10 +631,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   
-  sectionTitle: {
+  infoTitle: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.bold,
     marginBottom: Spacing.lg,
+    textAlign: 'center',
   },
   
   infoList: {

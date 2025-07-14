@@ -9,6 +9,7 @@ import {
   StatusBar,
   Platform,
   useColorScheme,
+  Alert,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import UserCard from "@/components/UserCard";
@@ -57,13 +58,21 @@ const SORT_OPTIONS: SortConfig[] = [
 ];
 
 const KindredSpirits: React.FC = () => {
-  const { userData, subscribeToReceivedLikes, getRadianceTimeRemaining, getImageUrl } = useUserContext();
+  const { 
+    userData, 
+    subscribeToReceivedLikes, 
+    getRadianceTimeRemaining, 
+    activateRadiance,
+    getImageUrl 
+  } = useUserContext();
+  
   const [likedByUsers, setLikedByUsers] = useState<any[]>([]);
   const [sortedUsers, setSortedUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [radianceTimeRemaining, setRadianceTimeRemaining] = useState<number>(0);
+  const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -90,7 +99,7 @@ const KindredSpirits: React.FC = () => {
     };
 
     checkRadianceTime();
-    const interval = setInterval(checkRadianceTime, 1000); // Update every second
+    const interval = setInterval(checkRadianceTime, 1000);
     return () => clearInterval(interval);
   }, [userData.boostExpiresAt, getRadianceTimeRemaining]);
 
@@ -152,8 +161,50 @@ const KindredSpirits: React.FC = () => {
     setSelectedSort(sortKey);
   };
 
-  const handleRadiancePress = () => {
-    setShowRadianceModal(true);
+  const handleRadiancePress = async () => {
+    // If boost is already active, just show the modal
+    if (radianceTimeRemaining > 0) {
+      setShowRadianceModal(true);
+      return;
+    }
+
+    if ((userData.activeBoosts || 0) > 0) {
+      Alert.alert(
+        "Activate Sacred Radiance",
+        `You have ${userData.activeBoosts} boost${userData.activeBoosts !== 1 ? 's' : ''} available. Activate Sacred Radiance to increase your visibility for 1 hour?`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Activate",
+            onPress: handleActivateBoost
+          }
+        ]
+      );
+    } else {
+      // No boosts available, show purchase modal
+      setShowRadianceModal(true);
+    }
+  };
+
+  const handleActivateBoost = async () => {
+    setIsActivatingBoost(true);
+    try {
+      await activateRadiance();
+      Alert.alert(
+        "Sacred Radiance Activated! ✨",
+        "Your profile is now boosted for the next hour. You'll appear higher in potential matches and your likes will have special radiance energy."
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Activation Failed",
+        error.message || "Failed to activate Sacred Radiance. Please try again."
+      );
+    } finally {
+      setIsActivatingBoost(false);
+    }
   };
 
   const isRecentlyActive = (user: any): boolean => {
@@ -189,6 +240,48 @@ const KindredSpirits: React.FC = () => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const getRadianceButtonConfig = () => {
+    if (isActivatingBoost) {
+      return {
+        text: "Activating...",
+        color: '#FFFFFF',
+        backgroundColor: '#D4AF37',
+        borderColor: '#D4AF37',
+        disabled: true
+      };
+    }
+    
+    if (radianceTimeRemaining > 0) {
+      return {
+        text: formatRadianceTime(radianceTimeRemaining),
+        color: '#FFFFFF',
+        backgroundColor: '#D4AF37',
+        borderColor: '#D4AF37',
+        disabled: false
+      };
+    }
+    
+    if ((userData.activeBoosts || 0) > 0) {
+      return {
+        text: `Activate (${userData.activeBoosts})`,
+        color: '#D4AF37',
+        backgroundColor: colors.background,
+        borderColor: '#D4AF37',
+        disabled: false
+      };
+    }
+    
+    return {
+      text: "Radiance",
+      color: '#D4AF37',
+      backgroundColor: colors.background,
+      borderColor: colors.border,
+      disabled: false
+    };
+  };
+
+  const radianceConfig = getRadianceButtonConfig();
+
   if (sortedUsers.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -205,8 +298,33 @@ const KindredSpirits: React.FC = () => {
               {' you'}
             </Text>
           </View>
+          
+          {/* Enhanced Radiance Button */}
+          <TouchableOpacity
+            style={[
+              styles.radianceButton,
+              { 
+                backgroundColor: radianceConfig.backgroundColor,
+                borderColor: radianceConfig.borderColor,
+                opacity: radianceConfig.disabled ? 0.7 : 1
+              }
+            ]}
+            onPress={handleRadiancePress}
+            activeOpacity={0.8}
+            disabled={radianceConfig.disabled}
+          >
+            <Ionicons 
+              name="radio-outline" 
+              size={16} 
+              color={radianceConfig.color} 
+            />
+            <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: radianceConfig.color }]}>
+              {radianceConfig.text}
+            </Text>
+          </TouchableOpacity>
         </View>
 
+        {/* No likes content */}
         <View style={styles.noLikesContainer}>
           <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
             <Ionicons name="heart-outline" size={32} color="#8B4513" />
@@ -239,13 +357,12 @@ const KindredSpirits: React.FC = () => {
             >
               <Ionicons name="radio-outline" size={18} color="#D4AF37" style={styles.buttonIcon} />
               <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#D4AF37' }]}>
-                Send Sacred Radiance
+                {(userData.activeBoosts || 0) > 0 ? 'Activate Sacred Radiance' : 'Sacred Radiance'}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Sacred Radiance Modal */}
         <RadianceScreen
           visible={showRadianceModal}
           onClose={() => setShowRadianceModal(false)}
@@ -272,32 +389,27 @@ const KindredSpirits: React.FC = () => {
           </Text>
         </View>
         
-        {/* Radiance Button */}
         <TouchableOpacity
           style={[
             styles.radianceButton,
             { 
-              backgroundColor: radianceTimeRemaining > 0 ? '#D4AF37' : colors.background,
-              borderColor: radianceTimeRemaining > 0 ? '#D4AF37' : colors.border
+              backgroundColor: radianceConfig.backgroundColor,
+              borderColor: radianceConfig.borderColor,
+              opacity: radianceConfig.disabled ? 0.7 : 1
             }
           ]}
           onPress={handleRadiancePress}
           activeOpacity={0.8}
+          disabled={radianceConfig.disabled}
         >
           <Ionicons 
             name="radio-outline" 
             size={16} 
-            color={radianceTimeRemaining > 0 ? '#FFFFFF' : '#D4AF37'} 
+            color={radianceConfig.color} 
           />
-          {radianceTimeRemaining > 0 ? (
-            <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: '#FFFFFF' }]}>
-              {formatRadianceTime(radianceTimeRemaining)}
-            </Text>
-          ) : (
-            <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: '#D4AF37' }]}>
-              Radiance
-            </Text>
-          )}
+          <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: radianceConfig.color }]}>
+            {radianceConfig.text}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -435,7 +547,6 @@ const KindredSpirits: React.FC = () => {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Sacred Radiance Modal */}
       <RadianceScreen
         visible={showRadianceModal}
         onClose={() => setShowRadianceModal(false)}
@@ -463,7 +574,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Radiance Button Styles
   radianceButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -476,6 +586,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    minWidth: 90,
   },
 
   radianceButtonText: {
@@ -506,7 +617,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Sort Container Styles
   sortContainer: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
@@ -623,19 +733,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing['2xl'],
   },
   
-  featuredHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  
-  featuredLabel: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
-    marginLeft: Spacing.sm,
-    letterSpacing: 0.3,
-  },
-  
   othersSection: {
     marginBottom: Spacing.xl,
   },
@@ -670,7 +767,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Card Container and Badge Styles
   cardContainer: {
     position: 'relative',
   },

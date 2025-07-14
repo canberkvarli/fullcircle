@@ -11,6 +11,7 @@ import {
   useColorScheme,
   StyleSheet,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -184,7 +185,7 @@ const LocationScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScrollView style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigateToPreviousScreen()}
@@ -273,7 +274,7 @@ const LocationScreen = () => {
       >
         <Ionicons name="chevron-forward" size={24} color={colors.background} />
       </TouchableOpacity>
-    </SafeAreaView>
+    </ScrollView>
   );
 };
 
