@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Modal,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -117,7 +118,11 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
   
   const [selectedOption, setSelectedOption] = useState<number>(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [radianceStatus, setRadianceStatus] = useState({ isActive: false, timeRemaining: 0, formattedTime: null });
+  const [radianceStatus, setRadianceStatus] = useState({ 
+    isActive: false, 
+    timeRemaining: 0, 
+    formattedTime: '00:00' 
+  });
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const boostOptions = [
@@ -141,36 +146,71 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   ];
 
+  // Format time function
+  const formatTime = (seconds: number): string => {
+    if (seconds <= 0) return '00:00';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+  };
+
   // Check radiance status
   useEffect(() => {
     const updateRadianceStatus = () => {
+      let timeRemaining = 0;
+      let isActive = false;
+
       if (getRadianceStatus) {
         const status = getRadianceStatus();
-        setRadianceStatus({
-          isActive: status.isActive,
-          timeRemaining: status.timeRemaining,
-          formattedTime: null
-        });
+        isActive = status.isActive;
+        timeRemaining = status.timeRemaining;
       } else if (getRadianceTimeRemaining) {
-        const timeRemaining = getRadianceTimeRemaining();
-        setRadianceStatus({
-          isActive: timeRemaining > 0,
-          timeRemaining,
-          formattedTime: null
-        });
+        timeRemaining = getRadianceTimeRemaining();
+        isActive = timeRemaining > 0;
       }
+
+      setRadianceStatus({
+        isActive,
+        timeRemaining,
+        formattedTime: formatTime(timeRemaining)
+      });
     };
 
-    updateRadianceStatus();
-    const interval = setInterval(updateRadianceStatus, 1000);
-    return () => clearInterval(interval);
-  }, [getRadianceStatus, getRadianceTimeRemaining]);
+    if (visible) {
+      updateRadianceStatus();
+      const interval = setInterval(updateRadianceStatus, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [visible, getRadianceStatus, getRadianceTimeRemaining]);
 
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  // Show alert when radiance is active (similar to KindredSpirits)
+  useEffect(() => {
+    if (visible && radianceStatus.isActive && radianceStatus.timeRemaining > 0) {
+      const minutes = Math.floor(radianceStatus.timeRemaining / 60);
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      
+      let timeText = "";
+      if (hours > 0) {
+        timeText = `${hours} hour${hours !== 1 ? 's' : ''} and ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+      } else {
+        timeText = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      }
+
+      Alert.alert(
+        "🌟 Radiance Active",
+        `Your profile is being prioritized for the next ${timeText}! You're getting 11x more visibility and appearing first in discovery.`,
+        [{ text: "Got it!", style: "default" }]
+      );
+    }
+  }, [visible, radianceStatus.isActive]);
 
   useEffect(() => {
     if (visible) {
@@ -190,9 +230,22 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     setIsProcessing(true);
     try {
       await activateRadiance();
+      
+      // Show success alert
+      Alert.alert(
+        "Radiance Activated!",
+        "Your profile is now being prioritized in discovery for the next hour. Get ready for 11x more connections!",
+        [{ text: "Amazing!", style: "default" }]
+      );
+      
       onClose();
     } catch (error) {
       console.error('Activation failed:', error);
+      Alert.alert(
+        "Activation Failed",
+        "We couldn't activate your Sacred Radiance right now. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -204,9 +257,22 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     
     try {
       await purchaseRadiance(option.boostCount, option.totalPrice);
+      
+      // Show success alert
+      Alert.alert(
+        "🎉 Purchase Successful!",
+        `You've received ${option.boostCount} Sacred Radiance boost${option.boostCount !== 1 ? 's' : ''}! Use them to get 11x more visibility and connections.`,
+        [{ text: "Awesome!", style: "default" }]
+      );
+      
       onClose();
     } catch (error) {
       console.error('Purchase failed:', error);
+      Alert.alert(
+        "Purchase Failed",
+        "We couldn't complete your purchase right now. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -246,14 +312,17 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
                 <View style={styles.activeRadianceHeader}>
                   <Ionicons name="radio" size={24} color="#B8860B" />
                   <Text style={[styles.activeRadianceTitle, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
-                    Sacred Radiance Active
+                    Radiance Active
                   </Text>
                 </View>
                 <Text style={[styles.activeRadianceTime, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  {radianceStatus.formattedTime || '00:00'}
+                  {radianceStatus.formattedTime}
                 </Text>
                 <Text style={[styles.activeRadianceSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
                   Your profile is being prioritized in discovery
+                </Text>
+                <Text style={[styles.activeRadianceBonus, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                  11x more visibility active!
                 </Text>
               </View>
             </View>
@@ -268,6 +337,13 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
               <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
                 You have {userData.activeBoosts} boost{userData.activeBoosts !== 1 ? 's' : ''} ready to activate
               </Text>
+              
+              <View style={[styles.boostInfoCard, { backgroundColor: colors.card }]}>
+                <Ionicons name="information-circle" size={20} color="#B8860B" />
+                <Text style={[styles.boostInfoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                  Activating Sacred Radiance will boost your profile for 1 hour with 11x more visibility!
+                </Text>
+              </View>
               
               <TouchableOpacity
                 style={[styles.activateButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
@@ -485,6 +561,13 @@ const styles = StyleSheet.create({
   activeRadianceSubtext: {
     fontSize: Typography.sizes.sm,
     textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+
+  activeRadianceBonus: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+    fontWeight: Typography.weights.semibold,
   },
 
   // Available Boosts Section
@@ -492,6 +575,21 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     paddingTop: Spacing.lg,
     alignItems: 'center',
+  },
+
+  boostInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+
+  boostInfoText: {
+    flex: 1,
+    fontSize: Typography.sizes.sm,
+    lineHeight: Typography.sizes.sm * 1.3,
   },
 
   activateButton: {
