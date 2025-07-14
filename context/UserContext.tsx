@@ -1173,13 +1173,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       connectionIntent: prefs?.connectionIntent,
       connectionPreferences: prefs?.connectionPreferences,
       preferredDistance: prefs?.preferredDistance,
-      spiritualPrefs: prefs?.spiritualCompatibility // 🔮 NEW
+      spiritualPrefs: prefs?.spiritualCompatibility
     });
+    
+    // 🔥 CRITICAL FIX: Add current user ID to exclusion check
+    console.log('🚫 Current user ID for exclusion:', userData.userId);
+    console.log('🚫 Exclusion set contents:', Array.from(matchingState.exclusionSet));
 
     const filteredUsers = users.filter(user => {
-      // 1. 🚫 EXCLUSION CHECK
+      // 1. 🚫 EXCLUSION CHECK - THIS MUST BE FIRST AND MOST IMPORTANT
       if (matchingState.exclusionSet.has(user.userId)) {
-        console.log(`❌ ${user.firstName} - Already excluded`);
+        console.log(`❌ ${user.firstName} (${user.userId}) - Already excluded from exclusion set`);
+        return false;
+      }
+      // 1. 🚫 EXCLUSION CHECK - IF WE MATCHED
+      if (userData?.matches?.includes(user.userId)) {
+        console.log(`❌ ${user.firstName} (${user.userId}) - Already matched with this user`);
+        return false;
+      }
+      
+      // 🔥 CRITICAL FIX: Also explicitly check if user is viewing themselves
+      if (user.userId === userData.userId) {
+        console.log(`❌ ${user.firstName} (${user.userId}) - Cannot show user themselves!`);
         return false;
       }
 
@@ -1235,7 +1250,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log(`✅ ${user.firstName} - Intent compatible: User wants "${prefs.connectionIntent}", they want "${userIntent}"`);
       }
 
-      // 5. 🔮 NEW: SPIRITUAL COMPATIBILITY FILTER
+      // 5. 🔮 SPIRITUAL COMPATIBILITY FILTER
       const spiritualResult = applySpiritualFilter(user);
       if (!spiritualResult.passes) {
         return false;
@@ -1296,10 +1311,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const finalSortedUsers = applyBoostPrioritySorting(sortedUsers);
     console.log(`📊 FINAL PRIORITIZED USERS: ${finalSortedUsers.length} out of ${users.length} raw users`);
 
-    return finalSortedUsers;
+    // 🔥 FINAL SAFETY CHECK: Remove self if somehow still present
+    const safeFinalUsers = finalSortedUsers.filter(user => {
+      if (user.userId === userData.userId) {
+        console.log(`🚨 FINAL SAFETY: Removing self (${user.firstName}) from final results!`);
+        return false;
+      }
+      return true;
+    });
 
-  }, [userData.matchPreferences, userData.latitude, userData.longitude, matchingState.exclusionSet, applySpiritualFilter, applyBoostPrioritySorting]);
+    console.log(`📊 SAFE FINAL USERS: ${safeFinalUsers.length} (after final self-removal check)`);
+    
+    return safeFinalUsers;
 
+  }, [userData.matchPreferences, userData.latitude, userData.longitude, userData.userId, matchingState.exclusionSet, applySpiritualFilter, applyBoostPrioritySorting]);
 
   const fetchPotentialMatches = useCallback(async (
     resetBatch: boolean = false,
