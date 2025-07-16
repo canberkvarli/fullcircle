@@ -812,13 +812,15 @@ const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string
             "verifyPhoneAndSetUser(): Linking phone number to Google SSO user"
           );
           await FIREBASE_AUTH.currentUser.linkWithCredential(phoneCredential);
-        } catch (error) {
+        } catch (error: any) {
           console.error(
             "Error linking phone number to Google SSO user:",
             error
           );
           setIsLinking(false);
-          return;
+          
+          // Throw a specific error for phone linking failures
+          throw new Error('PHONE_LINK_FAILED');
         }
 
         await updateUserData({
@@ -857,8 +859,15 @@ const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string
           await updateUserData(newUser);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error verifying phone number:", error);
+      
+      // Throw the error to be handled by the calling component
+      if (error.message === 'PHONE_LINK_FAILED') {
+        throw new Error('PHONE_LINK_FAILED');
+      } else {
+        throw new Error('VERIFICATION_FAILED');
+      }
     }
   };
 

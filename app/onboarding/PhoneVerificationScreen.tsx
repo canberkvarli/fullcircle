@@ -22,6 +22,8 @@ const PhoneVerificationScreen = () => {
     new Array(6).fill("")
   );
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showError, setShowError] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verificationId, phoneNumber } = params;
@@ -36,11 +38,16 @@ const PhoneVerificationScreen = () => {
   const handleVerifyCode = async () => {
     const code = verificationCode.join("");
     if (code.trim() === "") {
-      Alert.alert("Almost there!", "Please enter the code we sent you");
+      setErrorMessage("Please enter the code we sent you");
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
       return;
     }
 
     setLoading(true);
+    setShowError(false);
+    setErrorMessage("");
+    
     try {
       await verifyPhoneAndSetUser(
         verificationId as string,
@@ -48,8 +55,18 @@ const PhoneVerificationScreen = () => {
         phoneNumber as string
       );
     } catch (error: any) {
-      Alert.alert("Verification Issue", "That code doesn't match. Please try again.");
-      setVerificationCode(new Array(6).fill(""));
+      console.error("Verification error:", error);
+      
+      // Handle specific error types
+      if (error.message === 'PHONE_LINK_FAILED') {
+        setErrorMessage("This phone number is already linked to another account. Please try a different number.");
+        setShowError(true);
+      } else {
+        setErrorMessage("That code doesn't match. Please try again.");
+        setShowError(true);
+        setVerificationCode(new Array(6).fill(""));
+        setTimeout(() => setShowError(false), 3000);
+      }
     } finally {
       setLoading(false);
     }
@@ -121,6 +138,14 @@ const PhoneVerificationScreen = () => {
         <Text style={styles.subtitle}>We sent a code to {phoneNumber}</Text>
       </View>
 
+      {/* Error Message */}
+      {showError && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={20} color={colors.error || '#FF6B6B'} />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      )}
+
       {/* Verification Code Input */}
       <View style={styles.codeContainer}>
         {verificationCode.map((_, index) => (
@@ -129,7 +154,8 @@ const PhoneVerificationScreen = () => {
             ref={(ref) => (inputs.current[index] = ref as TextInput)}
             style={[
               styles.codeInput,
-              verificationCode[index] ? styles.codeInputFilled : null
+              verificationCode[index] ? styles.codeInputFilled : null,
+              showError ? styles.codeInputError : null
             ]}
             maxLength={1}
             keyboardType="numeric"
@@ -138,6 +164,7 @@ const PhoneVerificationScreen = () => {
             value={verificationCode[index]}
             inputMode="numeric"
             placeholderTextColor={colors.textMuted}
+            editable={!loading}
           />
         ))}
       </View>
@@ -203,7 +230,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont, // Keeping font for consistency
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.xl,
@@ -217,10 +244,29 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing['2xl'],
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Keeping font but removing italics
+      ...fonts.spiritualSubtitleFont,
       color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
       textAlign: "left",
-      fontStyle: "normal", // Changed from italic
+      fontStyle: "normal",
+    },
+    errorContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: '#FFEBEE',
+      borderColor: colors.error || '#FF6B6B',
+      borderWidth: 1,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      gap: Spacing.sm,
+    },
+    errorText: {
+      ...fonts.spiritualBodyFont,
+      color: colors.error || '#FF6B6B',
+      fontStyle: "normal",
+      flex: 1,
+      fontSize: Typography.sizes.sm,
     },
     codeContainer: {
       flexDirection: "row",
@@ -256,7 +302,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     codeInputFilled: {
       borderColor: colors.primary,
       backgroundColor: colors.tertiary,
-      // Add subtle glow effect when filled
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -269,15 +314,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
+    codeInputError: {
+      borderColor: colors.error || '#FF6B6B',
+      backgroundColor: '#FFEBEE',
+    },
     loadingContainer: {
       alignItems: 'center',
       marginTop: Spacing.lg,
     },
     loadingText: {
-      ...fonts.spiritualBodyFont, // Keeping font but removing italics
+      ...fonts.spiritualBodyFont,
       color: colors.primary,
       marginTop: Spacing.sm,
-      fontStyle: "normal", // Changed from italic
+      fontStyle: "normal",
       textAlign: "center",
       paddingHorizontal: Spacing.md,
     },
@@ -290,27 +339,27 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.primary,
       textDecorationLine: "underline",
       textAlign: "center",
-      fontStyle: "normal", // Changed from italic
+      fontStyle: "normal",
     },
     affirmation: {
-      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
+      ...fonts.elegantItalicFont,
       position: "absolute",
       bottom: Platform.select({ ios: 100, android: 80 }),
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
-      color: colors.textDark, // Darker color for better visibility
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
-      opacity: 0.8, // Slightly transparent for elegance
+      opacity: 0.8,
     },
     highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
   });
 };
