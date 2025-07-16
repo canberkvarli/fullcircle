@@ -40,7 +40,7 @@ export default function PrivacyPolicy() {
           </Text>
 
           <Text style={[styles.intro, fonts.spiritualBodyFont]}>
-            At Full Circle, we believe your privacy is fundamental to creating meaningful connections. 
+            At Circle, we believe your privacy is fundamental to creating meaningful connections. 
             This Privacy Policy explains how we collect, use, and protect your information when you use our app.
           </Text>
 
@@ -122,7 +122,7 @@ export default function PrivacyPolicy() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Children's Privacy</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              Full Circle is not intended for users under 18. We do not knowingly collect 
+              Circle is not intended for users under 18. We do not knowingly collect 
               information from children under 18. If we learn we have collected such information, 
               we will delete it immediately.
             </Text>
@@ -132,7 +132,7 @@ export default function PrivacyPolicy() {
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Changes to This Policy</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We may update this Privacy Policy from time to time. We will notify you of any 
-              significant changes through the app or by email. Your continued use of Full Circle 
+              significant changes through the app or by email. Your continued use of Circle 
               after changes indicates your acceptance of the updated policy.
             </Text>
           </View>

@@ -40,14 +40,14 @@ export default function TermsOfService() {
           </Text>
 
           <Text style={[styles.intro, fonts.spiritualBodyFont]}>
-            Welcome to Full Circle. By using our app, you agree to these Terms of Service. 
+            Welcome to Circle. By using our app, you agree to these Terms of Service. 
             Please read them carefully as they govern your use of our platform.
           </Text>
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Acceptance of Terms</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              By creating an account or using Full Circle, you agree to be bound by these Terms of Service 
+              By creating an account or using Circle, you agree to be bound by these Terms of Service 
               and our Privacy Policy. If you do not agree to these terms, please do not use our app.
             </Text>
           </View>
@@ -55,7 +55,7 @@ export default function TermsOfService() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Eligibility</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              You must be at least 18 years old to use Full Circle. By using our app, you represent that:{'\n\n'}
+              You must be at least 18 years old to use Circle. By using our app, you represent that:{'\n\n'}
               • You are at least 18 years of age{'\n'}
               • You have the legal capacity to enter into this agreement{'\n'}
               • You will comply with all applicable laws{'\n'}
@@ -90,7 +90,7 @@ export default function TermsOfService() {
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               You agree to:{'\n\n'}
               • Treat other users with respect and kindness{'\n'}
-              • Use Full Circle only for its intended purpose{'\n'}
+              • Use Circle only for its intended purpose{'\n'}
               • Not harass, spam, or abuse other users{'\n'}
               • Report inappropriate behavior{'\n'}
               • Not use the app for commercial purposes{'\n'}
@@ -113,7 +113,7 @@ export default function TermsOfService() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Subscription and Payments</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              For Full Circle premium features:{'\n\n'}
+              For Circle premium features:{'\n\n'}
               • Subscriptions automatically renew unless cancelled{'\n'}
               • You can cancel anytime through your device settings{'\n'}
               • No refunds for unused portions of subscriptions{'\n'}
@@ -125,7 +125,7 @@ export default function TermsOfService() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Intellectual Property</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              • Full Circle owns all rights to the app and its content{'\n'}
+              • Circle owns all rights to the app and its content{'\n'}
               • You retain rights to content you create{'\n'}
               • By posting content, you grant us permission to use it within our service{'\n'}
               • You may not copy, modify, or distribute our app without permission
@@ -147,7 +147,7 @@ export default function TermsOfService() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Disclaimer</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              Full Circle is provided "as is" without warranties of any kind. We do not guarantee:{'\n\n'}
+              Circle is provided "as is" without warranties of any kind. We do not guarantee:{'\n\n'}
               • That you will find compatible matches{'\n'}
               • Uninterrupted or error-free service{'\n'}
               • The accuracy of user-provided information{'\n'}
@@ -158,7 +158,7 @@ export default function TermsOfService() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Limitation of Liability</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
-              To the fullest extent permitted by law, Full Circle shall not be liable for any indirect, 
+              To the fullest extent permitted by law, Circle shall not be liable for any indirect, 
               incidental, special, or consequential damages arising from your use of the app, including 
               but not limited to damages for personal injury, emotional distress, or loss of data.
             </Text>
@@ -168,7 +168,7 @@ export default function TermsOfService() {
             <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Changes to Terms</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We may update these Terms of Service from time to time. We will notify you of any 
-              material changes through the app or by email. Your continued use of Full Circle after 
+              material changes through the app or by email. Your continued use of Circle after 
               changes indicates your acceptance of the updated terms.
             </Text>
           </View>
