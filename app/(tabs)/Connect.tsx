@@ -406,7 +406,7 @@ const ConnectScreen: React.FC = () => {
     }
   }, [currentPotentialMatch?.userId, showContent]);
 
-  // Helper functions for action feedback (unchanged)
+  // Helper functions for action feedback
   const getActionColor = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
       case 'like': return '#B8860B';
@@ -418,19 +418,10 @@ const ConnectScreen: React.FC = () => {
 
   const getActionIcon = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
-      case 'like': return 'heart';
-      case 'pass': return 'close';
-      case 'orb': return 'sparkles';
-      default: return 'heart';
-    }
-  };
-
-  const getActionText = (action: 'like' | 'pass' | 'orb') => {
-    switch (action) {
-      case 'like': return 'Heart Shared';
-      case 'pass': return 'Released with Love';
-      case 'orb': return 'Orb Sent';
-      default: return 'Energy Shared';
+      case 'like': return 'heart' as const;
+      case 'pass': return 'close' as const;
+      case 'orb': return 'sparkles' as const;
+      default: return 'heart' as const;
     }
   };
 
@@ -745,10 +736,7 @@ const ConnectScreen: React.FC = () => {
           {/* 🔄 NEW: Show additional debug info in development */}
           {__DEV__ && (
             <Text style={[styles.debugText, { color: colors.textLight, marginTop: 20 }]}>
-              Debug: {matchingState.potentialMatches.length} matches loaded, 
-              index: {matchingState.currentIndex}, 
-              initialized: {matchingState.initialized.toString()},
-              showContent: {showContent.toString()}
+              {`Debug: ${matchingState.potentialMatches.length} matches loaded, index: ${matchingState.currentIndex}, initialized: ${matchingState.initialized.toString()}, showContent: ${showContent.toString()}`}
             </Text>
           )}
         </Animated.View>
@@ -960,7 +948,7 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       )}
 
-      {/* Action Feedback Overlay */}
+      {/* Clean Action Feedback Overlay - NO container box */}
       {lastAction && (
         <Animated.View 
           style={[
@@ -971,130 +959,125 @@ const ConnectScreen: React.FC = () => {
             }
           ]}
         >
-          <View style={[
-            styles.actionFeedback,
-            { 
-              backgroundColor: colors.card,
-              borderColor: getActionColor(lastAction),
-              shadowColor: getActionColor(lastAction),
-            }
-          ]}>
+          <Animated.View
+            style={[
+              styles.actionIconContainer,
+              {
+                backgroundColor: getActionColor(lastAction) || '#B8860B',
+                shadowColor: getActionColor(lastAction) || '#B8860B',
+              }
+            ]}
+          >
             <Ionicons 
-              name={getActionIcon(lastAction)} 
-              size={32} 
-              color={getActionColor(lastAction)} 
+              name={getActionIcon(lastAction) || 'heart'} 
+              size={36} 
+              color="#FFFFFF" 
             />
-            <Text style={[
-              styles.actionText, 
-              fonts.spiritualBodyFont,
-              { color: colors.textDark }
-            ]}>
-              {getActionText(lastAction)}
-            </Text>
-          </View>
+          </Animated.View>
         </Animated.View>
       )}
-    {/* Daily Limit Modal */}
-    {showDailyLimitModal && (
-      <Animated.View 
-        style={[
-          styles.divineModalOverlay,
-          { opacity: dailyLimitModalOpacity }
-        ]}
-      >
+
+      {/* Daily Limit Modal */}
+      {showDailyLimitModal && (
         <Animated.View 
           style={[
-            styles.divineModal,
-            {
-              transform: [{ scale: dailyLimitModalScale }],
-              backgroundColor: colors.card,
-              borderColor: '#B8860B',
-              shadowColor: '#B8860B',
-            }
+            styles.divineModalOverlay,
+            { opacity: dailyLimitModalOpacity }
           ]}
         >
           <Animated.View 
             style={[
-              styles.divineGlow,
+              styles.divineModal,
               {
-                opacity: dailyLimitGlow.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.05, 0.15],
-                }),
-                backgroundColor: '#B8860B',
+                transform: [{ scale: dailyLimitModalScale }],
+                backgroundColor: colors.card,
+                borderColor: '#B8860B',
+                shadowColor: '#B8860B',
               }
             ]}
-          />
-          
-          <View style={styles.divineContent}>
-            <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
-              <Ionicons name="heart" size={36} color="#B8860B" />
-            </View>
+          >
+            <Animated.View 
+              style={[
+                styles.divineGlow,
+                {
+                  opacity: dailyLimitGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.05, 0.15],
+                  }),
+                  backgroundColor: '#B8860B',
+                }
+              ]}
+            />
             
-            <Text style={[
-              styles.divineTitle, 
-              fonts.spiritualTitleFont, 
-              { color: colors.textDark }
-            ]}>
-              Daily Hearts Used
-            </Text>
-            
-            <Text style={[
-              styles.divineMessage, 
-              fonts.spiritualBodyFont, 
-              { color: colors.textLight }
-            ]}>
-              You've shared all {DAILY_LIKE_LIMIT} of your daily hearts. Your energy resets at midnight, or join FullCircle for unlimited connections.
-            </Text>
-            
-            {/* Show remaining time until reset */}
-            <Text style={[
-              styles.resetTimeText,
-              fonts.spiritualBodyFont,
-              { color: '#B8860B', marginBottom: Spacing.lg }
-            ]}>
-              ✨ Hearts reset at midnight
-            </Text>
-            
-            <View style={styles.divineActions}>
-              <TouchableOpacity 
-                style={[
-                  styles.divineButton, 
-                  { 
-                    backgroundColor: '#B8860B',
-                    shadowColor: '#B8860B'
-                  }
-                ]}
-                onPress={navigateToFullCircle}
-                activeOpacity={0.9}
-              >
-                <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
-                  Get Unlimited Hearts
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.divineContent}>
+              <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
+                <Ionicons name="heart" size={36} color="#B8860B" />
+              </View>
               
-              <TouchableOpacity 
-                style={[
-                  styles.divineSecondaryButton,
-                  { borderColor: colors.border }
-                ]}
-                onPress={closeDailyLimitModal}
-                activeOpacity={0.8}
-              >
-                <Text style={[
-                  styles.divineSecondaryText, 
-                  fonts.spiritualBodyFont,
-                  { color: colors.textLight }
-                ]}>
-                  Continue Tomorrow
-                </Text>
-              </TouchableOpacity>
+              <Text style={[
+                styles.divineTitle, 
+                fonts.spiritualTitleFont, 
+                { color: colors.textDark }
+              ]}>
+                Daily Hearts Used
+              </Text>
+              
+              <Text style={[
+                styles.divineMessage, 
+                fonts.spiritualBodyFont, 
+                { color: colors.textLight }
+              ]}>
+                You've shared all {DAILY_LIKE_LIMIT} of your daily hearts. Your energy resets at midnight, or join FullCircle for unlimited connections.
+              </Text>
+              
+              {/* Show remaining time until reset */}
+              <Text style={[
+                styles.resetTimeText,
+                fonts.spiritualBodyFont,
+                { color: '#B8860B', marginBottom: Spacing.lg }
+              ]}>
+                ✨ Hearts reset at midnight
+              </Text>
+              
+              <View style={styles.divineActions}>
+                <TouchableOpacity 
+                  style={[
+                    styles.divineButton, 
+                    { 
+                      backgroundColor: '#B8860B',
+                      shadowColor: '#B8860B'
+                    }
+                  ]}
+                  onPress={navigateToFullCircle}
+                  activeOpacity={0.9}
+                >
+                  <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
+                    Get Unlimited Hearts
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.divineSecondaryButton,
+                    { borderColor: colors.border }
+                  ]}
+                  onPress={closeDailyLimitModal}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.divineSecondaryText, 
+                    fonts.spiritualBodyFont,
+                    { color: colors.textLight }
+                  ]}>
+                    Continue Tomorrow
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
-    )}
+      )}
     </View>
   );
 };
@@ -1433,7 +1416,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  // Action feedback styles
+  // Clean Action feedback styles - NO container box
   actionOverlay: {
     position: 'absolute',
     top: 0,
@@ -1442,26 +1425,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   
-  actionFeedback: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    borderRadius: BorderRadius.xl,
+  actionIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
     elevation: 12,
-  },
-  
-  actionText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.medium,
-    marginTop: Spacing.sm,
-    letterSpacing: 0.5,
   },
   
   // No more matches styles
@@ -1555,7 +1531,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // minHeight: 400,
     paddingHorizontal: Spacing.xl,
   },
 
@@ -1565,6 +1540,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.6,
   },
+  
   resetTimeText: {
     fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
