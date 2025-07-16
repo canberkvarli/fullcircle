@@ -156,7 +156,7 @@ export default function SelfieVerification() {
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        Help us ensure you are the divine soul behind this beautiful profile. This verification builds trust within our cosmic community.
+        Help us ensure you are the divine soul behind this beautiful profile. This verification builds trust within our community.
       </Text>
       
       <View style={styles.instructionsContainer}>
