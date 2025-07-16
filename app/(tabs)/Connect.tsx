@@ -81,16 +81,32 @@ const ConnectScreen: React.FC = () => {
   // Check if user has FullCircle subscription
   const hasFullCircleSubscription = userData?.fullCircleSubscription || false;
 
+  const userDataRef = useRef(userData);
+  const matchingStateRef = useRef(matchingState);
+  const currentPotentialMatchRef = useRef(currentPotentialMatch);
+
+  useEffect(() => {
+  userDataRef.current = userData;
+  }, [userData]);
+
+  useEffect(() => {
+    matchingStateRef.current = matchingState;
+  }, [matchingState]);
+
+  useEffect(() => {
+    currentPotentialMatchRef.current = currentPotentialMatch;
+  }, [currentPotentialMatch]);
+
   // 🆕 NEW: Enhanced loading state logic with minimum display time
   useEffect(() => {
-    const actuallyLoading = matchingState.loadingBatch || 
-                           !currentPotentialMatch || 
-                           !matchingState.initialized;
+    const actuallyLoading = matchingStateRef.current.loadingBatch || 
+                          !currentPotentialMatchRef.current || 
+                          !matchingStateRef.current.initialized;
     
     console.log('🔄 Loading state check:', {
-      loadingBatch: matchingState.loadingBatch,
-      hasCurrentMatch: !!currentPotentialMatch,
-      initialized: matchingState.initialized,
+      loadingBatch: matchingStateRef.current.loadingBatch,
+      hasCurrentMatch: !!currentPotentialMatchRef.current,
+      initialized: matchingStateRef.current.initialized,
       actuallyLoading,
       hasMinimumLoadingTime,
       isLoading,
@@ -157,19 +173,24 @@ const ConnectScreen: React.FC = () => {
 
   // 🆕 NEW: Reset loading states when component mounts or remounts
   useEffect(() => {
-    setHasMinimumLoadingTime(false);
-    loadingPulse.setValue(0);
-    loadingRotation.setValue(0);
-    loadingFadeIn.setValue(0);
-    contentFadeIn.setValue(0);
-  }, []);
+    if (currentPotentialMatchRef.current && !actionInProgress && showContent) {
+      console.log('🔄 Resetting animations for new match:', currentPotentialMatchRef.current.userId);
+      contentOpacity.setValue(1);
+      buttonsOpacity.setValue(0);
+      overlayOpacity.setValue(0);
+      overlayScale.setValue(0.8);
+      orbButtonGlow.setValue(0);
+      setPhotosLoaded(false);
+    }
+  }, [currentPotentialMatch?.userId, showContent, actionInProgress]);
+
 
   // 🔄 UPDATED: Monitor the new consolidated state
   useEffect(() => {
     console.log('🖥️ ConnectScreen: Detailed state debug', {
       // Basic state
-      currentMatch: currentPotentialMatch?.userId,
-      firstName: currentPotentialMatch?.firstName,
+      currentMatch: currentPotentialMatchRef.current?.userId,
+      firstName: currentPotentialMatchRef.current?.firstName,
       
       // Loading states
       isLoading,
@@ -177,23 +198,28 @@ const ConnectScreen: React.FC = () => {
       showContent,
       
       // Matching state details
-      matchingStateExists: !!matchingState,
-      totalMatches: matchingState?.potentialMatches?.length || 0,
-      currentIndex: matchingState?.currentIndex || 0,
-      initialized: matchingState?.initialized || false,
-      loading: matchingState?.loadingBatch || false,
-      noMore: matchingState?.noMoreMatches || false,
+      matchingStateExists: !!matchingStateRef.current,
+      totalMatches: matchingStateRef.current?.potentialMatches?.length || 0,
+      currentIndex: matchingStateRef.current?.currentIndex || 0,
+      initialized: matchingStateRef.current?.initialized || false,
+      loading: matchingStateRef.current?.loadingBatch || false,
+      noMore: matchingStateRef.current?.noMoreMatches || false,
     });
   }, [currentPotentialMatch, matchingState, isLoading, hasMinimumLoadingTime, showContent]);
 
   // 🔄 UPDATED: Use new optimized action handlers with loading feedback
   const handleAction = async (action: 'like' | 'pass' | 'orb') => {
-    if (actionInProgress || !currentPotentialMatch) return;
+    if (actionInProgress || !currentPotentialMatchRef.current) {
+      console.log('🚫 Action blocked: already in progress or no current match');
+      return;
+    }
     
-    if (action === 'orb' && (!userData?.numOfOrbs || userData.numOfOrbs <= 0)) {
+    if (action === 'orb' && (!userDataRef.current?.numOfOrbs || userDataRef.current.numOfOrbs <= 0)) {
       showDivineOrbModal();
       return;
     }
+    
+    console.log(`🎯 Starting ${action} action for user: ${currentPotentialMatchRef.current.userId}`);
     
     setActionInProgress(true);
     setLastAction(action);
@@ -218,7 +244,7 @@ const ConnectScreen: React.FC = () => {
       }),
     ]).start();
 
-    const userId = currentPotentialMatch.userId;
+    const userId = currentPotentialMatchRef.current.userId;
     
     try {
       switch (action) {
@@ -233,11 +259,14 @@ const ConnectScreen: React.FC = () => {
           break;
       }
       
+      console.log(`✅ ${action} action completed successfully for user: ${userId}`);
+      
     } catch (error: any) {
-      console.error('Action failed:', error);
+      console.error(`❌ ${action} action failed:`, error);
       
       // Handle daily limit error specifically
       if (error.message === "DAILY_LIMIT_REACHED") {
+        console.log('📊 Daily limit reached, showing modal');
         setActionInProgress(false);
         setLastAction(null);
         contentOpacity.setValue(1);
@@ -247,7 +276,8 @@ const ConnectScreen: React.FC = () => {
         return;
       }
       
-      // Handle other errors
+      // Handle other errors - reset action state
+      console.log('🔄 Resetting action state due to error');
       setActionInProgress(false);
       setLastAction(null);
       contentOpacity.setValue(1);
@@ -279,6 +309,7 @@ const ConnectScreen: React.FC = () => {
         setPhotosLoaded(false);
         overlayScale.setValue(0.8);
         buttonsOpacity.setValue(0);
+        console.log('🎬 Action animation completed');
       });
     }, 800);
   };
