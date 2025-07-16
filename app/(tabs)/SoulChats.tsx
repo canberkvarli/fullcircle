@@ -83,7 +83,6 @@ const SoulChats: React.FC = () => {
         viaRadiance: match.theirConnectionMethod?.viaRadiance || 
                      match.connectionMethods?.[match.userId]?.viaRadiance || 
                      match.viaRadiance || 
-                     match.viaBoost || 
                      false
       },
       ourMethod: {

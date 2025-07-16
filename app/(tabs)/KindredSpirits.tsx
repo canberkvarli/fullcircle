@@ -468,7 +468,7 @@ const KindredSpirits: React.FC = () => {
                 isBlurred={false}
                 style={styles.largeCard}
                 isOrbLike={firstUser.viaOrb}
-                isRadianceLike={firstUser.viaRadiance || firstUser.viaBoost}
+                isRadianceLike={firstUser.viaRadiance}
                 getImageUrl={getImageUrl}
               />
               
@@ -518,7 +518,7 @@ const KindredSpirits: React.FC = () => {
                         isBlurred={!userData.fullCircleSubscription}
                         style={styles.smallCard}
                         isOrbLike={user.viaOrb}
-                        isRadianceLike={user.viaRadiance || user.viaBoost}
+                        isRadianceLike={user.viaRadiance}
                         getImageUrl={getImageUrl}
                       />
                       

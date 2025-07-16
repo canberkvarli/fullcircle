@@ -82,8 +82,7 @@ const Chat: React.FC = () => {
                   false,
           viaRadiance: parsedUser.theirConnectionMethod?.viaRadiance || 
                        parsedUser.connectionMethods?.[parsedUser.userId]?.viaRadiance || 
-                       parsedUser.viaRadiance || 
-                       parsedUser.viaBoost || 
+                       parsedUser.viaRadiance ||
                        false
         };
         setConnectionMethod(method);
