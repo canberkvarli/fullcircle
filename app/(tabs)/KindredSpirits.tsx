@@ -448,6 +448,14 @@ const KindredSpirits: React.FC = () => {
               ]}>
                 {option.label}
               </Text>
+              {!userData.fullCircleSubscription && option.key !== 'recent' && (
+                <Ionicons 
+                  name="lock-closed" 
+                  size={12} 
+                  color={selectedSort === option.key ? '#FFFFFF' : '#B8860B'} 
+                  style={{ marginLeft: Spacing.xs }}
+                />
+              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -458,6 +466,13 @@ const KindredSpirits: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.featuredSection}>
+          <View style={styles.featuredHeader}>
+            <Ionicons name="star" size={20} color="#FFD700" />
+            <Text style={[styles.featuredLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+              Latest Connection
+            </Text>
+          </View>
+          
           <TouchableOpacity 
             onPress={() => handleCardPress(firstUser, true)}
             activeOpacity={0.9}
@@ -472,6 +487,7 @@ const KindredSpirits: React.FC = () => {
                 getImageUrl={getImageUrl}
                 isRecentlyActive={isRecentlyActive(firstUser)}
                 activityText={getTimeSinceActive(firstUser)}
+                cardSize="large"
               />
             </View>
           </TouchableOpacity>
@@ -506,14 +522,15 @@ const KindredSpirits: React.FC = () => {
                   >
                     <View style={styles.cardContainer}>
                       <UserCard
-                        user={firstUser}
-                        isBlurred={false}
-                        style={styles.largeCard}
-                        isOrbLike={firstUser.viaOrb}
-                        isRadianceLike={firstUser.viaRadiance}
+                        user={user}
+                        isBlurred={!userData.fullCircleSubscription}
+                        style={styles.smallCard}
+                        isOrbLike={user.viaOrb}
+                        isRadianceLike={user.viaRadiance}
                         getImageUrl={getImageUrl}
-                        isRecentlyActive={isRecentlyActive(firstUser)}
-                        activityText={getTimeSinceActive(firstUser)}
+                        isRecentlyActive={isRecentlyActive(user)}
+                        activityText={getTimeSinceActive(user)}
+                        cardSize="small"
                       />
                     </View>
                   </TouchableOpacity>
@@ -710,6 +727,19 @@ const styles = StyleSheet.create({
   
   featuredSection: {
     marginBottom: Spacing['2xl'],
+  },
+  
+  featuredHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  
+  featuredLabel: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    marginLeft: Spacing.sm,
+    letterSpacing: 0.3,
   },
   
   othersSection: {

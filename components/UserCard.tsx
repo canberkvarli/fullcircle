@@ -20,12 +20,11 @@ interface UserCardProps {
   variant?: "default" | "radiant";
   onPress?: () => void;
   showDetails?: boolean;
-  getImageUrl?: (photoPath: string) => Promise<string | null>;
+  onHeartPress?: () => void;
+  getImageUrl?: (photoPath: string) => Promise<string>;
   isOrbLike?: boolean;
-  isRadianceLike?: boolean;
-  showConnectionBadges?: boolean;
-  isRecentlyActive?: boolean;
-  activityText?: string;
+  isRadianceLike?: boolean; // NEW: For boost/radiance likes
+  showConnectionBadges?: boolean; // NEW: Show connection method badges
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -35,12 +34,11 @@ const UserCard: React.FC<UserCardProps> = ({
   variant = "default",
   onPress,
   showDetails = false,
+  onHeartPress,
   getImageUrl,
   isOrbLike = false,
   isRadianceLike = false,
   showConnectionBadges = true,
-  isRecentlyActive = false,
-  activityText = "",
 }) => {
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
@@ -50,13 +48,9 @@ const UserCard: React.FC<UserCardProps> = ({
     if (getImageUrl) {
       const resolvePhotos = async () => {
         const updated = await Promise.all(
-          photos.map(async (photo) => {
-            if (photo.startsWith("http")) {
-              return photo;
-            }
-            const resolvedUrl = await getImageUrl(photo);
-            return resolvedUrl || photo; // Fallback to original if null
-          })
+          photos.map(async (photo) =>
+            photo.startsWith("http") ? photo : await getImageUrl(photo)
+          )
         );
         setResolvedPhotos(updated);
       };
@@ -85,38 +79,41 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
-        {(showConnectionBadges && (isOrbLike || isRadianceLike)) || (isRecentlyActive && activityText) ? (
-          <View style={styles.allBadgesContainer}>
-            {/* Activity Badge - First (leftmost when multiple badges) */}
-            {isRecentlyActive && activityText && (
-              <View style={styles.activityBadge}>
-                <Ionicons name="radio" size={12} color="#FFFFFF" />
-                {variant === "default" && (
-                  <Text style={styles.activityBadgeText}>
-                    {activityText}
-                  </Text>
-                )}
-              </View>
-            )}
-            
-            {/* Connection Badges - After activity */}
-            {showConnectionBadges && isOrbLike && (
+        {/* Connection Method Badges */}
+        {showConnectionBadges && (isOrbLike || isRadianceLike) && (
+          <View style={styles.connectionBadgesContainer}>
+            {isOrbLike && (
               <View style={[styles.connectionBadge, styles.orbBadge]}>
-                <Ionicons name="star" size={12} color="#FFFFFF" />
+                <Ionicons name="planet" size={12} color="#FFFFFF" />
               </View>
             )}
-            {showConnectionBadges && isRadianceLike && (
+            {isRadianceLike && (
               <View style={[styles.connectionBadge, styles.radianceBadge]}>
                 <Ionicons name="radio" size={12} color="#FFFFFF" />
               </View>
             )}
           </View>
-        ) : null}
+        )}
 
         {/* Header for default variant */}
         {variant === "default" && (
           <View style={styles.headerDefault}>
             <View style={styles.nameRow}>
+              {/* Connection icons next to name */}
+              {(isOrbLike || isRadianceLike) && (
+                <View style={styles.nameIconsContainer}>
+                  {isOrbLike && (
+                    <View style={styles.nameIcon}>
+                      <Ionicons name="planet" size={14} color="#8B4513" />
+                    </View>
+                  )}
+                  {isRadianceLike && (
+                    <View style={styles.nameIcon}>
+                      <Ionicons name="radio" size={14} color="#D4AF37" />
+                    </View>
+                  )}
+                </View>
+              )}
               <Text style={styles.headerTextDefault}>
                 {user.firstName || "Unknown"}
               </Text>
@@ -133,11 +130,7 @@ const UserCard: React.FC<UserCardProps> = ({
             />
           ) : (
             <View style={styles.photoFallback}>
-              <Ionicons 
-                name="person" 
-                size={50} 
-                color="#ccc" 
-              />
+              <Ionicons name="person" size={50} color="#ccc" />
             </View>
           )}
         </View>
@@ -147,20 +140,28 @@ const UserCard: React.FC<UserCardProps> = ({
           <View style={styles.footer}>
             <View style={styles.avatarContainer}>
               {avatarPhoto ? (
-                <Image 
-                  source={{ uri: avatarPhoto }} 
-                  style={styles.avatar} 
-                />
+                <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
               ) : (
-                <Ionicons 
-                  name="person" 
-                  size={30} 
-                  color="#ccc" 
-                />
+                <Ionicons name="person" size={30} color="#ccc" />
               )}
             </View>
             <View style={styles.nameAndBadges}>
               <View style={styles.radiantNameRow}>
+                {/* Connection icons next to name for radiant variant */}
+                {(isOrbLike || isRadianceLike) && (
+                  <View style={styles.nameIconsContainer}>
+                    {isOrbLike && (
+                      <View style={styles.nameIcon}>
+                        <Ionicons name="planet" size={12} color="#8B4513" />
+                      </View>
+                    )}
+                    {isRadianceLike && (
+                      <View style={styles.nameIcon}>
+                        <Ionicons name="radio" size={12} color="#D4AF37" />
+                      </View>
+                    )}
+                  </View>
+                )}
                 <Text style={styles.userName}>
                   {user.firstName || "Unknown"}
                 </Text>
@@ -226,7 +227,6 @@ const styles = StyleSheet.create({
     height: height * 0.66,
     flexDirection: "column",
     justifyContent: "space-between",
-    overflow: 'hidden',
   },
   radiantCard: {
     backgroundColor: "#EDE9E3",
@@ -237,19 +237,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-
   mainPhotoContainer: {
     width: "100%",
     aspectRatio: 1,
     borderRadius: 10,
     overflow: "hidden",
-    position: 'relative',
   },
   mainPhoto: {
     width: "100%",
     height: "100%",
   },
-
   photoFallback: {
     width: "100%",
     height: "100%",
@@ -259,7 +256,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
   },
 
-  allBadgesContainer: {
+  // Connection Badges (top-right corner)
+  connectionBadgesContainer: {
     position: "absolute",
     top: 10,
     right: 10,
@@ -279,47 +277,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
-
   orbBadge: {
-    backgroundColor: "#FFD700",
-    shadowColor: "#FFD700",
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: "#FFFFFF",
+    backgroundColor: "#8B4513",
   },
-
   radianceBadge: {
     backgroundColor: "#D4AF37",
-  },
-
-  activityBadge: {
-    backgroundColor: '#348107ff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  activityBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginLeft: 4,
   },
 
   // Header for default variant
   headerDefault: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    zIndex: 5,
   },
   nameRow: {
     flexDirection: "row",
@@ -331,13 +299,32 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 
+  // Name icons (next to name)
+  nameIconsContainer: {
+    flexDirection: "row",
+    marginRight: 8,
+    gap: 4,
+  },
+  nameIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+
   // Footer for radiant variant
   footer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
     paddingHorizontal: 10,
-    zIndex: 5,
   },
   avatarContainer: {
     width: 80,
@@ -349,12 +336,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   avatar: {
     width: "100%",
     height: "100%",
   },
-
   nameAndBadges: {
     flex: 1,
   },
@@ -372,7 +357,6 @@ const styles = StyleSheet.create({
   detailsContainer: {
     marginTop: 10,
     width: "100%",
-    zIndex: 5,
   },
   detailRow: {
     flexDirection: "row",
