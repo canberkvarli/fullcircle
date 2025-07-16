@@ -837,7 +837,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: Spacing.lg,
-      paddingTop: Platform.OS === 'ios' ? 60 : 40,
+      paddingTop: Platform.OS === 'ios' ? 20 : 10,
       paddingBottom: Spacing.lg,
       backgroundColor: colors.background,
       borderBottomWidth: 1,
