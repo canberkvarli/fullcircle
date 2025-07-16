@@ -418,10 +418,10 @@ const ConnectScreen: React.FC = () => {
 
   const getActionIcon = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
-      case 'like': return 'heart';
-      case 'pass': return 'close';
-      case 'orb': return 'sparkles';
-      default: return 'heart';
+      case 'like': return 'heart' as const;
+      case 'pass': return 'close' as const;
+      case 'orb': return 'sparkles' as const;
+      default: return 'heart' as const;
     }
   };
 
@@ -490,20 +490,13 @@ const ConnectScreen: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>Circle</Text>
-            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Meaningful{' '}
-              <Text style={styles.highlightedWord}>connections</Text>
-              {' await'}
+            <Text style={[styles.headerTitle, { color: colors.textDark }]}>
+              Circle
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
+              Meaningful connections await
             </Text>
           </View>
-          
-          {/* 🔄 NEW: Add debug reset button in development */}
-          {__DEV__ && (
-            <TouchableOpacity onPress={resetMatching} style={styles.debugButton}>
-              <Ionicons name="refresh" size={20} color="#B8860B" />
-            </TouchableOpacity>
-          )}
         </View>
 
         <View style={styles.noLikesContainer}>
@@ -600,13 +593,11 @@ const ConnectScreen: React.FC = () => {
         {/* Always show header to avoid white screen */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, { color: colors.textDark }]}>
               Circle
             </Text>
-            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Meaningful{' '}
-              <Text style={styles.highlightedWord}>connections</Text>
-              {' await'}
+            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
+              Meaningful connections await
             </Text>
           </View>
         </View>
@@ -696,7 +687,6 @@ const ConnectScreen: React.FC = () => {
           <Animated.Text 
             style={[
               styles.loadingText, 
-              fonts.spiritualTitleFont, 
               { 
                 color: '#B8860B',
                 opacity: loadingPulse.interpolate({
@@ -706,14 +696,14 @@ const ConnectScreen: React.FC = () => {
               }
             ]}
           >
-            {matchingState.loadingBatch ? "Finding Your Matches" : "Preparing Your Journey"}
+            Finding Your Matches
           </Animated.Text>
           
-          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            {matchingState.loadingBatch ? "We're preparing your next connection" : "Getting everything ready"}
+          <Text style={[styles.loadingSubtext, { color: colors.textLight }]}>
+            Getting everything ready
           </Text>
           
-          {/* 🆕 NEW: Loading progress dots */}
+          {/* Loading progress dots */}
           <View style={styles.loadingDots}>
             {[0, 1, 2].map((index) => (
               <Animated.View
@@ -732,16 +722,6 @@ const ConnectScreen: React.FC = () => {
               />
             ))}
           </View>
-          
-          {/* 🔄 NEW: Show additional debug info in development */}
-          {__DEV__ && (
-            <Text style={[styles.debugText, { color: colors.textLight, marginTop: 20 }]}>
-              Debug: {matchingState.potentialMatches.length} matches loaded, 
-              index: {matchingState.currentIndex}, 
-              initialized: {matchingState.initialized.toString()},
-              showContent: {showContent.toString()}
-            </Text>
-          )}
         </Animated.View>
       </View>
     );
@@ -797,8 +777,8 @@ const ConnectScreen: React.FC = () => {
         </ScrollView>
       </Animated.View>
 
-      {/* Only show buttons when content is ready */}
-      {photosLoaded && !actionInProgress && showContent && currentPotentialMatch && (
+      {/* Only show buttons when content is ready - Android safe version */}
+      {photosLoaded && !actionInProgress && showContent && currentPotentialMatch ? (
         <Animated.View style={[styles.buttonsContainer, { opacity: buttonsOpacity }]}>
           <TouchableOpacity 
             style={[
@@ -825,7 +805,7 @@ const ConnectScreen: React.FC = () => {
           </TouchableOpacity>
 
           <View style={styles.orbButtonContainer}>
-            {userData?.numOfOrbs && userData.numOfOrbs > 0 && (
+            {userData?.numOfOrbs && userData.numOfOrbs > 0 ? (
               <Animated.View 
                 style={[
                   styles.orbGlow,
@@ -837,7 +817,7 @@ const ConnectScreen: React.FC = () => {
                   }
                 ]}
               />
-            )}
+            ) : null}
             <TouchableOpacity 
               style={[
                 styles.actionButton, 
@@ -859,7 +839,7 @@ const ConnectScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </Animated.View>
-      )}
+      ) : null}
 
       {/* Divine Orb Modal - unchanged */}
       {showOrbModal && (
@@ -951,8 +931,8 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       )}
 
-      {/* Clean Action Feedback Overlay - NO container box */}
-      {lastAction && (
+      {/* Clean Action Feedback Overlay - Android safe */}
+      {lastAction ? (
         <Animated.View 
           style={[
             styles.actionOverlay,
@@ -962,23 +942,26 @@ const ConnectScreen: React.FC = () => {
             }
           ]}
         >
-          <Animated.View
+          <View
             style={[
               styles.actionIconContainer,
               {
-                backgroundColor: getActionColor(lastAction),
-                shadowColor: getActionColor(lastAction),
+                backgroundColor: lastAction === 'like' ? '#B8860B' : 
+                                 lastAction === 'pass' ? '#8B7355' : '#CD853F',
+                shadowColor: lastAction === 'like' ? '#B8860B' : 
+                            lastAction === 'pass' ? '#8B7355' : '#CD853F',
               }
             ]}
           >
             <Ionicons 
-              name={getActionIcon(lastAction)} 
+              name={lastAction === 'like' ? 'heart' : 
+                   lastAction === 'pass' ? 'close' : 'sparkles'} 
               size={36} 
               color="#FFFFFF" 
             />
-          </Animated.View>
+          </View>
         </Animated.View>
-      )}
+      ) : null}
 
       {/* Daily Limit Modal */}
       {showDailyLimitModal && (
