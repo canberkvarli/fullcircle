@@ -275,9 +275,6 @@ export default function SacredSelf() {
             </View>
           ) : (
             <View style={styles.upgradeContainer}>
-              <Text style={[styles.upgradeTitle, fonts.spiritualTitleFont, { color: colors.textDark, textAlign: 'center' }]}>
-                Full Circle ∞
-              </Text>
               <Text style={[styles.upgradeSubtitle, fonts.spiritualBodyFont, { color: colors.textLight, textAlign: 'center' }]}>
                 Unlock your full potential and connect with 3x more people
               </Text>
