@@ -1651,21 +1651,37 @@ const loadNextMatch = useCallback(async () => {
     return Math.max(0, DAILY_LIKE_LIMIT - used);
   };
 
-    // Get remaining time for active boost
-  const getRadianceTimeRemaining = (): number => {
-    if (!userData.boostExpiresAt) return 0;
+  // Get remaining time for active boost
+  const getRadianceTimeRemaining = useCallback((): number => {
+    const currentUserData = userDataRef.current; // ✅ Use ref instead of state
     
-    const expiresAt = userData.boostExpiresAt.toDate 
-      ? userData.boostExpiresAt.toDate()
-      : new Date(userData.boostExpiresAt);
+    if (!currentUserData.boostExpiresAt) {
+      console.log('🔍 No boostExpiresAt found');
+      return 0;
+    }
+    
+    const expiresAt = currentUserData.boostExpiresAt.toDate 
+      ? currentUserData.boostExpiresAt.toDate()
+      : new Date(currentUserData.boostExpiresAt);
     
     const now = new Date();
     const remainingMs = expiresAt.getTime() - now.getTime();
+    const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
     
-    return Math.max(0, Math.floor(remainingMs / 1000)); // Return seconds
-  };
+    console.log('🔍 getRadianceTimeRemaining DEBUG:', {
+      boostExpiresAt: currentUserData.boostExpiresAt,
+      expiresAt: expiresAt.toISOString(),
+      now: now.toISOString(),
+      remainingMs,
+      remainingSeconds
+    });
+    
+    return remainingSeconds;
+  }, []); // ✅ No dependencies needed since we use ref
 
-// 🔧 CRITICAL FIX: Completely rewritten like function
+// 🔧 FINAL FIX: Replace your optimizedLikeMatch function with this version
+// This captures the radiance status BEFORE any state changes happen
+// 🔧 FIXED FOR INTERPRETATION 2: Check if the RECIPIENT has radiance
 const optimizedLikeMatch = useCallback(async (matchId: string) => {
   console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
   
@@ -1679,8 +1695,54 @@ const optimizedLikeMatch = useCallback(async (matchId: string) => {
       }
     }
 
-    // Check if user has active Sacred Radiance
-    const hasActiveRadiance = getRadianceTimeRemaining && getRadianceTimeRemaining() > 0;
+    // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
+    console.log(`🔍 Checking if target user ${matchId} has radiance...`);
+    
+    let targetHasRadiance = false;
+    
+    try {
+      // Fetch the target user's data to check their radiance status
+      const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
+      
+      if (targetUserDoc.exists) {
+        const targetUserData = targetUserDoc.data() as UserDataType;
+        
+        console.log('🎯 Target user data:', {
+          userId: matchId,
+          boostExpiresAt: targetUserData.boostExpiresAt,
+          hasBoostField: !!targetUserData.boostExpiresAt
+        });
+        
+        if (targetUserData.boostExpiresAt) {
+          const expiresAt = targetUserData.boostExpiresAt.toDate 
+            ? targetUserData.boostExpiresAt.toDate()
+            : new Date(targetUserData.boostExpiresAt);
+          
+          targetHasRadiance = new Date() < expiresAt;
+          
+          console.log('🔍 Target user radiance check:', {
+            expiresAt: expiresAt.toISOString(),
+            currentTime: new Date().toISOString(),
+            targetHasRadiance
+          });
+        } else {
+          console.log('🔍 Target user has no boostExpiresAt field');
+        }
+      } else {
+        console.log('❌ Target user document not found');
+      }
+    } catch (error) {
+      console.error('❌ Error checking target user radiance:', error);
+      // Continue with targetHasRadiance = false
+    }
+    
+    console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
+      targetUserId: matchId,
+      targetHasRadiance,
+      meaning: targetHasRadiance 
+        ? 'This like will be marked as viaRadiance because recipient has active boost' 
+        : 'Normal like - recipient has no active boost'
+    });
     
     // 🔧 CRITICAL FIX: Remove user from current array immediately and move to next
     setMatchingState(prev => {
@@ -1715,15 +1777,15 @@ const optimizedLikeMatch = useCallback(async (matchId: string) => {
       };
     });
     
-    // Perform like action in background (async but UI already moved)
+    // 🔧 FIXED: Pass the target's radiance status, not the sender's
     await recordLikeWithBatch(
       userDataRef.current.userId, 
       matchId, 
       false, // viaOrb = false for regular likes
-      hasActiveRadiance // viaRadiance = true if boost is active
+      targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
     );
     
-    console.log(`✅ Optimized like completed for ${matchId}${hasActiveRadiance ? ' ✨ (with Sacred Radiance)' : ''}`);
+    console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
     
   } catch (error: any) {
     console.error('❌ Error in optimized like:', error);
@@ -1749,7 +1811,135 @@ const optimizedLikeMatch = useCallback(async (matchId: string) => {
     
     throw error;
   }
-}, [getRemainingDailyLikes, getRadianceTimeRemaining]);
+}, [getRemainingDailyLikes]);
+
+// 🔧 ALSO UPDATE: optimizedOrbLike with the same logic
+const optimizedOrbLike = useCallback(async (matchId: string) => {
+  console.log(`✨ OPTIMIZED ORB LIKING USER: ${matchId}`);
+  
+  try {
+    // Check orb availability first
+    if (!userDataRef.current.numOfOrbs || userDataRef.current.numOfOrbs <= 0) {
+      throw new Error("No orbs available");
+    }
+
+    // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
+    console.log(`🔍 Checking if target user ${matchId} has radiance for orb like...`);
+    
+    let targetHasRadiance = false;
+    
+    try {
+      // Fetch the target user's data to check their radiance status
+      const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
+      
+      if (targetUserDoc.exists) {
+        const targetUserData = targetUserDoc.data() as UserDataType;
+        
+        if (targetUserData.boostExpiresAt) {
+          const expiresAt = targetUserData.boostExpiresAt.toDate 
+            ? targetUserData.boostExpiresAt.toDate()
+            : new Date(targetUserData.boostExpiresAt);
+          
+          targetHasRadiance = new Date() < expiresAt;
+          
+          console.log('🔍 Target user radiance check (orb):', {
+            expiresAt: expiresAt.toISOString(),
+            currentTime: new Date().toISOString(),
+            targetHasRadiance
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error checking target user radiance (orb):', error);
+    }
+    
+    console.log('🚀 ORB + RADIANCE CHECK RESULT:', {
+      targetUserId: matchId,
+      targetHasRadiance,
+      meaning: targetHasRadiance 
+        ? 'This orb like will be marked as viaRadiance because recipient has active boost' 
+        : 'Normal orb like - recipient has no active boost'
+    });
+    
+    // Update user data to reflect orb usage immediately
+    setUserData(prev => ({
+      ...prev,
+      numOfOrbs: (prev.numOfOrbs || 0) - 1
+    }));
+    
+    // 🔧 CRITICAL FIX: Same pattern - remove immediately and move to next
+    setMatchingState(prev => {
+      const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+      
+      // Remove orb-liked user from potentialMatches array entirely
+      const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+      
+      // Find next valid user that's not excluded
+      let nextIndex = prev.currentIndex;
+      while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+        nextIndex++;
+      }
+      
+      // If no valid user at current or next positions, look from beginning
+      if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+        nextIndex = 0;
+        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+          nextIndex++;
+        }
+      }
+      
+      console.log(`🔧 After orb like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+      console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+      
+      return {
+        ...prev,
+        exclusionSet: newExclusionSet,
+        potentialMatches: filteredMatches,
+        currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+        noMoreMatches: filteredMatches.length === 0
+      };
+    });
+    
+    // 🔧 FIXED: Pass the target's radiance status
+    await recordLikeWithBatch(
+      userDataRef.current.userId, 
+      matchId, 
+      true, // viaOrb = true for orb likes
+      targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
+    );
+
+    console.log(`✅ Optimized orb like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal orb like)'}`);
+    
+  } catch (error: any) {
+    console.error('❌ Error orb liking match:', error);
+    
+    // Rollback exclusion and orb count on error
+    setMatchingState(prev => {
+      const newSet = new Set(prev.exclusionSet);
+      newSet.delete(matchId);
+      
+      const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+      const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+      
+      return { 
+        ...prev, 
+        exclusionSet: newSet,
+        potentialMatches: newMatches
+      };
+    });
+    
+    // Rollback orb count if it was decremented
+    if (error.message !== "No orbs available") {
+      setUserData(prev => ({
+        ...prev,
+        numOfOrbs: (prev.numOfOrbs || 0) + 1
+      }));
+      console.log(`🔄 Rolled back orb count`);
+    }
+    
+    throw error;
+  }
+}, []);
 
 // 🔧 CRITICAL FIX: Completely rewritten dislike function
 const optimizedDislikeMatch = useCallback(async (matchId: string) => {
@@ -1816,104 +2006,11 @@ const optimizedDislikeMatch = useCallback(async (matchId: string) => {
   }
 }, []);
 
-// 🔧 CRITICAL FIX: Completely rewritten orb like function
-const optimizedOrbLike = useCallback(async (matchId: string) => {
-  console.log(`✨ OPTIMIZED ORB LIKING USER: ${matchId}`);
-  
-  try {
-    // Check orb availability first
-    if (!userDataRef.current.numOfOrbs || userDataRef.current.numOfOrbs <= 0) {
-      throw new Error("No orbs available");
-    }
-
-    const hasActiveRadiance = getRadianceTimeRemaining && getRadianceTimeRemaining() > 0;
-    
-    // Update user data to reflect orb usage immediately
-    setUserData(prev => ({
-      ...prev,
-      numOfOrbs: (prev.numOfOrbs || 0) - 1
-    }));
-    
-    // 🔧 CRITICAL FIX: Same pattern - remove immediately and move to next
-    setMatchingState(prev => {
-      const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
-      
-      // Remove orb-liked user from potentialMatches array entirely
-      const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
-      
-      // Find next valid user that's not excluded
-      let nextIndex = prev.currentIndex;
-      while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-        nextIndex++;
-      }
-      
-      // If no valid user at current or next positions, look from beginning
-      if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-        nextIndex = 0;
-        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-          nextIndex++;
-        }
-      }
-      
-      console.log(`🔧 After orb like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-      console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
-      
-      return {
-        ...prev,
-        exclusionSet: newExclusionSet,
-        potentialMatches: filteredMatches,
-        currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-        noMoreMatches: filteredMatches.length === 0
-      };
-    });
-    
-    // Perform orb like action in background
-      await recordLikeWithBatch(
-        userDataRef.current.userId, 
-        matchId, 
-        true, // viaOrb = true for orb likes
-        hasActiveRadiance // viaRadiance = true if boost is active
-      );    
-
-    console.log(`✅ Optimized orb like completed for ${matchId}`);
-    
-  } catch (error: any) {
-    console.error('❌ Error orb liking match:', error);
-    
-    // Rollback exclusion and orb count on error
-    setMatchingState(prev => {
-      const newSet = new Set(prev.exclusionSet);
-      newSet.delete(matchId);
-      
-      const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-      const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
-      
-      return { 
-        ...prev, 
-        exclusionSet: newSet,
-        potentialMatches: newMatches
-      };
-    });
-    
-    // Rollback orb count if it was decremented
-    if (error.message !== "No orbs available") {
-      setUserData(prev => ({
-        ...prev,
-        numOfOrbs: (prev.numOfOrbs || 0) + 1
-      }));
-      console.log(`🔄 Rolled back orb count`);
-    }
-    
-    throw error;
-  }
-}, [getRadianceTimeRemaining]);
-
-
   const recordLikeWithBatch = async (
     fromUserId: string,
     toUserId: string,
     viaOrb: boolean = false,
-    viaRadiance: boolean = false // NEW: Sacred Radiance parameter
+    viaRadiance: boolean = false
   ): Promise<void> => {
     console.log('🔥 Using batch approach for like...', { viaOrb, viaRadiance });
     
@@ -1935,7 +2032,7 @@ const optimizedOrbLike = useCallback(async (matchId: string) => {
         throw new Error('User documents do not exist');
       }
       
-      const fromData = fromSnap.data()!;
+      const fromData: any = fromSnap.data()!;
       const toData = toSnap.data()!;
       const hadLikedUs = incomingSnap.exists;
       
@@ -3207,15 +3304,15 @@ const reportUser = async (
     }
   };
 
-  const hasActiveRadiance = (userData: any): boolean => {
-    if (!userData.boostExpiresAt) return false;
-    
-    const expiresAt = userData.boostExpiresAt.toDate 
-      ? userData.boostExpiresAt.toDate()
-      : new Date(userData.boostExpiresAt);
-    
-    return new Date() < expiresAt;
-  };
+    const hasActiveRadiance = useCallback((userData: UserDataType): boolean => {
+      if (!userData.boostExpiresAt) return false;
+      
+      const expiresAt = userData.boostExpiresAt.toDate 
+        ? userData.boostExpiresAt.toDate()
+        : new Date(userData.boostExpiresAt);
+      
+      return new Date() < expiresAt;
+    }, []);
 
   const getRadianceStatus = useCallback(() => {
     const timeRemaining = getRadianceTimeRemaining ? getRadianceTimeRemaining() : 0;
