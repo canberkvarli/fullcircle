@@ -2931,14 +2931,70 @@ const reportUser = async (
     try {
       const userId = userData.userId;
       
-      // 1. Create a batch for atomic operations
+      // Step 1: Check if recent authentication is required and handle it
+      try {
+        // Try a test operation that requires recent auth
+        await currentUser.updatePassword(currentUser.uid); // This will fail if recent auth needed
+      } catch (error: any) {
+        if (error.code === 'auth/requires-recent-login') {
+          // Prompt user to re-authenticate
+          throw new Error("For security, please log out and log back in within the last few minutes, then try deleting your account again.");
+        }
+      }
+      
+      // Step 2: Delete user subcollections (client SDK doesn't have listCollections)
+      const deleteUserSubcollections = async (userId: string) => {
+        const subcollections = [
+          "matches", 
+          "likesGiven", 
+          "likesReceived", 
+          "reports",
+          "unmatchedUsers",
+        ];
+        
+        for (const subcollectionName of subcollections) {
+          try {
+            const subcollectionRef = FIRESTORE.collection("users")
+              .doc(userId)
+              .collection(subcollectionName);
+            
+            const snapshot = await subcollectionRef.get();
+            
+            // Delete documents in batches of 500 (Firestore limit)
+            const batchSize = 500;
+            let batch = FIRESTORE.batch();
+            let batchCount = 0;
+            
+            for (const doc of snapshot.docs) {
+              batch.delete(doc.ref);
+              batchCount++;
+              
+              if (batchCount === batchSize) {
+                await batch.commit();
+                batch = FIRESTORE.batch();
+                batchCount = 0;
+              }
+            }
+            
+            // Commit remaining documents
+            if (batchCount > 0) {
+              await batch.commit();
+            }
+            
+            console.log(`Deleted ${subcollectionName} subcollection`);
+          } catch (error) {
+            console.warn(`Error deleting ${subcollectionName}:`, error);
+          }
+        }
+      };
+
+      // Step 3: Create a batch for atomic operations where possible
       const batch = FIRESTORE.batch();
       
-      // 2. Log the deletion reason if provided
+      // Step 4: Log the deletion reason if provided
       if (reason) {
         const deletionLogRef = FIRESTORE.collection("deletionLogs").doc();
         
-        // Calculate account age safely
         let accountAge = null;
         if (userData.createdAt && userData.createdAt.toDate) {
           try {
@@ -2957,10 +3013,9 @@ const reportUser = async (
         });
       }
       
-      // 3. Get user's matches to clean up related data
+      // Step 5: Clean up matches and conversations
       const userMatches = userData.matches || [];
       
-      // 4. Clean up matches and conversations
       for (const matchId of userMatches) {
         try {
           // Remove from other user's matches array
@@ -2969,59 +3024,34 @@ const reportUser = async (
             matches: firestore.FieldValue.arrayRemove(userId),
           });
           
-          // Delete match records
-          const matchDocRef = FIRESTORE.collection("users").doc(matchId).collection("matches").doc(userId);
-          batch.delete(matchDocRef);
-          
-          const myMatchDocRef = FIRESTORE.collection("users").doc(userId).collection("matches").doc(matchId);
-          batch.delete(myMatchDocRef);
-          
           // Delete chat if exists
           const chatId = [userId, matchId].sort().join("_");
           const chatRef = FIRESTORE.collection("chats").doc(chatId);
           batch.delete(chatRef);
         } catch (matchError) {
           console.warn(`Error cleaning up match ${matchId}:`, matchError);
-          // Continue with other matches
         }
       }
       
-      // 5. Delete user's subcollections
-      const subcollections = [
-        "matches", 
-        "likesGiven", 
-        "likesReceived", 
-        "reports"
-      ];
-      
-      for (const subcollection of subcollections) {
-        try {
-          const subcollectionSnapshot = await FIRESTORE.collection("users")
-            .doc(userId)
-            .collection(subcollection)
-            .get();
-          
-          subcollectionSnapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-          });
-        } catch (subcollectionError) {
-          console.warn(`Error deleting ${subcollection}:`, subcollectionError);
-          // Continue with other subcollections
-        }
+      // Step 6: Commit the batch operations first
+      try {
+        await batch.commit();
+        console.log("Batch operations completed successfully");
+      } catch (batchError) {
+        console.warn("Some batch operations failed:", batchError);
+        // Continue with deletion even if some batch operations failed
       }
       
-      // 6. Delete user's photos from storage (with better error handling)
+      // Step 7: Delete user's photos from storage
       if (userData.photos && userData.photos.length > 0) {
         for (const photoUrl of userData.photos) {
           try {
-            // Only try to delete if it's actually a Firebase storage URL
             if (photoUrl && photoUrl.includes("firebasestorage.googleapis.com")) {
               const photoRef = STORAGE.refFromURL(photoUrl);
               await photoRef.delete();
               console.log(`Deleted photo: ${photoUrl}`);
             }
           } catch (storageError: any) {
-            // Log but don't fail the entire deletion for missing photos
             if (storageError.code === 'storage/object-not-found') {
               console.warn(`Photo already deleted or not found: ${photoUrl}`);
             } else {
@@ -3031,23 +3061,23 @@ const reportUser = async (
         }
       }
       
-      // 7. Delete the main user document
+      // Step 8: Delete user subcollections first
+      await deleteUserSubcollections(userId);
+      
+      // Step 9: Delete the main user document
       const userDocRef = FIRESTORE.collection("users").doc(userId);
-      batch.delete(userDocRef);
+      await userDocRef.delete();
+      console.log("User document and all subcollections deleted successfully");
       
-      // 8. Commit all Firestore deletions
-      await batch.commit();
-      console.log("Firestore data deleted successfully");
-      
-      // 9. Delete Firebase Auth account
+      // Step 10: Delete Firebase Auth account (this should work now with recent auth)
       await currentUser.delete();
       console.log("Firebase Auth account deleted successfully");
       
-      // 10. Clear local state
+      // Step 11: Clear local state
       setUserData(initialUserData);
       setCurrentUser(null);
       
-      // 11. Sign out from Google if connected
+      // Step 12: Sign out from Google if connected
       if (userData.GoogleSSOEnabled) {
         try {
           await GoogleSignin.signOut();
@@ -3058,13 +3088,13 @@ const reportUser = async (
       
       console.log("Account successfully deleted");
       
-      // 12. Navigate to login screen
+      // Step 13: Navigate to login screen
       router.navigate("onboarding/LoginSignupScreen" as any);
       
     } catch (error: any) {
       console.error("Error deleting account:", error);
       
-      // Provide specific error messages based on the error type
+      // Provide specific error messages
       if (error.code === 'auth/requires-recent-login') {
         throw new Error("For security, please log out and log back in within the last few minutes, then try deleting your account again.");
       } else if (error.message) {
