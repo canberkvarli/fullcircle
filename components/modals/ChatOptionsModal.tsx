@@ -57,7 +57,7 @@ export default function ChatOptionsModal({
     if (isProcessing) return;
 
     Alert.alert(
-      "End Sacred Connection",
+      "End Connection",
       "Are you sure you want to unmatch? This action cannot be undone and your conversation will be permanently removed.",
       [
         {
@@ -120,7 +120,7 @@ export default function ChatOptionsModal({
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.handle} />
           <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Connection Options
+            Chat Options
           </Text>
         </View>
 
@@ -138,7 +138,7 @@ export default function ChatOptionsModal({
             </View>
             <View style={styles.optionContent}>
               <Text style={[styles.optionTitle, fonts.spiritualBodyFont, { color: '#FF6B6B' }]}>
-                End Sacred Connection
+                End Connection
               </Text>
               <Text style={[styles.optionSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
                 Permanently remove this match and conversation

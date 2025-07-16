@@ -62,16 +62,31 @@ const Chat: React.FC = () => {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isUnmatching, setIsUnmatching] = useState(false);
+  const [connectionMethod, setConnectionMethod] = useState<{ viaOrb: boolean; viaRadiance: boolean } | null>(null);
   
   // Animation for smooth sliding between tabs
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  // Parse matchUser and fetch full data
+  // Parse matchUser and detect connection method
   useEffect(() => {
     if (matchUser) {
       try {
         const parsedUser = JSON.parse(matchUser);
         setOtherUserData(parsedUser);
+
+        // Detect connection method
+        const method = {
+          viaOrb: parsedUser.theirConnectionMethod?.viaOrb || 
+                  parsedUser.connectionMethods?.[parsedUser.userId]?.viaOrb || 
+                  parsedUser.viaOrb || 
+                  false,
+          viaRadiance: parsedUser.theirConnectionMethod?.viaRadiance || 
+                       parsedUser.connectionMethods?.[parsedUser.userId]?.viaRadiance || 
+                       parsedUser.viaRadiance || 
+                       parsedUser.viaBoost || 
+                       false
+        };
+        setConnectionMethod(method);
 
         // Fetch full user data for profile tab
         const fetchData = async () => {
@@ -80,7 +95,7 @@ const Chat: React.FC = () => {
         };
         fetchData();
       } catch {
-        setOtherUserData({ firstName: "Kindred Soul" });
+        setOtherUserData({ firstName: "Soul" });
       }
     }
   }, [matchUser, otherUserId]);
@@ -113,7 +128,7 @@ const Chat: React.FC = () => {
       // Create the match message
       const matchMessage: IMessage = {
         _id: "match-indicator",
-        text: `You matched with ${otherUserData?.firstName || "them"}! 💫`,
+        text: `You matched with ${otherUserData?.firstName || "them"}! ✨`,
         createdAt: matchDate,
         system: true,
         user: {
@@ -192,7 +207,33 @@ const Chat: React.FC = () => {
     [chatId, sendMessage, userData.userId, otherUserId]
   );
 
-  // Spiritual system message renderer
+  // Get connection method info
+  const getConnectionInfo = () => {
+    if (!connectionMethod) return null;
+    
+    if (connectionMethod.viaOrb && connectionMethod.viaRadiance) {
+      return {
+        icon: "planet" as const,
+        text: "Orb & Radiance Match",
+        color: "#8B4513"
+      };
+    } else if (connectionMethod.viaOrb) {
+      return {
+        icon: "planet" as const,
+        text: "Orb Match",
+        color: "#8B4513"
+      };
+    } else if (connectionMethod.viaRadiance) {
+      return {
+        icon: "radio" as const,
+        text: "Radiance Match",
+        color: "#D4AF37"
+      };
+    }
+    return null;
+  };
+
+  // System message renderer
   const renderSystemMessage = (props: any) => {
     return (
       <View style={[styles.systemMessageContainer, { backgroundColor: colors.background }]}>
@@ -202,13 +243,13 @@ const Chat: React.FC = () => {
           shadowColor: '#8B4513'
         }]}>
           <View style={[styles.systemIconContainer, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="sparkles" size={20} color="#8B4513" />
+            <Ionicons name="heart" size={20} color="#8B4513" />
           </View>
           <Text style={[styles.systemMessageText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
             {props.currentMessage.text}
           </Text>
           <Text style={[styles.systemMessageDate, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Sacred Connection • {props.currentMessage.createdAt.toLocaleDateString("en-US", {
+            Connected • {props.currentMessage.createdAt.toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",
               year: "numeric",
@@ -219,7 +260,7 @@ const Chat: React.FC = () => {
     );
   };
 
-  // Spiritual bubble renderer
+  // Bubble renderer
   const renderBubble = (props: any) => (
     <Bubble
       {...props}
@@ -270,7 +311,7 @@ const Chat: React.FC = () => {
     />
   );
 
-  // Spiritual input toolbar
+  // Input toolbar
   const renderInputToolbar = (props: any) => (
     <InputToolbar
       {...props}
@@ -283,7 +324,7 @@ const Chat: React.FC = () => {
     />
   );
 
-  // Spiritual send button with clean styling
+  // Send button
   const renderSend = (props: any) => (
     <Send 
       {...props}
@@ -311,15 +352,17 @@ const Chat: React.FC = () => {
             <Ionicons name="heart" size={40} color="#8B4513" />
           </View>
           <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            Connecting Sacred Souls...
+            Loading conversation...
           </Text>
           <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            The universe is preparing your divine conversation
+            Getting your chat ready
           </Text>
         </View>
       </SafeAreaView>
     );
   }
+
+  const connectionInfo = getConnectionInfo();
 
   return (
     <>
@@ -355,11 +398,24 @@ const Chat: React.FC = () => {
         }}
       />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Spiritual Header */}
+        {/* Header */}
         <View style={[styles.header, { 
           backgroundColor: colors.background,
           borderBottomColor: colors.border
         }]}>
+          {/* Connection Method Indicator */}
+          {connectionInfo && (
+            <View style={[styles.connectionBanner, { 
+              backgroundColor: connectionInfo.color + '08',
+              borderColor: connectionInfo.color + '20'
+            }]}>
+              <Ionicons name={connectionInfo.icon} size={16} color={connectionInfo.color} />
+              <Text style={[styles.connectionText, fonts.spiritualBodyFont, { color: connectionInfo.color }]}>
+                {connectionInfo.text}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.headerTop}>
             <View style={styles.backAndTitle}>
               <TouchableOpacity
@@ -370,10 +426,10 @@ const Chat: React.FC = () => {
               </TouchableOpacity>
               <View style={styles.titleContainer}>
                 <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  {otherUserData?.firstName || "Sacred Soul"}
+                  {otherUserData?.firstName || "Soul"}
                 </Text>
                 <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Divine Connection ✨
+                  Connected ✨
                 </Text>
               </View>
             </View>
@@ -385,7 +441,7 @@ const Chat: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Spiritual Tabs */}
+          {/* Tabs */}
           <View style={styles.tabsContainer}>
             <TouchableOpacity
               style={[styles.tab, activeTab === "chat" && styles.activeTab]}
@@ -403,7 +459,7 @@ const Chat: React.FC = () => {
                 { color: activeTab === "chat" ? "#8B4513" : colors.textLight },
                 activeTab === "chat" && styles.activeTabText
               ]}>
-                Sacred Exchange
+                Chat
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -422,7 +478,7 @@ const Chat: React.FC = () => {
                 { color: activeTab === "profile" ? "#8B4513" : colors.textLight },
                 activeTab === "profile" && styles.activeTabText
               ]}>
-                Soul Essence
+                Profile
               </Text>
             </TouchableOpacity>
           </View>
@@ -466,16 +522,11 @@ const Chat: React.FC = () => {
                   messagesContainerStyle={{ backgroundColor: colors.background }}
                   renderChatEmpty={() => <View />}
                   renderChatFooter={() => null}
-                  scrollToBottom={false}
                   scrollToBottomComponent={() => null}
                   loadEarlier={false}
                   infiniteScroll={false}
                   isLoadingEarlier={false}
                   renderLoadEarlier={() => null}
-                  listViewProps={{
-                    scrollEventThrottle: 400,
-                    removeClippedSubviews: false,
-                  }}
                   textInputProps={{
                     style: [styles.textInput, { 
                       backgroundColor: colors.background,
@@ -512,7 +563,7 @@ const Chat: React.FC = () => {
                     <Ionicons name="person" size={40} color="#8B4513" />
                   </View>
                   <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-                    Unveiling Sacred Soul Essence...
+                    Loading profile...
                   </Text>
                 </View>
               )}
@@ -538,6 +589,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  connectionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  connectionText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    marginLeft: Spacing.xs,
+    letterSpacing: 0.3,
   },
   headerTop: {
     flexDirection: "row",

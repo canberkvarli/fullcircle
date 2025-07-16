@@ -72,7 +72,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
 
     Alert.alert(
       "Report Submitted",
-      "Thank you for helping keep our sacred community safe. We'll review this report and take appropriate action.",
+      "Thank you for helping keep our community safe. We'll review this report and take appropriate action.",
       [{ text: "OK", onPress: onClose, style: "default" }],
       { cancelable: false }
     );
@@ -118,10 +118,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
                   <Ionicons name="shield-checkmark" size={32} color="#8B4513" />
                 </View>
                 <Text style={[styles.subtitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                  Help us maintain our sacred community
+                  Help us maintain our community
                 </Text>
                 <Text style={[styles.description, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Your report helps protect all souls in our community. Please select the reason that best describes the issue.
+                  Your report helps protect everyone in our community. Please select the reason that best describes the issue.
                 </Text>
               </View>
 
