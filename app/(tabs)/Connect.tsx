@@ -418,10 +418,10 @@ const ConnectScreen: React.FC = () => {
 
   const getActionIcon = (action: 'like' | 'pass' | 'orb') => {
     switch (action) {
-      case 'like': return 'heart' as const;
-      case 'pass': return 'close' as const;
-      case 'orb': return 'sparkles' as const;
-      default: return 'heart' as const;
+      case 'like': return 'heart';
+      case 'pass': return 'close';
+      case 'orb': return 'sparkles';
+      default: return 'heart';
     }
   };
 
@@ -736,7 +736,10 @@ const ConnectScreen: React.FC = () => {
           {/* 🔄 NEW: Show additional debug info in development */}
           {__DEV__ && (
             <Text style={[styles.debugText, { color: colors.textLight, marginTop: 20 }]}>
-              {`Debug: ${matchingState.potentialMatches.length} matches loaded, index: ${matchingState.currentIndex}, initialized: ${matchingState.initialized.toString()}, showContent: ${showContent.toString()}`}
+              Debug: {matchingState.potentialMatches.length} matches loaded, 
+              index: {matchingState.currentIndex}, 
+              initialized: {matchingState.initialized.toString()},
+              showContent: {showContent.toString()}
             </Text>
           )}
         </Animated.View>
@@ -963,13 +966,13 @@ const ConnectScreen: React.FC = () => {
             style={[
               styles.actionIconContainer,
               {
-                backgroundColor: getActionColor(lastAction) || '#B8860B',
-                shadowColor: getActionColor(lastAction) || '#B8860B',
+                backgroundColor: getActionColor(lastAction),
+                shadowColor: getActionColor(lastAction),
               }
             ]}
           >
             <Ionicons 
-              name={getActionIcon(lastAction) || 'heart'} 
+              name={getActionIcon(lastAction)} 
               size={36} 
               color="#FFFFFF" 
             />
