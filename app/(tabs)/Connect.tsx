@@ -12,6 +12,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
@@ -490,11 +491,13 @@ const ConnectScreen: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
               Circle
             </Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
-              Meaningful connections await
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Meaningful{' '}
+              <Text style={styles.highlightedWord}>connections</Text>
+              {' await'}
             </Text>
           </View>
         </View>
@@ -593,11 +596,13 @@ const ConnectScreen: React.FC = () => {
         {/* Always show header to avoid white screen */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
               Circle
             </Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textLight }]}>
-              Meaningful connections await
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Meaningful{' '}
+              <Text style={styles.highlightedWord}>connections</Text>
+              {' await'}
             </Text>
           </View>
         </View>
@@ -621,106 +626,34 @@ const ConnectScreen: React.FC = () => {
           ]}
         >
           <View style={styles.loadingContainer}>
-            {/* 🆕 NEW: Enhanced loading mandala with multiple animation layers */}
-            <Animated.View 
+            {/* Clean Lottie Animation */}
+            <Animated.View
               style={[
-                styles.loadingMandala,
-                { 
-                  backgroundColor: '#B8860B' + '10',
+                styles.lottieContainer,
+                {
+                  opacity: loadingPulse.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1],
+                  }),
                   transform: [
                     {
-                      rotate: loadingRotation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '360deg'],
+                      scale: loadingPulse.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [0.95, 1.05, 0.95],
                       }),
                     },
                   ],
                 }
               ]}
             >
-              <Animated.View
-                style={[
-                  styles.innerPulse,
-                  {
-                    opacity: loadingPulse.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [0.4, 1, 0.4],
-                    }),
-                    transform: [
-                      {
-                        scale: loadingPulse.interpolate({
-                          inputRange: [0, 0.5, 1],
-                          outputRange: [0.8, 1.2, 0.8],
-                        }),
-                      },
-                    ],
-                  }
-                ]}
-              >
-                <Ionicons name="heart" size={24} color="#B8860B" />
-              </Animated.View>
-              
-              {/* 🆕 NEW: Secondary rotating elements */}
-              <Animated.View
-                style={[
-                  styles.outerRing,
-                  {
-                    transform: [
-                      {
-                        rotate: loadingRotation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['360deg', '0deg'], // Counter-rotation
-                        }),
-                      },
-                    ],
-                  }
-                ]}
-              >
-                <View style={[styles.ringDot, { top: 0, left: '45%' }]} />
-                <View style={[styles.ringDot, { bottom: 0, right: '45%' }]} />
-                <View style={[styles.ringDot, { left: 0, top: '45%' }]} />
-                <View style={[styles.ringDot, { right: 0, bottom: '45%' }]} />
-              </Animated.View>
-            </Animated.View>
-          </View>
-          
-          <Animated.Text 
-            style={[
-              styles.loadingText, 
-              { 
-                color: '#B8860B',
-                opacity: loadingPulse.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.7, 1],
-                }),
-              }
-            ]}
-          >
-            Finding Your Matches
-          </Animated.Text>
-          
-          <Text style={[styles.loadingSubtext, { color: colors.textLight }]}>
-            Getting everything ready
-          </Text>
-          
-          {/* Loading progress dots */}
-          <View style={styles.loadingDots}>
-            {[0, 1, 2].map((index) => (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.loadingDot,
-                  {
-                    opacity: loadingPulse.interpolate({
-                      inputRange: [0, 0.3, 0.6, 1],
-                      outputRange: index === 0 ? [0.3, 1, 0.3, 0.3] :
-                                   index === 1 ? [0.3, 0.3, 1, 0.3] :
-                                                 [0.3, 0.3, 0.3, 1],
-                    }),
-                  }
-                ]}
+              <LottieView
+                source={require('../../assets/animations/loading_mandala.json')}
+                autoPlay
+                loop
+                style={styles.lottieAnimation}
+                speed={0.8}
               />
-            ))}
+            </Animated.View>
           </View>
         </Animated.View>
       </View>
@@ -1205,72 +1138,16 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   
-  loadingMandala: {
+  lottieContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  lottieAnimation: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    marginBottom: Spacing.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: '#B8860B' + '20',
-  },
-
-  innerPulse: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#B8860B' + '10',
-  },
-
-  outerRing: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    top: 10,
-    left: 10,
-  },
-
-  ringDot: {
-    position: 'absolute',
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#B8860B',
-    opacity: 0.6,
-  },
-
-  loadingDots: {
-    flexDirection: 'row',
-    marginTop: Spacing.lg,
-    gap: Spacing.sm,
-  },
-
-  loadingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#B8860B',
-  },
-  
-  loadingText: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.sm,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  
-  loadingSubtext: {
-    fontSize: Typography.sizes.sm,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-    marginBottom: Spacing.md,
   },
   
   // Divine orb modal styles
