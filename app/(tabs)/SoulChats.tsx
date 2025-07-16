@@ -9,8 +9,10 @@ import {
   StatusBar,
   Platform,
   useColorScheme,
+  Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import { useUserContext } from "@/context/UserContext";
 import { Link, useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -32,7 +34,20 @@ const SoulChats: React.FC = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
+  // Animation for smooth loading
+  const loadingPulse = React.useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
+    // Start loading animation
+    Animated.loop(
+      Animated.timing(loadingPulse, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    ).start();
+
     const unsubscribe = subscribeToChatMatches(
       userData.userId,
       async (chatList) => {
@@ -101,15 +116,33 @@ const SoulChats: React.FC = () => {
         </View>
         
         <View style={styles.loadingContainer}>
-          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-            <Ionicons name="chatbubbles" size={28} color="#8B4513" />
-          </View>
-          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            Loading Your Chats
-          </Text>
-          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Getting your conversations ready
-          </Text>
+          <Animated.View
+            style={[
+              styles.lottieContainer,
+              {
+                opacity: loadingPulse.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+                transform: [
+                  {
+                    scale: loadingPulse.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.95, 1.05, 0.95],
+                    }),
+                  },
+                ],
+              }
+            ]}
+          >
+            <LottieView
+              source={require('../../assets/animations/loading_mandala.json')}
+              autoPlay
+              loop
+              style={styles.lottieAnimation}
+              speed={0.8}
+            />
+          </Animated.View>
         </View>
       </View>
     );
@@ -420,28 +453,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   
-  loadingMandala: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    marginBottom: Spacing.lg,
+  lottieContainer: {
+    width: 120,
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
   },
   
-  loadingText: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.sm,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  
-  loadingSubtext: {
-    fontSize: Typography.sizes.sm,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    letterSpacing: 0.3,
+  lottieAnimation: {
+    width: 100,
+    height: 100,
   },
   
   noMatchesContainer: {
