@@ -59,9 +59,7 @@ const SoulChats: React.FC = () => {
 
   // Helper function to get connection methods for this match
   const getConnectionMethods = (match: any) => {
-    // Check multiple possible data sources for connection method
     return {
-      // How they connected to us (from their match record)
       theirMethod: {
         viaOrb: match.theirConnectionMethod?.viaOrb || 
                 match.connectionMethods?.[match.userId]?.viaOrb || 
@@ -73,7 +71,6 @@ const SoulChats: React.FC = () => {
                      match.viaBoost || 
                      false
       },
-      // How we connected to them (from our match record)
       ourMethod: {
         viaOrb: match.myConnectionMethod?.viaOrb || 
                 match.connectionMethods?.[userData.userId]?.viaOrb || 
@@ -93,7 +90,7 @@ const SoulChats: React.FC = () => {
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              Chats
+              Soul Chats
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
               Your{' '}
@@ -105,7 +102,7 @@ const SoulChats: React.FC = () => {
         
         <View style={styles.loadingContainer}>
           <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-            <Ionicons name="chatbubbles" size={24} color="#8B4513" />
+            <Ionicons name="chatbubbles" size={28} color="#8B4513" />
           </View>
           <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
             Loading Your Chats
@@ -138,7 +135,7 @@ const SoulChats: React.FC = () => {
 
         <View style={styles.noMatchesContainer}>
           <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="chatbubbles-outline" size={32} color="#8B4513" />
+            <Ionicons name="chatbubbles-outline" size={36} color="#8B4513" />
           </View>
           
           <Text style={[styles.noMatchesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -197,17 +194,20 @@ const SoulChats: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.matchRow, 
-                  { backgroundColor: isUnread ? '#FFD700' + '08' : 'transparent' }
+                  { 
+                    backgroundColor: 'transparent',
+                  }
                 ]}
                 onPress={() => handleChatPress(match)}
                 activeOpacity={0.7}
               >
                 <View style={styles.avatarWrapper}>
-                  {/* Enhanced unread indicator */}
+                  {/* Enhanced unread glow with divine golden-brown */}
                   {isUnread && (
                     <>
-                      <View style={styles.unreadGlow} />
-                      <View style={styles.unreadRing} />
+                      <View style={styles.unreadOuterGlow} />
+                      <View style={styles.unreadInnerGlow} />
+                      <View style={styles.unreadDivineRing} />
                     </>
                   )}
                   
@@ -215,8 +215,13 @@ const SoulChats: React.FC = () => {
                     styles.avatarContainer, 
                     { 
                       backgroundColor: colors.border,
-                      borderColor: isUnread ? '#FFD700' : colors.border,
+                      borderColor: isUnread ? '#B8860B' : colors.border,
                       borderWidth: isUnread ? 3 : 2,
+                      shadowColor: isUnread ? '#D4AF37' : '#000',
+                      shadowOffset: { width: 0, height: isUnread ? 4 : 2 },
+                      shadowOpacity: isUnread ? 0.3 : 0.1,
+                      shadowRadius: isUnread ? 8 : 4,
+                      elevation: isUnread ? 8 : 3,
                     }
                   ]}>
                     {match.photos[0] ? (
@@ -225,7 +230,7 @@ const SoulChats: React.FC = () => {
                         style={styles.photo}
                       />
                     ) : (
-                      <Ionicons name="person" size={36} color={colors.textMuted} />
+                      <Ionicons name="person" size={42} color={colors.textMuted} />
                     )}
                   </View>
                   
@@ -234,21 +239,22 @@ const SoulChats: React.FC = () => {
                     <View style={styles.connectionIndicators}>
                       {connectionMethods.theirMethod.viaOrb && (
                         <View style={[styles.connectionBadge, styles.orbIndicator]}>
-                          <Ionicons name="planet" size={10} color="#FFFFFF" />
+                          <Ionicons name="planet" size={11} color="#FFFFFF" />
                         </View>
                       )}
                       {connectionMethods.theirMethod.viaRadiance && (
                         <View style={[styles.connectionBadge, styles.radianceIndicator]}>
-                          <Ionicons name="radio" size={10} color="#FFFFFF" />
+                          <Ionicons name="radio" size={11} color="#FFFFFF" />
                         </View>
                       )}
                     </View>
                   )}
                   
-                  {/* Enhanced unread dot */}
+                  {/* Enhanced unread indicator with divine golden center */}
                   {isUnread && (
                     <View style={styles.unreadDot}>
                       <View style={styles.unreadDotInner} />
+                      <View style={styles.unreadDotCenter} />
                     </View>
                   )}
                 </View>
@@ -270,12 +276,12 @@ const SoulChats: React.FC = () => {
                         <View style={styles.nameConnectionIcons}>
                           {connectionMethods.theirMethod.viaOrb && (
                             <View style={styles.nameConnectionIcon}>
-                              <Ionicons name="planet" size={12} color="#8B4513" />
+                              <Ionicons name="planet" size={13} color="#8B4513" />
                             </View>
                           )}
                           {connectionMethods.theirMethod.viaRadiance && (
                             <View style={styles.nameConnectionIcon}>
-                              <Ionicons name="radio" size={12} color="#D4AF37" />
+                              <Ionicons name="radio" size={13} color="#D4AF37" />
                             </View>
                           )}
                         </View>
@@ -286,7 +292,7 @@ const SoulChats: React.FC = () => {
                       <Text style={[
                         styles.timeText, 
                         fonts.spiritualBodyFont, 
-                        { color: isUnread ? '#B8860B' : colors.textMuted },
+                        { color: isUnread ? '#8B4513' : colors.textMuted },
                         isUnread && styles.unreadTimeText
                       ]}>
                         {formatTime(match.lastMessageTimestamp)}
@@ -301,12 +307,12 @@ const SoulChats: React.FC = () => {
                       { color: isUnread ? colors.textDark : colors.textMuted },
                       isUnread && styles.unreadMessageText
                     ]}
-                    numberOfLines={1}
+                    numberOfLines={2}
                     ellipsizeMode="tail"
                   >
                     {match.lastMessage
-                      ? match.lastMessage.length > 35
-                        ? `${match.lastMessage.slice(0, 32)}...`
+                      ? match.lastMessage.length > 60
+                        ? `${match.lastMessage.slice(0, 57)}...`
                         : match.lastMessage
                       : `Start your conversation with ${match.firstName}`}
                   </Text>
@@ -315,16 +321,20 @@ const SoulChats: React.FC = () => {
                 <View style={styles.chatIcon}>
                   <Ionicons 
                     name="chevron-forward" 
-                    size={18} 
-                    color={isUnread ? '#B8860B' : colors.textMuted}
+                    size={20} 
+                    color={isUnread ? '#8B4513' : colors.textMuted}
                   />
                 </View>
               </TouchableOpacity>
               
-              {/* Enhanced Divider */}
+              {/* Enhanced Divider with spiritual touch */}
               {index < matches.length - 1 && (
                 <View style={styles.dividerContainer}>
-                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  <View style={styles.dividerOrnament}>
+                    <View style={[styles.dividerDot, { backgroundColor: '#8B4513' + '20' }]} />
+                    <View style={[styles.dividerLine, { backgroundColor: "#8B4513" }]} />
+                    <View style={[styles.dividerDot, { backgroundColor: '#8B4513' + '20' }]} />
+                  </View>
                 </View>
               )}
             </View>
@@ -411,9 +421,9 @@ const styles = StyleSheet.create({
   },
   
   loadingMandala: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     marginBottom: Spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
@@ -494,8 +504,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.lg,
+    paddingHorizontal: 0,
     marginBottom: Spacing.xs,
   },
   
@@ -504,36 +513,49 @@ const styles = StyleSheet.create({
     marginRight: Spacing.lg,
   },
   
+  // Enhanced smaller avatar
   avatarContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   
-  unreadGlow: {
+  // Divine golden-brown glow effects for unread
+  unreadOuterGlow: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 48,
+    zIndex: 0,
+  },
+  
+  unreadInnerGlow: {
     position: 'absolute',
     top: -6,
     left: -6,
     right: -6,
     bottom: -6,
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
-    borderRadius: 42,
-    zIndex: 0,
+    backgroundColor: 'rgba(139, 69, 19, 0.08)',
+    borderRadius: 44,
+    zIndex: 1,
   },
   
-  unreadRing: {
+  unreadDivineRing: {
     position: 'absolute',
     top: -3,
     left: -3,
     right: -3,
     bottom: -3,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.4)',
-    borderRadius: 39,
-    zIndex: 1,
+    borderWidth: 2,
+    borderColor: 'rgba(184, 134, 11, 0.6)',
+    borderRadius: 41,
+    zIndex: 2,
   },
   
   photo: {
@@ -541,7 +563,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   
-  // NEW: Connection indicators on avatar (top-right)
+  // Connection indicators on avatar (top-right)
   connectionIndicators: {
     position: 'absolute',
     top: -2,
@@ -552,18 +574,18 @@ const styles = StyleSheet.create({
   },
   
   connectionBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 4,
   },
   
   orbIndicator: {
@@ -574,29 +596,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#D4AF37',
   },
   
+  // Enhanced unread dot with divine center
   unreadDot: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
     zIndex: 10,
   },
   
   unreadDotInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FFD700',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#D4AF37',
+  },
+  
+  unreadDotCenter: {
+    position: 'absolute',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#8B4513',
   },
   
   matchInfo: {
@@ -611,7 +642,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   
-  // NEW: Name row with connection icons
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -624,7 +654,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  // NEW: Connection icons next to name
+  // Connection icons next to name
   nameConnectionIcons: {
     flexDirection: 'row',
     marginLeft: Spacing.sm,
@@ -632,17 +662,17 @@ const styles = StyleSheet.create({
   },
   
   nameConnectionIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 2,
   },
   
   timeText: {
@@ -653,13 +683,14 @@ const styles = StyleSheet.create({
   
   conversationText: {
     fontSize: Typography.sizes.sm,
-    lineHeight: Typography.sizes.sm * 1.3,
+    lineHeight: Typography.sizes.sm * 1.4,
     letterSpacing: 0.2,
   },
   
+  // Bold styling for unread messages
   unreadText: {
     fontWeight: Typography.weights.bold,
-    color: '#2C2C2C',
+    color: '#1A1A1A',
   },
   
   unreadTimeText: {
@@ -668,20 +699,35 @@ const styles = StyleSheet.create({
   
   unreadMessageText: {
     fontWeight: Typography.weights.bold,
+    color: '#2C2C2C',
   },
   
   chatIcon: {
     padding: Spacing.xs,
   },
   
+  // Enhanced spiritual divider
   dividerContainer: {
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   
-  divider: {
+  dividerOrnament: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+  },
+  
+  dividerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  
+  dividerLine: {
+    flex: 1,
     height: 1,
-    width: '85%',
+    marginHorizontal: Spacing.sm,
     opacity: 0.3,
   },
   
