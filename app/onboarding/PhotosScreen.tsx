@@ -401,7 +401,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     scrollContent: {
       paddingBottom: Spacing.xl,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+      marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
     },
     backButton: {
       backgroundColor: colors.card,
@@ -412,7 +412,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      marginLeft: Spacing.xl,
+      marginLeft: Spacing.md,
       marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
       marginBottom: 0,
       borderWidth: 1,

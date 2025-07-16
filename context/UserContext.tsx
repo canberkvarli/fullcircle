@@ -2371,7 +2371,6 @@ const optimizedOrbLike = useCallback(async (matchId: string) => {
         onboardingCompletedAt: firestore.FieldValue.serverTimestamp(),
         currentOnboardingScreen: "Connect",
       });
-      await fetchPotentialMatches();
       router.replace("/(tabs)/Connect" as any);
     } catch (error) {
       console.error("Failed to complete onboarding: ", error);

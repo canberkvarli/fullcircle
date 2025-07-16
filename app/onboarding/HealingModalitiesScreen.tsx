@@ -529,8 +529,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: Spacing.lg,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+      marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
     },
     backButton: {
       backgroundColor: colors.card,

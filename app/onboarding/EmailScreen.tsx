@@ -258,7 +258,7 @@ function EmailScreen() {
                   Linking your account creates a smoother experience and easier access to your Circle.
                 </Text>
                 {[
-                  { option: 1, text: "Connect with Apple", icon: "logo-apple", connected: false },
+                  // { option: 1, text: "Connect with Apple", icon: "logo-apple", connected: false },
                   { 
                     option: 2, 
                     text: "Connect with Google", 
@@ -307,8 +307,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: Spacing.lg,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
     backButton: {
       backgroundColor: colors.card,
@@ -410,7 +408,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     affirmation: {
       ...fonts.elegantItalicFont,
       position: 'absolute',
-      bottom: Platform.select({ ios: 120, android: 100 }),
+      bottom: 120,
       left: Spacing.lg,
       right: Spacing.lg,
       textAlign: "center",
@@ -429,7 +427,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     submitButton: {
       position: "absolute",
-      bottom: Platform.select({ ios: 50, android: 30 }),
+      bottom: 50,
       right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,

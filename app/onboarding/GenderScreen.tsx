@@ -354,7 +354,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     scrollViewContent: {
       paddingBottom: 100,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+      marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
     },
     backButton: {
       backgroundColor: colors.card,

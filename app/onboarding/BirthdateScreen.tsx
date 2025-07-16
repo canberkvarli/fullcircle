@@ -259,7 +259,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       alignItems: 'center',
       alignSelf: 'flex-start',
       marginLeft: Spacing.lg,
-      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
+      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.md }),
       borderWidth: 1,
       borderColor: colors.border,
     },

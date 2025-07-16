@@ -11,12 +11,10 @@ import {
   useColorScheme,
   StyleSheet,
   Dimensions,
-  ScrollView,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from '@expo/vector-icons';
-import Checkbox from "expo-checkbox";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -185,7 +183,7 @@ const LocationScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigateToPreviousScreen()}
@@ -195,12 +193,15 @@ const LocationScreen = () => {
 
       <OnboardingProgressBar currentScreen="LocationScreen" />
 
-      <View style={styles.contentContainer}>
+      <View style={styles.content}>
         <View style={styles.headerSection}>
           <Text style={styles.title}>Where are you rooted?</Text>
           <Text style={styles.subtitle}>
             Share your location to connect with people nearby
           </Text>
+        </View>
+
+        <View style={styles.regionDisplay}>
           <Text style={styles.regionName}>{regionName}</Text>
         </View>
 
@@ -216,7 +217,7 @@ const LocationScreen = () => {
             </View>
           ) : (
             <>
-              <MapView
+              {/* <MapView
                 style={styles.map}
                 region={region}
                 onRegionChangeComplete={(newRegion) => {
@@ -241,7 +242,7 @@ const LocationScreen = () => {
                     <Ionicons name="location" size={30} color={colors.primary} />
                   </View>
                 </Marker>
-              </MapView>
+              </MapView> */}
 
               <TouchableOpacity
                 style={styles.currentLocationButton}
@@ -269,22 +270,23 @@ const LocationScreen = () => {
       </View>
 
       <TouchableOpacity
-        style={styles.continueButton}
+        style={styles.submitButton}
         onPress={handleContinue}
       >
         <Ionicons name="chevron-forward" size={24} color={colors.background} />
       </TouchableOpacity>
-    </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>) => {
   const colors = Colors[colorScheme];
+  const { height } = Dimensions.get('window');
   
   // Calculate responsive map height based on screen size
   const getMapHeight = () => {
-    if (screenHeight < 700) return 200; // Slightly smaller for privacy option
-    if (screenHeight < 800) return 240; 
+    if (height < 700) return 200;
+    if (height < 800) return 240; 
     return 250; 
   };
 
@@ -292,8 +294,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: Spacing.lg,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+      marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
+    },
+    content: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: 100, // Space for submit button
     },
     backButton: {
       backgroundColor: colors.card,
@@ -305,7 +312,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: 'center',
       alignSelf: 'flex-start',
       marginLeft: Spacing.md,
-      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
+      marginTop: Platform.select({ ios: Spacing.md, android: Spacing.sm }),
       marginBottom: 0,
       borderWidth: 1,
       borderColor: colors.border,
@@ -321,13 +328,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
-    contentContainer: {
-      flex: 1,
-      justifyContent: 'space-between',
-      paddingBottom: 100, // Space for continue button
-    },
     headerSection: {
-      marginBottom: Spacing.sm,
+      alignSelf: 'flex-start',
+      width: '100%',
     },
     title: {
       ...fonts.spiritualTitleFont,
@@ -341,25 +344,47 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.lg,
       fontStyle: "normal",
     },
+    regionDisplay: {
+      padding: Spacing.xs,
+      alignItems: 'center',
+      minWidth: 200,
+      marginBottom: Spacing.xs,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
+    },
     regionName: {
-      ...fonts.spiritualBodyFont,
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes['2xl'],
       color: colors.primary,
-      fontSize: Typography.sizes.lg,
-      marginBottom: Spacing.sm,
-      textAlign: "center",
+      fontWeight: Typography.weights.bold,
+      marginBottom: Spacing.xs,
+      textAlign: 'center',
+    },
+    regionLabel: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textLight,
+      fontSize: Typography.sizes.base,
       fontStyle: "normal",
-      fontWeight: Typography.weights.medium,
     },
     mapContainer: {
-      height: getMapHeight(), // Responsive height
+      height: getMapHeight(),
+      width: '95%',
       borderRadius: BorderRadius.xl,
       overflow: "hidden",
       marginBottom: Spacing.lg,
-      marginHorizontal: 0,
       position: "relative",
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -443,25 +468,31 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: Spacing.md,
-      marginHorizontal: Spacing.lg,
+      justifyContent: "center",
       backgroundColor: colors.card,
-      padding: Spacing.lg,
+      padding: Spacing.md,
       borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
+      marginBottom: Spacing.md,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
     },
     privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,
       fontStyle: "normal",
-    },
-    checkbox: {
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+      marginRight: Spacing.md,
     },
     affirmation: {
       ...fonts.elegantItalicFont,
@@ -469,8 +500,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
-      paddingHorizontal: Spacing.lg,
       opacity: 0.8,
+      paddingHorizontal: Spacing.lg,
     },
     highlightedWord: {
       color: colors.textDark,
@@ -480,7 +511,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
     },
-    continueButton: {
+    submitButton: {
       position: "absolute",
       bottom: Platform.select({ ios: 50, android: 30 }),
       right: Spacing.xl,
