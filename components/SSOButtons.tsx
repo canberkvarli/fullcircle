@@ -213,7 +213,7 @@ function SSOButtons(): JSX.Element {
           </TouchableOpacity>
         </Animated.View>
         
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[
             styles.ssoButton, 
             styles.appleButton,
@@ -224,7 +224,7 @@ function SSOButtons(): JSX.Element {
         >
           <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={styles.buttonIcon} />
           <Text style={styles.appleButtonText}>Continue with Apple</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         
         <TouchableOpacity
           style={[

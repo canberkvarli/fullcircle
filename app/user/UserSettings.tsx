@@ -457,7 +457,7 @@ export default function UserSettings() {
 
           <View style={styles.separator} />
           
-          <View style={styles.row}>
+          {/* <View style={styles.row}>
             <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Apple</Text>
             <Switch
               value={userData.settings?.connectedAccounts?.apple || false}
@@ -465,7 +465,7 @@ export default function UserSettings() {
               trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
               thumbColor={userData.settings?.connectedAccounts?.apple ? '#8B4513' : colors.textMuted}
             />
-          </View>
+          </View> */}
         </View>
 
         {/* Legal Section */}
