@@ -66,7 +66,7 @@ export default function SelfieVerification() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
-        'Sacred Camera Access',
+        'Camera Access',
         'We need camera permission to verify your divine essence. Please enable camera access in your device settings.'
       );
       return false;
@@ -152,16 +152,16 @@ export default function SelfieVerification() {
       </View>
       
       <Text style={[styles.title, fonts.spiritualTitleFont]}>
-        Verify Your Sacred Essence
+        Verify Your Essence
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        Help us ensure you are the divine soul behind this beautiful profile. This sacred verification builds trust within our cosmic community.
+        Help us ensure you are the divine soul behind this beautiful profile. This verification builds trust within our cosmic community.
       </Text>
       
       <View style={styles.instructionsContainer}>
         <Text style={[styles.instructionsTitle, fonts.spiritualBodyFont]}>
-          Sacred Guidelines:
+          Guidelines:
         </Text>
         
         {[
@@ -182,7 +182,7 @@ export default function SelfieVerification() {
       <TouchableOpacity style={styles.primaryButton} onPress={takeSelfie}>
         <Ionicons name="camera" size={20} color="#FFFFFF" style={styles.buttonIcon} />
         <Text style={[styles.primaryButtonText, fonts.buttonFont]}>
-          Capture Sacred Selfie
+          Capture Essence
         </Text>
       </TouchableOpacity>
     </View>
@@ -201,7 +201,7 @@ export default function SelfieVerification() {
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        The universe is verifying your sacred essence against your profile. This cosmic process ensures the authenticity of your spiritual presence.
+        The universe is verifying your essence against your profile. This cosmic process ensures the authenticity of your spiritual presence.
       </Text>
       
       <View style={styles.progressContainer}>
@@ -238,17 +238,17 @@ export default function SelfieVerification() {
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        Your sacred essence has been verified! You now carry the cosmic seal of authenticity, building greater trust with kindred spirits seeking genuine connections.
+        Your essence has been verified! You now carry the cosmic seal of authenticity, building greater trust with kindred spirits seeking genuine connections.
       </Text>
       
       <View style={styles.benefitsContainer}>
         <Text style={[styles.benefitsTitle, fonts.spiritualBodyFont]}>
-          Sacred Benefits Unlocked:
+          Benefits Unlocked:
         </Text>
         
         {[
           'Enhanced visibility to seeking souls',
-          'Sacred verification badge on your profile',
+          'Verification badge on your profile',
           'Increased trust from potential connections',
           'Priority in cosmic matching algorithms'
         ].map((benefit, index) => (
@@ -264,7 +264,7 @@ export default function SelfieVerification() {
       <TouchableOpacity style={styles.primaryButton} onPress={() => router.back()}>
         <Ionicons name="heart" size={20} color="#FFFFFF" style={styles.buttonIcon} />
         <Text style={[styles.primaryButtonText, fonts.buttonFont]}>
-          Continue Sacred Journey
+          Continue Journey
         </Text>
       </TouchableOpacity>
     </View>
@@ -283,18 +283,18 @@ export default function SelfieVerification() {
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        The verification spirits couldn't align your sacred selfie with your profile energy. This sometimes happens when lighting or angles disrupt the cosmic flow.
+        The verification spirits couldn't align your essence with your profile energy. This sometimes happens when lighting or angles disrupt the cosmic flow.
       </Text>
       
       <View style={styles.tipsContainer}>
         <Text style={[styles.tipsTitle, fonts.spiritualBodyFont]}>
-          Try These Sacred Adjustments:
+          Try These Adjustments:
         </Text>
         
         {[
-          'Find better natural or spiritual lighting',
+          'Find better natural lighting',
           'Ensure your face matches your profile photos',
-          'Remove any energetic blockages (accessories)',
+          'Remove any accessories',
           'Center yourself and try again with pure intention'
         ].map((tip, index) => (
           <View key={index} style={styles.tipRow}>
@@ -310,7 +310,7 @@ export default function SelfieVerification() {
         <TouchableOpacity style={styles.primaryButton} onPress={resetVerification}>
           <Ionicons name="camera" size={20} color="#FFFFFF" style={styles.buttonIcon} />
           <Text style={[styles.primaryButtonText, fonts.buttonFont]}>
-            Try Sacred Verification Again
+            Try Verification Again
           </Text>
         </TouchableOpacity>
         
@@ -345,9 +345,6 @@ export default function SelfieVerification() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>
-          Sacred Verification
-        </Text>
         <View style={styles.headerRight} />
       </View>
 
