@@ -24,6 +24,8 @@ interface UserCardProps {
   isOrbLike?: boolean;
   isRadianceLike?: boolean;
   showConnectionBadges?: boolean;
+  isRecentlyActive?: boolean;
+  activityText?: string;
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -37,6 +39,8 @@ const UserCard: React.FC<UserCardProps> = ({
   isOrbLike = false,
   isRadianceLike = false,
   showConnectionBadges = true,
+  isRecentlyActive = false,
+  activityText = "",
 }) => {
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
@@ -81,20 +85,33 @@ const UserCard: React.FC<UserCardProps> = ({
           style,
         ]}
       >
-        {showConnectionBadges && (isOrbLike || isRadianceLike) && (
-          <View style={styles.connectionBadgesContainer}>
-            {isOrbLike && (
+        {(showConnectionBadges && (isOrbLike || isRadianceLike)) || (isRecentlyActive && activityText) ? (
+          <View style={styles.allBadgesContainer}>
+            {/* Activity Badge - First (leftmost when multiple badges) */}
+            {isRecentlyActive && activityText && (
+              <View style={styles.activityBadge}>
+                <Ionicons name="radio" size={12} color="#FFFFFF" />
+                {variant === "default" && (
+                  <Text style={styles.activityBadgeText}>
+                    {activityText}
+                  </Text>
+                )}
+              </View>
+            )}
+            
+            {/* Connection Badges - After activity */}
+            {showConnectionBadges && isOrbLike && (
               <View style={[styles.connectionBadge, styles.orbBadge]}>
                 <Ionicons name="star" size={12} color="#FFFFFF" />
               </View>
             )}
-            {isRadianceLike && (
+            {showConnectionBadges && isRadianceLike && (
               <View style={[styles.connectionBadge, styles.radianceBadge]}>
                 <Ionicons name="radio" size={12} color="#FFFFFF" />
               </View>
             )}
           </View>
-        )}
+        ) : null}
 
         {/* Header for default variant */}
         {variant === "default" && (
@@ -242,8 +259,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
   },
 
-  // Connection Badges (top-right corner)
-  connectionBadgesContainer: {
+  allBadgesContainer: {
     position: "absolute",
     top: 10,
     right: 10,
@@ -276,6 +292,27 @@ const styles = StyleSheet.create({
 
   radianceBadge: {
     backgroundColor: "#D4AF37",
+  },
+
+  activityBadge: {
+    backgroundColor: '#348107ff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  activityBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
 
   // Header for default variant

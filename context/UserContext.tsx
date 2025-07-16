@@ -1825,6 +1825,8 @@ const optimizedOrbLike = useCallback(async (matchId: string) => {
     if (!userDataRef.current.numOfOrbs || userDataRef.current.numOfOrbs <= 0) {
       throw new Error("No orbs available");
     }
+
+    const hasActiveRadiance = getRadianceTimeRemaining && getRadianceTimeRemaining() > 0;
     
     // Update user data to reflect orb usage immediately
     setUserData(prev => ({
@@ -1866,8 +1868,13 @@ const optimizedOrbLike = useCallback(async (matchId: string) => {
     });
     
     // Perform orb like action in background
-    await recordLikeWithBatch(userDataRef.current.userId, matchId, true);
-    
+      await recordLikeWithBatch(
+        userDataRef.current.userId, 
+        matchId, 
+        true, // viaOrb = true for orb likes
+        hasActiveRadiance // viaRadiance = true if boost is active
+      );    
+
     console.log(`✅ Optimized orb like completed for ${matchId}`);
     
   } catch (error: any) {
@@ -1899,7 +1906,7 @@ const optimizedOrbLike = useCallback(async (matchId: string) => {
     
     throw error;
   }
-}, []);
+}, [getRadianceTimeRemaining]);
 
 
   const recordLikeWithBatch = async (

@@ -470,17 +470,9 @@ const KindredSpirits: React.FC = () => {
                 isOrbLike={firstUser.viaOrb}
                 isRadianceLike={firstUser.viaRadiance}
                 getImageUrl={getImageUrl}
+                isRecentlyActive={isRecentlyActive(firstUser)}
+                activityText={getTimeSinceActive(firstUser)}
               />
-              
-              {/* Activity Badge */}
-              {isRecentlyActive(firstUser) && (
-                <View style={[styles.activityBadge, { backgroundColor: '#4CAF50' }]}>
-                  <Ionicons name="radio" size={12} color="#FFFFFF" />
-                  <Text style={[styles.activityBadgeText, fonts.spiritualBodyFont]}>
-                    {getTimeSinceActive(firstUser)}
-                  </Text>
-                </View>
-              )}
             </View>
           </TouchableOpacity>
         </View>
@@ -514,20 +506,15 @@ const KindredSpirits: React.FC = () => {
                   >
                     <View style={styles.cardContainer}>
                       <UserCard
-                        user={user}
-                        isBlurred={!userData.fullCircleSubscription}
-                        style={styles.smallCard}
-                        isOrbLike={user.viaOrb}
-                        isRadianceLike={user.viaRadiance}
+                        user={firstUser}
+                        isBlurred={false}
+                        style={styles.largeCard}
+                        isOrbLike={firstUser.viaOrb}
+                        isRadianceLike={firstUser.viaRadiance}
                         getImageUrl={getImageUrl}
+                        isRecentlyActive={isRecentlyActive(firstUser)}
+                        activityText={getTimeSinceActive(firstUser)}
                       />
-                      
-                      {/* Activity Badge for small cards */}
-                      {!user.isBlurred && isRecentlyActive(user) && (
-                        <View style={[styles.activityBadgeSmall, { backgroundColor: '#4CAF50' }]}>
-                          <Ionicons name="radio" size={8} color="#FFFFFF" />
-                        </View>
-                      )}
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -774,29 +761,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  activityBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  activityBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: Typography.weights.semibold,
-    marginLeft: 4,
-  },
-  
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -816,22 +780,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 2,
-  },
-
-  activityBadgeSmall: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
     elevation: 2,
   },
   
