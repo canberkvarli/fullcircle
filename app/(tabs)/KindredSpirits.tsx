@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   Platform,
   useColorScheme,
   Alert,
+  Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
@@ -79,9 +81,24 @@ const KindredSpirits: React.FC = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
+  // Loading animation ref
+  const loadingPulse = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (!userData.userId) return;
+    
     setIsLoading(true);
+    
+    // Start loading animation
+    Animated.loop(
+      Animated.timing(loadingPulse, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    ).start();
+
     const unsubscribe = subscribeToReceivedLikes((users) => {
       setLikedByUsers(users);
       setIsLoading(false);
@@ -282,6 +299,87 @@ const KindredSpirits: React.FC = () => {
 
   const radianceConfig = getRadianceButtonConfig();
 
+  // Show loading animation while data is being fetched
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
+        
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              Kindred Spirits
+            </Text>
+            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              People who{' '}
+              <Text style={styles.highlightedWord}>appreciate</Text>
+              {' you'}
+            </Text>
+          </View>
+          
+          <TouchableOpacity
+            style={[
+              styles.radianceButton,
+              { 
+                backgroundColor: radianceConfig.backgroundColor,
+                borderColor: radianceConfig.borderColor,
+                opacity: radianceConfig.disabled ? 0.7 : 1
+              }
+            ]}
+            onPress={handleRadiancePress}
+            activeOpacity={0.8}
+            disabled={radianceConfig.disabled}
+          >
+            <Ionicons 
+              name="radio-outline" 
+              size={16} 
+              color={radianceConfig.color} 
+            />
+            <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: radianceConfig.color }]}>
+              {radianceConfig.text}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <Animated.View
+            style={[
+              styles.lottieContainer,
+              {
+                opacity: loadingPulse.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+                transform: [
+                  {
+                    scale: loadingPulse.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.95, 1.05, 0.95],
+                    }),
+                  },
+                ],
+              }
+            ]}
+          >
+            <LottieView
+              source={require('../../assets/animations/loading_mandala.json')}
+              autoPlay
+              loop
+              style={styles.lottieAnimation}
+              speed={0.8}
+            />
+          </Animated.View>
+        </View>
+
+        <RadianceScreen
+          visible={showRadianceModal}
+          onClose={() => setShowRadianceModal(false)}
+        />
+      </View>
+    );
+  }
+
+  // Show no likes content when no users have liked the current user
   if (sortedUsers.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -299,7 +397,6 @@ const KindredSpirits: React.FC = () => {
             </Text>
           </View>
           
-          {/* Enhanced Radiance Button */}
           <TouchableOpacity
             style={[
               styles.radianceButton,
@@ -596,6 +693,25 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.5,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  
+  lottieContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  lottieAnimation: {
+    width: 100,
+    height: 100,
   },
 
   sortContainer: {
