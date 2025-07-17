@@ -1668,14 +1668,6 @@ const loadNextMatch = useCallback(async () => {
     const remainingMs = expiresAt.getTime() - now.getTime();
     const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
     
-    console.log('🔍 getRadianceTimeRemaining DEBUG:', {
-      boostExpiresAt: currentUserData.boostExpiresAt,
-      expiresAt: expiresAt.toISOString(),
-      now: now.toISOString(),
-      remainingMs,
-      remainingSeconds
-    });
-    
     return remainingSeconds;
   }, []); // ✅ No dependencies needed since we use ref
 
