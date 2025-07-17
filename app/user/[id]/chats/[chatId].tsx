@@ -477,7 +477,7 @@ const Chat: React.FC = () => {
                 { color: activeTab === "profile" ? "#8B4513" : colors.textLight },
                 activeTab === "profile" && styles.activeTabText
               ]}>
-                Profile
+                Essence
               </Text>
             </TouchableOpacity>
           </View>
