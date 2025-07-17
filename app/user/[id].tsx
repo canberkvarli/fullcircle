@@ -726,37 +726,42 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   wrapper: {
     flex: 1,
   },
-  headerOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: HEADER_HEIGHT,
-    zIndex: 1000,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border + '40',
-  },
-  headerContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Platform.select({ 
-      ios: 10,
-      android: 8
-    }),
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.sm,
-    paddingRight: Spacing.md,
-    zIndex: 1001,
-  },
-  backText: {
-    marginLeft: 4,
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-  },
+ headerOverlay: {
+  position: "absolute" as const,
+  left: 0,
+  right: 0,
+  height: HEADER_HEIGHT,
+  zIndex: 1000,
+  borderBottomWidth: 1,
+  borderBottomColor: colors.border + '40',
+},
+
+// Updated header content styles
+ headerContent: {
+  marginTop: Spacing["3xl"],
+  flex: 1,
+  flexDirection: "row" ,
+  alignItems: "center" ,
+  paddingHorizontal: Spacing.lg,
+  paddingTop: Platform.select({ 
+    ios: 5, // Reduced from 10
+    android: 3 // Reduced from 8
+  }),
+},
+ backButton: {
+  flexDirection: "row" ,
+  alignItems: "center" ,
+  paddingVertical: Spacing.xs, // Reduced from Spacing.sm
+  paddingRight: Spacing.md,
+  zIndex: 1001,
+},
+
+ backText: {
+  marginLeft: 4,
+  fontSize: Typography.sizes.base,
+  fontWeight: Typography.weights.medium,
+  color: colors.primary, // Use consistent color instead of connectionColors.primary
+},
   centerNameContainer: {
     position: "absolute",
     left: 0,
@@ -783,7 +788,6 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
     alignItems: "flex-start",
     marginBottom: Spacing.xl,
     width: "100%",
-    marginTop: Spacing.sm,
   },
   
   nameRow: {
