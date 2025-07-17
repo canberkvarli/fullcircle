@@ -10,6 +10,8 @@ import {
   ViewStyle,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Spacing } from '@/constants/Colors';
+import { useFont } from '@/hooks/useFont';
 
 const { width, height } = Dimensions.get("window");
 
@@ -44,6 +46,24 @@ const UserCard: React.FC<UserCardProps> = ({
 }) => {
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
+  const fonts = useFont();
+
+  // Smart font sizing based on name length and card size
+  const getNameFontSize = () => {
+    const name = user.firstName || "Unknown Presence";
+    const isSmallCard = cardSize === "small";
+    
+    if (isSmallCard) {
+      if (name.length > 12) return Typography.sizes.sm; // 14px for very long names
+      if (name.length > 8) return Typography.sizes.base; // 16px for long names
+      return Typography.sizes.lg; // 18px for short names
+    } else {
+      // Large card sizing
+      if (name.length > 15) return Typography.sizes.base; // 16px for very long names
+      if (name.length > 10) return Typography.sizes.lg; // 18px for long names
+      return Typography.sizes.xl; // 20px for short names
+    }
+  };
 
   // Resolve photos if getImageUrl is provided.
   useEffect(() => {
@@ -134,10 +154,17 @@ const UserCard: React.FC<UserCardProps> = ({
           </View>
         )}
 
-        {/* Simple header with just the name */}
+        {/* Simple header with smart name sizing */}
         <View style={styles.headerDefault}>
-          <Text style={styles.headerTextDefault}>
-            {user.firstName || "Unknown Presence"}
+          <Text style={[
+            fonts.spiritualBodyFont,
+            {
+              fontSize: getNameFontSize(),
+              fontWeight: Typography.weights.bold,
+              color: Colors.light.textDark,
+            }
+          ]}>
+            {user.firstName || "Unknown"}
           </Text>
         </View>
 
@@ -230,7 +257,7 @@ const styles = StyleSheet.create({
 
   mainPhotoContainer: {
     width: "100%",
-    aspectRatio: 0.8,
+    aspectRatio: 0.85,
     borderRadius: 10,
     overflow: "hidden",
     position: 'relative',
@@ -342,15 +369,8 @@ const styles = StyleSheet.create({
   },
 
   headerDefault: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing.xs,
     zIndex: 5,
-  },
-  
-  headerTextDefault: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#000",
   },
 
   // Details section
