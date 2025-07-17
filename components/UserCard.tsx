@@ -17,28 +17,30 @@ interface UserCardProps {
   user: any;
   isBlurred?: boolean;
   style?: StyleProp<ViewStyle>;
-  variant?: "default" | "radiant";
   onPress?: () => void;
   showDetails?: boolean;
-  onHeartPress?: () => void;
-  getImageUrl?: (photoPath: string) => Promise<string>;
+  getImageUrl?: (photoPath: string) => Promise<string | null>;
   isOrbLike?: boolean;
-  isRadianceLike?: boolean; // NEW: For boost/radiance likes
-  showConnectionBadges?: boolean; // NEW: Show connection method badges
+  isRadianceLike?: boolean;
+  showConnectionBadges?: boolean;
+  isRecentlyActive?: boolean;
+  activityText?: string;
+  cardSize?: "large" | "small";
 }
 
 const UserCard: React.FC<UserCardProps> = ({
   user,
   isBlurred = false,
   style,
-  variant = "default",
   onPress,
   showDetails = false,
-  onHeartPress,
   getImageUrl,
   isOrbLike = false,
   isRadianceLike = false,
   showConnectionBadges = true,
+  isRecentlyActive = false,
+  activityText = "",
+  cardSize = "large",
 }) => {
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
@@ -48,9 +50,13 @@ const UserCard: React.FC<UserCardProps> = ({
     if (getImageUrl) {
       const resolvePhotos = async () => {
         const updated = await Promise.all(
-          photos.map(async (photo) =>
-            photo.startsWith("http") ? photo : await getImageUrl(photo)
-          )
+          photos.map(async (photo) => {
+            if (photo.startsWith("http")) {
+              return photo;
+            }
+            const resolvedUrl = await getImageUrl(photo);
+            return resolvedUrl || photo; // Fallback to original if null
+          })
         );
         setResolvedPhotos(updated);
       };
@@ -60,115 +66,98 @@ const UserCard: React.FC<UserCardProps> = ({
     }
   }, [photos, getImageUrl]);
 
-  // For Radiant Souls we use photo index 2 (fallback to index 0),
-  // whereas for Kindred Spirits (default), we use index 0.
-  const mainPhoto =
-    variant === "radiant"
-      ? resolvedPhotos[2] || resolvedPhotos[0] || null
-      : resolvedPhotos[0] || null;
+  // Use photo index 0 as the main photo
+  const mainPhoto = resolvedPhotos[0] || null;
 
-  // For radiant variant, we display an avatar (from index 0).
-  const avatarPhoto = resolvedPhotos[0] || null;
+  // Determine badge styles based on card size
+  const isSmallCard = cardSize === "small";
+  const shouldShowTextActivity = isRecentlyActive && activityText && !isSmallCard;
+  const shouldShowDotActivity = isRecentlyActive && isSmallCard;
 
   return (
     <TouchableOpacity onPress={onPress} disabled={!onPress}>
       <View
         style={[
           styles.card,
-          variant === "radiant" && styles.radiantCard,
           style,
         ]}
       >
-        {/* Connection Method Badges */}
-        {showConnectionBadges && (isOrbLike || isRadianceLike) && (
-          <View style={styles.connectionBadgesContainer}>
-            {isOrbLike && (
-              <View style={[styles.connectionBadge, styles.orbBadge]}>
-                <Ionicons name="planet" size={12} color="#FFFFFF" />
+        {/* Only show ONE set of badges in top-right corner */}
+        {(shouldShowTextActivity || shouldShowDotActivity || (showConnectionBadges && (isOrbLike || isRadianceLike))) && (
+          <View style={[
+            styles.allBadgesContainer,
+            isSmallCard && styles.smallCardBadgesContainer
+          ]}>
+            {/* Activity Badge - First (leftmost) */}
+            {shouldShowTextActivity && (
+              <View style={styles.activityBadge}>
+                <Ionicons name="radio" size={12} color="#FFFFFF" />
+                <Text style={styles.activityBadgeText}>
+                  {activityText}
+                </Text>
               </View>
             )}
-            {isRadianceLike && (
-              <View style={[styles.connectionBadge, styles.radianceBadge]}>
-                <Ionicons name="radio" size={12} color="#FFFFFF" />
+            
+            {shouldShowDotActivity && (
+              <View style={styles.activityDot}>
+                <Ionicons name="radio" size={8} color="#FFFFFF" />
+              </View>
+            )}
+            
+            {/* Connection Badges - After activity */}
+            {showConnectionBadges && isOrbLike && (
+              <View style={[
+                styles.connectionBadge, 
+                styles.orbBadge,
+                isSmallCard && styles.smallConnectionBadge
+              ]}>
+                <Ionicons 
+                  name="planet" 
+                  size={isSmallCard ? 8 : 12} 
+                  color="#FFFFFF" 
+                />
+              </View>
+            )}
+            {showConnectionBadges && isRadianceLike && (
+              <View style={[
+                styles.connectionBadge, 
+                styles.radianceBadge,
+                isSmallCard && styles.smallConnectionBadge
+              ]}>
+                <Ionicons 
+                  name="radio" 
+                  size={isSmallCard ? 8 : 12} 
+                  color="#FFFFFF" 
+                />
               </View>
             )}
           </View>
         )}
 
-        {/* Header for default variant */}
-        {variant === "default" && (
-          <View style={styles.headerDefault}>
-            <View style={styles.nameRow}>
-              {/* Connection icons next to name */}
-              {(isOrbLike || isRadianceLike) && (
-                <View style={styles.nameIconsContainer}>
-                  {isOrbLike && (
-                    <View style={styles.nameIcon}>
-                      <Ionicons name="planet" size={14} color="#8B4513" />
-                    </View>
-                  )}
-                  {isRadianceLike && (
-                    <View style={styles.nameIcon}>
-                      <Ionicons name="radio" size={14} color="#D4AF37" />
-                    </View>
-                  )}
-                </View>
-              )}
-              <Text style={styles.headerTextDefault}>
-                {user.firstName || "Unknown"}
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Simple header with just the name */}
+        <View style={styles.headerDefault}>
+          <Text style={styles.headerTextDefault}>
+            {user.firstName || "Unknown Presence"}
+          </Text>
+        </View>
 
         <View style={styles.mainPhotoContainer}>
           {mainPhoto ? (
             <Image
               source={{ uri: mainPhoto }}
               style={styles.mainPhoto}
-              blurRadius={variant === "default" && isBlurred ? 20 : 0}
+              blurRadius={isBlurred ? 20 : 0}
             />
           ) : (
             <View style={styles.photoFallback}>
-              <Ionicons name="person" size={50} color="#ccc" />
+              <Ionicons 
+                name="person" 
+                size={50} 
+                color="#ccc" 
+              />
             </View>
           )}
         </View>
-
-        {/* Footer for radiant variant */}
-        {variant === "radiant" && (
-          <View style={styles.footer}>
-            <View style={styles.avatarContainer}>
-              {avatarPhoto ? (
-                <Image source={{ uri: avatarPhoto }} style={styles.avatar} />
-              ) : (
-                <Ionicons name="person" size={30} color="#ccc" />
-              )}
-            </View>
-            <View style={styles.nameAndBadges}>
-              <View style={styles.radiantNameRow}>
-                {/* Connection icons next to name for radiant variant */}
-                {(isOrbLike || isRadianceLike) && (
-                  <View style={styles.nameIconsContainer}>
-                    {isOrbLike && (
-                      <View style={styles.nameIcon}>
-                        <Ionicons name="planet" size={12} color="#8B4513" />
-                      </View>
-                    )}
-                    {isRadianceLike && (
-                      <View style={styles.nameIcon}>
-                        <Ionicons name="radio" size={12} color="#D4AF37" />
-                      </View>
-                    )}
-                  </View>
-                )}
-                <Text style={styles.userName}>
-                  {user.firstName || "Unknown"}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Details section */}
         {showDetails && (
@@ -219,7 +208,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 10,
-    padding: 15,
+    padding: 10,
     borderWidth: 1,
     borderColor: "#ddd",
     elevation: 3,
@@ -227,6 +216,7 @@ const styles = StyleSheet.create({
     height: height * 0.66,
     flexDirection: "column",
     justifyContent: "space-between",
+    overflow: 'hidden',
   },
   radiantCard: {
     backgroundColor: "#EDE9E3",
@@ -237,16 +227,19 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
+
   mainPhotoContainer: {
     width: "100%",
-    aspectRatio: 1,
+    aspectRatio: 0.8,
     borderRadius: 10,
     overflow: "hidden",
+    position: 'relative',
   },
   mainPhoto: {
     width: "100%",
     height: "100%",
   },
+
   photoFallback: {
     width: "100%",
     height: "100%",
@@ -256,15 +249,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
   },
 
-  // Connection Badges (top-right corner)
-  connectionBadgesContainer: {
+  // Top-right badges container
+  allBadgesContainer: {
     position: "absolute",
     top: 10,
     right: 10,
     flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     zIndex: 10,
   },
+
+  smallCardBadgesContainer: {
+    top: 8,
+    right: 8,
+    gap: 4,
+  },
+
+  // Connection Badges
   connectionBadge: {
     width: 24,
     height: 24,
@@ -276,87 +278,86 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
-  },
-  orbBadge: {
-    backgroundColor: "#8B4513",
-  },
-  radianceBadge: {
-    backgroundColor: "#D4AF37",
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
   },
 
-  // Header for default variant
+  smallConnectionBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  orbBadge: {
+    backgroundColor: "#FFD700", // Gold background for star
+  },
+
+  radianceBadge: {
+    backgroundColor: "#D4AF37", // Different gold for diamond
+  },
+
+  // Activity Badges
+  activityBadge: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+  },
+
+  activityBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+
+  // Small activity dot for small cards
+  activityDot: {
+    backgroundColor: '#4CAF50',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+  },
+
   headerDefault: {
     paddingHorizontal: 8,
     paddingVertical: 4,
+    zIndex: 5,
   },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  
   headerTextDefault: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#000",
   },
 
-  // Name icons (next to name)
-  nameIconsContainer: {
-    flexDirection: "row",
-    marginRight: 8,
-    gap: 4,
-  },
-  nameIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-
-  // Footer for radiant variant
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-    paddingHorizontal: 10,
-  },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    overflow: "hidden",
-    backgroundColor: "#ccc",
-    marginRight: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatar: {
-    width: "100%",
-    height: "100%",
-  },
-  nameAndBadges: {
-    flex: 1,
-  },
-  radiantNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  userName: {
-    fontSize: 18,
-    color: "#000",
-    fontWeight: "bold",
-  },
-
   // Details section
   detailsContainer: {
     marginTop: 10,
     width: "100%",
+    zIndex: 5,
   },
   detailRow: {
     flexDirection: "row",

@@ -448,14 +448,6 @@ const KindredSpirits: React.FC = () => {
               ]}>
                 {option.label}
               </Text>
-              {!userData.fullCircleSubscription && option.key !== 'recent' && (
-                <Ionicons 
-                  name="lock-closed" 
-                  size={12} 
-                  color={selectedSort === option.key ? '#FFFFFF' : '#B8860B'} 
-                  style={{ marginLeft: Spacing.xs }}
-                />
-              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -466,13 +458,6 @@ const KindredSpirits: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.featuredSection}>
-          <View style={styles.featuredHeader}>
-            <Ionicons name="star" size={20} color="#FFD700" />
-            <Text style={[styles.featuredLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-              Latest Connection
-            </Text>
-          </View>
-          
           <TouchableOpacity 
             onPress={() => handleCardPress(firstUser, true)}
             activeOpacity={0.9}
@@ -729,19 +714,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing['2xl'],
   },
   
-  featuredHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  
-  featuredLabel: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
-    marginLeft: Spacing.sm,
-    letterSpacing: 0.3,
-  },
-  
   othersSection: {
     marginBottom: Spacing.xl,
   },
@@ -804,7 +776,7 @@ const styles = StyleSheet.create({
   
   smallCard: {
     width: '100%',
-    height: 240,
+    height: 280, // Increased from 240
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
