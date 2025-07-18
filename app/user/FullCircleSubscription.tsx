@@ -108,7 +108,7 @@ export default function FullCircleSubscription() {
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'FullCircle',
-        style: 'alwaysDark',
+        style: 'alwaysDark'
       });
 
       if (initError) {

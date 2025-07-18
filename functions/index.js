@@ -90,63 +90,87 @@ exports.createRadiancePayment = functions.https.onCall(async (data, context) => 
   }
 });
 
-// Confirm radiance payment and add boosts
+// Confirm radiance payment and add boosts - FIXED VERSION
 exports.confirmRadiancePayment = functions.https.onCall(async (data, context) => {
   try {
+    console.log('🔍 Starting payment confirmation...', data);
+    
     if (!context.auth) {
+      console.log('❌ No authentication context');
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
 
+    console.log('✅ User authenticated:', context.auth.uid);
     const { paymentIntentId } = data;
+    console.log('💳 Payment Intent ID:', paymentIntentId);
 
     if (!paymentIntentId) {
+      console.log('❌ No payment intent ID provided');
       throw new functions.https.HttpsError('invalid-argument', 'Payment intent ID required');
     }
 
+    console.log('🔍 Retrieving payment intent from Stripe...');
     // Retrieve payment intent from Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    console.log('✅ Payment intent retrieved. Status:', paymentIntent.status);
 
     // Verify payment succeeded
     if (paymentIntent.status !== 'succeeded') {
+      console.log('❌ Payment not completed. Status:', paymentIntent.status);
       throw new functions.https.HttpsError('failed-precondition', 'Payment not completed');
     }
 
     // Verify this payment belongs to the authenticated user
+    console.log('🔍 Verifying payment ownership...');
+    console.log('Payment UID:', paymentIntent.metadata.firebaseUID);
+    console.log('Current UID:', context.auth.uid);
+    
     if (paymentIntent.metadata.firebaseUID !== context.auth.uid) {
+      console.log('❌ UID mismatch');
       throw new functions.https.HttpsError('permission-denied', 'Payment does not belong to user');
     }
 
     const boostCount = parseInt(paymentIntent.metadata.boostCount);
     const amount = paymentIntent.amount;
+    console.log('💰 Processing:', boostCount, 'boosts for $', amount / 100);
 
-    // Create purchase record
+    // Create purchase record - FIXED: Use regular Date instead of serverTimestamp in array
     const purchase = {
       boostCount,
       totalPrice: amount / 100, // Convert cents to dollars
-      purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
+      purchaseDate: new Date(), // FIXED: Use regular Date object
       transactionId: `radiance_${Date.now()}_${context.auth.uid}`,
       stripePaymentIntentId: paymentIntentId,
       status: 'succeeded'
     };
 
+    console.log('🔍 Updating user document in Firestore...');
     // Update user document with new boosts
     const userRef = admin.firestore().collection('users').doc(context.auth.uid);
     
     await admin.firestore().runTransaction(async (transaction) => {
+      console.log('🔍 Getting user document...');
       const userDoc = await transaction.get(userRef);
+      
       if (!userDoc.exists) {
+        console.log('❌ User document not found for UID:', context.auth.uid);
         throw new Error('User not found');
       }
 
+      console.log('✅ User document found');
       const currentData = userDoc.data();
       const currentBoosts = currentData.activeBoosts || 0;
+      console.log('📊 Current boosts:', currentBoosts, '→ Adding:', boostCount);
 
       transaction.update(userRef, {
         activeBoosts: currentBoosts + boostCount,
-        boostPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+        boostPurchases: admin.firestore.FieldValue.arrayUnion(purchase) // This will work now
       });
+      
+      console.log('✅ Firestore transaction completed');
     });
 
+    console.log('🎉 Payment confirmation successful!');
     return {
       success: true,
       boostCount,
@@ -155,10 +179,16 @@ exports.confirmRadiancePayment = functions.https.onCall(async (data, context) =>
     };
 
   } catch (error) {
+    console.error('💥 Payment confirmation error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code
+    });
+    
     if (error instanceof functions.https.HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError('internal', 'Failed to confirm payment');
+    throw new functions.https.HttpsError('internal', `Failed to confirm payment: ${error.message}`);
   }
 });
 
