@@ -57,4 +57,4 @@ yarn-error.*
 *.tsbuildinfo
 
 expo-env.d.ts
-# @end expo-cli
+# @end expo-clifunctions/firebase-debug.log
