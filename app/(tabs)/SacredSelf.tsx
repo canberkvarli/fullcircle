@@ -12,18 +12,28 @@ import {
   StatusBar,
   Dimensions,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import RadianceScreen from "@/components/RadianceScreen";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function SacredSelf() {
-  const { userData } = useUserContext();
+  const { 
+    userData, 
+    activateRadiance, 
+    getRadianceTimeRemaining,
+    getRadianceStatus 
+  } = useUserContext();
+  
   const [verified, _] = useState(userData.settings?.isSelfieVerified || false);
+  const [showRadianceModal, setShowRadianceModal] = useState(false);
+  const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -41,6 +51,74 @@ export default function SacredSelf() {
 
   const handleVerify = () => {
     router.navigate("/user/SelfieVerificationScreen");
+  };
+
+  // New handler for radiance clicks
+  const handleRadiancePress = async () => {
+    const radianceStatus = getRadianceStatus();
+    const radianceTimeRemaining = getRadianceTimeRemaining();
+    
+    // If radiance is already active, show info about current radiance
+    if (radianceTimeRemaining > 0) {
+      Alert.alert(
+        "Sacred Radiance Active ✨",
+        `Your Sacred Radiance is currently active with ${radianceStatus.formattedTime} remaining. You're getting 11x more visibility!`,
+        [
+          {
+            text: "Get More Radiance",
+            onPress: () => setShowRadianceModal(true)
+          },
+          {
+            text: "OK",
+            style: "cancel"
+          }
+        ]
+      );
+      return;
+    }
+
+    // If user has available radiances, ask if they want to activate
+    if ((userData.activeBoosts || 0) > 0) {
+      Alert.alert(
+        "Activate Sacred Radiance",
+        `You have ${userData.activeBoosts} radiance${userData.activeBoosts !== 1 ? 's' : ''} available. Activate Sacred Radiance to increase your visibility for 1 hour?`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "Activate",
+            onPress: handleActivateRadiance
+          },
+          {
+            text: "Buy More",
+            onPress: () => setShowRadianceModal(true)
+          }
+        ]
+      );
+    } else {
+      // No radiances available, redirect to purchase screen
+      setShowRadianceModal(true);
+    }
+  };
+
+  const handleActivateRadiance = async () => {
+    setIsActivatingBoost(true);
+    try {
+      await activateRadiance();
+      Alert.alert(
+        "Sacred Radiance Activated! ✨",
+        "Your profile is now boosted for the next hour. You'll appear higher in potential matches and your likes will have special radiance energy."
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Activation Failed",
+        error.message || "Failed to activate Sacred Radiance. Please try again."
+      );
+    } finally {
+      setIsActivatingBoost(false);
+    }
   };
 
   const calculateAge = () => {
@@ -198,8 +276,12 @@ export default function SacredSelf() {
                   </View>
                 </View>
 
-                {/* Boosts */}
-                <View style={[styles.featureRow, { backgroundColor: colors.card }]}>
+                {/* Radiances - Now clickable */}
+                <TouchableOpacity 
+                  style={[styles.featureRow, { backgroundColor: colors.card }]}
+                  onPress={handleRadiancePress}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#FFD700' + '20' }]}>
                       <Ionicons name="flash" size={24} color="#FFD700" />
@@ -210,13 +292,14 @@ export default function SacredSelf() {
                   </View>
                   <View style={styles.featureContent}>
                     <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                      Boosts
+                      Radiances
                     </Text>
                     <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
                       Get seen by 11x more people
                     </Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
 
                 {/* Orbs */}
                 <View style={[styles.featureRow, { backgroundColor: colors.card }]}>
@@ -292,8 +375,12 @@ export default function SacredSelf() {
               {/* Current user resources */}
               <View style={styles.currentResourcesContainer}>
                 <View style={styles.resourcesGrid}>
-                  {/* Boosts */}
-                  <View style={[styles.resourceItem, { backgroundColor: colors.card }]}>
+                  {/* Radiances - Now clickable */}
+                  <TouchableOpacity 
+                    style={[styles.resourceItem, { backgroundColor: colors.card }]}
+                    onPress={handleRadiancePress}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.resourceIconContainer}>
                       <View style={[styles.resourceIcon, { backgroundColor: '#FFD700' + '20' }]}>
                         <Ionicons name="flash" size={20} color="#FFD700" />
@@ -304,13 +391,14 @@ export default function SacredSelf() {
                     </View>
                     <View style={styles.resourceContent}>
                       <Text style={[styles.resourceTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                        Boosts
+                        Radiances
                       </Text>
                       <Text style={[styles.resourceSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
                         Get seen by 11x more people
                       </Text>
                     </View>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
 
                   {/* Orbs */}
                   <View style={[styles.resourceItem, { backgroundColor: colors.card }]}>
@@ -339,6 +427,12 @@ export default function SacredSelf() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Add the RadianceScreen Modal */}
+      <RadianceScreen
+        visible={showRadianceModal}
+        onClose={() => setShowRadianceModal(false)}
+      />
     </SafeAreaView>
   );
 }

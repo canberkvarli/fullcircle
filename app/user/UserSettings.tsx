@@ -22,7 +22,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
-import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
+import { FIREBASE_AUTH, FUNCTIONS } from "@/services/FirebaseConfig";
 import StripeTestComponent from "@/components/StripeTestComponent"
 
 export default function UserSettings() {
@@ -394,6 +394,18 @@ export default function UserSettings() {
     "Other reasons",
   ];
 
+  const testSubscription = async () => {
+    try {
+      const testFunction = FUNCTIONS.httpsCallable('testSubscriptionCreation');
+      const result = await testFunction();
+      console.log('Subscription test result:', result.data);
+      Alert.alert('Test Result', JSON.stringify(result.data, null, 2));
+    } catch (error: any) {
+      console.error('Test failed:', error);
+      Alert.alert('Test Failed', error.message);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -411,7 +423,10 @@ export default function UserSettings() {
           <Text style={[styles.sectionTitle, fonts.captionFont]}>PROFILE</Text>
           
           <View style={styles.row}>
-            <StripeTestComponent/>
+            <TouchableOpacity onPress={testSubscription}>
+              <Text>Test Subscription</Text>
+            </TouchableOpacity>
+            
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Pause Profile</Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>
