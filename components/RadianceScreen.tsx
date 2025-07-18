@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
+import { useStripe } from "@stripe/stripe-react-native";
 
 const { width } = Dimensions.get('window');
 
@@ -107,10 +108,13 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
   const { 
     userData, 
     purchaseRadiance, 
+    confirmRadiancePayment,
     activateRadiance, 
     getRadianceTimeRemaining,
     getRadianceStatus 
   } = useUserContext();
+  
+  const { presentPaymentSheet, initPaymentSheet } = useStripe();
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -190,7 +194,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   }, [visible, getRadianceStatus, getRadianceTimeRemaining]);
 
-  // Show alert when radiance is active (similar to KindredSpirits)
+  // Show alert when radiance is active
   useEffect(() => {
     if (visible && radianceStatus.isActive && radianceStatus.timeRemaining > 0) {
       const minutes = Math.floor(radianceStatus.timeRemaining / 60);
@@ -231,7 +235,6 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     try {
       await activateRadiance();
       
-      // Show success alert
       Alert.alert(
         "Radiance Activated!",
         "Your profile is now being prioritized in discovery for the next hour. Get ready for 11x more connections!",
@@ -251,14 +254,45 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   };
 
+  // 🚀 NEW: Handle Stripe Purchase
   const handlePurchase = async () => {
     setIsProcessing(true);
     const option = boostOptions[selectedOption];
     
     try {
-      await purchaseRadiance(option.boostCount, option.totalPrice);
+      // 1. Create payment intent
+      console.log('Creating payment intent...');
+      const { clientSecret, paymentIntentId } = await purchaseRadiance(option.boostCount);
       
-      // Show success alert
+      // 2. Initialize payment sheet
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'FullCircle',
+        style: 'alwaysDark',
+      });
+
+      if (initError) {
+        console.error('Payment sheet init failed:', initError);
+        Alert.alert('Error', 'Failed to initialize payment. Please try again.');
+        return;
+      }
+
+      // 3. Present payment sheet
+      const { error: paymentError } = await presentPaymentSheet();
+
+      if (paymentError) {
+        console.error('Payment failed:', paymentError);
+        if (paymentError.code !== 'Canceled') {
+          Alert.alert('Payment Failed', paymentError.message || 'Payment was not completed.');
+        }
+        return;
+      }
+
+      // 4. Confirm payment on backend
+      console.log('Payment succeeded, confirming...');
+      await confirmRadiancePayment(paymentIntentId);
+      
+      // 5. Show success
       Alert.alert(
         "🎉 Purchase Successful!",
         `You've received ${option.boostCount} Sacred Radiance boost${option.boostCount !== 1 ? 's' : ''}! Use them to get 11x more visibility and connections.`,
@@ -290,7 +324,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       onRequestClose={onClose}
     >
       <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
-        {/* Simple Header - No Title */}
+        {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity 
             style={[styles.closeButton, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -374,7 +408,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
             </View>
           )}
 
-          {/* Purchase Options - Only show if no active radiance or as additional options */}
+          {/* Purchase Options */}
           {(!hasActiveRadiance || hasActiveRadiance) && (
             <>
               <View style={styles.purchaseSection}>
@@ -498,6 +532,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
   );
 };
 
+// Keep all your existing styles...
 const styles = StyleSheet.create({
   container: {
     flex: 1,

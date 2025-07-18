@@ -58,11 +58,15 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router", {
+          "origin": "https://fullcircle.com"
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-av",
@@ -102,7 +106,8 @@
       ],
       [
         "@stripe/stripe-react-native", {
-          "enableGooglePay": true
+          "enableGooglePay": true,
+          "publishableKey": "pk_test_51RlfjBKGi7kY2GqSATaiEnuCBPE7e5cE6P2XE0jJNUxYL29y2MVQUQ3fZxBo9Qd487bxcS0fmTfcRlHPf7UKTQyM00Z99c2TsX"
         }
       ]
     ],

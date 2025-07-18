@@ -10,12 +10,13 @@ import React, {
 import { useRouter, useSegments } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { FIREBASE_AUTH, FIRESTORE, STORAGE } from "@/services/FirebaseConfig";
+import { FIREBASE_AUTH, FIRESTORE, STORAGE, FUNCTIONS } from "@/services/FirebaseConfig";
 import auth from "@react-native-firebase/auth";
 
 import firestore, { 
   FirebaseFirestoreTypes 
 } from "@react-native-firebase/firestore";
+import { Alert } from "react-native";
 
 export type UserDataType = {
   userId: string;
@@ -69,6 +70,13 @@ export type UserDataType = {
   };
   
   fullCircleSubscription: boolean;
+  stripeCustomerId?: string;
+  subscriptionId?: string;
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'incomplete';
+  subscriptionPlanType?: 'monthly' | 'yearly';
+  subscriptionPeriodEnd?: any;
+  subscriptionCreatedAt?: any;
+  subscriptionUpdatedAt?: any;
   likesGivenCount?: number;
   likesReceivedCount?: number;
   dislikesGivenCount?: number;
@@ -118,6 +126,8 @@ export interface BoostPurchase {
   totalPrice: number;
   purchaseDate: any;
   transactionId: string;
+  stripePaymentIntentId?: string;
+  status: 'succeeded' | 'processing' | 'failed'; 
 }
 
 export type UserSettings = {
@@ -292,7 +302,11 @@ type UserContextType = {
   resetMatching: () => void;
   getRemainingDailyLikes: () => number;
   DAILY_LIKE_LIMIT: number;
-  purchaseRadiance: (boostCount: number, totalPrice: number) => Promise<void>;
+  createSubscription: (planType: 'monthly' | 'yearly') => Promise<{ clientSecret: string; subscriptionId: string }>;
+  cancelSubscription: () => Promise<void>;
+  getSubscriptionStatus: () => Promise<any>;
+  purchaseRadiance: (boostCount: number) => Promise<{ clientSecret: string; paymentIntentId: string }>;
+  confirmRadiancePayment: (paymentIntentId: string) => Promise<void>;
   activateRadiance: () => Promise<void>;
   getRadianceTimeRemaining: () => number;
   hasActiveRadiance: (userData: UserDataType) => boolean;
@@ -305,6 +319,8 @@ type UserContextType = {
   formatRadianceTime: (seconds: number) => string;
   isUserBoosted: (userData: UserDataType) => boolean;
   isUserRecentlyActive: (userData: UserDataType) => boolean;
+  testStripeConnection: any;
+  createRadiancePaymentIntent: any;
 }
 
 // Initial screens and initial user data
@@ -467,62 +483,61 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return subscriber;
   }, []);
 
-const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string>> => {
-  if (!userId) return new Set();
-  
-  console.log('🚫 Building comprehensive exclusion set for user:', userId);
-  
-  try {
-    // 🔄 ENHANCED: Parallel fetch of ALL exclusion data including reports and unmatches
-    const [
-      likesSnap, 
-      dislikesSnap, 
-      matchesSnap, 
-      receivedLikesSnap,
-      reportsSnap,
-      unmatchesSnap
-    ] = await Promise.all([
-      FIRESTORE.collection("users").doc(userId).collection("likesGiven").get(),
-      FIRESTORE.collection("users").doc(userId).collection("dislikesGiven").get(),
-      FIRESTORE.collection("users").doc(userId).collection("matches").get(),
-      FIRESTORE.collection("users").doc(userId).collection("likesReceived").get(),
-      // 🆕 NEW: Fetch reported users
-      FIRESTORE.collection("users").doc(userId).collection("reportedUsers").get(),
-      // 🆕 NEW: Fetch unmatched users
-      FIRESTORE.collection("users").doc(userId).collection("unmatchedUsers").get(),
-    ]);
+  const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string>> => {
+    if (!userId) return new Set();
     
-    const exclusions = new Set<string>([
-      userId, // Always exclude self
-      ...likesSnap.docs.map(doc => doc.id),
-      ...dislikesSnap.docs.map(doc => doc.id),
-      ...matchesSnap.docs.map(doc => doc.id),
-      ...receivedLikesSnap.docs.map(doc => doc.id),
-      // 🆕 NEW: Add reported users to exclusions
-      ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id),
-      // 🆕 NEW: Add unmatched users to exclusions
-      ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id),
-    ]);
+    console.log('🚫 Building comprehensive exclusion set for user:', userId);
+    
+    try {
+      // 🔄 ENHANCED: Parallel fetch of ALL exclusion data including reports and unmatches
+      const [
+        likesSnap, 
+        dislikesSnap, 
+        matchesSnap, 
+        receivedLikesSnap,
+        reportsSnap,
+        unmatchesSnap
+      ] = await Promise.all([
+        FIRESTORE.collection("users").doc(userId).collection("likesGiven").get(),
+        FIRESTORE.collection("users").doc(userId).collection("dislikesGiven").get(),
+        FIRESTORE.collection("users").doc(userId).collection("matches").get(),
+        FIRESTORE.collection("users").doc(userId).collection("likesReceived").get(),
+        // 🆕 NEW: Fetch reported users
+        FIRESTORE.collection("users").doc(userId).collection("reportedUsers").get(),
+        // 🆕 NEW: Fetch unmatched users
+        FIRESTORE.collection("users").doc(userId).collection("unmatchedUsers").get(),
+      ]);
+      
+      const exclusions = new Set<string>([
+        userId, // Always exclude self
+        ...likesSnap.docs.map(doc => doc.id),
+        ...dislikesSnap.docs.map(doc => doc.id),
+        ...matchesSnap.docs.map(doc => doc.id),
+        ...receivedLikesSnap.docs.map(doc => doc.id),
+        // 🆕 NEW: Add reported users to exclusions
+        ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id),
+        // 🆕 NEW: Add unmatched users to exclusions
+        ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id),
+      ]);
 
-    console.log('🚫 Comprehensive exclusion breakdown:', {
-      self: 1,
-      likesGiven: likesSnap.docs.length,
-      dislikesGiven: dislikesSnap.docs.length,
-      matches: matchesSnap.docs.length,
-      receivedLikes: receivedLikesSnap.docs.length,
-      reportedUsers: reportsSnap.docs.length,
-      unmatchedUsers: unmatchesSnap.docs.length,
-      totalExcluded: exclusions.size
-    });
-    
-    return exclusions;
-    
-  } catch (error) {
-    console.error('❌ Error building exclusion set:', error);
-    return new Set([userId]); // Fallback to just excluding self
-  }
-}, []);
-
+      console.log('🚫 Comprehensive exclusion breakdown:', {
+        self: 1,
+        likesGiven: likesSnap.docs.length,
+        dislikesGiven: dislikesSnap.docs.length,
+        matches: matchesSnap.docs.length,
+        receivedLikes: receivedLikesSnap.docs.length,
+        reportedUsers: reportsSnap.docs.length,
+        unmatchedUsers: unmatchesSnap.docs.length,
+        totalExcluded: exclusions.size
+      });
+      
+      return exclusions;
+      
+    } catch (error) {
+      console.error('❌ Error building exclusion set:', error);
+      return new Set([userId]); // Fallback to just excluding self
+    }
+  }, []);
 
   const generatePreferencesHash = useCallback((prefs: typeof userData.matchPreferences) => {
     if (!prefs) return '';
@@ -1391,37 +1406,79 @@ const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string
 
   }, [userData.matchPreferences, userData.latitude, userData.longitude, userData.userId, matchingState.exclusionSet, applySpiritualFilter, applyBoostPrioritySorting]);
 
-const fetchPotentialMatches = useCallback(async (
-  resetBatch: boolean = false,
-  overrideExclusions?: Set<string>
-): Promise<UserDataType[]> => {
-  
-  if (matchingStateRef.current.loadingBatch) {
-    console.log('⏸️ Already loading, skipping fetch');
-    return [];
-  }
-  
-  console.log('🔍 === FETCHING POTENTIAL MATCHES ===');
-  console.log('🔍 Reset batch:', resetBatch);
-  
-  setMatchingState(prev => ({ ...prev, loadingBatch: true }));
-  
-  try {
-    const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
-    const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
+  const fetchPotentialMatches = useCallback(async (
+    resetBatch: boolean = false,
+    overrideExclusions?: Set<string>
+  ): Promise<UserDataType[]> => {
     
-    // 🔧 CRITICAL FIX: Also exclude users already in potentialMatches to prevent duplicates
-    const existingUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
-    const combinedExclusions = new Set([...exclusionsToUse, ...existingUserIds]);
+    if (matchingStateRef.current.loadingBatch) {
+      console.log('⏸️ Already loading, skipping fetch');
+      return [];
+    }
     
-    console.log('🔍 Combined exclusions (including existing):', Array.from(combinedExclusions));
+    console.log('🔍 === FETCHING POTENTIAL MATCHES ===');
+    console.log('🔍 Reset batch:', resetBatch);
     
-    // Build and execute query
-    const query = buildMatchQuery(combinedExclusions, lastDoc, 30);
-    const snapshot = await query.get();
+    setMatchingState(prev => ({ ...prev, loadingBatch: true }));
     
-    if (snapshot.empty) {
-      console.log('📭 No more users found in Firestore');
+    try {
+      const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
+      const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
+      
+      // 🔧 CRITICAL FIX: Also exclude users already in potentialMatches to prevent duplicates
+      const existingUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
+      const combinedExclusions = new Set([...exclusionsToUse, ...existingUserIds]);
+      
+      console.log('🔍 Combined exclusions (including existing):', Array.from(combinedExclusions));
+      
+      // Build and execute query
+      const query = buildMatchQuery(combinedExclusions, lastDoc, 30);
+      const snapshot = await query.get();
+      
+      if (snapshot.empty) {
+        console.log('📭 No more users found in Firestore');
+        setMatchingState(prev => ({ 
+          ...prev, 
+          loadingBatch: false, 
+          noMoreMatches: true 
+        }));
+        return [];
+      }
+      
+      // Convert Firestore docs to user objects
+      const rawUsers = snapshot.docs.map(doc => ({
+        userId: doc.id,
+        ...doc.data()
+      } as UserDataType));
+      
+      console.log(`📊 Raw users from Firestore: ${rawUsers.length}`);
+      
+      // Apply all client-side filters
+      const filteredUsers = applyAllFilters(rawUsers);
+      
+      // 🔧 CRITICAL FIX: Final duplicate check
+      const uniqueFilteredUsers = filteredUsers.filter(user => 
+        !existingUserIds.has(user.userId) && !exclusionsToUse.has(user.userId)
+      );
+      
+      console.log(`📊 FINAL UNIQUE USERS: ${uniqueFilteredUsers.length} out of ${rawUsers.length} raw users`);
+      console.log('📊 Final users:', uniqueFilteredUsers.map(u => `${u.firstName} (${u.userId.slice(-4)})`));
+      
+      // Update pagination state
+      const newLastDoc = snapshot.docs.length > 0 ? 
+        snapshot.docs[snapshot.docs.length - 1] : null;
+      
+      setMatchingState(prev => ({
+        ...prev,
+        lastFetchedDoc: newLastDoc,
+        loadingBatch: false,
+        noMoreMatches: uniqueFilteredUsers.length === 0
+      }));
+      
+      return uniqueFilteredUsers;
+      
+    } catch (error) {
+      console.error('❌ Error fetching matches:', error);
       setMatchingState(prev => ({ 
         ...prev, 
         loadingBatch: false, 
@@ -1429,49 +1486,7 @@ const fetchPotentialMatches = useCallback(async (
       }));
       return [];
     }
-    
-    // Convert Firestore docs to user objects
-    const rawUsers = snapshot.docs.map(doc => ({
-      userId: doc.id,
-      ...doc.data()
-    } as UserDataType));
-    
-    console.log(`📊 Raw users from Firestore: ${rawUsers.length}`);
-    
-    // Apply all client-side filters
-    const filteredUsers = applyAllFilters(rawUsers);
-    
-    // 🔧 CRITICAL FIX: Final duplicate check
-    const uniqueFilteredUsers = filteredUsers.filter(user => 
-      !existingUserIds.has(user.userId) && !exclusionsToUse.has(user.userId)
-    );
-    
-    console.log(`📊 FINAL UNIQUE USERS: ${uniqueFilteredUsers.length} out of ${rawUsers.length} raw users`);
-    console.log('📊 Final users:', uniqueFilteredUsers.map(u => `${u.firstName} (${u.userId.slice(-4)})`));
-    
-    // Update pagination state
-    const newLastDoc = snapshot.docs.length > 0 ? 
-      snapshot.docs[snapshot.docs.length - 1] : null;
-    
-    setMatchingState(prev => ({
-      ...prev,
-      lastFetchedDoc: newLastDoc,
-      loadingBatch: false,
-      noMoreMatches: uniqueFilteredUsers.length === 0
-    }));
-    
-    return uniqueFilteredUsers;
-    
-  } catch (error) {
-    console.error('❌ Error fetching matches:', error);
-    setMatchingState(prev => ({ 
-      ...prev, 
-      loadingBatch: false, 
-      noMoreMatches: true 
-    }));
-    return [];
-  }
-}, [buildMatchQuery, applyAllFilters]);
+  }, [buildMatchQuery, applyAllFilters]);
 
   useEffect(() => {
     const initializeMatching = async () => {
@@ -1600,29 +1615,29 @@ const fetchPotentialMatches = useCallback(async (
     };
   }
 
-const loadNextMatch = useCallback(async () => {
-  const { potentialMatches, currentIndex, exclusionSet } = matchingStateRef.current;
-  
-  console.log(`➡️ Checking if need to load more matches. Current index: ${currentIndex}, Total: ${potentialMatches.length}`);
-  
-  // Only fetch new batch if we're running low on matches
-  const PREFETCH_THRESHOLD = 2;
-  if (potentialMatches.length - currentIndex <= PREFETCH_THRESHOLD) {
-    console.log('📦 Running low on matches, fetching new batch...');
-    const newBatch = await fetchPotentialMatches(false);
+  const loadNextMatch = useCallback(async () => {
+    const { potentialMatches, currentIndex, exclusionSet } = matchingStateRef.current;
     
-    if (newBatch.length > 0) {
-      console.log(`📦 Adding ${newBatch.length} new matches to batch`);
-      setMatchingState(prev => ({
-        ...prev,
-        potentialMatches: [...prev.potentialMatches, ...newBatch],
-      }));
-    } else {
-      console.log('📭 No more matches available');
-      setMatchingState(prev => ({ ...prev, noMoreMatches: true }));
+    console.log(`➡️ Checking if need to load more matches. Current index: ${currentIndex}, Total: ${potentialMatches.length}`);
+    
+    // Only fetch new batch if we're running low on matches
+    const PREFETCH_THRESHOLD = 2;
+    if (potentialMatches.length - currentIndex <= PREFETCH_THRESHOLD) {
+      console.log('📦 Running low on matches, fetching new batch...');
+      const newBatch = await fetchPotentialMatches(false);
+      
+      if (newBatch.length > 0) {
+        console.log(`📦 Adding ${newBatch.length} new matches to batch`);
+        setMatchingState(prev => ({
+          ...prev,
+          potentialMatches: [...prev.potentialMatches, ...newBatch],
+        }));
+      } else {
+        console.log('📭 No more matches available');
+        setMatchingState(prev => ({ ...prev, noMoreMatches: true }));
+      }
     }
-  }
-}, [fetchPotentialMatches]);
+  }, [fetchPotentialMatches]);
 
   const shouldResetDailyLikes = (lastResetDate: any): boolean => {
     if (!lastResetDate) return true;
@@ -1671,125 +1686,245 @@ const loadNextMatch = useCallback(async () => {
     return remainingSeconds;
   }, []); // ✅ No dependencies needed since we use ref
 
-// 🔧 FINAL FIX: Replace your optimizedLikeMatch function with this version
-// This captures the radiance status BEFORE any state changes happen
-// 🔧 FIXED FOR INTERPRETATION 2: Check if the RECIPIENT has radiance
-const optimizedLikeMatch = useCallback(async (matchId: string) => {
-  console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
-  
-  try {
-    // Check daily limit for non-FullCircle users in production
-    if (!userDataRef.current.fullCircleSubscription && !__DEV__) {
-      const remaining = getRemainingDailyLikes();
-      
-      if (remaining <= 0) {
-        throw new Error("DAILY_LIMIT_REACHED");
-      }
-    }
-
-    // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
-    console.log(`🔍 Checking if target user ${matchId} has radiance...`);
-    
-    let targetHasRadiance = false;
+  // 🔧 FINAL FIX: Replace your optimizedLikeMatch function with this version
+  // This captures the radiance status BEFORE any state changes happen
+  // 🔧 FIXED FOR INTERPRETATION 2: Check if the RECIPIENT has radiance
+  const optimizedLikeMatch = useCallback(async (matchId: string) => {
+    console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
     
     try {
-      // Fetch the target user's data to check their radiance status
-      const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
-      
-      if (targetUserDoc.exists) {
-        const targetUserData = targetUserDoc.data() as UserDataType;
+      // Check daily limit for non-FullCircle users in production
+      if (!userDataRef.current.fullCircleSubscription && !__DEV__) {
+        const remaining = getRemainingDailyLikes();
         
-        console.log('🎯 Target user data:', {
-          userId: matchId,
-          boostExpiresAt: targetUserData.boostExpiresAt,
-          hasBoostField: !!targetUserData.boostExpiresAt
-        });
-        
-        if (targetUserData.boostExpiresAt) {
-          const expiresAt = targetUserData.boostExpiresAt.toDate 
-            ? targetUserData.boostExpiresAt.toDate()
-            : new Date(targetUserData.boostExpiresAt);
-          
-          targetHasRadiance = new Date() < expiresAt;
-          
-          console.log('🔍 Target user radiance check:', {
-            expiresAt: expiresAt.toISOString(),
-            currentTime: new Date().toISOString(),
-            targetHasRadiance
-          });
-        } else {
-          console.log('🔍 Target user has no boostExpiresAt field');
+        if (remaining <= 0) {
+          throw new Error("DAILY_LIMIT_REACHED");
         }
-      } else {
-        console.log('❌ Target user document not found');
       }
-    } catch (error) {
-      console.error('❌ Error checking target user radiance:', error);
-      // Continue with targetHasRadiance = false
-    }
-    
-    console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
-      targetUserId: matchId,
-      targetHasRadiance,
-      meaning: targetHasRadiance 
-        ? 'This like will be marked as viaRadiance because recipient has active boost' 
-        : 'Normal like - recipient has no active boost'
-    });
-    
-    // 🔧 CRITICAL FIX: Remove user from current array immediately and move to next
-    setMatchingState(prev => {
-      const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+
+      // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
+      console.log(`🔍 Checking if target user ${matchId} has radiance...`);
       
-      // 🔧 CRITICAL: Remove liked user from potentialMatches array entirely
-      const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+      let targetHasRadiance = false;
       
-      // 🔧 CRITICAL: Find next valid user that's not excluded
-      let nextIndex = prev.currentIndex;
-      while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-        nextIndex++;
+      try {
+        // Fetch the target user's data to check their radiance status
+        const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
+        
+        if (targetUserDoc.exists) {
+          const targetUserData = targetUserDoc.data() as UserDataType;
+          
+          console.log('🎯 Target user data:', {
+            userId: matchId,
+            boostExpiresAt: targetUserData.boostExpiresAt,
+            hasBoostField: !!targetUserData.boostExpiresAt
+          });
+          
+          if (targetUserData.boostExpiresAt) {
+            const expiresAt = targetUserData.boostExpiresAt.toDate 
+              ? targetUserData.boostExpiresAt.toDate()
+              : new Date(targetUserData.boostExpiresAt);
+            
+            targetHasRadiance = new Date() < expiresAt;
+            
+            console.log('🔍 Target user radiance check:', {
+              expiresAt: expiresAt.toISOString(),
+              currentTime: new Date().toISOString(),
+              targetHasRadiance
+            });
+          } else {
+            console.log('🔍 Target user has no boostExpiresAt field');
+          }
+        } else {
+          console.log('❌ Target user document not found');
+        }
+      } catch (error) {
+        console.error('❌ Error checking target user radiance:', error);
+        // Continue with targetHasRadiance = false
       }
       
-      // If no valid user at current or next positions, look from beginning
-      if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-        nextIndex = 0;
+      console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
+        targetUserId: matchId,
+        targetHasRadiance,
+        meaning: targetHasRadiance 
+          ? 'This like will be marked as viaRadiance because recipient has active boost' 
+          : 'Normal like - recipient has no active boost'
+      });
+      
+      // 🔧 CRITICAL FIX: Remove user from current array immediately and move to next
+      setMatchingState(prev => {
+        const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+        
+        // 🔧 CRITICAL: Remove liked user from potentialMatches array entirely
+        const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+        
+        // 🔧 CRITICAL: Find next valid user that's not excluded
+        let nextIndex = prev.currentIndex;
         while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
           nextIndex++;
         }
+        
+        // If no valid user at current or next positions, look from beginning
+        if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+          nextIndex = 0;
+          while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+            nextIndex++;
+          }
+        }
+        
+        console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+        
+        return {
+          ...prev,
+          exclusionSet: newExclusionSet,
+          potentialMatches: filteredMatches,
+          currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+          noMoreMatches: filteredMatches.length === 0
+        };
+      });
+      
+      // 🔧 FIXED: Pass the target's radiance status, not the sender's
+      await recordLikeWithBatch(
+        userDataRef.current.userId, 
+        matchId, 
+        false, // viaOrb = false for regular likes
+        targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
+      );
+      
+      console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
+      
+    } catch (error: any) {
+      console.error('❌ Error in optimized like:', error);
+      
+      // 🔧 CRITICAL FIX: Only rollback for non-daily-limit errors
+      if (error.message !== "DAILY_LIMIT_REACHED") {
+        console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
+        setMatchingState(prev => {
+          const newSet = new Set(prev.exclusionSet);
+          newSet.delete(matchId);
+          
+          // Add user back to potentialMatches if rollback
+          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          
+          return { 
+            ...prev, 
+            exclusionSet: newSet,
+            potentialMatches: newMatches
+          };
+        });
       }
       
-      console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-      console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+      throw error;
+    }
+  }, [getRemainingDailyLikes]);
+
+  // 🔧 ALSO UPDATE: optimizedOrbLike with the same logic
+  const optimizedOrbLike = useCallback(async (matchId: string) => {
+    console.log(`✨ OPTIMIZED ORB LIKING USER: ${matchId}`);
+    
+    try {
+      // Check orb availability first
+      if (!userDataRef.current.numOfOrbs || userDataRef.current.numOfOrbs <= 0) {
+        throw new Error("No orbs available");
+      }
+
+      // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
+      console.log(`🔍 Checking if target user ${matchId} has radiance for orb like...`);
       
-      return {
+      let targetHasRadiance = false;
+      
+      try {
+        // Fetch the target user's data to check their radiance status
+        const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
+        
+        if (targetUserDoc.exists) {
+          const targetUserData = targetUserDoc.data() as UserDataType;
+          
+          if (targetUserData.boostExpiresAt) {
+            const expiresAt = targetUserData.boostExpiresAt.toDate 
+              ? targetUserData.boostExpiresAt.toDate()
+              : new Date(targetUserData.boostExpiresAt);
+            
+            targetHasRadiance = new Date() < expiresAt;
+            
+            console.log('🔍 Target user radiance check (orb):', {
+              expiresAt: expiresAt.toISOString(),
+              currentTime: new Date().toISOString(),
+              targetHasRadiance
+            });
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error checking target user radiance (orb):', error);
+      }
+      
+      console.log('🚀 ORB + RADIANCE CHECK RESULT:', {
+        targetUserId: matchId,
+        targetHasRadiance,
+        meaning: targetHasRadiance 
+          ? 'This orb like will be marked as viaRadiance because recipient has active boost' 
+          : 'Normal orb like - recipient has no active boost'
+      });
+      
+      // Update user data to reflect orb usage immediately
+      setUserData(prev => ({
         ...prev,
-        exclusionSet: newExclusionSet,
-        potentialMatches: filteredMatches,
-        currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-        noMoreMatches: filteredMatches.length === 0
-      };
-    });
-    
-    // 🔧 FIXED: Pass the target's radiance status, not the sender's
-    await recordLikeWithBatch(
-      userDataRef.current.userId, 
-      matchId, 
-      false, // viaOrb = false for regular likes
-      targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
-    );
-    
-    console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
-    
-  } catch (error: any) {
-    console.error('❌ Error in optimized like:', error);
-    
-    // 🔧 CRITICAL FIX: Only rollback for non-daily-limit errors
-    if (error.message !== "DAILY_LIMIT_REACHED") {
-      console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
+        numOfOrbs: (prev.numOfOrbs || 0) - 1
+      }));
+      
+      // 🔧 CRITICAL FIX: Same pattern - remove immediately and move to next
+      setMatchingState(prev => {
+        const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+        
+        // Remove orb-liked user from potentialMatches array entirely
+        const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+        
+        // Find next valid user that's not excluded
+        let nextIndex = prev.currentIndex;
+        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+          nextIndex++;
+        }
+        
+        // If no valid user at current or next positions, look from beginning
+        if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+          nextIndex = 0;
+          while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+            nextIndex++;
+          }
+        }
+        
+        console.log(`🔧 After orb like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+        
+        return {
+          ...prev,
+          exclusionSet: newExclusionSet,
+          potentialMatches: filteredMatches,
+          currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+          noMoreMatches: filteredMatches.length === 0
+        };
+      });
+      
+      // 🔧 FIXED: Pass the target's radiance status
+      await recordLikeWithBatch(
+        userDataRef.current.userId, 
+        matchId, 
+        true, // viaOrb = true for orb likes
+        targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
+      );
+
+      console.log(`✅ Optimized orb like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal orb like)'}`);
+      
+    } catch (error: any) {
+      console.error('❌ Error orb liking match:', error);
+      
+      // Rollback exclusion and orb count on error
       setMatchingState(prev => {
         const newSet = new Set(prev.exclusionSet);
         newSet.delete(matchId);
         
-        // Add user back to potentialMatches if rollback
         const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
         const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
         
@@ -1799,204 +1934,84 @@ const optimizedLikeMatch = useCallback(async (matchId: string) => {
           potentialMatches: newMatches
         };
       });
+      
+      // Rollback orb count if it was decremented
+      if (error.message !== "No orbs available") {
+        setUserData(prev => ({
+          ...prev,
+          numOfOrbs: (prev.numOfOrbs || 0) + 1
+        }));
+        console.log(`🔄 Rolled back orb count`);
+      }
+      
+      throw error;
     }
-    
-    throw error;
-  }
-}, [getRemainingDailyLikes]);
+  }, []);
 
-// 🔧 ALSO UPDATE: optimizedOrbLike with the same logic
-const optimizedOrbLike = useCallback(async (matchId: string) => {
-  console.log(`✨ OPTIMIZED ORB LIKING USER: ${matchId}`);
-  
-  try {
-    // Check orb availability first
-    if (!userDataRef.current.numOfOrbs || userDataRef.current.numOfOrbs <= 0) {
-      throw new Error("No orbs available");
-    }
-
-    // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
-    console.log(`🔍 Checking if target user ${matchId} has radiance for orb like...`);
-    
-    let targetHasRadiance = false;
+  // 🔧 CRITICAL FIX: Completely rewritten dislike function
+  const optimizedDislikeMatch = useCallback(async (matchId: string) => {
+    console.log(`👎 OPTIMIZED DISLIKING USER: ${matchId}`);
     
     try {
-      // Fetch the target user's data to check their radiance status
-      const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
-      
-      if (targetUserDoc.exists) {
-        const targetUserData = targetUserDoc.data() as UserDataType;
+      // 🔧 CRITICAL FIX: Same pattern as like - remove immediately and move to next
+      setMatchingState(prev => {
+        const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
         
-        if (targetUserData.boostExpiresAt) {
-          const expiresAt = targetUserData.boostExpiresAt.toDate 
-            ? targetUserData.boostExpiresAt.toDate()
-            : new Date(targetUserData.boostExpiresAt);
-          
-          targetHasRadiance = new Date() < expiresAt;
-          
-          console.log('🔍 Target user radiance check (orb):', {
-            expiresAt: expiresAt.toISOString(),
-            currentTime: new Date().toISOString(),
-            targetHasRadiance
-          });
+        // Remove disliked user from potentialMatches array entirely
+        const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+        
+        // Find next valid user that's not excluded
+        let nextIndex = prev.currentIndex;
+        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+          nextIndex++;
         }
-      }
+        
+        // If no valid user at current or next positions, look from beginning
+        if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+          nextIndex = 0;
+          while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+            nextIndex++;
+          }
+        }
+        
+        console.log(`🔧 After dislike - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+        
+        return {
+          ...prev,
+          exclusionSet: newExclusionSet,
+          potentialMatches: filteredMatches,
+          currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+          noMoreMatches: filteredMatches.length === 0
+        };
+      });
+      
+      // Perform dislike action in background
+      await recordDislikeWithBatch(userDataRef.current.userId, matchId);
+      
+      console.log(`✅ Optimized dislike completed for ${matchId}`);
+      
     } catch (error) {
-      console.error('❌ Error checking target user radiance (orb):', error);
+      console.error('❌ Error disliking match:', error);
+      
+      // Rollback on error
+      setMatchingState(prev => {
+        const newSet = new Set(prev.exclusionSet);
+        newSet.delete(matchId);
+        
+        const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+        const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+        
+        return { 
+          ...prev, 
+          exclusionSet: newSet,
+          potentialMatches: newMatches
+        };
+      });
+      
+      throw error;
     }
-    
-    console.log('🚀 ORB + RADIANCE CHECK RESULT:', {
-      targetUserId: matchId,
-      targetHasRadiance,
-      meaning: targetHasRadiance 
-        ? 'This orb like will be marked as viaRadiance because recipient has active boost' 
-        : 'Normal orb like - recipient has no active boost'
-    });
-    
-    // Update user data to reflect orb usage immediately
-    setUserData(prev => ({
-      ...prev,
-      numOfOrbs: (prev.numOfOrbs || 0) - 1
-    }));
-    
-    // 🔧 CRITICAL FIX: Same pattern - remove immediately and move to next
-    setMatchingState(prev => {
-      const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
-      
-      // Remove orb-liked user from potentialMatches array entirely
-      const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
-      
-      // Find next valid user that's not excluded
-      let nextIndex = prev.currentIndex;
-      while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-        nextIndex++;
-      }
-      
-      // If no valid user at current or next positions, look from beginning
-      if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-        nextIndex = 0;
-        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-          nextIndex++;
-        }
-      }
-      
-      console.log(`🔧 After orb like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-      console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
-      
-      return {
-        ...prev,
-        exclusionSet: newExclusionSet,
-        potentialMatches: filteredMatches,
-        currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-        noMoreMatches: filteredMatches.length === 0
-      };
-    });
-    
-    // 🔧 FIXED: Pass the target's radiance status
-    await recordLikeWithBatch(
-      userDataRef.current.userId, 
-      matchId, 
-      true, // viaOrb = true for orb likes
-      targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
-    );
-
-    console.log(`✅ Optimized orb like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal orb like)'}`);
-    
-  } catch (error: any) {
-    console.error('❌ Error orb liking match:', error);
-    
-    // Rollback exclusion and orb count on error
-    setMatchingState(prev => {
-      const newSet = new Set(prev.exclusionSet);
-      newSet.delete(matchId);
-      
-      const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-      const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
-      
-      return { 
-        ...prev, 
-        exclusionSet: newSet,
-        potentialMatches: newMatches
-      };
-    });
-    
-    // Rollback orb count if it was decremented
-    if (error.message !== "No orbs available") {
-      setUserData(prev => ({
-        ...prev,
-        numOfOrbs: (prev.numOfOrbs || 0) + 1
-      }));
-      console.log(`🔄 Rolled back orb count`);
-    }
-    
-    throw error;
-  }
-}, []);
-
-// 🔧 CRITICAL FIX: Completely rewritten dislike function
-const optimizedDislikeMatch = useCallback(async (matchId: string) => {
-  console.log(`👎 OPTIMIZED DISLIKING USER: ${matchId}`);
-  
-  try {
-    // 🔧 CRITICAL FIX: Same pattern as like - remove immediately and move to next
-    setMatchingState(prev => {
-      const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
-      
-      // Remove disliked user from potentialMatches array entirely
-      const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
-      
-      // Find next valid user that's not excluded
-      let nextIndex = prev.currentIndex;
-      while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-        nextIndex++;
-      }
-      
-      // If no valid user at current or next positions, look from beginning
-      if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-        nextIndex = 0;
-        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-          nextIndex++;
-        }
-      }
-      
-      console.log(`🔧 After dislike - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-      console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
-      
-      return {
-        ...prev,
-        exclusionSet: newExclusionSet,
-        potentialMatches: filteredMatches,
-        currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-        noMoreMatches: filteredMatches.length === 0
-      };
-    });
-    
-    // Perform dislike action in background
-    await recordDislikeWithBatch(userDataRef.current.userId, matchId);
-    
-    console.log(`✅ Optimized dislike completed for ${matchId}`);
-    
-  } catch (error) {
-    console.error('❌ Error disliking match:', error);
-    
-    // Rollback on error
-    setMatchingState(prev => {
-      const newSet = new Set(prev.exclusionSet);
-      newSet.delete(matchId);
-      
-      const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-      const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
-      
-      return { 
-        ...prev, 
-        exclusionSet: newSet,
-        potentialMatches: newMatches
-      };
-    });
-    
-    throw error;
-  }
-}, []);
+  }, []);
 
   const recordLikeWithBatch = async (
     fromUserId: string,
@@ -2766,243 +2781,242 @@ const optimizedDislikeMatch = useCallback(async (matchId: string) => {
     });
   };
 
-const unmatchUser = async (otherUserId: string) => {
-  if (!userDataRef.current.userId) return false;
+  const unmatchUser = async (otherUserId: string) => {
+    if (!userDataRef.current.userId) return false;
 
-  try {
-    const currentUserId = userDataRef.current.userId;
-    const chatId = [currentUserId, otherUserId].sort().join("_");
+    try {
+      const currentUserId = userDataRef.current.userId;
+      const chatId = [currentUserId, otherUserId].sort().join("_");
 
-    console.log(`🔄 Unmatching user: ${otherUserId}`);
+      console.log(`🔄 Unmatching user: ${otherUserId}`);
 
-    // 1. Check for existing likes BEFORE deleting them
-    const [likeGivenDoc, likeReceivedDoc] = await Promise.all([
-      FIRESTORE.collection("users")
-        .doc(currentUserId)
-        .collection("likesGiven")
-        .doc(otherUserId)
-        .get(),
-      FIRESTORE.collection("users")
-        .doc(currentUserId)
-        .collection("likesReceived")
-        .doc(otherUserId)
-        .get()
-    ]);
+      // 1. Check for existing likes BEFORE deleting them
+      const [likeGivenDoc, likeReceivedDoc] = await Promise.all([
+        FIRESTORE.collection("users")
+          .doc(currentUserId)
+          .collection("likesGiven")
+          .doc(otherUserId)
+          .get(),
+        FIRESTORE.collection("users")
+          .doc(currentUserId)
+          .collection("likesReceived")
+          .doc(otherUserId)
+          .get()
+      ]);
 
-    const hadGivenLike = likeGivenDoc.exists;
-    const hadReceivedLike = likeReceivedDoc.exists;
+      const hadGivenLike = likeGivenDoc.exists;
+      const hadReceivedLike = likeReceivedDoc.exists;
 
-    // 2. Start batch operation
-    const batch = FIRESTORE.batch();
+      // 2. Start batch operation
+      const batch = FIRESTORE.batch();
 
-    const currentUserRef = FIRESTORE.collection("users").doc(currentUserId);
-    const otherUserRef = FIRESTORE.collection("users").doc(otherUserId);
+      const currentUserRef = FIRESTORE.collection("users").doc(currentUserId);
+      const otherUserRef = FIRESTORE.collection("users").doc(otherUserId);
 
-    // 3. Delete the chat document
-    const chatRef = FIRESTORE.collection("chats").doc(chatId);
-    batch.delete(chatRef);
+      // 3. Delete the chat document
+      const chatRef = FIRESTORE.collection("chats").doc(chatId);
+      batch.delete(chatRef);
 
-    // 4. Remove from both users' matches arrays
-    batch.update(currentUserRef, {
-      matches: firestore.FieldValue.arrayRemove(otherUserId),
-    });
-
-    batch.update(otherUserRef, {
-      matches: firestore.FieldValue.arrayRemove(currentUserId),
-    });
-
-    // 5. Remove from matches subcollections
-    batch.delete(
-      FIRESTORE.collection("users")
-        .doc(currentUserId)
-        .collection("matches")
-        .doc(otherUserId)
-    );
-
-    batch.delete(
-      FIRESTORE.collection("users")
-        .doc(otherUserId)
-        .collection("matches")
-        .doc(currentUserId)
-    );
-
-    // 6. Delete all like records
-    batch.delete(
-      FIRESTORE.collection("users")
-        .doc(currentUserId)
-        .collection("likesGiven")
-        .doc(otherUserId)
-    );
-
-    batch.delete(
-      FIRESTORE.collection("users")
-        .doc(currentUserId)
-        .collection("likesReceived")
-        .doc(otherUserId)
-    );
-
-    batch.delete(
-      FIRESTORE.collection("users")
-        .doc(otherUserId)
-        .collection("likesGiven")
-        .doc(currentUserId)
-    );
-
-    batch.delete(
-      FIRESTORE.collection("users")
-        .doc(otherUserId)
-        .collection("likesReceived")
-        .doc(currentUserId)
-    );
-
-    // 7. 🆕 NEW: Track unmatch in subcollection for exclusion
-    const unmatchRecord: UnmatchRecord = {
-      unmatchedUserId: otherUserId,
-      timestamp: firestore.FieldValue.serverTimestamp(),
-    };
-
-    batch.set(
-      FIRESTORE.collection("users")
-        .doc(currentUserId)
-        .collection("unmatchedUsers")
-        .doc(otherUserId),
-      unmatchRecord
-    );
-
-    // Also track for the other user (they unmatched us too)
-    const reverseUnmatchRecord: UnmatchRecord = {
-      unmatchedUserId: currentUserId,
-      timestamp: firestore.FieldValue.serverTimestamp(),
-    };
-
-    batch.set(
-      FIRESTORE.collection("users")
-        .doc(otherUserId)
-        .collection("unmatchedUsers")
-        .doc(currentUserId),
-      reverseUnmatchRecord
-    );
-
-    // 8. Update like counts based on what existed before deletion
-    if (hadGivenLike) {
+      // 4. Remove from both users' matches arrays
       batch.update(currentUserRef, {
-        likesGivenCount: firestore.FieldValue.increment(-1),
+        matches: firestore.FieldValue.arrayRemove(otherUserId),
       });
-      batch.update(otherUserRef, {
-        likesReceivedCount: firestore.FieldValue.increment(-1),
-      });
-      console.log("like given count decremented");
-    }
 
-    if (hadReceivedLike) {
+      batch.update(otherUserRef, {
+        matches: firestore.FieldValue.arrayRemove(currentUserId),
+      });
+
+      // 5. Remove from matches subcollections
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(currentUserId)
+          .collection("matches")
+          .doc(otherUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("matches")
+          .doc(currentUserId)
+      );
+
+      // 6. Delete all like records
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(currentUserId)
+          .collection("likesGiven")
+          .doc(otherUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(currentUserId)
+          .collection("likesReceived")
+          .doc(otherUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("likesGiven")
+          .doc(currentUserId)
+      );
+
+      batch.delete(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("likesReceived")
+          .doc(currentUserId)
+      );
+
+      // 7. 🆕 NEW: Track unmatch in subcollection for exclusion
+      const unmatchRecord: UnmatchRecord = {
+        unmatchedUserId: otherUserId,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      };
+
+      batch.set(
+        FIRESTORE.collection("users")
+          .doc(currentUserId)
+          .collection("unmatchedUsers")
+          .doc(otherUserId),
+        unmatchRecord
+      );
+
+      // Also track for the other user (they unmatched us too)
+      const reverseUnmatchRecord: UnmatchRecord = {
+        unmatchedUserId: currentUserId,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      };
+
+      batch.set(
+        FIRESTORE.collection("users")
+          .doc(otherUserId)
+          .collection("unmatchedUsers")
+          .doc(currentUserId),
+        reverseUnmatchRecord
+      );
+
+      // 8. Update like counts based on what existed before deletion
+      if (hadGivenLike) {
+        batch.update(currentUserRef, {
+          likesGivenCount: firestore.FieldValue.increment(-1),
+        });
+        batch.update(otherUserRef, {
+          likesReceivedCount: firestore.FieldValue.increment(-1),
+        });
+        console.log("like given count decremented");
+      }
+
+      if (hadReceivedLike) {
+        batch.update(currentUserRef, {
+          likesReceivedCount: firestore.FieldValue.increment(-1),
+        });
+        batch.update(otherUserRef, {
+          likesGivenCount: firestore.FieldValue.increment(-1),
+        });
+        console.log("like received count decremented");
+      }
+
+      // 9. 🆕 NEW: Update local user data to include unmatched user
       batch.update(currentUserRef, {
-        likesReceivedCount: firestore.FieldValue.increment(-1),
+        unmatchedUsers: firestore.FieldValue.arrayUnion(otherUserId),
       });
-      batch.update(otherUserRef, {
-        likesGivenCount: firestore.FieldValue.increment(-1),
+
+      // Commit all changes at once
+      await batch.commit();
+
+      // 10. 🆕 NEW: Update local exclusion set immediately
+      setMatchingState(prev => {
+        const newExclusionSet = new Set([...prev.exclusionSet, otherUserId]);
+        console.log(`🚫 Added ${otherUserId} to exclusion set after unmatch`);
+        return { ...prev, exclusionSet: newExclusionSet };
       });
-      console.log("like received count decremented");
+
+      // 11. Update local user data
+      setUserData(prev => ({
+        ...prev,
+        unmatchedUsers: [...(prev.unmatchedUsers || []), otherUserId],
+        matches: (prev.matches || []).filter(id => id !== otherUserId),
+      }));
+
+      console.log(`✅ Successfully unmatched user: ${otherUserId}`);
+      return true;
+
+    } catch (error) {
+      console.error("Error unmatching user:", error);
+      return false;
     }
+  };
 
-    // 9. 🆕 NEW: Update local user data to include unmatched user
-    batch.update(currentUserRef, {
-      unmatchedUsers: firestore.FieldValue.arrayUnion(otherUserId),
-    });
+  const reportUser = async (
+    reportedUserId: string,
+    reason: string,
+    details?: string
+  ) => {
+    if (!userDataRef.current.userId) return false;
 
-    // Commit all changes at once
-    await batch.commit();
+    try {
+      const currentUserId = userDataRef.current.userId;
+      
+      console.log(`🚨 Reporting user: ${reportedUserId} for: ${reason}`);
 
-    // 10. 🆕 NEW: Update local exclusion set immediately
-    setMatchingState(prev => {
-      const newExclusionSet = new Set([...prev.exclusionSet, otherUserId]);
-      console.log(`🚫 Added ${otherUserId} to exclusion set after unmatch`);
-      return { ...prev, exclusionSet: newExclusionSet };
-    });
-
-    // 11. Update local user data
-    setUserData(prev => ({
-      ...prev,
-      unmatchedUsers: [...(prev.unmatchedUsers || []), otherUserId],
-      matches: (prev.matches || []).filter(id => id !== otherUserId),
-    }));
-
-    console.log(`✅ Successfully unmatched user: ${otherUserId}`);
-    return true;
-
-  } catch (error) {
-    console.error("Error unmatching user:", error);
-    return false;
-  }
-};
-
-// 🆕 NEW: Enhanced report function with proper tracking
-const reportUser = async (
-  reportedUserId: string,
-  reason: string,
-  details?: string
-) => {
-  if (!userDataRef.current.userId) return false;
-
-  try {
-    const currentUserId = userDataRef.current.userId;
-    
-    console.log(`🚨 Reporting user: ${reportedUserId} for: ${reason}`);
-
-    // 1. Create report in reports collection
-    await FIRESTORE.collection("reports").add({
-      reportedBy: currentUserId,
-      reportedUser: reportedUserId,
-      reason,
-      details: details || "",
-      status: "pending",
-      createdAt: firestore.FieldValue.serverTimestamp(),
-    });
-
-    // 2. 🆕 NEW: Track report in user's subcollection for exclusion
-    const reportRecord: ReportRecord = {
-      reportedUserId,
-      reason,
-      details,
-      timestamp: firestore.FieldValue.serverTimestamp(),
-    };
-
-    await FIRESTORE.collection("users")
-      .doc(currentUserId)
-      .collection("reportedUsers")
-      .doc(reportedUserId)
-      .set(reportRecord);
-
-    // 3. 🆕 NEW: Update user document to include reported user
-    await FIRESTORE.collection("users")
-      .doc(currentUserId)
-      .update({
-        reportedUsers: firestore.FieldValue.arrayUnion(reportedUserId),
+      // 1. Create report in reports collection
+      await FIRESTORE.collection("reports").add({
+        reportedBy: currentUserId,
+        reportedUser: reportedUserId,
+        reason,
+        details: details || "",
+        status: "pending",
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
-    // 4. 🆕 NEW: Update local exclusion set immediately
-    setMatchingState(prev => {
-      const newExclusionSet = new Set([...prev.exclusionSet, reportedUserId]);
-      console.log(`🚫 Added ${reportedUserId} to exclusion set after report`);
-      return { ...prev, exclusionSet: newExclusionSet };
-    });
+      // 2. 🆕 NEW: Track report in user's subcollection for exclusion
+      const reportRecord: ReportRecord = {
+        reportedUserId,
+        reason,
+        details,
+        timestamp: firestore.FieldValue.serverTimestamp(),
+      };
 
-    // 5. Update local user data
-    setUserData(prev => ({
-      ...prev,
-      reportedUsers: [...(prev.reportedUsers || []), reportedUserId],
-    }));
+      await FIRESTORE.collection("users")
+        .doc(currentUserId)
+        .collection("reportedUsers")
+        .doc(reportedUserId)
+        .set(reportRecord);
 
-    // 6. Unmatch if they were matched
-    await unmatchUser(reportedUserId);
+      // 3. 🆕 NEW: Update user document to include reported user
+      await FIRESTORE.collection("users")
+        .doc(currentUserId)
+        .update({
+          reportedUsers: firestore.FieldValue.arrayUnion(reportedUserId),
+        });
 
-    console.log(`✅ Successfully reported user: ${reportedUserId}`);
-    return true;
+      // 4. 🆕 NEW: Update local exclusion set immediately
+      setMatchingState(prev => {
+        const newExclusionSet = new Set([...prev.exclusionSet, reportedUserId]);
+        console.log(`🚫 Added ${reportedUserId} to exclusion set after report`);
+        return { ...prev, exclusionSet: newExclusionSet };
+      });
 
-  } catch (error) {
-    console.error("Error reporting user:", error);
-    return false;
-  }
-};
+      // 5. Update local user data
+      setUserData(prev => ({
+        ...prev,
+        reportedUsers: [...(prev.reportedUsers || []), reportedUserId],
+      }));
+
+      // 6. Unmatch if they were matched
+      await unmatchUser(reportedUserId);
+
+      console.log(`✅ Successfully reported user: ${reportedUserId}`);
+      return true;
+
+    } catch (error) {
+      console.error("Error reporting user:", error);
+      return false;
+    }
+  };
 
   const markMatchAsRead = useCallback(
     async (otherUserId: string) => {
@@ -3200,37 +3214,171 @@ const reportUser = async (
     }
   };
 
-  const purchaseRadiance = async (boostCount: number, totalPrice: number) => {
+  // 💳 Create Subscription (FullCircle) - FIXED
+  const createSubscription = async (planType: 'monthly' | 'yearly') => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User must be logged in");
+      }
+
+      console.log(`Creating ${planType} subscription...`);
+      
+      const createSubscriptionFunction = FUNCTIONS.httpsCallable('createSubscription');
+      const result = await createSubscriptionFunction({ planType });
+      
+      console.log('Cloud Function result:', result);
+      console.log('Result data:', result.data);
+      
+      // Check if the function call was successful
+      if (!result.data) {
+        throw new Error('No data returned from Cloud Function');
+      }
+      
+      interface SubscriptionResponse {
+        clientSecret: string;
+        subscriptionId: string;
+      }
+      
+      const { clientSecret, subscriptionId } = result.data as SubscriptionResponse;
+      
+      if (!clientSecret) {
+        throw new Error('No clientSecret returned from subscription creation');
+      }
+      
+      console.log(`Subscription created: ${subscriptionId}`);
+      
+      return { clientSecret, subscriptionId };
+    } catch (error: any) {
+      console.error('Error creating subscription:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      });
+      throw new Error('Failed to create subscription');
+    }
+  };
+
+  // 💳 Cancel Subscription (Fixed TypeScript)
+  const cancelSubscription = async () => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User must be logged in");
+      }
+
+      console.log('Canceling subscription...');
+      
+      const cancelSubscriptionFunction = FUNCTIONS.httpsCallable('cancelSubscription');
+      const result = await cancelSubscriptionFunction();
+      
+      // Update local state with proper typing
+      setUserData(prevData => ({
+        ...prevData,
+        subscriptionStatus: 'canceled' as const,
+        fullCircleSubscription: false
+      }));
+      
+      console.log('Subscription canceled successfully');
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      throw new Error('Failed to cancel subscription');
+    }
+  };
+
+  // 💳 Get Subscription Status (Fixed TypeScript errors)
+  const getSubscriptionStatus = async () => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User must be logged in");
+      }
+
+      const getStatusFunction = FUNCTIONS.httpsCallable('getSubscriptionStatus');
+      const result = await getStatusFunction();
+      
+      interface SubscriptionData {
+        hasSubscription: boolean;
+        status: 'active' | 'canceled' | 'past_due' | 'incomplete' | null;
+        planType: 'monthly' | 'yearly' | null;
+        currentPeriodEnd: any;
+      }
+      
+      const subscriptionData = result.data as SubscriptionData;
+      
+      // Update local state with latest subscription info
+      if (subscriptionData.hasSubscription && subscriptionData.status && subscriptionData.planType) {
+        setUserData(prevData => ({
+          ...prevData,
+          subscriptionStatus: subscriptionData.status as 'active' | 'canceled' | 'past_due' | 'incomplete',
+          subscriptionPlanType: subscriptionData.planType as 'monthly' | 'yearly',
+          subscriptionPeriodEnd: subscriptionData.currentPeriodEnd,
+          fullCircleSubscription: subscriptionData.status === 'active'
+        }));
+      }
+      
+      return subscriptionData;
+    } catch (error) {
+      console.error('Error getting subscription status:', error);
+      throw new Error('Failed to get subscription status');
+    }
+  };
+
+  const purchaseRadiance = async (boostCount: number) => {
     try {
       if (!userData.userId) {
         throw new Error("User ID is required");
       }
 
-      // Here you would integrate with your payment system (Apple Pay, Stripe, etc.)
-      // For now, we'll simulate a successful purchase
+      console.log(`Creating payment for ${boostCount} boosts...`);
       
-      const purchase = {
+      const createPaymentFunction = FUNCTIONS.httpsCallable('createRadiancePayment');
+      const result = await createPaymentFunction({ boostCount });
+      
+      interface PaymentIntent {
+        clientSecret: string;
+        paymentIntentId: string;
+      }
+      
+      const { clientSecret, paymentIntentId } = result.data as PaymentIntent;
+      
+      console.log(`Payment intent created: ${paymentIntentId}`);
+      
+      return { clientSecret, paymentIntentId };
+    } catch (error) {
+      console.error("Failed to create radiance payment:", error);
+      throw error;
+    }
+  };
+
+  // 💳 Confirm Radiance Payment (after Stripe payment succeeds)
+  const confirmRadiancePayment = async (paymentIntentId: string) => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User ID is required");
+      }
+
+      console.log(`Confirming payment: ${paymentIntentId}`);
+      
+      const confirmPaymentFunction = FUNCTIONS.httpsCallable('confirmRadiancePayment');
+      const result = await confirmPaymentFunction({ paymentIntentId });
+      
+      interface PaymentResult {
+        boostCount: number;
+        totalPrice: number;
+        transactionId: string;
+      }
+      
+      const { boostCount, totalPrice, transactionId } = result.data as PaymentResult;
+      
+      // Update local state
+      const purchase: BoostPurchase = {
         boostCount,
         totalPrice,
         purchaseDate: firestore.FieldValue.serverTimestamp(),
-        transactionId: `radiance_${Date.now()}_${userData.userId}`, // Generate unique ID
+        transactionId,
+        stripePaymentIntentId: paymentIntentId,
+        status: 'succeeded'
       };
-
-      const userRef = FIRESTORE.collection("users").doc(userData.userId);
       
-      await FIRESTORE.runTransaction(async (transaction) => {
-        const userSnap = await transaction.get(userRef);
-        const currentData = userSnap.data() as UserDataType;
-        
-        const updatedData = {
-          activeBoosts: (currentData.activeBoosts || 0) + boostCount,
-          boostPurchases: firestore.FieldValue.arrayUnion(purchase)
-        };
-        
-        transaction.update(userRef, updatedData);
-      });
-
-      // Update local state
       setUserData(prevData => ({
         ...prevData,
         activeBoosts: (prevData.activeBoosts || 0) + boostCount,
@@ -3239,14 +3387,88 @@ const reportUser = async (
           purchase
         ]
       }));
-
-      console.log(`Successfully purchased ${boostCount} Sacred Radiance boosts`);
+      
+      console.log(`Successfully confirmed purchase of ${boostCount} boosts`);
     } catch (error) {
-      console.error("Failed to purchase Sacred Radiance:", error);
+      console.error("Failed to confirm radiance payment:", error);
       throw error;
     }
   };
 
+  const testStripeConnection = async () => {
+  try {
+    console.log('🧪 Testing Stripe connection...');
+    
+    const testFunction = FUNCTIONS.httpsCallable('testStripe');
+    const result = await testFunction();
+    
+    interface StripeTestResult {
+      success: boolean;
+      customerId?: string;
+      error?: string;
+    }
+
+    const data = result.data as StripeTestResult;
+    console.log('✅ Stripe test result:', data);
+    
+    if (data.success) {
+      Alert.alert(
+        "Stripe Connected! 🎉", 
+        `Customer ID: ${data.customerId}`,
+        [{ text: "Great!", style: "default" }]
+      );
+    } else {
+      Alert.alert(
+        "Stripe Error ❌", 
+        data.error,
+        [{ text: "OK", style: "default" }]
+      );
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('❌ Stripe test error:', error);
+    Alert.alert(
+      "Connection Error", 
+      error.message,
+      [{ text: "OK", style: "default" }]
+    );
+    throw error;
+  }
+  };
+
+  const testDirectConnection = async () => {
+  try {
+    console.log('Testing direct Firebase Functions connection...');
+    
+    const directFunctions = FUNCTIONS;
+    const testFunction = directFunctions.httpsCallable('testStripe');
+    const result = await testFunction();
+    
+    console.log('✅ Direct connection worked:', result.data);
+    return result.data;
+  } catch (error) {
+    console.error('❌ Direct connection failed:', error);
+    throw error;
+  }
+};
+
+  const createRadiancePaymentIntent = async (boostCount: number) => {
+    try {
+      console.log(`🚀 Creating payment intent for ${boostCount} boosts...`);
+      
+      const createPayment = FUNCTIONS.httpsCallable('createRadiancePayment');
+      const result = await createPayment({ boostCount });
+      
+      console.log('✅ Payment intent created:', result.data);
+      
+      return result.data;
+    } catch (error: any) {
+      console.error('❌ Payment intent creation failed:', error);
+      throw error;
+    }
+  };
+  
   const activateRadiance = async () => {
     try {
       if (!userData.userId) {
@@ -3296,15 +3518,15 @@ const reportUser = async (
     }
   };
 
-    const hasActiveRadiance = useCallback((userData: UserDataType): boolean => {
-      if (!userData.boostExpiresAt) return false;
-      
-      const expiresAt = userData.boostExpiresAt.toDate 
-        ? userData.boostExpiresAt.toDate()
-        : new Date(userData.boostExpiresAt);
-      
-      return new Date() < expiresAt;
-    }, []);
+  const hasActiveRadiance = useCallback((userData: UserDataType): boolean => {
+    if (!userData.boostExpiresAt) return false;
+    
+    const expiresAt = userData.boostExpiresAt.toDate 
+      ? userData.boostExpiresAt.toDate()
+      : new Date(userData.boostExpiresAt);
+    
+    return new Date() < expiresAt;
+  }, []);
 
   const getRadianceStatus = useCallback(() => {
     const timeRemaining = getRadianceTimeRemaining ? getRadianceTimeRemaining() : 0;
@@ -3377,7 +3599,11 @@ const reportUser = async (
     loadingNextBatch: matchingState.loadingBatch,
     getRemainingDailyLikes,
     DAILY_LIKE_LIMIT,
+    createSubscription,
+    cancelSubscription,
+    getSubscriptionStatus,
     purchaseRadiance,
+    confirmRadiancePayment,
     activateRadiance,
     getRadianceTimeRemaining,
     hasActiveRadiance,
@@ -3385,6 +3611,8 @@ const reportUser = async (
     formatRadianceTime,
     isUserBoosted,
     isUserRecentlyActive,
+    testStripeConnection,
+    createRadiancePaymentIntent,
   };
 
   if (initializing) {

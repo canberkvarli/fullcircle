@@ -23,6 +23,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
+import StripeTestComponent from "@/components/StripeTestComponent"
 
 export default function UserSettings() {
   const router = useRouter();
@@ -410,6 +411,7 @@ export default function UserSettings() {
           <Text style={[styles.sectionTitle, fonts.captionFont]}>PROFILE</Text>
           
           <View style={styles.row}>
+            <StripeTestComponent/>
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Pause Profile</Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>

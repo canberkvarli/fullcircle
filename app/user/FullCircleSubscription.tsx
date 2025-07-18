@@ -8,15 +8,14 @@ import {
   useColorScheme,
   Platform,
   Animated,
-  Dimensions,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
-
-const { width } = Dimensions.get('window');
+import { useStripe } from "@stripe/stripe-react-native";
 
 interface FeatureCardProps {
   icon: string;
@@ -57,28 +56,143 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 
 export default function FullCircleSubscription() {
   const router = useRouter();
-  const { userData } = useUserContext();
+  const { 
+    userData, 
+    createSubscription, 
+    cancelSubscription, 
+    getSubscriptionStatus 
+  } = useUserContext();
+  
+  const { presentPaymentSheet, initPaymentSheet } = useStripe();
+  
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
   
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly'); // Default to yearly
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Simple, subtle fade in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
+
+    // Load current subscription status
+    loadSubscriptionStatus();
   }, []);
 
-  const handleUpgrade = () => {
-    console.log(`Redirecting to Stripe checkout for ${selectedPlan} plan...`);
-    // Navigation to Stripe checkout (placeholder)
-    // router.push(`/user/checkout?plan=${selectedPlan}`);
+  const loadSubscriptionStatus = async () => {
+    try {
+      const status = await getSubscriptionStatus();
+      setSubscriptionData(status);
+    } catch (error) {
+      console.error('Failed to load subscription status:', error);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    setIsProcessing(true);
+    
+    try {
+      console.log(`Creating ${selectedPlan} subscription...`);
+      
+      // 1. Create subscription
+      const { clientSecret, subscriptionId } = await createSubscription(selectedPlan);
+      
+      // 2. Initialize payment sheet
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'FullCircle',
+        style: 'alwaysDark',
+      });
+
+      if (initError) {
+        console.error('Payment sheet init failed:', initError);
+        Alert.alert('Error', 'Failed to initialize payment. Please try again.');
+        return;
+      }
+
+      // 3. Present payment sheet
+      const { error: paymentError } = await presentPaymentSheet();
+
+      if (paymentError) {
+        console.error('Payment failed:', paymentError);
+        if (paymentError.code !== 'Canceled') {
+          Alert.alert('Payment Failed', paymentError.message || 'Payment was not completed.');
+        }
+        return;
+      }
+
+      // 4. Payment succeeded
+      console.log('Subscription payment succeeded!');
+      
+      Alert.alert(
+        "🎉 Welcome to FullCircle!",
+        "Your subscription is now active. Enjoy unlimited connections and premium features!",
+        [
+          { 
+            text: "Start Exploring!", 
+            style: "default",
+            onPress: () => router.back()
+          }
+        ]
+      );
+
+      // Refresh subscription status
+      await loadSubscriptionStatus();
+      
+    } catch (error) {
+      console.error('Subscription creation failed:', error);
+      Alert.alert(
+        "Subscription Failed",
+        "We couldn't create your subscription right now. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    Alert.alert(
+      "Cancel Subscription",
+      "Are you sure you want to cancel your FullCircle subscription? You'll lose access to premium features at the end of your current billing period.",
+      [
+        { text: "Keep Subscription", style: "cancel" },
+        { 
+          text: "Cancel", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsProcessing(true);
+              await cancelSubscription();
+              
+              Alert.alert(
+                "Subscription Canceled",
+                "Your subscription has been canceled. You'll continue to have access to premium features until the end of your current billing period.",
+                [{ text: "OK", style: "default" }]
+              );
+              
+              await loadSubscriptionStatus();
+            } catch (error) {
+              console.error('Cancellation failed:', error);
+              Alert.alert(
+                "Cancellation Failed",
+                "We couldn't cancel your subscription right now. Please try again.",
+                [{ text: "OK", style: "default" }]
+              );
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const premiumFeatures = [
@@ -115,9 +229,12 @@ export default function FullCircleSubscription() {
     }
   ];
 
+  // Check if user already has active subscription
+  const hasActiveSubscription = userData.fullCircleSubscription && userData.subscriptionStatus === 'active';
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* Simple Header */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -136,11 +253,51 @@ export default function FullCircleSubscription() {
           <View style={styles.logoContainer}>
             <Ionicons name="sparkles" size={32} color={colors.primary} />
           </View>
-          <Text style={styles.mainTitle}>Deepen Your Connections</Text>
+          <Text style={styles.mainTitle}>
+            {hasActiveSubscription ? "Manage Your FullCircle" : "Deepen Your Connections"}
+          </Text>
           <Text style={styles.subtitle}>
-            Unlock advanced features designed for meaningful spiritual connections
+            {hasActiveSubscription 
+              ? "You're enjoying premium spiritual connection features"
+              : "Unlock advanced features designed for meaningful spiritual connections"
+            }
           </Text>
         </View>
+
+        {/* Current Subscription Status */}
+        {hasActiveSubscription && subscriptionData && (
+          <View style={styles.currentSubscriptionSection}>
+            <View style={[styles.subscriptionCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+              <View style={styles.subscriptionHeader}>
+                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                <Text style={[styles.subscriptionTitle, { color: colors.primary }]}>
+                  FullCircle Active
+                </Text>
+              </View>
+              <Text style={[styles.subscriptionPlan, { color: colors.textDark }]}>
+                {userData.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
+              </Text>
+              <Text style={[styles.subscriptionDetails, { color: colors.textLight }]}>
+                {subscriptionData.cancelAtPeriodEnd 
+                  ? `Cancels on ${new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}`
+                  : `Renews on ${new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}`
+                }
+              </Text>
+              
+              {!subscriptionData.cancelAtPeriodEnd && (
+                <TouchableOpacity
+                  style={[styles.cancelButton, { borderColor: colors.textMuted }]}
+                  onPress={handleCancelSubscription}
+                  disabled={isProcessing}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>
+                    Cancel Subscription
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Features Section */}
         <View style={styles.featuresSection}>
@@ -158,90 +315,109 @@ export default function FullCircleSubscription() {
           </View>
         </View>
 
-        {/* Pricing Section */}
-        <View style={styles.pricingSection}>
-          <Text style={styles.sectionTitle}>Choose Your Plan</Text>
-          
-          {/* Plan Cards */}
-          <View style={styles.planContainer}>
-            {/* Monthly Plan */}
-            <TouchableOpacity
-              style={[
-                styles.planCard,
-                selectedPlan === 'monthly' && styles.planCardSelected
-              ]}
-              onPress={() => setSelectedPlan('monthly')}
-            >
-              <Text style={[
-                styles.planTitle,
-                selectedPlan === 'monthly' && styles.planTitleSelected
-              ]}>
-                Monthly
-              </Text>
-              <Text style={[
-                styles.planPrice,
-                selectedPlan === 'monthly' && styles.planPriceSelected
-              ]}>
-                $29.99
-              </Text>
-              <Text style={styles.planPeriod}>per month</Text>
-            </TouchableOpacity>
-            
-            {/* Yearly Plan */}
-            <TouchableOpacity
-              style={[
-                styles.planCard,
-                styles.planCardRecommended,
-                selectedPlan === 'yearly' && styles.planCardSelected
-              ]}
-              onPress={() => setSelectedPlan('yearly')}
-            >
-              <View style={styles.recommendedBadge}>
-                <Text style={styles.recommendedText}>BEST VALUE</Text>
+        {/* Pricing Section (only show if no active subscription) */}
+        {!hasActiveSubscription && (
+          <>
+            <View style={styles.pricingSection}>
+              <Text style={styles.sectionTitle}>Choose Your Plan</Text>
+              
+              {/* Plan Cards */}
+              <View style={styles.planContainer}>
+                {/* Monthly Plan */}
+                <TouchableOpacity
+                  style={[
+                    styles.planCard,
+                    selectedPlan === 'monthly' && styles.planCardSelected
+                  ]}
+                  onPress={() => setSelectedPlan('monthly')}
+                >
+                  <Text style={[
+                    styles.planTitle,
+                    selectedPlan === 'monthly' && styles.planTitleSelected
+                  ]}>
+                    Monthly
+                  </Text>
+                  <Text style={[
+                    styles.planPrice,
+                    selectedPlan === 'monthly' && styles.planPriceSelected
+                  ]}>
+                    $29.99
+                  </Text>
+                  <Text style={styles.planPeriod}>per month</Text>
+                </TouchableOpacity>
+                
+                {/* Yearly Plan */}
+                <TouchableOpacity
+                  style={[
+                    styles.planCard,
+                    styles.planCardRecommended,
+                    selectedPlan === 'yearly' && styles.planCardSelected
+                  ]}
+                  onPress={() => setSelectedPlan('yearly')}
+                >
+                  <View style={styles.recommendedBadge}>
+                    <Text style={styles.recommendedText}>BEST VALUE</Text>
+                  </View>
+                  <Text style={[
+                    styles.planTitle,
+                    selectedPlan === 'yearly' && styles.planTitleSelected
+                  ]}>
+                    Yearly
+                  </Text>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.originalPrice}>$359.88</Text>
+                    <Text style={[
+                      styles.planPrice,
+                      selectedPlan === 'yearly' && styles.planPriceSelected
+                    ]}>
+                      $199.99
+                    </Text>
+                  </View>
+                  <Text style={styles.planPeriod}>per year</Text>
+                  <Text style={styles.savings}>Save 44%</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={[
-                styles.planTitle,
-                selectedPlan === 'yearly' && styles.planTitleSelected
-              ]}>
-                Yearly
-              </Text>
-              <View style={styles.priceContainer}>
-                <Text style={styles.originalPrice}>$359.88</Text>
-                <Text style={[
-                  styles.planPrice,
-                  selectedPlan === 'yearly' && styles.planPriceSelected
-                ]}>
-                  $199.99
+            </View>
+
+            {/* CTA Section */}
+            <View style={styles.ctaSection}>
+              <TouchableOpacity
+                style={[
+                  styles.upgradeButton,
+                  { backgroundColor: isProcessing ? colors.textMuted : colors.primary }
+                ]}
+                onPress={handleUpgrade}
+                disabled={isProcessing}
+                activeOpacity={0.8}
+              >
+                {isProcessing ? (
+                  <View style={styles.processingContainer}>
+                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                    <Text style={styles.upgradeButtonText}>
+                      Processing...
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.upgradeContainer}>
+                    <Text style={styles.upgradeButtonText}>
+                      Start Your FullCircle Journey
+                    </Text>
+                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                  </View>
+                )}
+              </TouchableOpacity>
+              
+              <View style={styles.guaranteeSection}>
+                <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+                <Text style={styles.guaranteeText}>
+                  7-day money-back guarantee • Cancel anytime
                 </Text>
               </View>
-              <Text style={styles.planPeriod}>per year</Text>
-              <Text style={styles.savings}>Save 44%</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+            </View>
+          </>
+        )}
 
-        {/* CTA Section */}
-        <View style={styles.ctaSection}>
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={handleUpgrade}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.upgradeButtonText}>
-              Start Your FullCircle Journey
-            </Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-          
-          <View style={styles.guaranteeSection}>
-            <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
-            <Text style={styles.guaranteeText}>
-              7-day money-back guarantee • Cancel anytime
-            </Text>
-          </View>
-        </View>
-
-        {/* Simple Testimonial */}
+        {/* Testimonial */}
         <View style={styles.testimonialSection}>
           <Text style={styles.testimonialText}>
             "FullCircle's advanced matching helped me find my spiritual soulmate. The connection was instant and deep."
@@ -334,12 +510,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    headerTitle: {
-      ...fonts.spiritualTitleFont,
-      fontSize: Typography.sizes.xl,
-      fontWeight: Typography.weights.bold,
-      color: colors.textDark,
-    },
     scrollView: {
       paddingHorizontal: Spacing.lg,
       paddingBottom: Spacing['2xl'],
@@ -375,6 +545,51 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       textAlign: 'center',
       lineHeight: Typography.sizes.lg * 1.4,
       paddingHorizontal: Spacing.md,
+    },
+
+    // Current Subscription Section
+    currentSubscriptionSection: {
+      marginBottom: Spacing.xl,
+    },
+    subscriptionCard: {
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.xl,
+      borderWidth: 2,
+      alignItems: 'center',
+    },
+    subscriptionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    subscriptionTitle: {
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.bold,
+      marginLeft: Spacing.sm,
+    },
+    subscriptionPlan: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      fontWeight: Typography.weights.semibold,
+      marginBottom: Spacing.sm,
+    },
+    subscriptionDetails: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      textAlign: 'center',
+      marginBottom: Spacing.lg,
+    },
+    cancelButton: {
+      borderWidth: 1,
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+    },
+    cancelButtonText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.medium,
     },
     
     // Features Section
@@ -483,16 +698,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       marginBottom: Spacing.xl,
     },
     upgradeButton: {
-      backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       paddingVertical: Spacing.lg,
       paddingHorizontal: Spacing.xl,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: Spacing.sm,
       marginBottom: Spacing.lg,
       width: '100%',
       justifyContent: 'center',
+      alignItems: 'center',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -504,6 +716,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
           elevation: 6,
         },
       }),
+    },
+    upgradeContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    processingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
     },
     upgradeButtonText: {
       ...fonts.spiritualBodyFont,

@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { UserProvider } from "@/context/UserContext";
 import { NativeBaseProvider } from "native-base";
+import { StripeProvider } from "@stripe/stripe-react-native";
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -46,16 +47,21 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NativeBaseProvider>
-        <UserProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="user" />
-          </Stack>
-        </UserProvider>
-      </NativeBaseProvider>
-    </GestureHandlerRootView>
+    <StripeProvider
+      publishableKey="pk_test_51RlfjBKGi7kY2GqSATaiEnuCBPE7e5cE6P2XE0jJNUxYL29y2MVQUQ3fZxBo9Qd487bxcS0fmTfcRlHPf7UKTQyM00Z99c2TsX"
+      merchantIdentifier="merchant.com.fullcircle.app"
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NativeBaseProvider>
+          <UserProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="user" />
+            </Stack>
+          </UserProvider>
+        </NativeBaseProvider>
+      </GestureHandlerRootView>
+    </StripeProvider>
   );
 }
