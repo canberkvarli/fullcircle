@@ -394,18 +394,6 @@ export default function UserSettings() {
     "Other reasons",
   ];
 
-  const testSubscription = async () => {
-    try {
-      const testFunction = FUNCTIONS.httpsCallable('testSubscriptionCreation');
-      const result = await testFunction();
-      console.log('Subscription test result:', result.data);
-      Alert.alert('Test Result', JSON.stringify(result.data, null, 2));
-    } catch (error: any) {
-      console.error('Test failed:', error);
-      Alert.alert('Test Failed', error.message);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -419,14 +407,11 @@ export default function UserSettings() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
+        <StripeTestComponent/>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, fonts.captionFont]}>PROFILE</Text>
           
           <View style={styles.row}>
-            <TouchableOpacity onPress={testSubscription}>
-              <Text>Test Subscription</Text>
-            </TouchableOpacity>
-            
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Pause Profile</Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>

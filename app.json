@@ -107,7 +107,7 @@
       [
         "@stripe/stripe-react-native", {
           "enableGooglePay": true,
-          "publishableKey": "pk_test_51RlfjBKGi7kY2GqSATaiEnuCBPE7e5cE6P2XE0jJNUxYL29y2MVQUQ3fZxBo9Qd487bxcS0fmTfcRlHPf7UKTQyM00Z99c2TsX"
+          "publishableKey": "pk_test_51RlfjoGdeC038tAHh1GgI9jVQHxr7opaIPMByG4miVIO29K757hRG3DSkMeN6kNZEQjdTgGf7U891g5wwJhopfow00f1NQbc9s"
         }
       ]
     ],

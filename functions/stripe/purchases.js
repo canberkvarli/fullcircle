@@ -33,17 +33,27 @@ const createRadiancePayment = functions.https.onCall(async (data, context) => {
 
     // Create or get customer
     let customerId = userData.stripeCustomerId;
+
     if (!customerId) {
+      // Create new Stripe customer
+      const customerEmail = userData.email || `user_${userId}@fullcircle.app`;
+      const customerName = userData.fullName || 
+                          (userData.firstName && userData.lastName) ? 
+                          `${userData.firstName} ${userData.lastName}` :
+                          `User ${userId}`;
+
       const customer = await stripe.customers.create({
-        email: userData.email,
+        email: customerEmail,
+        name: customerName,
         metadata: {
           firebaseUID: userId,
-          fullName: userData.fullName || `${userData.firstName} ${userData.lastName}`
+          fullName: customerName
         }
       });
+      
       customerId = customer.id;
 
-      // Save customer ID
+      // Save customer ID to user document
       await db.collection('users').doc(userId).update({
         stripeCustomerId: customerId
       });
@@ -86,80 +96,104 @@ const createRadiancePayment = functions.https.onCall(async (data, context) => {
 /**
  * Confirm radiance payment and add boosts to user account
  */
-const confirmRadiancePayment = functions.https.onCall(async (data, context) => {
-  try {
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    const { paymentIntentId } = data;
-    const userId = context.auth.uid;
-
-    if (!paymentIntentId) {
-      throw new functions.https.HttpsError('invalid-argument', 'Payment intent ID required');
-    }
-
-    // Retrieve payment intent from Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-    // Verify payment succeeded
-    if (paymentIntent.status !== 'succeeded') {
-      throw new functions.https.HttpsError('failed-precondition', 'Payment not completed');
-    }
-
-    // Verify this payment belongs to the authenticated user
-    if (paymentIntent.metadata.firebaseUID !== userId) {
-      throw new functions.https.HttpsError('permission-denied', 'Payment does not belong to user');
-    }
-
-    const boostCount = parseInt(paymentIntent.metadata.boostCount);
-    const amount = paymentIntent.amount;
-
-    // Create purchase record
-    const purchase = {
-      boostCount,
-      totalPrice: amount / 100, // Convert cents to dollars
-      purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
-      transactionId: `radiance_${Date.now()}_${userId}`,
-      stripePaymentIntentId: paymentIntentId,
-      status: 'succeeded'
-    };
-
-    // Update user document with new boosts
-    const userRef = db.collection('users').doc(userId);
-    
-    await db.runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) {
-        throw new Error('User not found');
+  const confirmRadiancePayment = functions.https.onCall(async (data, context) => {
+    try {
+      console.log('🔄 confirmRadiancePayment called with data:', data);
+      
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
       }
 
-      const currentData = userDoc.data();
-      const currentBoosts = currentData.activeBoosts || 0;
+      const { paymentIntentId } = data;
+      const userId = context.auth.uid;
 
-      transaction.update(userRef, {
-        activeBoosts: currentBoosts + boostCount,
-        boostPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+      console.log(`👤 User ID: ${userId}`);
+      console.log(`💳 Payment Intent ID: ${paymentIntentId}`);
+
+      if (!paymentIntentId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Payment intent ID required');
+      }
+
+      // Retrieve payment intent from Stripe
+      console.log('🔍 Retrieving payment intent from Stripe...');
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      console.log(`✅ Payment intent retrieved. Status: ${paymentIntent.status}`);
+
+      // Verify payment succeeded
+      if (paymentIntent.status !== 'succeeded') {
+        console.error(`❌ Payment not completed. Status: ${paymentIntent.status}`);
+        throw new functions.https.HttpsError('failed-precondition', `Payment not completed. Status: ${paymentIntent.status}`);
+      }
+
+      // Verify this payment belongs to the authenticated user
+      if (paymentIntent.metadata.firebaseUID !== userId) {
+        console.error(`❌ Payment belongs to different user`);
+        throw new functions.https.HttpsError('permission-denied', 'Payment does not belong to user');
+      }
+
+      const boostCount = parseInt(paymentIntent.metadata.boostCount);
+      const amount = paymentIntent.amount;
+
+      console.log(`🎁 Processing ${boostCount} boosts for $${amount / 100}`);
+
+      // 🔥 FIX: Create purchase record with regular Date instead of serverTimestamp
+      const purchase = {
+        boostCount,
+        totalPrice: amount / 100, // Convert cents to dollars
+        purchaseDate: new Date(), // ✅ Use regular Date instead of serverTimestamp()
+        transactionId: `radiance_${Date.now()}_${userId}`,
+        stripePaymentIntentId: paymentIntentId,
+        status: 'succeeded'
+      };
+
+      console.log('📝 Purchase record:', purchase);
+
+      // Update user document with new boosts
+      const userRef = db.collection('users').doc(userId);
+      
+      console.log('🔄 Starting Firestore transaction...');
+      await db.runTransaction(async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists) {
+          console.error('❌ User document not found');
+          throw new Error('User not found');
+        }
+
+        const currentData = userDoc.data();
+        const currentBoosts = currentData.activeBoosts || 0;
+
+        console.log(`📊 Current boosts: ${currentBoosts}, Adding: ${boostCount}`);
+
+        transaction.update(userRef, {
+          activeBoosts: currentBoosts + boostCount,
+          boostPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+        });
+
+        console.log('✅ Transaction prepared successfully');
       });
-    });
 
-    return {
-      success: true,
-      boostCount,
-      totalPrice: amount / 100,
-      transactionId: purchase.transactionId
-    };
+      console.log('✅ Firestore transaction completed');
 
-  } catch (error) {
-    console.error('Error confirming radiance payment:', error);
-    
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
+      const response = {
+        success: true,
+        boostCount,
+        totalPrice: amount / 100,
+        transactionId: purchase.transactionId
+      };
+
+      console.log('🎉 Payment confirmation successful:', response);
+      return response;
+
+    } catch (error) {
+      console.error('💥 Error confirming radiance payment:', error);
+      
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      
+      throw new functions.https.HttpsError('internal', `Failed to confirm payment: ${error.message}`);
     }
-    
-    throw new functions.https.HttpsError('internal', 'Failed to confirm payment');
-  }
-});
+  });
 
 module.exports = {
   createRadiancePayment,

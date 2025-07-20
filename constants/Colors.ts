@@ -138,6 +138,9 @@ export const Typography = {
     elegantSemiBold: 'Raleway-SemiBold',
     elegantBold: 'Raleway-Bold',
     elegantItalic: 'Raleway-Italic',
+
+    //Custom spritiuality font
+    main: 'Spirituality',
   }
 };
 

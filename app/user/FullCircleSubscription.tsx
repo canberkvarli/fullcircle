@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
+import { useFocusEffect } from '@react-navigation/native';
 
 interface FeatureCardProps {
   icon: string;
@@ -35,7 +36,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   const fonts = useFont();
 
   const styles = createFeatureCardStyles(colorScheme, isHighlighted, fonts);
-
   return (
     <View style={styles.featureCard}>
       <View style={styles.iconContainer}>
@@ -60,7 +60,10 @@ export default function FullCircleSubscription() {
     userData, 
     createSubscription, 
     cancelSubscription, 
-    getSubscriptionStatus 
+    getSubscriptionStatus,
+    updateUserData,
+    reactivateSubscription ,
+    activateSubscription
   } = useUserContext();
   
   const { presentPaymentSheet, initPaymentSheet } = useStripe();
@@ -73,7 +76,46 @@ export default function FullCircleSubscription() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Fixed subscription status logic
+  const getDisplayStatus = () => {
+    const status = userData.subscriptionStatus;
+    const hasSubscription = !!userData.subscriptionId;
+    
+    // Check if subscription is truly active (not canceled)
+    const isActiveSubscription = hasSubscription && status === 'active';
+    
+    // Check if canceled but still has time (would need periodEnd data)
+    const isCanceledButActive = hasSubscription && 
+      status === 'active' && 
+      userData.subscriptionCancelAt && 
+      userData.subscriptionPeriodEnd;
+    
+    // Subscription is completely canceled or doesn't exist
+    const needsNewSubscription = !hasSubscription || 
+      status === 'canceled' || 
+      status === 'past_due' || 
+      status === 'incomplete';
+
+    return {
+      isActiveSubscription,
+      isCanceledButActive,
+      needsNewSubscription,
+      status,
+      hasSubscription
+    };
+  };
+
+  const displayStatus = getDisplayStatus();
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSubscriptionStatus();
+    }, [])
+  );
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -82,58 +124,169 @@ export default function FullCircleSubscription() {
       useNativeDriver: true,
     }).start();
 
-    // Load current subscription status
     loadSubscriptionStatus();
   }, []);
 
   const loadSubscriptionStatus = async () => {
     try {
+      setLoadingStatus(true);
       const status = await getSubscriptionStatus();
       setSubscriptionData(status);
+      console.log('📊 Loaded subscription status:', status);
     } catch (error) {
       console.error('Failed to load subscription status:', error);
+    } finally {
+      setLoadingStatus(false);
     }
+  };
+
+  const handleReactivate = async () => {
+    Alert.alert(
+      "Reactivate Subscription",
+      "Would you like to reactivate your FullCircle subscription? Your current benefits will continue and auto-renewal will resume.",
+      [
+        { text: "Not Now", style: "cancel" },
+        { 
+          text: "Reactivate", 
+          style: "default",
+          onPress: async () => {
+            try {
+              setIsProcessing(true);
+              const result = await reactivateSubscription();
+              
+              if (result.success) {
+                Alert.alert(
+                  "🎉 Subscription Reactivated!",
+                  "Your FullCircle subscription is now active again and will auto-renew at the end of your current period.",
+                  [{ text: "Great!", style: "default" }]
+                );
+                await loadSubscriptionStatus();
+              } else {
+                Alert.alert(
+                  "Reactivation Failed",
+                  result.message || "We couldn't reactivate your subscription right now. Please try again.",
+                  [{ text: "OK", style: "default" }]
+                );
+              }
+            } catch (error) {
+              console.error('Reactivation failed:', error);
+              Alert.alert(
+                "Reactivation Failed",
+                "We couldn't reactivate your subscription right now. Please try again.",
+                [{ text: "OK", style: "default" }]
+              );
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleUpgrade = async () => {
     setIsProcessing(true);
     
     try {
-      console.log(`Creating ${selectedPlan} subscription...`);
+      console.log(`🚀 Creating ${selectedPlan} subscription...`);
       
       // 1. Create subscription
       const { clientSecret, subscriptionId } = await createSubscription(selectedPlan);
+      console.log(`✅ Subscription created: ${subscriptionId}`);
       
       // 2. Initialize payment sheet
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'FullCircle',
-        style: 'alwaysDark'
+        returnURL: 'fullcircle://payment-return',
+        defaultBillingDetails: {
+          name: userData.fullName || userData.firstName || 'Customer',
+        },
+        appearance: {
+          colors: {
+            primary: '#007AFF',
+          },
+        },
       });
 
       if (initError) {
-        console.error('Payment sheet init failed:', initError);
+        console.error('❌ Payment sheet init failed:', initError);
         Alert.alert('Error', 'Failed to initialize payment. Please try again.');
         return;
       }
 
-      // 3. Present payment sheet
+      console.log('✅ Payment sheet initialized');
+
+      // 3. Add delay before presenting (fix for infinite loading)
+      console.log('⏳ Waiting 1 second before presenting payment sheet...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 4. Present payment sheet
+      console.log('📱 Presenting payment sheet...');
       const { error: paymentError } = await presentPaymentSheet();
 
       if (paymentError) {
-        console.error('Payment failed:', paymentError);
+        console.error('❌ Payment failed:', paymentError);
         if (paymentError.code !== 'Canceled') {
           Alert.alert('Payment Failed', paymentError.message || 'Payment was not completed.');
         }
         return;
       }
 
-      // 4. Payment succeeded
-      console.log('Subscription payment succeeded!');
-      
+      console.log('✅ Payment completed successfully!');
+
+      // 5. Wait for Stripe to process the payment
+      console.log('⏳ Waiting for payment processing...');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // 6. Refresh subscription status multiple times to ensure we get the updated status
+      console.log('🔄 Refreshing subscription status...');
+      let attempts = 0;
+      let subscriptionActive = false;
+
+      while (attempts < 5 && !subscriptionActive) {
+        try {
+          const statusData = await getSubscriptionStatus();
+          console.log(`📊 Status check ${attempts + 1}:`, statusData);
+          
+          if (statusData.hasSubscription && statusData.status === 'active') {
+            subscriptionActive = true;
+            console.log('🎉 Subscription is now active!');
+            break;
+          } else if (statusData.hasSubscription && statusData.status !== 'incomplete') {
+            // Payment succeeded but might still be processing
+            console.log(`⏳ Subscription exists with status: ${statusData.status}`);
+            subscriptionActive = true; // Consider it successful
+            break;
+          }
+          
+          attempts++;
+          if (attempts < 5) {
+            console.log(`⏳ Waiting 2 seconds before next check...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (error) {
+          console.error(`❌ Status check ${attempts + 1} failed:`, error);
+          attempts++;
+        }
+      }
+
+      // 7. Update local state immediately with successful subscription
+      updateUserData({
+        ...userData,
+        subscriptionId: subscriptionId,
+        subscriptionStatus: 'active',
+        subscriptionPlanType: selectedPlan,
+        fullCircleSubscription: true,
+        subscriptionCreatedAt: new Date(),
+      });
+
+      // 8. Show success message
       Alert.alert(
-        "🎉 Welcome to FullCircle!",
-        "Your subscription is now active. Enjoy unlimited connections and premium features!",
+        "🎉 Welcome to FullCircle Premium!",
+        subscriptionActive 
+          ? "Your subscription is now active! Enjoy unlimited connections and premium features!"
+          : "Your payment was successful! Your premium features will be available shortly.",
         [
           { 
             text: "Start Exploring!", 
@@ -143,14 +296,16 @@ export default function FullCircleSubscription() {
         ]
       );
 
-      // Refresh subscription status
-      await loadSubscriptionStatus();
+      // 9. Final refresh of subscription status
+      setTimeout(() => {
+        loadSubscriptionStatus();
+      }, 1000);
       
-    } catch (error) {
-      console.error('Subscription creation failed:', error);
+    } catch (error: any) {
+      console.error('💥 Subscription creation failed:', error);
       Alert.alert(
         "Subscription Failed",
-        "We couldn't create your subscription right now. Please try again.",
+        error.message || "We couldn't create your subscription right now. Please try again.",
         [{ text: "OK", style: "default" }]
       );
     } finally {
@@ -171,6 +326,11 @@ export default function FullCircleSubscription() {
             try {
               setIsProcessing(true);
               await cancelSubscription();
+              
+              await updateUserData({
+                subscriptionStatus: 'canceled',
+                fullCircleSubscription: false
+              });
               
               Alert.alert(
                 "Subscription Canceled",
@@ -229,9 +389,6 @@ export default function FullCircleSubscription() {
     }
   ];
 
-  // Check if user already has active subscription
-  const hasActiveSubscription = userData.fullCircleSubscription && userData.subscriptionStatus === 'active';
-
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {/* Header */}
@@ -251,23 +408,73 @@ export default function FullCircleSubscription() {
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
-            <Ionicons name="sparkles" size={32} color={colors.primary} />
+            <Ionicons 
+              name={
+                displayStatus.isActiveSubscription 
+                  ? "checkmark-circle"
+                  : displayStatus.isCanceledButActive 
+                    ? "warning"
+                    : "sparkles"
+              } 
+              size={32} 
+              color={
+                displayStatus.isActiveSubscription 
+                  ? "#4CAF50"
+                  : displayStatus.isCanceledButActive 
+                    ? "#FF9500"
+                    : colors.primary
+              } 
+            />
           </View>
           <Text style={styles.mainTitle}>
-            {hasActiveSubscription ? "Manage Your FullCircle" : "Deepen Your Connections"}
-          </Text>
-          <Text style={styles.subtitle}>
-            {hasActiveSubscription 
-              ? "You're enjoying premium spiritual connection features"
-              : "Unlock advanced features designed for meaningful spiritual connections"
+            {displayStatus.isActiveSubscription 
+              ? "FullCircle Premium Active"
+              : displayStatus.isCanceledButActive 
+                ? "Subscription Ending Soon"
+                : displayStatus.hasSubscription && displayStatus.status === 'canceled'
+                  ? "Subscription Canceled"
+                  : "Deepen Your Connections"
             }
           </Text>
+          <Text style={styles.subtitle}>
+            {displayStatus.isActiveSubscription 
+              ? "You're enjoying unlimited spiritual connections and premium features"
+              : displayStatus.isCanceledButActive 
+                ? "Your premium access is ending soon. Reactivate to continue enjoying unlimited connections."
+                : displayStatus.hasSubscription && displayStatus.status === 'canceled'
+                  ? "Your subscription has been canceled. You can reactivate or start a new subscription below."
+                  : "Unlock advanced features designed for meaningful spiritual connections"
+            }
+          </Text>
+
+          {!displayStatus.isActiveSubscription && !loadingStatus && (
+            <TouchableOpacity
+              style={styles.restoreButton}
+              onPress={loadSubscriptionStatus}
+              disabled={loadingStatus}
+            >
+              <Ionicons name="refresh" size={16} color={colors.primary} />
+              <Text style={styles.restoreButtonText}>
+                {loadingStatus ? 'Checking...' : 'Refresh Status'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {loadingStatus && (
+            <View style={styles.loadingIndicator}>
+              <Ionicons name="radio-outline" size={16} color={colors.primary} />
+              <Text style={styles.loadingText}>Checking subscription status...</Text>
+            </View>
+          )}
         </View>
 
-        {/* Current Subscription Status */}
-        {hasActiveSubscription && subscriptionData && (
+        {/* Current Subscription Status - Only show if truly active */}
+        {displayStatus.isActiveSubscription && (
           <View style={styles.currentSubscriptionSection}>
-            <View style={[styles.subscriptionCard, { backgroundColor: colors.primary + '10', borderColor: colors.primary }]}>
+            <View style={[styles.subscriptionCard, { 
+              backgroundColor: colors.primary + '10', 
+              borderColor: colors.primary 
+            }]}>
               <View style={styles.subscriptionHeader}>
                 <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
                 <Text style={[styles.subscriptionTitle, { color: colors.primary }]}>
@@ -278,23 +485,51 @@ export default function FullCircleSubscription() {
                 {userData.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
               </Text>
               <Text style={[styles.subscriptionDetails, { color: colors.textLight }]}>
-                {subscriptionData.cancelAtPeriodEnd 
-                  ? `Cancels on ${new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}`
-                  : `Renews on ${new Date(subscriptionData.currentPeriodEnd * 1000).toLocaleDateString()}`
-                }
+                Your premium subscription is active
               </Text>
               
-              {!subscriptionData.cancelAtPeriodEnd && (
-                <TouchableOpacity
-                  style={[styles.cancelButton, { borderColor: colors.textMuted }]}
-                  onPress={handleCancelSubscription}
-                  disabled={isProcessing}
-                >
-                  <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>
-                    Cancel Subscription
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[styles.cancelButton, { borderColor: colors.textMuted }]}
+                onPress={handleCancelSubscription}
+                disabled={isProcessing}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>
+                  Cancel Subscription
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Canceled Subscription Section */}
+        {displayStatus.hasSubscription && displayStatus.status === 'canceled' && (
+          <View style={styles.currentSubscriptionSection}>
+            <View style={[styles.subscriptionCard, { 
+              backgroundColor: '#FF9500' + '10', 
+              borderColor: '#FF9500' 
+            }]}>
+              <View style={styles.subscriptionHeader}>
+                <Ionicons name="information-circle" size={24} color="#FF9500" />
+                <Text style={[styles.subscriptionTitle, { color: '#FF9500' }]}>
+                  Subscription Canceled
+                </Text>
+              </View>
+              <Text style={[styles.subscriptionPlan, { color: colors.textDark }]}>
+                Previous: {userData.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
+              </Text>
+              <Text style={[styles.subscriptionDetails, { color: colors.textLight }]}>
+                You can reactivate your previous subscription or start a new one below
+              </Text>
+              
+              <TouchableOpacity
+                style={[styles.reactivateButton, { backgroundColor: '#FF9500' }]}
+                onPress={handleReactivate}
+                disabled={isProcessing}
+              >
+                <Text style={[styles.reactivateButtonText]}>
+                  {isProcessing ? 'Reactivating...' : 'Reactivate Previous Subscription'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -315,13 +550,14 @@ export default function FullCircleSubscription() {
           </View>
         </View>
 
-        {/* Pricing Section (only show if no active subscription) */}
-        {!hasActiveSubscription && (
+        {/* Pricing Section - Show if needs new subscription */}
+        {displayStatus.needsNewSubscription && (
           <>
             <View style={styles.pricingSection}>
-              <Text style={styles.sectionTitle}>Choose Your Plan</Text>
+              <Text style={styles.sectionTitle}>
+                {displayStatus.hasSubscription ? 'Start New Subscription' : 'Choose Your Plan'}
+              </Text>
               
-              {/* Plan Cards */}
               <View style={styles.planContainer}>
                 {/* Monthly Plan */}
                 <TouchableOpacity
@@ -400,7 +636,7 @@ export default function FullCircleSubscription() {
                 ) : (
                   <View style={styles.upgradeContainer}>
                     <Text style={styles.upgradeButtonText}>
-                      Start Your FullCircle Journey
+                      {displayStatus.hasSubscription ? 'Start New Subscription' : 'Start Your FullCircle Journey'}
                     </Text>
                     <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
                   </View>
@@ -591,6 +827,19 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       fontSize: Typography.sizes.sm,
       fontWeight: Typography.weights.medium,
     },
+    reactivateButton: {
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginTop: Spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    reactivateButtonText: {
+      color: '#FFFFFF',
+      fontWeight: Typography.weights.semibold,
+      fontSize: Typography.sizes.base,
+    },
     
     // Features Section
     featuresSection: {
@@ -773,6 +1022,40 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       fontSize: Typography.sizes.sm,
       color: colors.textMuted,
       textAlign: 'center',
+      fontWeight: Typography.weights.medium,
+    },
+    
+    // Loading and Status
+    loadingIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginTop: Spacing.md,
+      padding: Spacing.md,
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.md,
+    },
+    loadingText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      color: colors.textMuted,
+    },
+    restoreButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginTop: Spacing.md,
+      borderWidth: 1,
+      borderColor: colors.primary + '30',
+      borderRadius: BorderRadius.md,
+      backgroundColor: colors.primary + '10',
+    },
+    restoreButtonText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      color: colors.primary,
       fontWeight: Typography.weights.medium,
     },
   });

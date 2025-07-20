@@ -45,5 +45,11 @@ export const useFont = () => {
     
     // Special logo font (for "Circle" title)
     logoFont: getFontStyle('5xl', 'spiritualRegular'),
+
+    spiritualityTitleFont: getFontStyle('4xl', 'main'),
+    spiritualitySubtitleFont: getFontStyle('lg', 'main'),
+    spiritualityBodyFont: getFontStyle('base', 'main'),
+    spiritualityButtonFont: getFontStyle('base', 'main'),
+    
   };
 };

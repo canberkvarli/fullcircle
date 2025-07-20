@@ -1,22 +1,25 @@
 const functions = require('firebase-functions');
 const Stripe = require('stripe');
 
-// Initialize Stripe - will use environment config in production
-const stripe = Stripe(
-  functions.config().stripe?.secret_key || 
-  process.env.STRIPE_SECRET_KEY || 
-  'sk_test_51RlfjBKGi7kY2GqSYfSds6HOaydp3TwlM5Kvfa09ylq5g1e7Qu3R9pxsSEW4ivEWOubR6UdlPvMD07PESGoyivqf00kEp6uAF2'
-);
+// Get Stripe secret key from Firebase Functions config
+const STRIPE_SECRET_KEY = functions.config().stripe?.secret_key;
 
-// Subscription pricing (you'll replace with real price IDs from Stripe Dashboard)
+if (!STRIPE_SECRET_KEY) {
+  throw new Error('Stripe secret key not configured. Run: firebase functions:config:set stripe.secret_key="your_key"');
+}
+
+// Initialize Stripe
+const stripe = Stripe(STRIPE_SECRET_KEY);
+
+// Subscription pricing (update these with your actual Stripe price IDs)
 const SUBSCRIPTION_PRICES = {
   monthly: {
-    priceId: 'price_1Rm1lLKGi7kY2GqSj70bU0aY',
+    priceId: 'price_1RmyuoGdeC038tAHuLexwVkm', // Your actual monthly price ID
     amount: 2999, // $29.99 in cents
     interval: 'month'
   },
   yearly: {
-    priceId: 'price_1Rm1m7KGi7kY2GqSGkuW9y96',
+    priceId: 'price_1RmyvIGdeC038tAHmUyatrjz', // Your actual yearly price ID
     amount: 19999, // $199.99 in cents
     interval: 'year'
   }

@@ -77,6 +77,7 @@ export type UserDataType = {
   subscriptionPeriodEnd?: any;
   subscriptionCreatedAt?: any;
   subscriptionUpdatedAt?: any;
+  subscriptionCancelAt?: any;
   likesGivenCount?: number;
   likesReceivedCount?: number;
   dislikesGivenCount?: number;
@@ -121,6 +122,7 @@ export type UserDataType = {
   reportedUsers?: string[];
   unmatchedUsers?: string[];
 };
+
 export interface BoostPurchase {
   boostCount: number;
   totalPrice: number;
@@ -128,6 +130,44 @@ export interface BoostPurchase {
   transactionId: string;
   stripePaymentIntentId?: string;
   status: 'succeeded' | 'processing' | 'failed'; 
+}
+
+interface PaymentIntent {
+  clientSecret: string;
+  paymentIntentId: string;
+  amount: number;
+}
+
+interface PaymentResult {
+  success: boolean;
+  boostCount: number;
+  totalPrice: number;
+  transactionId: string;
+}
+
+interface SubscriptionResponse {
+  clientSecret: string;
+  subscriptionId: string;
+  status: string;
+}
+
+interface SubscriptionData {
+  hasSubscription: boolean;
+  status: 'active' | 'canceled' | 'past_due' | 'incomplete' | null;
+  planType: 'monthly' | 'yearly' | null;
+  currentPeriodEnd: number;
+  cancelAtPeriodEnd: boolean;
+}
+
+interface CancelResponse {
+  status: string;
+  cancelAt: number;
+}
+
+interface ConfirmSubscriptionResponse {
+  success: boolean;
+  status: string;
+  subscriptionId: string;
 }
 
 export type UserSettings = {
@@ -302,11 +342,57 @@ type UserContextType = {
   resetMatching: () => void;
   getRemainingDailyLikes: () => number;
   DAILY_LIKE_LIMIT: number;
-  createSubscription: (planType: 'monthly' | 'yearly') => Promise<{ clientSecret: string; subscriptionId: string }>;
-  cancelSubscription: () => Promise<void>;
-  getSubscriptionStatus: () => Promise<any>;
-  purchaseRadiance: (boostCount: number) => Promise<{ clientSecret: string; paymentIntentId: string }>;
-  confirmRadiancePayment: (paymentIntentId: string) => Promise<void>;
+  
+  // 💳 Updated Stripe Payment Types
+  createSubscription: (planType: 'monthly' | 'yearly') => Promise<{
+    clientSecret: string;
+    subscriptionId: string;
+    status: string;
+  }>;
+  activateSubscription: (subscriptionId: string, planType: 'monthly' | 'yearly') => Promise<{
+    status: string;
+    subscriptionId: string;
+  }>
+  confirmSubscription: (subscriptionId: string) => Promise<ConfirmSubscriptionResponse>;
+  cancelSubscription: () => Promise<{
+    status: string;
+    cancelAt: number;
+  }>;
+  getDetailedSubscriptionStatus: () => {
+    hasSubscription: boolean;
+    isCurrentlyActive: boolean;
+    isCanceledButActive: boolean;
+    status: 'active' | 'canceled' | 'past_due' | 'incomplete' | undefined;
+    planType: 'monthly' | 'yearly' | undefined;
+    daysRemaining: number;
+    periodEndDate: Date | null;
+    cancelDate: Date | null;
+    canReactivate: boolean;
+    needsUpgrade: boolean;
+  };
+  reactivateSubscription: () => Promise<{
+    success: boolean;
+    status: string;
+    message: string;
+  }>;
+  getSubscriptionStatus: () => Promise<{
+    hasSubscription: boolean;
+    status: 'active' | 'canceled' | 'past_due' | 'incomplete' | null;
+    planType: 'monthly' | 'yearly' | null;
+    currentPeriodEnd: number;
+    cancelAtPeriodEnd: boolean;
+  }>;
+  purchaseRadiance: (boostCount: number) => Promise<{
+    clientSecret: string;
+    paymentIntentId: string;
+  }>;
+  confirmRadiancePayment: (paymentIntentId: string) => Promise<{
+    success: boolean;
+    boostCount: number;
+    totalPrice: number;
+  }>;
+  
+  // Existing radiance functions
   activateRadiance: () => Promise<void>;
   getRadianceTimeRemaining: () => number;
   hasActiveRadiance: (userData: UserDataType) => boolean;
@@ -321,7 +407,7 @@ type UserContextType = {
   isUserRecentlyActive: (userData: UserDataType) => boolean;
   testStripeConnection: any;
   createRadiancePaymentIntent: any;
-}
+};
 
 // Initial screens and initial user data
 const initialScreens = [
@@ -1668,10 +1754,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Get remaining time for active boost
   const getRadianceTimeRemaining = useCallback((): number => {
-    const currentUserData = userDataRef.current; // ✅ Use ref instead of state
+    const currentUserData = userDataRef.current;
     
+    // Silent check - no console.log to reduce noise
     if (!currentUserData.boostExpiresAt) {
-      console.log('🔍 No boostExpiresAt found');
       return 0;
     }
     
@@ -1684,7 +1770,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const remainingSeconds = Math.max(0, Math.floor(remainingMs / 1000));
     
     return remainingSeconds;
-  }, []); // ✅ No dependencies needed since we use ref
+  }, []);
 
   // 🔧 FINAL FIX: Replace your optimizedLikeMatch function with this version
   // This captures the radiance status BEFORE any state changes happen
@@ -3031,7 +3117,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     [userData.userId]
   );
 
-
   const deleteAccount = async (reason?: string) => {
     if (!userData.userId || !currentUser) {
       throw new Error("No user logged in");
@@ -3059,6 +3144,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           "likesReceived", 
           "reports",
           "unmatchedUsers",
+          "dislikesGiven"
         ];
         
         for (const subcollectionName of subcollections) {
@@ -3214,7 +3300,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // 💳 Create Subscription (FullCircle) - FIXED
+  // 💳 Create Subscription (FullCircle)
   const createSubscription = async (planType: 'monthly' | 'yearly') => {
     try {
       if (!userData.userId) {
@@ -3227,39 +3313,104 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const result = await createSubscriptionFunction({ planType });
       
       console.log('Cloud Function result:', result);
-      console.log('Result data:', result.data);
+      console.log('Result data exists:', !!result.data);
+      console.log('Result data keys:', result.data ? Object.keys(result.data) : 'none');
       
       // Check if the function call was successful
       if (!result.data) {
         throw new Error('No data returned from Cloud Function');
       }
       
-      interface SubscriptionResponse {
-        clientSecret: string;
-        subscriptionId: string;
-      }
+      const { clientSecret, subscriptionId, status } = result.data as SubscriptionResponse;
       
-      const { clientSecret, subscriptionId } = result.data as SubscriptionResponse;
+      console.log('Extracted values:');
+      console.log('- clientSecret exists:', !!clientSecret);
+      console.log('- subscriptionId:', subscriptionId);
+      console.log('- status:', status);
       
       if (!clientSecret) {
         throw new Error('No clientSecret returned from subscription creation');
       }
       
-      console.log(`Subscription created: ${subscriptionId}`);
+      if (!subscriptionId) {
+        throw new Error('No subscriptionId returned from subscription creation');
+      }
       
-      return { clientSecret, subscriptionId };
+      console.log(`✅ Subscription created successfully: ${subscriptionId}`);
+      
+      return { clientSecret, subscriptionId, status };
     } catch (error: any) {
-      console.error('Error creating subscription:', error);
+      console.error('❌ Error creating subscription:', error);
       console.error('Error details:', {
         message: error.message,
         code: error.code,
         details: error.details
       });
-      throw new Error('Failed to create subscription');
+      throw new Error(`Subscription creation failed: ${error.message}`);
     }
   };
 
-  // 💳 Cancel Subscription (Fixed TypeScript)
+  const confirmSubscription = async (subscriptionId: string): Promise<ConfirmSubscriptionResponse> => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User must be logged in");
+      }
+
+      console.log(`🔄 Confirming subscription: ${subscriptionId}`);
+      
+      // Wait a moment for Stripe to process
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3 seconds
+      
+      // Try to get the latest subscription status
+      try {
+        const subscriptionData = await getSubscriptionStatus();
+        
+        console.log('📊 Latest subscription data:', subscriptionData);
+        
+        if (subscriptionData.hasSubscription && subscriptionData.status === 'active') {
+          console.log('✅ Subscription is now active!');
+          return { 
+            success: true, 
+            status: 'active',
+            subscriptionId: subscriptionId 
+          };
+        } else if (subscriptionData.hasSubscription) {
+          console.log(`⏳ Subscription exists but status is: ${subscriptionData.status}`);
+          return { 
+            success: true, // Payment succeeded even if not yet active
+            status: subscriptionData.status || 'processing',
+            subscriptionId: subscriptionId 
+          };
+        } else {
+          console.log('❌ No subscription found after payment');
+          return { 
+            success: false, 
+            status: 'not_found',
+            subscriptionId: subscriptionId 
+          };
+        }
+      } catch (statusError) {
+        console.error('⚠️ Could not check subscription status:', statusError);
+        
+        // If we can't check status but payment succeeded, assume it's processing
+        console.log('🤔 Assuming subscription is processing since payment succeeded');
+        return {
+          success: true,
+          status: 'processing',
+          subscriptionId: subscriptionId
+        };
+      }
+    } catch (error: any) {
+      console.error('❌ Error confirming subscription:', error);
+      return {
+        success: false,
+        status: 'error',
+        subscriptionId: subscriptionId
+      };
+    }
+  };
+
+ // 💳 Cancel Subscription
   const cancelSubscription = async () => {
     try {
       if (!userData.userId) {
@@ -3271,57 +3422,220 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const cancelSubscriptionFunction = FUNCTIONS.httpsCallable('cancelSubscription');
       const result = await cancelSubscriptionFunction();
       
-      // Update local state with proper typing
+      interface CancelResponse {
+        status: string;
+        cancelAt: number;
+      }
+      
+      const { status, cancelAt } = result.data as CancelResponse;
+      
+      // Update local state
       setUserData(prevData => ({
         ...prevData,
         subscriptionStatus: 'canceled' as const,
         fullCircleSubscription: false
       }));
       
-      console.log('Subscription canceled successfully');
-    } catch (error) {
+      console.log(`Subscription will be canceled at: ${new Date(cancelAt * 1000)}`);
+      return { status, cancelAt };
+    } catch (error: any) {
       console.error('Error canceling subscription:', error);
-      throw new Error('Failed to cancel subscription');
+      throw new Error(`Subscription cancellation failed: ${error.message}`);
     }
   };
 
-  // 💳 Get Subscription Status (Fixed TypeScript errors)
+  const activateSubscription = async (subscriptionId: string, planType: "monthly" | "yearly"): Promise<{ status: string; subscriptionId: string; }> => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User must be logged in");
+      }
+
+      console.log(`🚀 Activating subscription: ${subscriptionId}`);
+      
+      const activateFunction = FUNCTIONS.httpsCallable('activateSubscription');
+      const result = await activateFunction({ 
+        subscriptionId, 
+        planType 
+      });
+      
+      console.log('✅ Activation result:', result.data);
+      
+      interface ActivationResponse {
+        success: boolean;
+        subscriptionId: string;
+        status: string;
+        isActive: boolean;
+        paymentSuccessful: boolean;
+        currentPeriodEnd: number;
+        currentPeriodStart: number;
+      }
+      
+      const activationData = result.data as ActivationResponse;
+      
+      if (activationData.success) {
+        // Update local state immediately
+        setUserData(prevData => ({
+          ...prevData,
+          subscriptionId: activationData.subscriptionId,
+          subscriptionStatus: activationData.isActive ? 'active' : activationData.status as 'active' | 'canceled' | 'past_due' | 'incomplete',
+          fullCircleSubscription: activationData.isActive,
+          subscriptionPeriodEnd: activationData.currentPeriodEnd,
+          subscriptionPeriodStart: activationData.currentPeriodStart,
+          subscriptionPlanType: planType
+        }));
+        
+        console.log(`🎉 Subscription activated! Active: ${activationData.isActive}`);
+      }
+      
+      // Return the expected format
+      return { 
+        status: activationData.isActive ? 'active' : activationData.status,
+        subscriptionId: activationData.subscriptionId 
+      };
+    } catch (error: any) {
+      console.error('❌ Error activating subscription:', error);
+      // Return error status in expected format
+      return { 
+        status: 'error',
+        subscriptionId: subscriptionId 
+      };
+    }
+  };
+
+  // 💳 Get Subscription Status
   const getSubscriptionStatus = async () => {
     try {
       if (!userData.userId) {
         throw new Error("User must be logged in");
       }
 
+      console.log('📡 Fetching subscription status...');
       const getStatusFunction = FUNCTIONS.httpsCallable('getSubscriptionStatus');
       const result = await getStatusFunction();
-      
-      interface SubscriptionData {
-        hasSubscription: boolean;
-        status: 'active' | 'canceled' | 'past_due' | 'incomplete' | null;
-        planType: 'monthly' | 'yearly' | null;
-        currentPeriodEnd: any;
-      }
-      
-      const subscriptionData = result.data as SubscriptionData;
-      
-      // Update local state with latest subscription info
-      if (subscriptionData.hasSubscription && subscriptionData.status && subscriptionData.planType) {
-        setUserData(prevData => ({
-          ...prevData,
-          subscriptionStatus: subscriptionData.status as 'active' | 'canceled' | 'past_due' | 'incomplete',
-          subscriptionPlanType: subscriptionData.planType as 'monthly' | 'yearly',
-          subscriptionPeriodEnd: subscriptionData.currentPeriodEnd,
-          fullCircleSubscription: subscriptionData.status === 'active'
-        }));
-      }
-      
-      return subscriptionData;
-    } catch (error) {
-      console.error('Error getting subscription status:', error);
-      throw new Error('Failed to get subscription status');
+    
+    console.log('✅ Subscription status fetched:', result.data);
+    
+    const subscriptionData = result.data as SubscriptionData;
+    
+    // Update local state with latest subscription info
+    if (subscriptionData.hasSubscription && subscriptionData.status && subscriptionData.planType) {
+      setUserData(prevData => ({
+        ...prevData,
+        subscriptionStatus: subscriptionData.status as 'active' | 'canceled' | 'past_due' | 'incomplete',
+        subscriptionPlanType: subscriptionData.planType || undefined,
+        subscriptionPeriodEnd: subscriptionData.currentPeriodEnd,
+        fullCircleSubscription: subscriptionData.status === 'active'
+      }));
+    } else if (!subscriptionData.hasSubscription) {
+      // Clear subscription data if no subscription exists
+      setUserData(prevData => ({
+        ...prevData,
+        subscriptionStatus: undefined,
+        subscriptionPlanType: undefined,
+        subscriptionPeriodEnd: undefined,
+        fullCircleSubscription: false
+      }));
     }
+    
+    return subscriptionData;
+  } catch (error: any) {
+    console.error('❌ Error getting subscription status:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details
+    });
+    
+    // Return a fallback based on current user data
+    const fallbackData = {
+      hasSubscription: !!userData.subscriptionId,
+      status: userData.subscriptionStatus || null,
+      planType: userData.subscriptionPlanType || null,
+      currentPeriodEnd: userData.subscriptionPeriodEnd || null,
+      cancelAtPeriodEnd: false
+    };
+    
+    console.log('⚠️ Using fallback subscription data:', fallbackData);
+    return fallbackData;
+  }
   };
 
+  const getDetailedSubscriptionStatus = () => {
+    const now = new Date();
+    const hasSubscriptionId = !!userData.subscriptionId;
+    const status = userData.subscriptionStatus;
+    const periodEnd = userData.subscriptionPeriodEnd;
+    
+    // Calculate if subscription is currently active (regardless of cancellation)
+    const isCurrentlyActive = hasSubscriptionId && 
+      status === 'active' && 
+      periodEnd && 
+      (periodEnd * 1000 > now.getTime());
+    
+    // Check if it's canceled but still active until period end
+    const isCanceledButActive = isCurrentlyActive && userData.subscriptionCancelAt;
+    
+    // Calculate days remaining
+    const daysRemaining = periodEnd 
+      ? Math.max(0, Math.ceil((periodEnd * 1000 - now.getTime()) / (1000 * 60 * 60 * 24)))
+      : 0;
+    
+    return {
+      hasSubscription: hasSubscriptionId,
+      isCurrentlyActive,
+      isCanceledButActive,
+      status,
+      planType: userData.subscriptionPlanType,
+      daysRemaining,
+      periodEndDate: periodEnd ? new Date(periodEnd * 1000) : null,
+      cancelDate: userData.subscriptionCancelAt ? new Date(userData.subscriptionCancelAt * 1000) : null,
+      canReactivate: isCanceledButActive,
+      needsUpgrade: !isCurrentlyActive
+    };
+  };
+
+const reactivateSubscription = async (): Promise<{
+  success: boolean;
+  status: string;
+  message: string;
+}> => {
+  try {
+    if (!userData.userId || !userData.subscriptionId) {
+      throw new Error("No subscription to reactivate");
+    }
+
+    console.log('🔄 Reactivating subscription...');
+    
+    const reactivateFunction = FUNCTIONS.httpsCallable<any, { status?: string; message?: string }>('reactivateSubscription');
+    const result = await reactivateFunction();
+    
+    // Update local state
+    await updateUserData({
+      subscriptionCancelAt: null, // Remove cancellation
+      subscriptionUpdatedAt: new Date()
+    });
+    
+    console.log('✅ Subscription reactivated successfully');
+    
+    // Return properly typed response
+    return {
+      success: true,
+      status: result.data?.status || 'active',
+      message: result.data?.message || 'Subscription reactivated successfully'
+    };
+  } catch (error: any) {
+    console.error('❌ Error reactivating subscription:', error);
+    
+    // Return error response with proper typing
+    return {
+      success: false,
+      status: 'error',
+      message: error.message || 'Reactivation failed'
+    };
+  }
+};
+
+  // 💳 Purchase Radiance Boosts
   const purchaseRadiance = async (boostCount: number) => {
     try {
       if (!userData.userId) {
@@ -3333,19 +3647,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const createPaymentFunction = FUNCTIONS.httpsCallable('createRadiancePayment');
       const result = await createPaymentFunction({ boostCount });
       
-      interface PaymentIntent {
-        clientSecret: string;
-        paymentIntentId: string;
-      }
+      const { clientSecret, paymentIntentId, amount } = result.data as PaymentIntent;
       
-      const { clientSecret, paymentIntentId } = result.data as PaymentIntent;
-      
-      console.log(`Payment intent created: ${paymentIntentId}`);
+      console.log(`Payment intent created: ${paymentIntentId} for $${amount / 100}`);
       
       return { clientSecret, paymentIntentId };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create radiance payment:", error);
-      throw error;
+      throw new Error(`Payment creation failed: ${error.message}`);
     }
   };
 
@@ -3356,42 +3665,49 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error("User ID is required");
       }
 
-      console.log(`Confirming payment: ${paymentIntentId}`);
+      console.log(`🔄 Confirming payment: ${paymentIntentId}`);
+      console.log(`👤 User ID: ${userData.userId}`);
       
       const confirmPaymentFunction = FUNCTIONS.httpsCallable('confirmRadiancePayment');
+      
+      console.log('📞 Calling confirmRadiancePayment function...');
       const result = await confirmPaymentFunction({ paymentIntentId });
       
-      interface PaymentResult {
-        boostCount: number;
-        totalPrice: number;
-        transactionId: string;
+      console.log('✅ Function call successful:', result);
+      
+      const { success, boostCount, totalPrice, transactionId } = result.data as PaymentResult;
+      
+      if (success) {
+        // Update local state with new boost count
+        const purchase: BoostPurchase = {
+          boostCount,
+          totalPrice,
+          purchaseDate: new Date(),
+          transactionId,
+          stripePaymentIntentId: paymentIntentId,
+          status: 'succeeded'
+        };
+        
+        setUserData(prevData => ({
+          ...prevData,
+          activeBoosts: (prevData.activeBoosts || 0) + boostCount,
+          boostPurchases: [
+            ...(prevData.boostPurchases || []),
+            purchase
+          ]
+        }));
+        
+        console.log(`✅ Successfully confirmed purchase of ${boostCount} boosts`);
+        return { success: true, boostCount, totalPrice };
+      } else {
+        throw new Error('Payment confirmation failed');
       }
-      
-      const { boostCount, totalPrice, transactionId } = result.data as PaymentResult;
-      
-      // Update local state
-      const purchase: BoostPurchase = {
-        boostCount,
-        totalPrice,
-        purchaseDate: firestore.FieldValue.serverTimestamp(),
-        transactionId,
-        stripePaymentIntentId: paymentIntentId,
-        status: 'succeeded'
-      };
-      
-      setUserData(prevData => ({
-        ...prevData,
-        activeBoosts: (prevData.activeBoosts || 0) + boostCount,
-        boostPurchases: [
-          ...(prevData.boostPurchases || []),
-          purchase
-        ]
-      }));
-      
-      console.log(`Successfully confirmed purchase of ${boostCount} boosts`);
-    } catch (error) {
-      console.error("Failed to confirm radiance payment:", error);
-      throw error;
+    } catch (error: any) {
+      console.error("❌ Failed to confirm radiance payment:", error);
+      console.error("❌ Error code:", error.code);
+      console.error("❌ Error message:", error.message);
+      console.error("❌ Error details:", error.details);
+      throw new Error(`Payment confirmation failed: ${error.message}`);
     }
   };
 
@@ -3437,22 +3753,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }
   };
 
-  const testDirectConnection = async () => {
-  try {
-    console.log('Testing direct Firebase Functions connection...');
-    
-    const directFunctions = FUNCTIONS;
-    const testFunction = directFunctions.httpsCallable('testStripe');
-    const result = await testFunction();
-    
-    console.log('✅ Direct connection worked:', result.data);
-    return result.data;
-  } catch (error) {
-    console.error('❌ Direct connection failed:', error);
-    throw error;
-  }
-};
-
   const createRadiancePaymentIntent = async (boostCount: number) => {
     try {
       console.log(`🚀 Creating payment intent for ${boostCount} boosts...`);
@@ -3471,62 +3771,46 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   
   const activateRadiance = async () => {
     try {
-      if (!userData.userId) {
-        throw new Error("User ID is required");
+      if (!userData.userId || !userData.activeBoosts || userData.activeBoosts <= 0) {
+        throw new Error("No boosts available to activate");
       }
 
-      if ((userData.activeBoosts || 0) < 1) {
-        throw new Error("No Sacred Radiance boosts available");
-      }
+      // Calculate expiration time (24 hours from now)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
 
-      const userRef = FIRESTORE.collection("users").doc(userData.userId);
-      const boostDuration = 60 * 60 * 1000; // 1 hour in milliseconds
-      const expiresAt = new Date(Date.now() + boostDuration);
-
-      await FIRESTORE.runTransaction(async (transaction) => {
-        const userSnap = await transaction.get(userRef);
-        const currentData = userSnap.data() as UserDataType;
-        
-        transaction.update(userRef, {
-          activeBoosts: Math.max(0, (currentData.activeBoosts || 1) - 1),
-          boostExpiresAt: firestore.Timestamp.fromDate(expiresAt),
-          lastActive: firestore.FieldValue.serverTimestamp() // 🔥 Update for priority matching
-        });
+      // Update Firestore
+      await FIRESTORE.collection('users').doc(userData.userId).update({
+        boostExpiresAt: firestore.FieldValue.serverTimestamp(),
+        activeBoosts: userData.activeBoosts - 1,
       });
 
       // Update local state
       setUserData(prevData => ({
         ...prevData,
-        activeBoosts: Math.max(0, (prevData.activeBoosts || 1) - 1),
-        boostExpiresAt: firestore.Timestamp.fromDate(expiresAt),
-        lastActive: firestore.FieldValue.serverTimestamp() // 🔥 NEW: Update local lastActive
+        boostExpiresAt: expiresAt, // Set local expiration
+        activeBoosts: (prevData.activeBoosts || 1) - 1,
       }));
 
-      // 🔥 NEW: Trigger a refresh so others see this user prioritized
-      console.log("🚀 Sacred Radiance activated - triggering match refresh for better visibility");
-      
-      // Optional: Reset matching to get fresh prioritized batch
-      setTimeout(async () => {
-        console.log("🚀 Refreshing matches with boost priority...");
-        await resetMatching();
-      }, 1000);
-
-      console.log("🚀 Sacred Radiance activated for 1 hour with priority matching!");
-    } catch (error) {
-      console.error("Failed to activate Sacred Radiance:", error);
+      console.log('✨ Radiance activated successfully!');
+    } catch (error: any) {
+      console.error("Failed to activate radiance:", error);
       throw error;
     }
   };
 
-  const hasActiveRadiance = useCallback((userData: UserDataType): boolean => {
-    if (!userData.boostExpiresAt) return false;
+  const hasActiveRadiance = (userData: UserDataType): boolean => {
+    // Silent check - no console.log
+    if (!userData.boostExpiresAt) {
+      return false;
+    }
     
     const expiresAt = userData.boostExpiresAt.toDate 
       ? userData.boostExpiresAt.toDate()
       : new Date(userData.boostExpiresAt);
     
     return new Date() < expiresAt;
-  }, []);
+  };
 
   const getRadianceStatus = useCallback(() => {
     const timeRemaining = getRadianceTimeRemaining ? getRadianceTimeRemaining() : 0;
@@ -3600,6 +3884,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     getRemainingDailyLikes,
     DAILY_LIKE_LIMIT,
     createSubscription,
+    confirmSubscription,
+    activateSubscription,
+    getDetailedSubscriptionStatus,
+    reactivateSubscription,
     cancelSubscription,
     getSubscriptionStatus,
     purchaseRadiance,
