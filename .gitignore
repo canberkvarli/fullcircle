@@ -52,9 +52,12 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+.env.local
+functions/firebase-debug.log
 
 # typescript
 *.tsbuildinfo
 
 expo-env.d.ts
 # @end expo-clifunctions/firebase-debug.log
+
