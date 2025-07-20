@@ -3594,46 +3594,46 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   };
 
-const reactivateSubscription = async (): Promise<{
-  success: boolean;
-  status: string;
-  message: string;
-}> => {
-  try {
-    if (!userData.userId || !userData.subscriptionId) {
-      throw new Error("No subscription to reactivate");
-    }
+  const reactivateSubscription = async (): Promise<{
+    success: boolean;
+    status: string;
+    message: string;
+  }> => {
+    try {
+      if (!userData.userId || !userData.subscriptionId) {
+        throw new Error("No subscription to reactivate");
+      }
 
-    console.log('🔄 Reactivating subscription...');
-    
-    const reactivateFunction = FUNCTIONS.httpsCallable<any, { status?: string; message?: string }>('reactivateSubscription');
-    const result = await reactivateFunction();
-    
-    // Update local state
-    await updateUserData({
-      subscriptionCancelAt: null, // Remove cancellation
-      subscriptionUpdatedAt: new Date()
-    });
-    
-    console.log('✅ Subscription reactivated successfully');
-    
-    // Return properly typed response
-    return {
-      success: true,
-      status: result.data?.status || 'active',
-      message: result.data?.message || 'Subscription reactivated successfully'
-    };
-  } catch (error: any) {
-    console.error('❌ Error reactivating subscription:', error);
-    
-    // Return error response with proper typing
-    return {
-      success: false,
-      status: 'error',
-      message: error.message || 'Reactivation failed'
-    };
-  }
-};
+      console.log('🔄 Reactivating subscription...');
+      
+      const reactivateFunction = FUNCTIONS.httpsCallable<any, { status?: string; message?: string }>('reactivateSubscription');
+      const result = await reactivateFunction();
+      
+      // Update local state
+      await updateUserData({
+        subscriptionCancelAt: null, // Remove cancellation
+        subscriptionUpdatedAt: new Date()
+      });
+      
+      console.log('✅ Subscription reactivated successfully');
+      
+      // Return properly typed response
+      return {
+        success: true,
+        status: result.data?.status || 'active',
+        message: result.data?.message || 'Subscription reactivated successfully'
+      };
+    } catch (error: any) {
+      console.error('❌ Error reactivating subscription:', error);
+      
+      // Return error response with proper typing
+      return {
+        success: false,
+        status: 'error',
+        message: error.message || 'Reactivation failed'
+      };
+    }
+  };
 
   // 💳 Purchase Radiance Boosts
   const purchaseRadiance = async (boostCount: number) => {

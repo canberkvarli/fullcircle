@@ -23,7 +23,6 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
 import { FIREBASE_AUTH, FUNCTIONS } from "@/services/FirebaseConfig";
-import StripeTestComponent from "@/components/StripeTestComponent"
 
 export default function UserSettings() {
   const router = useRouter();
@@ -407,7 +406,6 @@ export default function UserSettings() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
-        <StripeTestComponent/>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, fonts.captionFont]}>PROFILE</Text>
           
