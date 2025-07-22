@@ -39,7 +39,7 @@ export default function SacredSelf() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
-  const isFullCircle = userData.fullCircleSubscription;
+  const isFullCircle = userData.subscription?.isActive;
 
   const scrollY = useRef(new Animated.Value(0)).current;
 

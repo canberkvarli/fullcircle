@@ -26,7 +26,7 @@ export default function ConnectingPreferences() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
-  const fullCircleSubscription = userData?.fullCircleSubscription || false;
+  const fullCircleSubscription = userData?.subscription?.isActive || false;
 
   const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
   const isRomantic = connectionIntent === "romantic";

@@ -160,7 +160,7 @@ const KindredSpirits: React.FC = () => {
   }, [likedByUsers, selectedSort]);
 
   const handleCardPress = (user: any, isFirst: boolean) => {
-    if (userData.fullCircleSubscription || isFirst) {
+    if (userData.subscription?.isActive || isFirst) {
       router.navigate({
         pathname: "/user/UserShow" as any,
         params: { user: JSON.stringify(user) },
@@ -171,7 +171,7 @@ const KindredSpirits: React.FC = () => {
   };
 
   const handleSortPress = (sortKey: SortOption) => {
-    if (!userData.fullCircleSubscription && sortKey !== 'recent') {
+    if (!userData.subscription?.isActive && sortKey !== 'recent') {
       router.navigate({ pathname: "/user/FullCircleSubscription" });
       return;
     }
@@ -584,7 +584,7 @@ const KindredSpirits: React.FC = () => {
               </Text>
             </View>
             
-            {!userData.fullCircleSubscription && (
+            {!userData.subscription?.isActive && (
               <TouchableOpacity 
               onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
               style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
@@ -605,7 +605,7 @@ const KindredSpirits: React.FC = () => {
                     <View style={styles.cardContainer}>
                       <UserCard
                         user={user}
-                        isBlurred={!userData.fullCircleSubscription}
+                        isBlurred={!userData.subscription?.isActive}
                         style={styles.smallCard}
                         isOrbLike={user.viaOrb}
                         isRadianceLike={user.viaRadiance}

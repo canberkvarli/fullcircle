@@ -374,9 +374,64 @@ const generateMatchPreferences = (connectionIntent: string) => {
   };
 };
 
+// --- Generate Subscription Data ---
+const generateSubscription = () => {
+  const hasSubscription = faker.datatype.boolean(0.25); // 25% have subscription
+  
+  if (!hasSubscription) {
+    return {
+      isActive: false,
+      stripeCustomerId: undefined,
+      subscriptionId: undefined,
+      status: undefined,
+      planType: undefined,
+      currentPeriodStart: undefined,
+      currentPeriodEnd: undefined,
+      cancelAtPeriodEnd: false,
+      canceledAt: undefined,
+      createdAt: undefined,
+      updatedAt: undefined
+    };
+  }
+
+  const planType = faker.helpers.arrayElement(['monthly', 'yearly']);
+  const subscriptionDate = faker.date.recent({ days: 365 });
+  const currentPeriodStart = Math.floor(subscriptionDate.getTime() / 1000);
+  
+  // Calculate period end based on plan type
+  const periodEndDate = new Date(subscriptionDate);
+  if (planType === 'yearly') {
+    periodEndDate.setFullYear(periodEndDate.getFullYear() + 1);
+  } else {
+    periodEndDate.setMonth(periodEndDate.getMonth() + 1);
+  }
+  const currentPeriodEnd = Math.floor(periodEndDate.getTime() / 1000);
+  
+  const now = Math.floor(Date.now() / 1000);
+  const isActive = currentPeriodEnd > now;
+  const status = isActive ? 'active' : 'canceled';
+  
+  // Some active subscriptions might be set to cancel at period end
+  const cancelAtPeriodEnd = isActive ? faker.datatype.boolean(0.1) : false;
+
+  return {
+    isActive,
+    stripeCustomerId: faker.string.alphanumeric(24), // Mock Stripe customer ID
+    subscriptionId: faker.string.alphanumeric(24), // Mock Stripe subscription ID
+    status,
+    planType,
+    currentPeriodStart,
+    currentPeriodEnd,
+    cancelAtPeriodEnd,
+    canceledAt: status === 'canceled' ? currentPeriodStart + (currentPeriodEnd - currentPeriodStart) * 0.8 : undefined,
+    createdAt: admin.firestore.Timestamp.fromDate(subscriptionDate),
+    updatedAt: admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 30 }))
+  };
+};
+
 // --- Main Seed Function ---
 async function seedFirestore(numUsers: number) {
-  console.group("🔥 Starting Firestore seeding with updated schema");
+  console.group("🔥 Starting Firestore seeding with updated subscription schema");
   console.info(`Target number of users: ${numUsers}`);
 
   const usersCol = db.collection("users");
@@ -476,6 +531,9 @@ async function seedFirestore(numUsers: number) {
     const connectionIntent = faker.helpers.arrayElement(connectionIntents);
     const matchPreferences = generateMatchPreferences(connectionIntent);
 
+    // 💳 Generate subscription data with new structure
+    const subscription = generateSubscription();
+
     // Settings generation
     const settings = {
       isPaused: faker.datatype.boolean(0.05),
@@ -564,8 +622,10 @@ async function seedFirestore(numUsers: number) {
       // 🔮 Spiritual Profile Section
       spiritualProfile,
 
-      // Subscription & Engagement
-      fullCircleSubscription: faker.datatype.boolean(0.25),
+      // 💳 NEW Simplified Subscription Structure
+      subscription,
+
+      // Engagement
       likesGivenCount: 0,
       likesReceivedCount: 0,
       dislikesGivenCount: 0,
@@ -578,6 +638,16 @@ async function seedFirestore(numUsers: number) {
 
       // Match Preferences
       matchPreferences,
+
+      // Boosts & Daily Limits
+      activeBoosts: faker.number.int({ min: 0, max: 10 }),
+      boostExpiresAt: null,
+      boostPurchases: [],
+      dailyLikesCount: faker.number.int({ min: 0, max: 8 }),
+      lastLikeResetDate: admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 1 })),
+      DAILY_LIKE_LIMIT: 8,
+      reportedUsers: [],
+      unmatchedUsers: [],
       
       // Settings
       settings,
@@ -650,14 +720,14 @@ async function seedFirestore(numUsers: number) {
   }
   console.groupEnd();
 
-  console.log("✅ Seed complete: all users with updated schema created!");
+  console.log("✅ Seed complete: all users with updated subscription schema created!");
   console.groupEnd();
 }
 
 // Run the seeding
 seedFirestore(50)
   .then(() => {
-    console.log("🎉 Done seeding Firestore with updated schema.");
+    console.log("🎉 Done seeding Firestore with updated subscription schema.");
     process.exit(0);
   })
   .catch((err) => {

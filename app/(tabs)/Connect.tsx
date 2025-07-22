@@ -80,7 +80,7 @@ const ConnectScreen: React.FC = () => {
   const orbButtonGlow = useRef(new Animated.Value(0)).current;
 
   // Check if user has FullCircle subscription
-  const hasFullCircleSubscription = userData?.fullCircleSubscription || false;
+  const hasFullCircleSubscription = userData?.subscription?.isActive || false;
 
   const userDataRef = useRef(userData);
   const matchingStateRef = useRef(matchingState);

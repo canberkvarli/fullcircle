@@ -61,9 +61,9 @@ export default function FullCircleSubscription() {
     createSubscription, 
     cancelSubscription, 
     getSubscriptionStatus,
+    getSubscriptionDisplayInfo, // 🆕 NEW: Use the new helper function
     updateUserData,
-    reactivateSubscription ,
-    activateSubscription
+    reactivateSubscription,
   } = useUserContext();
   
   const { presentPaymentSheet, initPaymentSheet } = useStripe();
@@ -80,33 +80,9 @@ export default function FullCircleSubscription() {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Fixed subscription status logic
+  // 🔄 UPDATED: Use new helper function for display status
   const getDisplayStatus = () => {
-    const status = userData.subscriptionStatus;
-    const hasSubscription = !!userData.subscriptionId;
-    
-    // Check if subscription is truly active (not canceled)
-    const isActiveSubscription = hasSubscription && status === 'active';
-    
-    // Check if canceled but still has time (would need periodEnd data)
-    const isCanceledButActive = hasSubscription && 
-      status === 'active' && 
-      userData.subscriptionCancelAt && 
-      userData.subscriptionPeriodEnd;
-    
-    // Subscription is completely canceled or doesn't exist
-    const needsNewSubscription = !hasSubscription || 
-      status === 'canceled' || 
-      status === 'past_due' || 
-      status === 'incomplete';
-
-    return {
-      isActiveSubscription,
-      isCanceledButActive,
-      needsNewSubscription,
-      status,
-      hasSubscription
-    };
+    return getSubscriptionDisplayInfo();
   };
 
   const displayStatus = getDisplayStatus();
@@ -184,6 +160,7 @@ export default function FullCircleSubscription() {
     );
   };
 
+  // 🔄 UPDATED: Better handleUpgrade function with proper state updates
   const handleUpgrade = async () => {
     setIsProcessing(true);
     
@@ -249,14 +226,9 @@ export default function FullCircleSubscription() {
           const statusData = await getSubscriptionStatus();
           console.log(`📊 Status check ${attempts + 1}:`, statusData);
           
-          if (statusData.hasSubscription && statusData.status === 'active') {
+          if (statusData.hasSubscription && statusData.isActive) {
             subscriptionActive = true;
             console.log('🎉 Subscription is now active!');
-            break;
-          } else if (statusData.hasSubscription && statusData.status !== 'incomplete') {
-            // Payment succeeded but might still be processing
-            console.log(`⏳ Subscription exists with status: ${statusData.status}`);
-            subscriptionActive = true; // Consider it successful
             break;
           }
           
@@ -272,21 +244,21 @@ export default function FullCircleSubscription() {
       }
 
       // 7. Update local state immediately with successful subscription
-      updateUserData({
-        ...userData,
-        subscriptionId: subscriptionId,
-        subscriptionStatus: 'active',
-        subscriptionPlanType: selectedPlan,
-        fullCircleSubscription: true,
-        subscriptionCreatedAt: new Date(),
+      await updateUserData({
+        subscription: {
+          isActive: true,
+          subscriptionId: subscriptionId,
+          status: 'active' as const,
+          planType: selectedPlan,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
       });
 
       // 8. Show success message
       Alert.alert(
         "🎉 Welcome to FullCircle Premium!",
-        subscriptionActive 
-          ? "Your subscription is now active! Enjoy unlimited connections and premium features!"
-          : "Your payment was successful! Your premium features will be available shortly.",
+        "Your subscription is now active! Enjoy unlimited connections and premium features!",
         [
           { 
             text: "Start Exploring!", 
@@ -313,10 +285,11 @@ export default function FullCircleSubscription() {
     }
   };
 
+  // 🔄 UPDATED: Better cancel subscription with proper state updates
   const handleCancelSubscription = async () => {
     Alert.alert(
       "Cancel Subscription",
-      "Are you sure you want to cancel your FullCircle subscription? You'll lose access to premium features at the end of your current billing period.",
+      "Are you sure you want to cancel your FullCircle subscription? You'll continue to have access to premium features until the end of your current billing period.",
       [
         { text: "Keep Subscription", style: "cancel" },
         { 
@@ -326,11 +299,6 @@ export default function FullCircleSubscription() {
             try {
               setIsProcessing(true);
               await cancelSubscription();
-              
-              await updateUserData({
-                subscriptionStatus: 'canceled',
-                fullCircleSubscription: false
-              });
               
               Alert.alert(
                 "Subscription Canceled",
@@ -410,44 +378,45 @@ export default function FullCircleSubscription() {
           <View style={styles.logoContainer}>
             <Ionicons 
               name={
-                displayStatus.isActiveSubscription 
+                displayStatus.isActive && !displayStatus.canReactivate
                   ? "checkmark-circle"
-                  : displayStatus.isCanceledButActive 
+                  : displayStatus.isActive && displayStatus.canReactivate 
                     ? "warning"
                     : "sparkles"
               } 
               size={32} 
               color={
-                displayStatus.isActiveSubscription 
+                displayStatus.isActive && !displayStatus.canReactivate
                   ? "#4CAF50"
-                  : displayStatus.isCanceledButActive 
+                  : displayStatus.isActive && displayStatus.canReactivate 
                     ? "#FF9500"
                     : colors.primary
               } 
             />
           </View>
+          {/* 🔄 UPDATED: Hero Section text based on new status */}
           <Text style={styles.mainTitle}>
-            {displayStatus.isActiveSubscription 
+            {displayStatus.isActive && !displayStatus.canReactivate
               ? "FullCircle Premium Active"
-              : displayStatus.isCanceledButActive 
+              : displayStatus.isActive && displayStatus.canReactivate 
                 ? "Subscription Ending Soon"
-                : displayStatus.hasSubscription && displayStatus.status === 'canceled'
-                  ? "Subscription Canceled"
+                : displayStatus.hasSubscription
+                  ? "Subscription Inactive"
                   : "Deepen Your Connections"
             }
           </Text>
           <Text style={styles.subtitle}>
-            {displayStatus.isActiveSubscription 
-              ? "You're enjoying unlimited spiritual connections and premium features"
-              : displayStatus.isCanceledButActive 
-                ? "Your premium access is ending soon. Reactivate to continue enjoying unlimited connections."
-                : displayStatus.hasSubscription && displayStatus.status === 'canceled'
-                  ? "Your subscription has been canceled. You can reactivate or start a new subscription below."
+            {displayStatus.isActive && !displayStatus.canReactivate
+              ? `You're enjoying unlimited spiritual connections and premium features. ${displayStatus.timeRemaining ? `${displayStatus.timeRemaining}.` : ''} You can cancel anytime and continue using premium features until the end of your billing period.`
+              : displayStatus.isActive && displayStatus.canReactivate 
+                ? `Your premium access is ending soon (${displayStatus.timeRemaining}). Reactivate to continue enjoying unlimited connections.`
+                : displayStatus.hasSubscription
+                  ? "Your subscription has ended. You can start a new subscription below to regain access to premium features."
                   : "Unlock advanced features designed for meaningful spiritual connections"
             }
           </Text>
 
-          {!displayStatus.isActiveSubscription && !loadingStatus && (
+          {!displayStatus.isActive && !loadingStatus && (
             <TouchableOpacity
               style={styles.restoreButton}
               onPress={loadSubscriptionStatus}
@@ -468,68 +437,91 @@ export default function FullCircleSubscription() {
           )}
         </View>
 
-        {/* Current Subscription Status - Only show if truly active */}
-        {displayStatus.isActiveSubscription && (
+        {/* 🔄 UPDATED: Current Subscription Status - Enhanced */}
+        {displayStatus.hasSubscription && displayStatus.isActive && (
           <View style={styles.currentSubscriptionSection}>
             <View style={[styles.subscriptionCard, { 
-              backgroundColor: colors.primary + '10', 
-              borderColor: colors.primary 
+              backgroundColor: displayStatus.canReactivate ? '#FF9500' + '10' : colors.primary + '10', 
+              borderColor: displayStatus.canReactivate ? '#FF9500' : colors.primary 
             }]}>
               <View style={styles.subscriptionHeader}>
-                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                <Text style={[styles.subscriptionTitle, { color: colors.primary }]}>
-                  FullCircle Active
+                <Ionicons 
+                  name={displayStatus.canReactivate ? "warning" : "checkmark-circle"} 
+                  size={24} 
+                  color={displayStatus.canReactivate ? '#FF9500' : colors.primary} 
+                />
+                <Text style={[styles.subscriptionTitle, { 
+                  color: displayStatus.canReactivate ? '#FF9500' : colors.primary 
+                }]}>
+                  {displayStatus.displayText}
                 </Text>
               </View>
+              
               <Text style={[styles.subscriptionPlan, { color: colors.textDark }]}>
-                {userData.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
-              </Text>
-              <Text style={[styles.subscriptionDetails, { color: colors.textLight }]}>
-                Your premium subscription is active
+                {displayStatus.planType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
               </Text>
               
-              <TouchableOpacity
-                style={[styles.cancelButton, { borderColor: colors.textMuted }]}
-                onPress={handleCancelSubscription}
-                disabled={isProcessing}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>
-                  Cancel Subscription
-                </Text>
-              </TouchableOpacity>
+              {/* 🆕 NEW: Time Remaining Display */}
+              {displayStatus.timeRemaining && (
+                <View style={styles.timeRemainingContainer}>
+                  <Ionicons name="time-outline" size={16} color={colors.textMuted} />
+                  <Text style={[styles.timeRemainingText, { color: colors.textMuted }]}>
+                    {displayStatus.timeRemaining}
+                  </Text>
+                </View>
+              )}
+              
+              <Text style={[styles.subscriptionDetails, { color: colors.textLight }]}>
+                {displayStatus.canReactivate 
+                  ? "Your subscription will end soon. You can reactivate to continue enjoying premium features, or let it expire and still use features until the end of your billing period."
+                  : "Your premium subscription is active. You can cancel anytime and continue using premium features until the end of your billing period."
+                }
+              </Text>
+              
+              {displayStatus.canReactivate ? (
+                <TouchableOpacity
+                  style={[styles.reactivateButton, { backgroundColor: '#FF9500' }]}
+                  onPress={handleReactivate}
+                  disabled={isProcessing}
+                >
+                  <Text style={styles.reactivateButtonText}>
+                    {isProcessing ? 'Reactivating...' : 'Reactivate Subscription'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.cancelButton, { borderColor: colors.textMuted }]}
+                  onPress={handleCancelSubscription}
+                  disabled={isProcessing}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.textMuted }]}>
+                    Cancel Subscription
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
 
-        {/* Canceled Subscription Section */}
-        {displayStatus.hasSubscription && displayStatus.status === 'canceled' && (
+        {/* 🔄 UPDATED: Canceled Subscription Section */}
+        {displayStatus.hasSubscription && !displayStatus.isActive && (
           <View style={styles.currentSubscriptionSection}>
             <View style={[styles.subscriptionCard, { 
-              backgroundColor: '#FF9500' + '10', 
-              borderColor: '#FF9500' 
+              backgroundColor: '#6B7280' + '10', 
+              borderColor: '#6B7280' 
             }]}>
               <View style={styles.subscriptionHeader}>
-                <Ionicons name="information-circle" size={24} color="#FF9500" />
-                <Text style={[styles.subscriptionTitle, { color: '#FF9500' }]}>
-                  Subscription Canceled
+                <Ionicons name="information-circle" size={24} color="#6B7280" />
+                <Text style={[styles.subscriptionTitle, { color: '#6B7280' }]}>
+                  {displayStatus.displayText}
                 </Text>
               </View>
               <Text style={[styles.subscriptionPlan, { color: colors.textDark }]}>
-                Previous: {userData.subscriptionPlanType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
+                Previous: {displayStatus.planType === 'yearly' ? 'Yearly Plan' : 'Monthly Plan'}
               </Text>
               <Text style={[styles.subscriptionDetails, { color: colors.textLight }]}>
-                You can reactivate your previous subscription or start a new one below
+                You can start a new subscription below to regain access to premium features
               </Text>
-              
-              <TouchableOpacity
-                style={[styles.reactivateButton, { backgroundColor: '#FF9500' }]}
-                onPress={handleReactivate}
-                disabled={isProcessing}
-              >
-                <Text style={[styles.reactivateButtonText]}>
-                  {isProcessing ? 'Reactivating...' : 'Reactivate Previous Subscription'}
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -551,7 +543,7 @@ export default function FullCircleSubscription() {
         </View>
 
         {/* Pricing Section - Show if needs new subscription */}
-        {displayStatus.needsNewSubscription && (
+        {!displayStatus.isActive && (
           <>
             <View style={styles.pricingSection}>
               <Text style={styles.sectionTitle}>
@@ -815,6 +807,22 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       fontSize: Typography.sizes.sm,
       textAlign: 'center',
       marginBottom: Spacing.lg,
+    },
+    // 🆕 NEW: Time remaining display styles
+    timeRemainingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      marginBottom: Spacing.sm,
+      backgroundColor: colors.background,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      borderRadius: BorderRadius.md,
+    },
+    timeRemainingText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      fontWeight: Typography.weights.medium,
     },
     cancelButton: {
       borderWidth: 1,

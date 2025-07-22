@@ -577,7 +577,7 @@ export default function UserSettings() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, fonts.captionFont]}>SUBSCRIPTION</Text>
           
-          {userData.fullCircleSubscription ? (
+          {userData.subscription?.isActive ? (
             <View style={[styles.row, styles.goldSubscriptionRow]}>
               <View style={styles.rowContent}>
                 <Text style={[styles.rowTitle, fonts.spiritualBodyFont, styles.goldText]}>
