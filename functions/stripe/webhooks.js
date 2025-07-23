@@ -30,19 +30,29 @@ const handleStripeWebhook = functions.https.onRequest(async (req, res) => {
         break;
       
       case 'invoice.payment_succeeded':
+        console.log('🎉 Invoice payment succeeded - updating subscription status');
         await handleSubscriptionPayment(event.data.object);
         break;
       
       case 'customer.subscription.updated':
+        console.log('🔄 Subscription updated via webhook');
         await handleSubscriptionUpdated(event.data.object);
         break;
       
       case 'customer.subscription.deleted':
+        console.log('❌ Subscription deleted via webhook');
         await handleSubscriptionDeleted(event.data.object);
         break;
       
       case 'customer.subscription.created':
+        console.log('🆕 Subscription created via webhook');
         await handleSubscriptionCreated(event.data.object);
+        break;
+
+      // ✅ NEW: Handle invoice.payment_failed for failed renewals
+      case 'invoice.payment_failed':
+        console.log('💥 Invoice payment failed');
+        await handleSubscriptionPaymentFailed(event.data.object);
         break;
       
       default:
@@ -68,15 +78,25 @@ async function handlePaymentSucceeded(paymentIntent) {
   }
 
   console.log(`Payment succeeded for user ${userId}: ${paymentIntent.id}`);
+  
+  // Handle radiance boost purchases
+  if (paymentIntent.metadata.type === 'radiance_boost') {
+    const boostCount = parseInt(paymentIntent.metadata.boostCount || '0');
+    if (boostCount > 0) {
+      await handleRadiancePurchase(userId, boostCount, paymentIntent);
+    }
+  }
 }
 
 /**
- * Handle successful subscription payment - ONLY use subscription object
+ * ✅ FIXED: Handle successful subscription payment - ONLY use subscription object
  */
 async function handleSubscriptionPayment(invoice) {
   const customerId = invoice.customer;
   
   try {
+    console.log(`📋 Processing subscription payment for customer: ${customerId}`);
+    
     // Get customer to find Firebase user
     const customer = await stripe.customers.retrieve(customerId);
     const userId = customer.metadata.firebaseUID;
@@ -88,8 +108,10 @@ async function handleSubscriptionPayment(invoice) {
 
     // Get subscription details
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+    console.log(`📊 Subscription status from Stripe: ${subscription.status}`);
     
-    await updateUserSubscriptionData(userId, subscription);
+    // ✅ KEY FIX: Force update to active when payment succeeds
+    await updateUserSubscriptionData(userId, subscription, true); // Force active
 
     console.log(`✅ Subscription payment succeeded for user ${userId} - Status: ${subscription.status}`);
   } catch (error) {
@@ -115,10 +137,8 @@ async function handleSubscriptionCreated(subscription) {
 
     console.log(`🆕 Subscription created for user ${userId}: ${subscription.id} (status: ${subscription.status})`);
 
-    // If subscription is active, update user data
-    if (subscription.status === 'active') {
-      await updateUserSubscriptionData(userId, subscription);
-    }
+    // Update user data regardless of status
+    await updateUserSubscriptionData(userId, subscription);
   } catch (error) {
     console.error('Error handling subscription creation:', error);
   }
@@ -189,18 +209,59 @@ async function handleSubscriptionDeleted(subscription) {
 }
 
 /**
- * HELPER: Update user subscription data consistently - ONLY use subscription object
+ * ✅ NEW: Handle failed subscription payments
  */
-async function updateUserSubscriptionData(userId, subscription) {
+async function handleSubscriptionPaymentFailed(invoice) {
+  const customerId = invoice.customer;
+  
   try {
-    // Determine if subscription is active
+    const customer = await stripe.customers.retrieve(customerId);
+    const userId = customer.metadata.firebaseUID;
+    
+    if (!userId) {
+      console.error('No Firebase UID found in customer metadata');
+      return;
+    }
+
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+    console.log(`💥 Payment failed for user ${userId} - subscription status: ${subscription.status}`);
+    
+    // Update subscription status to reflect payment failure
+    await updateUserSubscriptionData(userId, subscription);
+  } catch (error) {
+    console.error('Error handling subscription payment failure:', error);
+  }
+}
+
+/**
+ * ✅ FIXED: Update user subscription data consistently - ONLY use subscription object
+ */
+async function updateUserSubscriptionData(userId, subscription, forceActive = false) {
+  try {
     const now = Math.floor(Date.now() / 1000);
-    const isActive = subscription.status === 'active' && 
-                    subscription.current_period_end && 
-                    subscription.current_period_end > now;
+    
+    // ✅ KEY FIX: Determine if subscription should be active
+    let isActive = false;
+    
+    if (forceActive) {
+      // When called from invoice.payment_succeeded, force active regardless of Stripe status
+      isActive = true;
+      console.log('🔥 Forcing subscription to active due to successful payment');
+    } else {
+      // Normal logic: active if status is active and period hasn't ended
+      isActive = subscription.status === 'active' && 
+                subscription.current_period_end && 
+                subscription.current_period_end > now;
+    }
+
+    // ✅ SPECIAL CASE: If status is incomplete but we have a successful payment, treat as active
+    if (subscription.status === 'incomplete' && forceActive) {
+      console.log('🎯 Converting incomplete subscription to active due to successful payment');
+      isActive = true;
+    }
 
     // Get plan type
-    let planType = 'yearly'; // default
+    let planType = 'monthly'; // default
     if (subscription.items && subscription.items.data.length > 0) {
       const price = subscription.items.data[0].price;
       if (price.recurring) {
@@ -215,9 +276,9 @@ async function updateUserSubscriptionData(userId, subscription) {
 
     // Build the subscription object update
     const subscriptionUpdate = {
-      isActive: isActive,
+      isActive: isActive, // ✅ Use our improved logic
       subscriptionId: subscription.id,
-      status: subscription.status,
+      status: forceActive && subscription.status === 'incomplete' ? 'active' : subscription.status, // ✅ Override incomplete status
       planType: planType,
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -243,6 +304,14 @@ async function updateUserSubscriptionData(userId, subscription) {
       subscriptionUpdate.createdAt = admin.firestore.FieldValue.serverTimestamp();
     }
 
+    // Handle canceledAt properly
+    if (subscription.cancel_at_period_end && subscription.cancel_at) {
+      subscriptionUpdate.canceledAt = subscription.cancel_at;
+    } else if (!subscription.cancel_at_period_end) {
+      // Remove canceledAt if subscription is no longer being canceled
+      subscriptionUpdate.canceledAt = admin.firestore.FieldValue.delete();
+    }
+
     // Update ONLY the subscription object
     const updateData = {
       subscription: subscriptionUpdate
@@ -250,10 +319,41 @@ async function updateUserSubscriptionData(userId, subscription) {
 
     await db.collection('users').doc(userId).update(updateData);
     
-    console.log(`✅ User ${userId} subscription updated: ${subscription.status} (active: ${isActive})`);
+    console.log(`✅ User ${userId} subscription updated: ${subscriptionUpdate.status} (active: ${isActive})`);
+    console.log(`📊 Subscription data:`, JSON.stringify(subscriptionUpdate, null, 2));
   } catch (error) {
     console.error('Error updating user subscription data:', error);
     throw error;
+  }
+}
+
+/**
+ * ✅ NEW: Handle radiance boost purchases
+ */
+async function handleRadiancePurchase(userId, boostCount, paymentIntent) {
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
+    const purchase = {
+      boostCount: boostCount,
+      totalPrice: paymentIntent.amount / 100, // Convert from cents
+      purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
+      transactionId: paymentIntent.id,
+      stripePaymentIntentId: paymentIntent.id,
+      status: 'succeeded'
+    };
+
+    const updateData = {
+      activeBoosts: (userData.activeBoosts || 0) + boostCount,
+      boostPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+    };
+
+    await db.collection('users').doc(userId).update(updateData);
+    
+    console.log(`✅ Added ${boostCount} radiance boosts to user ${userId}`);
+  } catch (error) {
+    console.error('Error handling radiance purchase:', error);
   }
 }
 

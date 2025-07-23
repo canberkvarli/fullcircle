@@ -78,7 +78,7 @@ export type UserDataType = {
     currentPeriodStart?: number; // Unix timestamp
     currentPeriodEnd?: number; // Unix timestamp
     cancelAtPeriodEnd?: boolean;
-    canceledAt?: number; // Unix timestamp
+    canceledAt?: any; // Unix timestamp
     createdAt?: any;
     updatedAt?: any;
   };
@@ -3339,8 +3339,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const periodEnd = subscriptionData.currentPeriodEnd ? subscriptionData.currentPeriodEnd * 1000 : null;
       const daysRemaining = periodEnd ? Math.max(0, Math.ceil((periodEnd - now) / (1000 * 60 * 60 * 24))) : 0;
       
-      // 🔧 FIX: Use the Cloud Function's isActive value directly - DON'T override it!
-      const isActive = subscriptionData.isActive; // Trust the Cloud Function
+      // Use the Cloud Function's isActive value directly
+      const isActive = subscriptionData.isActive;
       
       const canReactivate = subscriptionData.hasSubscription && 
                           subscriptionData.status === 'active' && 
@@ -3354,7 +3354,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           status: subscriptionData.status,
           planType: subscriptionData.planType,
           cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
-          updatedAt: new Date()
+          updatedAt: new Date() // ✅ Fix: Always use Date object for consistency
         };
 
         // Only add fields that have values
@@ -3367,8 +3367,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         if (subscriptionData.currentPeriodEnd) {
           subscriptionUpdate.currentPeriodEnd = subscriptionData.currentPeriodEnd;
         }
+        // ✅ Fix: Convert canceledAt timestamp to Date object for consistency
         if (subscriptionData.canceledAt) {
-          subscriptionUpdate.canceledAt = subscriptionData.canceledAt;
+          subscriptionUpdate.canceledAt = new Date(subscriptionData.canceledAt * 1000);
         }
 
         // Preserve existing createdAt
@@ -3387,7 +3388,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       return {
         hasSubscription: subscriptionData.hasSubscription,
-        isActive: subscriptionData.isActive, // Use Cloud Function's value
+        isActive: subscriptionData.isActive,
         status: subscriptionData.status,
         planType: subscriptionData.planType,
         currentPeriodStart: subscriptionData.currentPeriodStart,
@@ -3421,6 +3422,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     }
   };
+
 
 // 5. UPDATED: Simplified reactivateSubscription  
   const reactivateSubscription = async (): Promise<ReactivateResponse> => {
@@ -3476,7 +3478,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // 6. UPDATED: Simplified cancelSubscription
+  // ✅ UPDATED: Simplified cancelSubscription with timestamp fix
   const cancelSubscription = async () => {
     try {
       if (!userData.userId) {
@@ -3490,15 +3492,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       const { status, cancelAt } = result.data as CancelResponse;
       
-      // Update ONLY the subscription object
+      // ✅ Fix: Convert cancelAt timestamp to Date object for consistency
       if (userData.subscription?.subscriptionId) {
         await updateUserData({
           subscription: {
             ...userData.subscription,
             cancelAtPeriodEnd: true,
-            canceledAt: cancelAt,
+            canceledAt: new Date(cancelAt * 1000), // Convert timestamp to Date object
             status: status as any,
-            updatedAt: new Date()
+            updatedAt: new Date() // Use Date object for consistency
           }
         });
       }
@@ -3511,6 +3513,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       throw new Error(`Subscription cancellation failed: ${error.message}`);
     }
   };
+
 
   const getSubscriptionInfo = (userData: UserDataType) => {
     const subscription = userData.subscription;
