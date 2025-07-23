@@ -62,12 +62,6 @@ export default function RootLayout() {
     
     const publishableKey = envKey || extraKey || pluginKey;
     
-    console.log('🔑 Environment key:', !!envKey ? 'Found' : 'Not found');
-    console.log('🔑 Extra key:', !!extraKey ? 'Found' : 'Not found');
-    console.log('🔑 Plugin key:', !!pluginKey ? 'Found' : 'Not found');
-    console.log('🔑 Final key exists:', !!publishableKey);
-    console.log('🔑 Key preview:', publishableKey?.substring(0, 20) + '...');
-    
     return publishableKey;
   };
 

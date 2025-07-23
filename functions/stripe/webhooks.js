@@ -41,6 +41,10 @@ const handleStripeWebhook = functions.https.onRequest(async (req, res) => {
         await handleSubscriptionDeleted(event.data.object);
         break;
       
+      case 'customer.subscription.created':
+        await handleSubscriptionCreated(event.data.object);
+        break;
+      
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
@@ -63,13 +67,11 @@ async function handlePaymentSucceeded(paymentIntent) {
     return;
   }
 
-  // For radiance boosts, the confirmation is handled in the client app
-  // This webhook can be used for additional processing like analytics
   console.log(`Payment succeeded for user ${userId}: ${paymentIntent.id}`);
 }
 
 /**
- * Handle successful subscription payment
+ * Handle successful subscription payment - ONLY use subscription object
  */
 async function handleSubscriptionPayment(invoice) {
   const customerId = invoice.customer;
@@ -84,17 +86,41 @@ async function handleSubscriptionPayment(invoice) {
       return;
     }
 
-    // Update user's subscription status
-    await db.collection('users').doc(userId).update({
-      subscriptionStatus: 'active',
-      fullCircleSubscription: true,
-      lastPaymentDate: admin.firestore.FieldValue.serverTimestamp(),
-      subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    // Get subscription details
+    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+    
+    await updateUserSubscriptionData(userId, subscription);
 
-    console.log(`Subscription payment succeeded for user ${userId}`);
+    console.log(`✅ Subscription payment succeeded for user ${userId} - Status: ${subscription.status}`);
   } catch (error) {
     console.error('Error handling subscription payment:', error);
+  }
+}
+
+/**
+ * Handle subscription creation
+ */
+async function handleSubscriptionCreated(subscription) {
+  const customerId = subscription.customer;
+  
+  try {
+    // Get customer to find Firebase user
+    const customer = await stripe.customers.retrieve(customerId);
+    const userId = customer.metadata.firebaseUID;
+    
+    if (!userId) {
+      console.error('No Firebase UID found in customer metadata');
+      return;
+    }
+
+    console.log(`🆕 Subscription created for user ${userId}: ${subscription.id} (status: ${subscription.status})`);
+
+    // If subscription is active, update user data
+    if (subscription.status === 'active') {
+      await updateUserSubscriptionData(userId, subscription);
+    }
+  } catch (error) {
+    console.error('Error handling subscription creation:', error);
   }
 }
 
@@ -114,15 +140,9 @@ async function handleSubscriptionUpdated(subscription) {
       return;
     }
 
-    // Update user's subscription status
-    await db.collection('users').doc(userId).update({
-      subscriptionStatus: subscription.status,
-      subscriptionPeriodEnd: subscription.current_period_end,
-      fullCircleSubscription: subscription.status === 'active',
-      subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log(`Subscription updated for user ${userId}: ${subscription.status}`);
+    console.log(`🔄 Subscription updated for user ${userId}: ${subscription.status}`);
+    
+    await updateUserSubscriptionData(userId, subscription);
   } catch (error) {
     console.error('Error handling subscription update:', error);
   }
@@ -144,16 +164,96 @@ async function handleSubscriptionDeleted(subscription) {
       return;
     }
 
-    // Update user's subscription status
-    await db.collection('users').doc(userId).update({
-      subscriptionStatus: 'canceled',
-      fullCircleSubscription: false,
-      subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    // Get current user data to preserve existing subscription info
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const currentSubscription = userData.subscription || {};
 
-    console.log(`Subscription canceled for user ${userId}`);
+    // Update ONLY the subscription object with canceled status
+    const updateData = {
+      subscription: {
+        ...currentSubscription,
+        isActive: false,
+        status: 'canceled',
+        cancelAtPeriodEnd: false,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }
+    };
+
+    await db.collection('users').doc(userId).update(updateData);
+
+    console.log(`❌ Subscription canceled for user ${userId}`);
   } catch (error) {
     console.error('Error handling subscription deletion:', error);
+  }
+}
+
+/**
+ * HELPER: Update user subscription data consistently - ONLY use subscription object
+ */
+async function updateUserSubscriptionData(userId, subscription) {
+  try {
+    // Determine if subscription is active
+    const now = Math.floor(Date.now() / 1000);
+    const isActive = subscription.status === 'active' && 
+                    subscription.current_period_end && 
+                    subscription.current_period_end > now;
+
+    // Get plan type
+    let planType = 'yearly'; // default
+    if (subscription.items && subscription.items.data.length > 0) {
+      const price = subscription.items.data[0].price;
+      if (price.recurring) {
+        planType = price.recurring.interval === 'year' ? 'yearly' : 'monthly';
+      }
+    }
+
+    // Get current user data to preserve other subscription fields
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const currentSubscription = userData.subscription || {};
+
+    // Build the subscription object update
+    const subscriptionUpdate = {
+      isActive: isActive,
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      planType: planType,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Add periods if they exist
+    if (subscription.current_period_start) {
+      subscriptionUpdate.currentPeriodStart = subscription.current_period_start;
+    }
+    if (subscription.current_period_end) {
+      subscriptionUpdate.currentPeriodEnd = subscription.current_period_end;
+    }
+
+    // Preserve stripeCustomerId if it exists
+    if (currentSubscription.stripeCustomerId) {
+      subscriptionUpdate.stripeCustomerId = currentSubscription.stripeCustomerId;
+    }
+
+    // Preserve createdAt if it exists, otherwise set it
+    if (currentSubscription.createdAt) {
+      subscriptionUpdate.createdAt = currentSubscription.createdAt;
+    } else {
+      subscriptionUpdate.createdAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    // Update ONLY the subscription object
+    const updateData = {
+      subscription: subscriptionUpdate
+    };
+
+    await db.collection('users').doc(userId).update(updateData);
+    
+    console.log(`✅ User ${userId} subscription updated: ${subscription.status} (active: ${isActive})`);
+  } catch (error) {
+    console.error('Error updating user subscription data:', error);
+    throw error;
   }
 }
 

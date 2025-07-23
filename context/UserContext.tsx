@@ -69,7 +69,6 @@ export type UserDataType = {
     healingModalities?: string[];
   };
   
-  // 💳 SIMPLIFIED Subscription Fields
   subscription?: {
     isActive: boolean; // True when user is receiving premium benefits
     stripeCustomerId?: string;
@@ -146,16 +145,6 @@ interface PaymentResult {
   transactionId: string;
 }
 
-type SubscriptionDisplayInfo = {
-  hasSubscription: boolean;
-  displayText: string;
-  timeRemaining: string | null;
-  canReactivate: boolean;
-  isActive: boolean;
-  planType?: 'monthly' | 'yearly';
-  daysRemaining?: number;
-};
-
 type SubscriptionStatus = {
   hasSubscription: boolean;
   isActive: boolean; // Currently receiving benefits
@@ -166,7 +155,19 @@ type SubscriptionStatus = {
   daysRemaining: number;
   cancelAtPeriodEnd: boolean;
   canReactivate: boolean;
-  subscriptionId?: string;
+  subscriptionId?: string | null;
+};
+
+type SubscriptionInfo = {
+  hasSubscription: boolean;
+  isActive: boolean;
+  displayText: string;
+  timeRemaining: string | null;
+  canUpgrade: boolean;
+  canCancel: boolean;
+  canReactivate: boolean;
+  planType: 'monthly' | 'yearly' | null | undefined;
+  daysRemaining: number;
 };
 
 interface SubscriptionResponse {
@@ -359,8 +360,8 @@ type UserContextType = {
   getRemainingDailyLikes: () => number;
   DAILY_LIKE_LIMIT: number;
   getSubscriptionStatus: () => Promise<SubscriptionStatus>;
-  getSubscriptionDisplayInfo: () => SubscriptionDisplayInfo;
   createSubscription: (planType: 'monthly' | 'yearly') => Promise<SubscriptionResponse>;
+  getSubscriptionInfo: (userData: UserDataType) => SubscriptionInfo;
   cancelSubscription: () => Promise<{ status: string; cancelAt: number }>;
   reactivateSubscription: () => Promise<ReactivateResponse>;
   
@@ -388,7 +389,6 @@ type UserContextType = {
   isUserRecentlyActive: (userData: UserDataType) => boolean;
   
   // 🧪 Testing Functions (remove in production)
-  testStripeConnection: any;
   createRadiancePaymentIntent: any;
 };
 
@@ -430,21 +430,6 @@ const initialUserData: UserDataType = {
   number: "",
   currentOnboardingScreen: initialScreens[0],
   hiddenFields: {},
-  
-  // 💳 SIMPLIFIED Subscription Structure
-  subscription: {
-    isActive: false,
-    stripeCustomerId: undefined,
-    subscriptionId: undefined,
-    status: undefined,
-    planType: undefined,
-    currentPeriodStart: undefined,
-    currentPeriodEnd: undefined,
-    cancelAtPeriodEnd: false,
-    canceledAt: undefined,
-    createdAt: undefined,
-    updatedAt: undefined
-  },
   
   // Boosts & Engagement
   activeBoosts: 0,
@@ -3334,6 +3319,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Fixed getSubscriptionStatus function
   const getSubscriptionStatus = async (): Promise<SubscriptionStatus> => {
     try {
       if (!userData.userId) {
@@ -3348,63 +3334,80 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       const subscriptionData = result.data as any;
       
-      // Calculate current status with time awareness
+      // Calculate days remaining for display
       const now = Date.now();
       const periodEnd = subscriptionData.currentPeriodEnd ? subscriptionData.currentPeriodEnd * 1000 : null;
       const daysRemaining = periodEnd ? Math.max(0, Math.ceil((periodEnd - now) / (1000 * 60 * 60 * 24))) : 0;
       
-      // Determine if subscription is currently providing benefits
-      const isActive = subscriptionData.hasSubscription && 
-                      subscriptionData.status === 'active' && 
-                      periodEnd && 
-                      periodEnd > now;
+      // 🔧 FIX: Use the Cloud Function's isActive value directly - DON'T override it!
+      const isActive = subscriptionData.isActive; // Trust the Cloud Function
       
       const canReactivate = subscriptionData.hasSubscription && 
                           subscriptionData.status === 'active' && 
                           subscriptionData.cancelAtPeriodEnd;
 
-      // 🔄 UPDATE: Use new subscription object structure
-      const subscriptionUpdate = {
-        isActive: isActive,
-        stripeCustomerId: userData.subscription?.stripeCustomerId,
-        subscriptionId: subscriptionData.hasSubscription ? (userData.subscription?.subscriptionId || subscriptionData.subscriptionId) : undefined,
-        status: subscriptionData.status as 'active' | 'canceled' | 'past_due' | 'incomplete' | 'incomplete_expired' | undefined,
-        planType: subscriptionData.planType as 'monthly' | 'yearly' | undefined,
-        currentPeriodStart: subscriptionData.periodStartDate,
-        currentPeriodEnd: subscriptionData.currentPeriodEnd,
-        cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
-        canceledAt: subscriptionData.canceledAt,
-        updatedAt: new Date()
-      };
+      // Only update if we have subscription data
+      if (subscriptionData.hasSubscription && subscriptionData.subscriptionId) {
+        const subscriptionUpdate: any = {
+          isActive: subscriptionData.isActive,
+          subscriptionId: subscriptionData.subscriptionId,
+          status: subscriptionData.status,
+          planType: subscriptionData.planType,
+          cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
+          updatedAt: new Date()
+        };
 
-      // Update user data using the existing updateUserData function
-      await updateUserData({
-        subscription: subscriptionUpdate
-      });
+        // Only add fields that have values
+        if (subscriptionData.stripeCustomerId) {
+          subscriptionUpdate.stripeCustomerId = subscriptionData.stripeCustomerId;
+        }
+        if (subscriptionData.currentPeriodStart) {
+          subscriptionUpdate.currentPeriodStart = subscriptionData.currentPeriodStart;
+        }
+        if (subscriptionData.currentPeriodEnd) {
+          subscriptionUpdate.currentPeriodEnd = subscriptionData.currentPeriodEnd;
+        }
+        if (subscriptionData.canceledAt) {
+          subscriptionUpdate.canceledAt = subscriptionData.canceledAt;
+        }
+
+        // Preserve existing createdAt
+        const currentSubscription = userData.subscription;
+        if (currentSubscription?.createdAt) {
+          subscriptionUpdate.createdAt = currentSubscription.createdAt;
+        }
+
+        console.log('🔧 Updating subscription with isActive:', subscriptionUpdate.isActive);
+
+        // Update the subscription object
+        await updateUserData({
+          subscription: subscriptionUpdate
+        });
+      }
       
       return {
         hasSubscription: subscriptionData.hasSubscription,
-        isActive: isActive,
+        isActive: subscriptionData.isActive, // Use Cloud Function's value
         status: subscriptionData.status,
         planType: subscriptionData.planType,
-        currentPeriodStart: subscriptionData.periodStartDate,
+        currentPeriodStart: subscriptionData.currentPeriodStart,
         currentPeriodEnd: subscriptionData.currentPeriodEnd,
         daysRemaining: daysRemaining,
         cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
         canReactivate: canReactivate,
-        subscriptionId: subscriptionData.hasSubscription ? (userData.subscription?.subscriptionId || subscriptionData.subscriptionId) : undefined
+        subscriptionId: subscriptionData.subscriptionId
       };
       
     } catch (error: any) {
       console.error('❌ Error getting subscription status:', error);
       
-      // Return fallback based on current user data (using new structure first, then legacy)
+      // Return fallback based on current user data
       const subscription = userData.subscription;
       const now = Date.now();
       const periodEnd = subscription?.currentPeriodEnd ? subscription.currentPeriodEnd * 1000 : null;
       const daysRemaining = periodEnd ? Math.max(0, Math.ceil((periodEnd - now) / (1000 * 60 * 60 * 24))) : 0;
       
-      const fallbackData: SubscriptionStatus = {
+      return {
         hasSubscription: !!subscription?.subscriptionId,
         isActive: subscription?.isActive || false,
         status: subscription?.status || null,
@@ -3416,21 +3419,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         canReactivate: subscription?.cancelAtPeriodEnd || false,
         subscriptionId: subscription?.subscriptionId
       };
-      
-      console.log('⚠️ Using fallback subscription data:', fallbackData);
-      return fallbackData;
     }
   };
 
-  // 💳 IMPROVED: Better reactivation with proper error handling
+// 5. UPDATED: Simplified reactivateSubscription  
   const reactivateSubscription = async (): Promise<ReactivateResponse> => {
     try {
       if (!userData.userId) {
         throw new Error("User must be logged in");
       }
 
-      // Check if user has a subscription to reactivate
-      const subscriptionId = userData.subscription?.subscriptionId || userData.subscription?.subscriptionId;
+      const subscriptionId = userData.subscription?.subscriptionId;
       if (!subscriptionId) {
         throw new Error("No subscription found to reactivate");
       }
@@ -3443,17 +3442,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('✅ Reactivation result:', result.data);
       
       if (result.data?.success) {
-        // Update subscription data using updateUserData
-        const updatedSubscription = {
-          ...userData.subscription,
-          isActive: true,
-          cancelAtPeriodEnd: false,
-          canceledAt: undefined,
-          updatedAt: new Date()
-        };
-
+        // Update ONLY the subscription object
         await updateUserData({
-          subscription: updatedSubscription
+          subscription: {
+            ...userData.subscription,
+            isActive: true,
+            cancelAtPeriodEnd: false,
+            canceledAt: undefined,
+            updatedAt: new Date()
+          }
         });
 
         return {
@@ -3479,7 +3476,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // 🚫 Cancel Subscription
+  // 6. UPDATED: Simplified cancelSubscription
   const cancelSubscription = async () => {
     try {
       if (!userData.userId) {
@@ -3493,10 +3490,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       const { status, cancelAt } = result.data as CancelResponse;
       
-      // Only update if we have an active subscription
+      // Update ONLY the subscription object
       if (userData.subscription?.subscriptionId) {
         await updateUserData({
-          ...userData,
           subscription: {
             ...userData.subscription,
             cancelAtPeriodEnd: true,
@@ -3516,17 +3512,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // 💳 HELPER: Get readable subscription info for UI display
-  const getSubscriptionDisplayInfo = (): SubscriptionDisplayInfo => {
+  const getSubscriptionInfo = (userData: UserDataType) => {
     const subscription = userData.subscription;
     
     if (!subscription?.subscriptionId) {
       return {
         hasSubscription: false,
+        isActive: false,
         displayText: "No active subscription",
         timeRemaining: null,
+        canUpgrade: true,
+        canCancel: false,
         canReactivate: false,
-        isActive: false
+        planType: null,
+        daysRemaining: 0
       };
     }
 
@@ -3534,13 +3533,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const periodEnd = subscription.currentPeriodEnd ? subscription.currentPeriodEnd * 1000 : null;
     const daysRemaining = periodEnd ? Math.max(0, Math.ceil((periodEnd - now) / (1000 * 60 * 60 * 24))) : 0;
     
-    const isActive = Boolean(subscription.isActive && periodEnd && periodEnd > now);
-    const isCanceled = Boolean(subscription.cancelAtPeriodEnd);
+    const isActive = subscription.isActive && 
+                    subscription.status === 'active' && 
+                    periodEnd && 
+                    periodEnd > now;
+    
+    const isCanceled = subscription.cancelAtPeriodEnd;
+    const isProcessing = subscription.status === 'incomplete';
     
     let displayText = "";
     let timeRemaining: any = "";
     
-    if (isActive && !isCanceled) {
+    if (isProcessing) {
+      displayText = "Subscription Processing";
+      timeRemaining = "Payment is being processed";
+    } else if (isActive && !isCanceled) {
       displayText = `FullCircle ${subscription.planType === 'yearly' ? 'Yearly' : 'Monthly'} Active`;
       timeRemaining = daysRemaining > 0 
         ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining`
@@ -3560,10 +3567,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return {
       hasSubscription: true,
+      isActive: isActive || isProcessing,
       displayText,
       timeRemaining,
+      canUpgrade: !isActive && !isProcessing,
+      canCancel: Boolean(isActive && !isCanceled),
       canReactivate: Boolean(isCanceled && isActive),
-      isActive,
       planType: subscription.planType,
       daysRemaining: daysRemaining
     };
@@ -3643,48 +3652,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("❌ Error details:", error.details);
       throw new Error(`Payment confirmation failed: ${error.message}`);
     }
-  };
-
-  const testStripeConnection = async () => {
-  try {
-    console.log('🧪 Testing Stripe connection...');
-    
-    const testFunction = FUNCTIONS.httpsCallable('testStripe');
-    const result = await testFunction();
-    
-    interface StripeTestResult {
-      success: boolean;
-      customerId?: string;
-      error?: string;
-    }
-
-    const data = result.data as StripeTestResult;
-    console.log('✅ Stripe test result:', data);
-    
-    if (data.success) {
-      Alert.alert(
-        "Stripe Connected! 🎉", 
-        `Customer ID: ${data.customerId}`,
-        [{ text: "Great!", style: "default" }]
-      );
-    } else {
-      Alert.alert(
-        "Stripe Error ❌", 
-        data.error,
-        [{ text: "OK", style: "default" }]
-      );
-    }
-    
-    return data;
-  } catch (error: any) {
-    console.error('❌ Stripe test error:', error);
-    Alert.alert(
-      "Connection Error", 
-      error.message,
-      [{ text: "OK", style: "default" }]
-    );
-    throw error;
-  }
   };
 
   const createRadiancePaymentIntent = async (boostCount: number) => {
@@ -3821,7 +3788,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     reactivateSubscription,
     cancelSubscription,
     getSubscriptionStatus,
-    getSubscriptionDisplayInfo,
+    getSubscriptionInfo,
     purchaseRadiance,
     confirmRadiancePayment,
     activateRadiance,
@@ -3831,7 +3798,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     formatRadianceTime,
     isUserBoosted,
     isUserRecentlyActive,
-    testStripeConnection,
     createRadiancePaymentIntent,
   };
 
