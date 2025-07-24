@@ -20,6 +20,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import RadianceScreen from "@/components/RadianceScreen";
+import OrbsScreen from "@/components/OrbsScreen"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -28,11 +29,13 @@ export default function SacredSelf() {
     userData, 
     activateRadiance, 
     getRadianceTimeRemaining,
-    getRadianceStatus 
+    getRadianceStatus,
+    updateUserData
   } = useUserContext();
   
   const [verified, _] = useState(userData.settings?.isSelfieVerified || false);
   const [showRadianceModal, setShowRadianceModal] = useState(false);
+  const [showOrbsModal, setShowOrbsModal] = useState(false);
   const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
   
@@ -51,6 +54,10 @@ export default function SacredSelf() {
 
   const handleVerify = () => {
     router.navigate("/user/SelfieVerificationScreen");
+  };
+
+  const handleOrbsPress = () => {
+    setShowOrbsModal(true);
   };
 
   // New handler for radiance clicks
@@ -307,7 +314,11 @@ export default function SacredSelf() {
                 </TouchableOpacity>
 
                 {/* Orbs */}
-                <View style={[styles.featureRow, { backgroundColor: colors.card }]}>
+                <TouchableOpacity 
+                  style={[styles.featureRow, { backgroundColor: colors.card }]}
+                  onPress={handleOrbsPress}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#8B4513' + '20' }]}>
                       <Ionicons name="sparkles" size={24} color="#8B4513" />
@@ -324,7 +335,8 @@ export default function SacredSelf() {
                       Super likes with cosmic energy
                     </Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
 
                 {/* See Who Likes You */}
                 <TouchableOpacity 
@@ -416,7 +428,11 @@ export default function SacredSelf() {
                   </TouchableOpacity>
 
                   {/* Orbs */}
-                  <View style={[styles.resourceItem, { backgroundColor: colors.card }]}>
+                  <TouchableOpacity 
+                    style={[styles.resourceItem, { backgroundColor: colors.card }]}
+                    onPress={handleOrbsPress}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.resourceIconContainer}>
                       <View style={[styles.resourceIcon, { backgroundColor: '#8B4513' + '20' }]}>
                         <Ionicons name="sparkles" size={20} color="#8B4513" />
@@ -433,7 +449,8 @@ export default function SacredSelf() {
                         Super likes with cosmic energy
                       </Text>
                     </View>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -447,6 +464,11 @@ export default function SacredSelf() {
       <RadianceScreen
         visible={showRadianceModal}
         onClose={() => setShowRadianceModal(false)}
+      />
+
+      <OrbsScreen
+        visible={showOrbsModal}
+        onClose={() => setShowOrbsModal(false)}
       />
     </SafeAreaView>
   );

@@ -24,6 +24,7 @@ export type UserDataType = {
   lastActive?: any;
   isSeedUser: boolean;
   numOfOrbs?: number;
+  orbPurchases?: OrbPurchase[];
   lastOrbAssignedAt?: any;
   currentOnboardingScreen: string;
   phoneNumber: string;
@@ -132,6 +133,15 @@ export interface BoostPurchase {
   status: 'succeeded' | 'processing' | 'failed'; 
 }
 
+export interface OrbPurchase {
+  orbCount: number;
+  totalPrice: number;
+  purchaseDate: any;
+  transactionId: string;
+  stripePaymentIntentId?: string;
+  status: 'succeeded' | 'processing' | 'failed'; 
+}
+
 interface PaymentIntent {
   clientSecret: string;
   paymentIntentId: string;
@@ -141,6 +151,7 @@ interface PaymentIntent {
 interface PaymentResult {
   success: boolean;
   boostCount: number;
+  orbCount: number;
   totalPrice: number;
   transactionId: string;
 }
@@ -385,6 +396,15 @@ type UserContextType = {
     formattedTime: string | null;
   };
   formatRadianceTime: (seconds: number) => string;
+  createOrbPaymentIntent: (orbCount: number) => Promise<{
+  clientSecret: string;
+  paymentIntentId: string;
+  }>;
+  confirmOrbPayment: (paymentIntentId: string) => Promise<{
+  success: boolean;
+  orbCount: number;
+  totalPrice: number;
+  }>;
   isUserBoosted: (userData: UserDataType) => boolean;
   isUserRecentlyActive: (userData: UserDataType) => boolean;
   
@@ -3745,6 +3765,82 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // 💎 Create Orb Payment Intent
+  const createOrbPaymentIntent = async (orbCount: number) => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User ID is required");
+      }
+
+      console.log(`Creating payment for ${orbCount} orbs...`);
+      
+      const createPaymentFunction = FUNCTIONS.httpsCallable('createOrbPayment');
+      const result = await createPaymentFunction({ orbCount });
+      
+      const { clientSecret, paymentIntentId, amount } = result.data as PaymentIntent;
+      
+      console.log(`Orb payment intent created: ${paymentIntentId} for $${amount / 100}`);
+      
+      return { clientSecret, paymentIntentId };
+    } catch (error: any) {
+      console.error("Failed to create orb payment:", error);
+      throw new Error(`Orb payment creation failed: ${error.message}`);
+    }
+  };
+
+  // 💎 Confirm Orb Payment (after Stripe payment succeeds)
+  const confirmOrbPayment = async (paymentIntentId: string) => {
+    try {
+      if (!userData.userId) {
+        throw new Error("User ID is required");
+      }
+
+      console.log(`🔄 Confirming orb payment: ${paymentIntentId}`);
+      console.log(`👤 User ID: ${userData.userId}`);
+      
+      const confirmPaymentFunction = FUNCTIONS.httpsCallable('confirmOrbPayment');
+      
+      console.log('📞 Calling confirmOrbPayment function...');
+      const result = await confirmPaymentFunction({ paymentIntentId });
+      
+      console.log('✅ Orb payment confirmation successful:', result);
+      
+      const { success, orbCount, totalPrice, transactionId } = result.data as PaymentResult;
+      
+      if (success) {
+        // Update local state with new orb count
+        const purchase: OrbPurchase = {
+          orbCount,
+          totalPrice,
+          purchaseDate: new Date(),
+          transactionId,
+          stripePaymentIntentId: paymentIntentId,
+          status: 'succeeded'
+        };
+        
+        setUserData(prevData => ({
+          ...prevData,
+          numOfOrbs: (prevData.numOfOrbs || 0) + orbCount,
+          orbPurchases: [
+            ...(prevData.orbPurchases || []),
+            purchase
+          ]
+        }));
+        
+        console.log(`✅ Successfully confirmed purchase of ${orbCount} orbs`);
+        return { success: true, orbCount, totalPrice };
+      } else {
+        throw new Error('Orb payment confirmation failed');
+      }
+    } catch (error: any) {
+      console.error("❌ Failed to confirm orb payment:", error);
+      console.error("❌ Error code:", error.code);
+      console.error("❌ Error message:", error.message);
+      console.error("❌ Error details:", error.details);
+      throw new Error(`Orb payment confirmation failed: ${error.message}`);
+    }
+  };
+
   const contextValue: UserContextType = {
     currentOnboardingScreen,
     setcurrentOnboardingScreen,
@@ -3812,6 +3908,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     isUserBoosted,
     isUserRecentlyActive,
     createRadiancePaymentIntent,
+    createOrbPaymentIntent,
+    confirmOrbPayment,
   };
 
   if (initializing) {

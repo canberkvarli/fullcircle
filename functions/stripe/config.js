@@ -32,8 +32,15 @@ const RADIANCE_PRICING = {
   5: { price: 3995, description: '5 Sacred Radiance Boosts (Save 20%)' }
 };
 
+const ORB_PRICES = {
+  1: { amount: 499, pricePerOrb: 4.99 },   // $4.99 for 1 orb
+  3: { amount: 1347, pricePerOrb: 4.49 },  // $13.47 for 3 orbs (10% off)
+  5: { amount: 1995, pricePerOrb: 3.99 },  // $19.95 for 5 orbs (20% off)
+};
+
 module.exports = {
   stripe,
   SUBSCRIPTION_PRICES,
-  RADIANCE_PRICING
+  RADIANCE_PRICING,
+  ORB_PRICES
 };

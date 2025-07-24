@@ -1,13 +1,13 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const { stripe, RADIANCE_PRICING } = require('./config');
+const { stripe, RADIANCE_PRICING, ORB_PRICES } = require('./config');
 
 const db = admin.firestore();
 
-/**
- * Create payment intent for Radiance boost purchase
- */
-const createRadiancePayment = functions.https.onCall(async (data, context) => {
+  /**
+   * Create payment intent for Radiance boost purchase
+   */
+  const createRadiancePayment = functions.https.onCall(async (data, context) => {
   try {
     // Verify user is authenticated
     if (!context.auth) {
@@ -91,11 +91,11 @@ const createRadiancePayment = functions.https.onCall(async (data, context) => {
     
     throw new functions.https.HttpsError('internal', 'Failed to create payment');
   }
-});
+  });
 
-/**
- * Confirm radiance payment and add boosts to user account
- */
+  /** 
+   * Confirm radiance payment and add boosts to user account
+   */
   const confirmRadiancePayment = functions.https.onCall(async (data, context) => {
     try {
       console.log('🔄 confirmRadiancePayment called with data:', data);
@@ -195,7 +195,151 @@ const createRadiancePayment = functions.https.onCall(async (data, context) => {
     }
   });
 
+  /**
+   * Create payment intent for orb purchase
+   */
+  const createOrbPayment = functions.https.onCall(async (data, context) => {
+    try {
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+      }
+
+      const { orbCount } = data;
+      const userId = context.auth.uid;
+
+      console.log(`🌟 Creating orb payment for user: ${userId}, orbCount: ${orbCount}`);
+
+      if (!ORB_PRICES[orbCount]) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid orb count');
+      }
+
+      const { amount } = ORB_PRICES[orbCount];
+
+      // Get user data for customer info
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'User not found');
+      }
+
+      const userData = userDoc.data();
+
+      // Create payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        metadata: {
+          firebaseUID: userId,
+          type: 'orb_purchase',
+          orbCount: orbCount.toString(),
+          pricePerOrb: ORB_PRICES[orbCount].pricePerOrb.toString(),
+        },
+        description: `${orbCount} Cosmic Orb${orbCount > 1 ? 's' : ''}`,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      console.log(`✅ Orb payment intent created: ${paymentIntent.id}`);
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: amount,
+      };
+
+    } catch (error) {
+      console.error('❌ Error creating orb payment:', error);
+      
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      
+      throw new functions.https.HttpsError('internal', `Orb payment creation failed: ${error.message}`);
+    }
+  });
+
+  /**
+   * Confirm orb payment and update user data
+   */
+  const confirmOrbPayment = functions.https.onCall(async (data, context) => {
+    try {
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+      }
+
+      const { paymentIntentId } = data;
+      const userId = context.auth.uid;
+
+      console.log(`🔄 Confirming orb payment: ${paymentIntentId} for user: ${userId}`);
+
+      // Retrieve payment intent from Stripe
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new functions.https.HttpsError('failed-precondition', 'Payment has not succeeded');
+      }
+
+      // Verify the payment belongs to this user
+      if (paymentIntent.metadata.firebaseUID !== userId) {
+        throw new functions.https.HttpsError('permission-denied', 'Payment does not belong to this user');
+      }
+
+      // Extract purchase details
+      const orbCount = parseInt(paymentIntent.metadata.orbCount);
+      const totalPrice = paymentIntent.amount / 100; // Convert from cents
+
+      console.log(`💎 Processing ${orbCount} orbs for ${totalPrice}`);
+
+      // Get current user data
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'User not found');
+      }
+
+      const userData = userDoc.data();
+      const currentOrbs = userData.numOfOrbs || 0;
+
+      // Create purchase record
+      const purchase = {
+        orbCount: orbCount,
+        totalPrice: totalPrice,
+        purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
+        transactionId: paymentIntent.id,
+        stripePaymentIntentId: paymentIntent.id,
+        status: 'succeeded'
+      };
+
+      // Update user data
+      const updateData = {
+        numOfOrbs: currentOrbs + orbCount,
+        orbPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+      };
+
+      await db.collection('users').doc(userId).update(updateData);
+
+      console.log(`✅ User ${userId} now has ${currentOrbs + orbCount} orbs (added ${orbCount})`);
+
+      return {
+        success: true,
+        orbCount: orbCount,
+        totalPrice: totalPrice,
+        transactionId: paymentIntent.id
+      };
+
+    } catch (error) {
+      console.error('❌ Error confirming orb payment:', error);
+      
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      
+      throw new functions.https.HttpsError('internal', `Orb payment confirmation failed: ${error.message}`);
+    }
+  });
+
 module.exports = {
   createRadiancePayment,
-  confirmRadiancePayment
+  confirmRadiancePayment,
+  createOrbPayment,
+  confirmOrbPayment,
 };

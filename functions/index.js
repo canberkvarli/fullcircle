@@ -15,7 +15,9 @@ const {
 
 const { 
   createRadiancePayment,
-  confirmRadiancePayment 
+  confirmRadiancePayment,
+  createOrbPayment,
+  confirmOrbPayment  
 } = require('./stripe/purchases');
 
 const { stripeWebhook } = require('./stripe/webhooks');
@@ -27,4 +29,6 @@ exports.getSubscriptionStatus = getSubscriptionStatus;
 exports.reactivateSubscription = reactivateSubscription;
 exports.createRadiancePayment = createRadiancePayment;
 exports.confirmRadiancePayment = confirmRadiancePayment;
+exports.createOrbPayment = createOrbPayment;
+exports.confirmOrbPayment = confirmOrbPayment; 
 exports.stripeWebhook = stripeWebhook;

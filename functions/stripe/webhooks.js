@@ -69,7 +69,6 @@ const stripeWebhook = functions.https.onRequest(async (req, res) => {
 /**
  * Handle successful payment intent (for one-time payments like radiance boosts)
  */
-
 async function handlePaymentSucceeded(paymentIntent) {
   const userId = paymentIntent.metadata.firebaseUID;
   
@@ -97,6 +96,15 @@ async function handlePaymentSucceeded(paymentIntent) {
     }
   }
   
+  // Handle orb purchases
+  if (paymentIntent.metadata.type === 'orb_purchase') {
+    console.log('🌟 Processing orb purchase');
+    const orbCount = parseInt(paymentIntent.metadata.orbCount || '0');
+    if (orbCount > 0) {
+      await handleOrbPurchase(userId, orbCount, paymentIntent);
+    }
+  }
+  
   // Handle subscription payments (manual payment intents)
   if (paymentIntent.metadata.type === 'subscription_payment' && paymentIntent.metadata.subscriptionId) {
     console.log('🎉 WEBHOOK DEBUG - Processing manual subscription payment!');
@@ -108,12 +116,6 @@ async function handlePaymentSucceeded(paymentIntent) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       
       console.log(`📊 WEBHOOK DEBUG - Subscription status before update: ${subscription.status}`);
-      console.log('🔍 Subscription details:', JSON.stringify({
-        id: subscription.id,
-        status: subscription.status,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end
-      }, null, 2));
       
       // Force update to active since payment succeeded
       console.log('🚀 WEBHOOK DEBUG - Calling updateUserSubscriptionData with forceActive=true');
@@ -121,7 +123,7 @@ async function handlePaymentSucceeded(paymentIntent) {
       
       console.log(`✅ WEBHOOK DEBUG - Manual subscription payment processed successfully for user ${userId}`);
       
-      // ✅ ADD THIS DEBUG CODE HERE:
+      // Verify update worked
       console.log('🔍 WEBHOOK DEBUG - Verifying update worked...');
       const userDoc = await db.collection('users').doc(userId).get();
       const updatedUserData = userDoc.data();
@@ -136,8 +138,35 @@ async function handlePaymentSucceeded(paymentIntent) {
   }
 }
 
+async function handleOrbPurchase(userId, orbCount, paymentIntent) {
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
+    const purchase = {
+      orbCount: orbCount,
+      totalPrice: paymentIntent.amount / 100, // Convert from cents
+      purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
+      transactionId: paymentIntent.id,
+      stripePaymentIntentId: paymentIntent.id,
+      status: 'succeeded'
+    };
+
+    const updateData = {
+      numOfOrbs: (userData.numOfOrbs || 0) + orbCount,
+      orbPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+    };
+
+    await db.collection('users').doc(userId).update(updateData);
+    
+    console.log(`✅ Added ${orbCount} orbs to user ${userId}`);
+  } catch (error) {
+    console.error('Error handling orb purchase:', error);
+  }
+}
+
 /**
- * ✅ FIXED: Handle successful subscription payment - ONLY use subscription object
+ * Handle successful subscription payment
  */
 async function handleSubscriptionPayment(invoice) {
   const customerId = invoice.customer;
