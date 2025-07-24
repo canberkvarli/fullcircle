@@ -261,32 +261,43 @@ export default function SacredSelf() {
         <View style={styles.tabContent}>
           {isFullCircle ? (
             <View style={styles.fullCircleActiveContainer}>
-              <Text style={[styles.fullCircleActiveTitle, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-                Full Circle Active ∞
-              </Text>
+              {/* Clickable Full Circle Active Badge */}
+              <TouchableOpacity 
+                style={[styles.fullCircleBadge, { backgroundColor: colors.card }]}
+                onPress={() => router.navigate("/user/FullCircleSubscription")}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.fullCircleIcon, { backgroundColor: '#8B4513' + '20' }]}>
+                  <Ionicons name="checkmark-circle" size={20} color="#8B4513" />
+                </View>
+                <Text style={[styles.fullCircleBadgeText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                  Full Circle Active
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
               
               <View style={styles.featuresContainer}>
                 {/* Unlimited Likes */}
-                  <TouchableOpacity 
-                    style={[styles.featureRow, { backgroundColor: colors.card }]}
-                    onPress={() => router.navigate("/user/FullCircleSubscription")}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.featureIconContainer}>
-                      <View style={[styles.featureIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
-                        <Ionicons name="heart-circle" size={24} color="#FF6B6B" />
-                      </View>
+                <TouchableOpacity 
+                  style={[styles.featureRow, { backgroundColor: colors.card }]}
+                  onPress={() => router.navigate("/user/FullCircleSubscription")}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.featureIconContainer}>
+                    <View style={[styles.featureIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
+                      <Ionicons name="heart-circle" size={24} color="#FF6B6B" />
                     </View>
-                    <View style={styles.featureContent}>
-                      <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                        Unlimited Likes
-                      </Text>
-                      <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                        Express your interest freely
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
+                  </View>
+                  <View style={styles.featureContent}>
+                    <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                      Unlimited Likes
+                    </Text>
+                    <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                      Express your interest freely
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
 
                 {/* Radiances - Now clickable */}
                 <TouchableOpacity 
@@ -776,5 +787,34 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: Spacing['3xl'],
+  },
+  fullCircleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: 12,
+    marginBottom: Spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    alignSelf: 'center',
+    maxWidth: '80%',
+  },
+  fullCircleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
+  fullCircleBadgeText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
+    flex: 1,
   },
 });
