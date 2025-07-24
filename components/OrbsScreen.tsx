@@ -25,12 +25,13 @@ interface OrbOption {
   pricePerOrb: number;
   totalPrice: number;
   tag?: string;
+  popular?: boolean;
 }
 
 interface OrbsScreenProps {
   visible: boolean;
   onClose: () => void;
-  onPurchaseSuccess?: (orbCount: number, totalPrice: number, transactionId: string) => void; // Add this
+  onPurchaseSuccess?: (orbCount: number, totalPrice: number, transactionId: string) => void;
 }
 
 const OrbOptionCard: React.FC<{
@@ -49,43 +50,53 @@ const OrbOptionCard: React.FC<{
         {
           backgroundColor: isSelected ? '#8B4513' + '15' : colors.card,
           borderColor: isSelected ? '#8B4513' : colors.border,
-          borderWidth: isSelected ? 2 : 1,
+          shadowColor: isSelected ? '#8B4513' : colors.shadow,
         }
       ]}
       onPress={onSelect}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
     >
-      {option.tag && (
-        <View style={[styles.tagContainer, { backgroundColor: '#8B4513' }]}>
-          <Text style={[styles.tagText, fonts.spiritualBodyFont]}>
+      {option.popular && (
+        <View style={[styles.popularBadge, { backgroundColor: '#8B4513' }]}>
+          <Text style={[styles.popularText, fonts.captionFont]}>
+            Most Popular
+          </Text>
+        </View>
+      )}
+      
+      {option.tag && !option.popular && (
+        <View style={[styles.saveBadge, { backgroundColor: colors.success }]}>
+          <Text style={[styles.saveText, fonts.captionFont]}>
             {option.tag}
           </Text>
         </View>
       )}
       
-      <View style={styles.orbsContainer}>
+      <View style={styles.orbDisplay}>
         <View style={[styles.orbIcon, { backgroundColor: '#8B4513' + '20' }]}>
-          <Ionicons name="sparkles" size={32} color="#8B4513" />
+          <Text style={[styles.orbCountText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
+            {option.orbCount}
+          </Text>
         </View>
-        <Text style={[styles.orbCount, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-          {option.orbCount} Orb{option.orbCount !== 1 ? 's' : ''}
+        <Text style={[styles.orbLabel, fonts.bodyFont, { color: colors.textMuted }]}>
+          orb{option.orbCount !== 1 ? 's' : ''}
         </Text>
       </View>
       
-      <View style={styles.priceContainer}>
-        <Text style={[styles.totalPrice, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+      <View style={styles.priceDisplay}>
+        <Text style={[styles.mainPrice, fonts.titleFont, { color: colors.textDark }]}>
           ${option.totalPrice.toFixed(2)}
         </Text>
-        <Text style={[styles.pricePerOrb, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-          ${option.pricePerOrb.toFixed(2)} per orb
+        <Text style={[styles.unitPrice, fonts.captionFont, { color: colors.textMuted }]}>
+          ${option.pricePerOrb.toFixed(2)} each
         </Text>
       </View>
       
-      <View style={[styles.selectionIndicator, { borderColor: isSelected ? '#8B4513' : colors.border }]}>
-        {isSelected && (
-          <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-        )}
-      </View>
+      {isSelected && (
+        <View style={[styles.selectedIndicator, { backgroundColor: '#8B4513' }]}>
+          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -101,29 +112,36 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
   const colors = Colors[colorScheme];
   const fonts = useFont();
   
-  const [selectedOption, setSelectedOption] = useState<number>(1);
+  const [selectedOption, setSelectedOption] = useState<number>(1); // Default to middle option
   const [isProcessing, setIsProcessing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const orbOptions: OrbOption[] = [
     {
       orbCount: 1,
       pricePerOrb: 4.99,
       totalPrice: 4.99,
-      tag: undefined
     },
     {
       orbCount: 3,
       pricePerOrb: 4.49,
       totalPrice: 13.47,
-      tag: "Save 10%"
+      tag: "Save 10%",
+      popular: true,
     },
     {
       orbCount: 5,
       pricePerOrb: 3.99,
       totalPrice: 19.95,
-      tag: "Save 20%"
+      tag: "Save 20%",
+    },
+    {
+      orbCount: 10,
+      pricePerOrb: 3.49,
+      totalPrice: 34.90,
+      tag: "Save 30%",
     }
   ];
 
@@ -134,6 +152,14 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
         duration: 300,
         useNativeDriver: true,
       }).start();
+      
+      // Auto-scroll to popular option
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          x: 160, // Adjusted for wider cards
+          animated: true,
+        });
+      }, 300);
     }
   }, [visible]);
 
@@ -203,11 +229,11 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
       });
       
       Alert.alert(
-        'Orbs Purchased! ✨',
-        `You successfully purchased ${selectedOrbOption.orbCount} cosmic orb${selectedOrbOption.orbCount !== 1 ? 's' : ''} for $${selectedOrbOption.totalPrice.toFixed(2)}. Use them to make powerful connections!`,
+        'Success! ✨',
+        `You got ${selectedOrbOption.orbCount} cosmic orb${selectedOrbOption.orbCount !== 1 ? 's' : ''}!`,
         [
           {
-            text: 'Amazing!',
+            text: 'Nice!',
             onPress: onClose
           }
         ]
@@ -240,9 +266,6 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.textDark} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              Cosmic Orbs
-            </Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -251,39 +274,35 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Hero Section */}
+            {/* Simple Hero */}
             <View style={styles.heroSection}>
-              <View style={[styles.heroIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                <Ionicons name="sparkles" size={48} color="#8B4513" />
+              <View style={[styles.currentOrbsDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="sparkles" size={18} color="#8B4513" />
+                <Text style={[styles.currentOrbsText, fonts.bodyFont, { color: colors.textDark }]}>
+                  {userData.numOfOrbs || 0} orbs
+                </Text>
               </View>
               
               <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Super Likes with Cosmic Energy
+                Stand Out with Super Likes
               </Text>
               
-              <Text style={[styles.heroSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                Stand out from the crowd and make meaningful connections with cosmic orbs. 
-                Your profile gets special cosmic energy that draws the right people to you.
+              <Text style={[styles.heroSubtitle, fonts.bodyFont, { color: colors.textMuted }]}>
+                Get priority placement and make meaningful connections
               </Text>
-
-              {/* Current Orbs Display */}
-              <View style={[styles.currentOrbsContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={[styles.currentOrbsIcon, { backgroundColor: '#8B4513' + '15' }]}>
-                  <Ionicons name="sparkles" size={20} color="#8B4513" />
-                </View>
-                <Text style={[styles.currentOrbsText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                  You have {userData.numOfOrbs || 0} cosmic orb{(userData.numOfOrbs || 0) !== 1 ? 's' : ''}
-                </Text>
-              </View>
             </View>
 
-            {/* Orb Options */}
+            {/* Horizontal Scrolling Options */}
             <View style={styles.optionsSection}>
-              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Choose Your Cosmic Power
-              </Text>
-              
-              <View style={styles.optionsGrid}>
+              <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.optionsContainer}
+                decelerationRate="fast"
+                snapToInterval={156} // Adjusted for wider cards (140 + 16 gap)
+                snapToAlignment="start"
+              >
                 {orbOptions.map((option, index) => (
                   <OrbOptionCard
                     key={index}
@@ -294,51 +313,30 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
                     fonts={fonts}
                   />
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
-            {/* Benefits Section */}
+            {/* Simple Benefits */}
             <View style={styles.benefitsSection}>
-              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Cosmic Orb Benefits
-              </Text>
+              <View style={styles.benefitRow}>
+                <Ionicons name="flash" size={16} color="#8B4513" />
+                <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
+                  Priority placement
+                </Text>
+              </View>
               
-              <View style={styles.benefitsList}>
-                <View style={styles.benefitItem}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                    <Ionicons name="star" size={16} color="#8B4513" />
-                  </View>
-                  <Text style={[styles.benefitText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                    Stand out with cosmic energy aura
-                  </Text>
-                </View>
-                
-                <View style={styles.benefitItem}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                    <Ionicons name="flash" size={16} color="#8B4513" />
-                  </View>
-                  <Text style={[styles.benefitText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                    Priority placement in their queue
-                  </Text>
-                </View>
-                
-                <View style={styles.benefitItem}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                    <Ionicons name="heart" size={16} color="#8B4513" />
-                  </View>
-                  <Text style={[styles.benefitText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                    Higher connection success rate
-                  </Text>
-                </View>
-                
-                <View style={styles.benefitItem}>
-                  <View style={[styles.benefitIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                    <Ionicons name="notifications" size={16} color="#8B4513" />
-                  </View>
-                  <Text style={[styles.benefitText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                    Instant notification to recipient
-                  </Text>
-                </View>
+              <View style={styles.benefitRow}>
+                <Ionicons name="heart" size={16} color="#8B4513" />
+                <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
+                  Higher match rate
+                </Text>
+              </View>
+              
+              <View style={styles.benefitRow}>
+                <Ionicons name="notifications" size={16} color="#8B4513" />
+                <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
+                  Instant notification
+                </Text>
               </View>
             </View>
           </ScrollView>
@@ -360,19 +358,19 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
               {isProcessing ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+                <Ionicons name="sparkles" size={18} color="#FFFFFF" />
               )}
               
-              <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
+              <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
                 {isProcessing 
                   ? 'Processing...' 
-                  : `Get ${orbOptions[selectedOption].orbCount} Orb${orbOptions[selectedOption].orbCount !== 1 ? 's' : ''} - $${orbOptions[selectedOption].totalPrice.toFixed(2)}`
+                  : `Get ${orbOptions[selectedOption].orbCount} Orb${orbOptions[selectedOption].orbCount !== 1 ? 's' : ''} • $${orbOptions[selectedOption].totalPrice.toFixed(2)}`
                 }
               </Text>
             </TouchableOpacity>
             
-            <Text style={[styles.disclaimerText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-              Secure payment powered by Stripe
+            <Text style={[styles.disclaimerText, fonts.captionFont, { color: colors.textMuted }]}>
+              Secure payment by Stripe
             </Text>
           </View>
         </Animated.View>
@@ -401,159 +399,140 @@ const styles = StyleSheet.create({
     padding: Spacing.xs,
   },
   headerTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
+    fontSize: Typography.sizes.lg,
     letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   heroSection: {
     alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xl,
   },
-  heroIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  heroTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-    letterSpacing: 0.5,
-  },
-  heroSubtitle: {
-    fontSize: Typography.sizes.base,
-    textAlign: 'center',
-    lineHeight: Typography.sizes.base * 1.5,
-    marginBottom: Spacing.lg,
-    letterSpacing: 0.2,
-  },
-  currentOrbsContainer: {
+  currentOrbsDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
-  },
-  currentOrbsIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   currentOrbsText: {
+    marginLeft: Spacing.sm,
     fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
+  },
+  heroTitle: {
+    fontSize: Typography.sizes.xl,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  heroSubtitle: {
+    fontSize: Typography.sizes.sm,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   optionsSection: {
     marginBottom: Spacing.xl,
   },
-  sectionTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.lg,
-    letterSpacing: 0.3,
-  },
-  optionsGrid: {
+  optionsContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md, // Add top padding for badge space
     gap: Spacing.md,
   },
   optionCard: {
     padding: Spacing.lg,
     borderRadius: 16,
+    borderWidth: 2,
     position: 'relative',
-    shadowColor: '#000',
+    alignItems: 'center',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginTop: Spacing.md, // Add top margin to prevent badge cutoff
   },
-  tagContainer: {
+  popularBadge: {
     position: 'absolute',
-    top: -8,
-    right: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 12,
+    top: -10,
+    left: 0,
+    right: 0,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: 8,
     zIndex: 1,
   },
-  tagText: {
+  popularText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontSize: Typography.sizes.xs,
+  },
+  saveBadge: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  saveText: {
     color: '#FFFFFF',
     fontSize: Typography.sizes.xs,
-    fontWeight: Typography.weights.bold,
   },
-  orbsContainer: {
-    flexDirection: 'row',
+  orbDisplay: {
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    marginVertical: Spacing.md,
   },
   orbIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  orbCount: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-  },
-  priceContainer: {
-    alignItems: 'flex-start',
-  },
-  totalPrice: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
     marginBottom: Spacing.xs,
   },
-  pricePerOrb: {
-    fontSize: Typography.sizes.sm,
+  orbCountText: {
+    fontSize: Typography.sizes.lg,
   },
-  selectionIndicator: {
+  orbLabel: {
+    fontSize: Typography.sizes.xs,
+  },
+  priceDisplay: {
+    alignItems: 'center',
+  },
+  mainPrice: {
+    fontSize: Typography.sizes.sm,
+    marginBottom: 2,
+  },
+  unitPrice: {
+    fontSize: 10,
+  },
+  selectedIndicator: {
     position: 'absolute',
-    top: Spacing.md,
-    right: Spacing.md,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
+    top: Spacing.sm,
+    left: Spacing.sm,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#8B4513',
   },
   benefitsSection: {
-    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
   },
-  benefitsList: {
-    gap: Spacing.md,
-  },
-  benefitItem: {
+  benefitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  benefitIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.md,
+    gap: Spacing.sm,
   },
   benefitText: {
-    fontSize: Typography.sizes.base,
-    flex: 1,
+    fontSize: Typography.sizes.sm,
   },
   purchaseSection: {
     padding: Spacing.lg,
@@ -564,25 +543,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.lg,
-    borderRadius: 16,
+    borderRadius: 12,
     marginBottom: Spacing.sm,
-    shadowColor: '#8B4513',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   purchaseButtonText: {
     color: '#FFFFFF',
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.bold,
     marginLeft: Spacing.sm,
-    letterSpacing: 0.3,
   },
   disclaimerText: {
-    fontSize: Typography.sizes.xs,
     textAlign: 'center',
-    letterSpacing: 0.2,
   },
 });
 
