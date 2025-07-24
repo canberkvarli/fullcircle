@@ -10,7 +10,7 @@ const endpointSecret = functions.config().stripe?.webhook_secret;
 /**
  * Handle Stripe webhooks
  */
-const handleStripeWebhook = functions.https.onRequest(async (req, res) => {
+const stripeWebhook = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
@@ -69,8 +69,17 @@ const handleStripeWebhook = functions.https.onRequest(async (req, res) => {
 /**
  * Handle successful payment intent (for one-time payments like radiance boosts)
  */
+
 async function handlePaymentSucceeded(paymentIntent) {
   const userId = paymentIntent.metadata.firebaseUID;
+  
+  console.log('🔍 WEBHOOK DEBUG - Payment succeeded:', {
+    paymentIntentId: paymentIntent.id,
+    userId: userId,
+    metadata: paymentIntent.metadata,
+    amount: paymentIntent.amount,
+    status: paymentIntent.status
+  });
   
   if (!userId) {
     console.error('No Firebase UID found in payment intent metadata');
@@ -81,10 +90,49 @@ async function handlePaymentSucceeded(paymentIntent) {
   
   // Handle radiance boost purchases
   if (paymentIntent.metadata.type === 'radiance_boost') {
+    console.log('🔮 Processing radiance boost purchase');
     const boostCount = parseInt(paymentIntent.metadata.boostCount || '0');
     if (boostCount > 0) {
       await handleRadiancePurchase(userId, boostCount, paymentIntent);
     }
+  }
+  
+  // Handle subscription payments (manual payment intents)
+  if (paymentIntent.metadata.type === 'subscription_payment' && paymentIntent.metadata.subscriptionId) {
+    console.log('🎉 WEBHOOK DEBUG - Processing manual subscription payment!');
+    console.log('🔍 Subscription ID from metadata:', paymentIntent.metadata.subscriptionId);
+    
+    try {
+      const subscriptionId = paymentIntent.metadata.subscriptionId;
+      console.log('🔍 Retrieving subscription from Stripe...');
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      console.log(`📊 WEBHOOK DEBUG - Subscription status before update: ${subscription.status}`);
+      console.log('🔍 Subscription details:', JSON.stringify({
+        id: subscription.id,
+        status: subscription.status,
+        current_period_start: subscription.current_period_start,
+        current_period_end: subscription.current_period_end
+      }, null, 2));
+      
+      // Force update to active since payment succeeded
+      console.log('🚀 WEBHOOK DEBUG - Calling updateUserSubscriptionData with forceActive=true');
+      await updateUserSubscriptionData(userId, subscription, true);
+      
+      console.log(`✅ WEBHOOK DEBUG - Manual subscription payment processed successfully for user ${userId}`);
+      
+      // ✅ ADD THIS DEBUG CODE HERE:
+      console.log('🔍 WEBHOOK DEBUG - Verifying update worked...');
+      const userDoc = await db.collection('users').doc(userId).get();
+      const updatedUserData = userDoc.data();
+      console.log('🔍 WEBHOOK DEBUG - Updated subscription in Firestore:', JSON.stringify(updatedUserData.subscription, null, 2));
+      
+    } catch (error) {
+      console.error('❌ WEBHOOK DEBUG - Error handling manual subscription payment:', error);
+      console.error('❌ WEBHOOK DEBUG - Full error stack:', error.stack);
+    }
+  } else {
+    console.log('🔍 WEBHOOK DEBUG - Not a subscription payment, metadata:', paymentIntent.metadata);
   }
 }
 
@@ -304,18 +352,21 @@ async function updateUserSubscriptionData(userId, subscription, forceActive = fa
       subscriptionUpdate.createdAt = admin.firestore.FieldValue.serverTimestamp();
     }
 
-    // Handle canceledAt properly
+    // ✅ FIXED: Handle canceledAt properly - don't use FieldValue.delete() in nested object
     if (subscription.cancel_at_period_end && subscription.cancel_at) {
       subscriptionUpdate.canceledAt = subscription.cancel_at;
-    } else if (!subscription.cancel_at_period_end) {
-      // Remove canceledAt if subscription is no longer being canceled
-      subscriptionUpdate.canceledAt = admin.firestore.FieldValue.delete();
     }
+    // Don't add canceledAt field if subscription is not being canceled
 
-    // Update ONLY the subscription object
+    // ✅ CRITICAL FIX: Handle deletion of canceledAt separately if needed
     const updateData = {
       subscription: subscriptionUpdate
     };
+
+    // If we need to remove canceledAt, do it at the top level
+    if (!subscription.cancel_at_period_end && currentSubscription.canceledAt) {
+      updateData['subscription.canceledAt'] = admin.firestore.FieldValue.delete();
+    }
 
     await db.collection('users').doc(userId).update(updateData);
     
@@ -358,5 +409,5 @@ async function handleRadiancePurchase(userId, boostCount, paymentIntent) {
 }
 
 module.exports = {
-  handleStripeWebhook
+  stripeWebhook
 };

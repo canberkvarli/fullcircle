@@ -18,7 +18,7 @@ const {
   confirmRadiancePayment 
 } = require('./stripe/purchases');
 
-const { handleStripeWebhook } = require('./stripe/webhooks');
+const { stripeWebhook } = require('./stripe/webhooks');
 
 // Export all functions
 exports.createSubscription = createSubscription;
@@ -27,4 +27,4 @@ exports.getSubscriptionStatus = getSubscriptionStatus;
 exports.reactivateSubscription = reactivateSubscription;
 exports.createRadiancePayment = createRadiancePayment;
 exports.confirmRadiancePayment = confirmRadiancePayment;
-exports.stripeWebhook = handleStripeWebhook;
+exports.stripeWebhook = stripeWebhook;

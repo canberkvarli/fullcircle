@@ -181,20 +181,10 @@ const getSubscriptionStatus = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
-    
-    // 🔧 DEBUG: Log the actual userData structure
-    console.log('🔍 Full user data structure:', JSON.stringify(userData, null, 2));
-    console.log('🔍 userData.subscription:', userData.subscription);
-    console.log('🔍 userData.subscription?.subscriptionId:', userData.subscription?.subscriptionId);
-    
     const subscriptionId = userData.subscription?.subscriptionId;
 
     if (!subscriptionId) {
       console.log('❌ No subscription ID found');
-      console.log('🔍 Available keys in userData:', Object.keys(userData));
-      if (userData.subscription) {
-        console.log('🔍 Available keys in subscription:', Object.keys(userData.subscription));
-      }
       return {
         hasSubscription: false,
         isActive: false,
@@ -208,121 +198,120 @@ const getSubscriptionStatus = functions.https.onCall(async (data, context) => {
     console.log(`🔍 Found subscription ID: ${subscriptionId}`);
 
     // Get latest subscription data from Stripe
-    console.log(`🔍 Retrieving subscription from Stripe: ${subscriptionId}`);
     const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
       expand: ['latest_invoice', 'latest_invoice.payment_intent']
     });
 
     console.log(`📋 Stripe subscription status: ${subscription.status}`);
 
-    // Handle period dates safely
-    const currentPeriodEnd = subscription.current_period_end;
-    const currentPeriodStart = subscription.current_period_start;
+    // ✅ KEY FIX: Check if we recently processed a successful payment
+    const currentSubscription = userData.subscription || {};
+    const lastUpdated = currentSubscription.updatedAt;
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
     
-    if (currentPeriodEnd) {
-      console.log(`📅 Current period end: ${new Date(currentPeriodEnd * 1000)}`);
-    } else {
-      console.log('📅 Current period end: Not set (subscription incomplete)');
-    }
-
-    // Safely determine if subscription is active
-    const now = Math.floor(Date.now() / 1000);
-    const isActive = subscription.status === 'active' && 
-                    currentPeriodEnd && 
-                    currentPeriodEnd > now;
-
-    // 🔧 UPDATED: For incomplete subscriptions, check payment intent status
-    let shouldShowAsActive = isActive;
-    if (subscription.status === 'incomplete') {
-      console.log('🔄 Subscription is incomplete, checking payment intent...');
-      
-      if (subscription.latest_invoice?.payment_intent) {
-        const paymentIntentStatus = subscription.latest_invoice.payment_intent.status;
-        console.log(`💳 Payment intent status: ${paymentIntentStatus}`);
-        
-        // If payment succeeded, treat as active even if subscription is still "incomplete"
-        if (paymentIntentStatus === 'succeeded') {
-          shouldShowAsActive = true;
-          console.log('✅ Payment succeeded, treating as active');
-        } else if (paymentIntentStatus === 'processing') {
-          shouldShowAsActive = true; // Treat processing as active for UI
-          console.log('⏳ Payment processing, treating as active for UI');
-        } else {
-          console.log(`⚠️ Payment status: ${paymentIntentStatus}, not treating as active`);
-        }
-      } else {
-        // If no payment intent, treat incomplete as active (maybe payment method succeeded)
-        shouldShowAsActive = true;
-        console.log('✅ No payment intent found, treating incomplete as active');
+    // If webhook recently updated to "active" within last 5 minutes, trust it
+    let shouldUseWebhookStatus = false;
+    if (lastUpdated && currentSubscription.status === 'active') {
+      const lastUpdatedDate = lastUpdated.toDate ? lastUpdated.toDate() : new Date(lastUpdated);
+      if (lastUpdatedDate > fiveMinutesAgo) {
+        shouldUseWebhookStatus = true;
+        console.log('🎯 Recent webhook update detected, trusting webhook status over Stripe');
       }
     }
 
-    // Safely calculate days remaining
-    let daysRemaining = 0;
-    if (currentPeriodEnd && currentPeriodEnd > now) {
-      daysRemaining = Math.max(0, Math.ceil((currentPeriodEnd - now) / (60 * 60 * 24)));
+    // Determine active status
+    const currentPeriodEnd = subscription.current_period_end;
+    const currentPeriodStart = subscription.current_period_start;
+    const nowUnix = Math.floor(Date.now() / 1000);
+    
+    let isActive = false;
+    let finalStatus = subscription.status;
+    
+    if (shouldUseWebhookStatus) {
+      // Trust the webhook's determination
+      isActive = currentSubscription.isActive;
+      finalStatus = currentSubscription.status;
+      console.log('✅ Using webhook status: active =', isActive, 'status =', finalStatus);
+    } else {
+      // Use normal logic
+      isActive = subscription.status === 'active' && 
+                currentPeriodEnd && 
+                currentPeriodEnd > nowUnix;
+      
+      // Check for incomplete with successful payment
+      if (subscription.status === 'incomplete' && subscription.latest_invoice?.payment_intent) {
+        const paymentIntentStatus = subscription.latest_invoice.payment_intent.status;
+        if (paymentIntentStatus === 'succeeded') {
+          isActive = true;
+          finalStatus = 'active';
+          console.log('✅ Payment succeeded for incomplete subscription, treating as active');
+        }
+      }
     }
 
-    // Get plan type from subscription
-    let planType = 'monthly'; // default
+    // Calculate days remaining
+    let daysRemaining = 0;
+    if (currentPeriodEnd && currentPeriodEnd > nowUnix) {
+      daysRemaining = Math.max(0, Math.ceil((currentPeriodEnd - nowUnix) / (60 * 60 * 24)));
+    }
+
+    // Get plan type
+    let planType = 'monthly';
     if (subscription.items && subscription.items.data.length > 0) {
       const price = subscription.items.data[0].price;
       if (price.recurring) {
         planType = price.recurring.interval === 'year' ? 'yearly' : 'monthly';
       }
     }
-    // Fallback to user data
-    if (!planType && userData.subscription?.planType) {
-      planType = userData.subscription.planType;
+
+    // Only update Firestore if we're not using recent webhook data
+    if (!shouldUseWebhookStatus) {
+      const subscriptionUpdate = {
+        isActive: isActive,
+        subscriptionId: subscription.id,
+        status: finalStatus,
+        planType: planType,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      // Add periods if they exist
+      if (currentPeriodStart && !isNaN(currentPeriodStart)) {
+        subscriptionUpdate.currentPeriodStart = currentPeriodStart;
+      }
+      if (currentPeriodEnd && !isNaN(currentPeriodEnd)) {
+        subscriptionUpdate.currentPeriodEnd = currentPeriodEnd;
+      }
+
+      // Preserve existing fields
+      if (currentSubscription.stripeCustomerId) {
+        subscriptionUpdate.stripeCustomerId = currentSubscription.stripeCustomerId;
+      }
+      if (currentSubscription.createdAt) {
+        subscriptionUpdate.createdAt = currentSubscription.createdAt;
+      }
+
+      await db.collection('users').doc(userId).update({
+        subscription: subscriptionUpdate
+      });
+      console.log('✅ Firestore updated with fresh Stripe data');
+    } else {
+      console.log('⏭️ Skipping Firestore update, using recent webhook data');
     }
 
-    // Update Firestore with latest subscription data
-    const subscriptionUpdate = {
-      isActive: shouldShowAsActive, // 🔧 Use updated logic
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      planType: planType,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    // Only add periods if they exist and are valid
-    if (currentPeriodStart && !isNaN(currentPeriodStart)) {
-      subscriptionUpdate.currentPeriodStart = currentPeriodStart;
-    }
-    if (currentPeriodEnd && !isNaN(currentPeriodEnd)) {
-      subscriptionUpdate.currentPeriodEnd = currentPeriodEnd;
-    }
-
-    // Preserve existing fields
-    const currentSubscription = userData.subscription || {};
-    if (currentSubscription.stripeCustomerId) {
-      subscriptionUpdate.stripeCustomerId = currentSubscription.stripeCustomerId;
-    }
-    if (currentSubscription.createdAt) {
-      subscriptionUpdate.createdAt = currentSubscription.createdAt;
-    }
-    if (currentSubscription.canceledAt) {
-      subscriptionUpdate.canceledAt = currentSubscription.canceledAt;
-    }
-
-    await db.collection('users').doc(userId).update({
-      subscription: subscriptionUpdate
-    });
-    console.log('✅ Firestore updated with subscription object');
-
-    // Build response object
+    // Build response
     const result = {
       hasSubscription: true,
-      isActive: shouldShowAsActive, // 🔧 Use updated logic
-      status: subscription.status,
+      isActive: isActive,
+      status: finalStatus,
       planType: planType,
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
       daysRemaining: daysRemaining,
       subscriptionId: subscriptionId
     };
 
-    // Only include period fields if they have valid values
+    // Add period fields if they exist
     if (currentPeriodEnd && !isNaN(currentPeriodEnd)) {
       result.currentPeriodEnd = currentPeriodEnd;
     }

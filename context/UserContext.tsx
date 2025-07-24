@@ -3354,21 +3354,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           status: subscriptionData.status,
           planType: subscriptionData.planType,
           cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
-          updatedAt: new Date() // ✅ Fix: Always use Date object for consistency
+          updatedAt: new Date()
         };
 
-        // Only add fields that have values
+        // ✅ KEY FIX: Only add fields that exist and are not undefined
         if (subscriptionData.stripeCustomerId) {
           subscriptionUpdate.stripeCustomerId = subscriptionData.stripeCustomerId;
         }
-        if (subscriptionData.currentPeriodStart) {
+        
+        // ✅ CRITICAL FIX: Only update period fields if they have valid values
+        if (subscriptionData.currentPeriodStart && !isNaN(subscriptionData.currentPeriodStart)) {
           subscriptionUpdate.currentPeriodStart = subscriptionData.currentPeriodStart;
         }
-        if (subscriptionData.currentPeriodEnd) {
+        if (subscriptionData.currentPeriodEnd && !isNaN(subscriptionData.currentPeriodEnd)) {
           subscriptionUpdate.currentPeriodEnd = subscriptionData.currentPeriodEnd;
         }
+        
         // ✅ Fix: Convert canceledAt timestamp to Date object for consistency
-        if (subscriptionData.canceledAt) {
+        if (subscriptionData.canceledAt && !isNaN(subscriptionData.canceledAt)) {
           subscriptionUpdate.canceledAt = new Date(subscriptionData.canceledAt * 1000);
         }
 
@@ -3378,7 +3381,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           subscriptionUpdate.createdAt = currentSubscription.createdAt;
         }
 
-        console.log('🔧 Updating subscription with isActive:', subscriptionUpdate.isActive);
+        console.log('🔧 Updating subscription with valid data only:', subscriptionUpdate);
 
         // Update the subscription object
         await updateUserData({
@@ -3391,8 +3394,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         isActive: subscriptionData.isActive,
         status: subscriptionData.status,
         planType: subscriptionData.planType,
-        currentPeriodStart: subscriptionData.currentPeriodStart,
-        currentPeriodEnd: subscriptionData.currentPeriodEnd,
+        currentPeriodStart: subscriptionData.currentPeriodStart || null,
+        currentPeriodEnd: subscriptionData.currentPeriodEnd || null,
         daysRemaining: daysRemaining,
         cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd || false,
         canReactivate: canReactivate,
@@ -3422,7 +3425,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
     }
   };
-
 
 // 5. UPDATED: Simplified reactivateSubscription  
   const reactivateSubscription = async (): Promise<ReactivateResponse> => {
