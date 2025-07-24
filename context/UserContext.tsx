@@ -3674,31 +3674,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       throw error;
     }
   };
-  
+
   const activateRadiance = async () => {
     try {
       if (!userData.userId || !userData.activeBoosts || userData.activeBoosts <= 0) {
         throw new Error("No boosts available to activate");
       }
 
-      // Calculate expiration time (24 hours from now)
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
+      // Check if radiance is already active
+      if (hasActiveRadiance(userData)) {
+        throw new Error("Radiance is already active");
+      }
 
-      // Update Firestore
+      console.log(`🚀 Activating 1 radiance boost. Current boosts: ${userData.activeBoosts}`);
+
+      // Calculate expiration time (1 HOUR from now, not 24 hours)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1); // Changed from +24 to +1
+
+      // Update Firestore - use the calculated expiration time
       await FIRESTORE.collection('users').doc(userData.userId).update({
-        boostExpiresAt: firestore.FieldValue.serverTimestamp(),
-        activeBoosts: userData.activeBoosts - 1,
+        boostExpiresAt: firestore.Timestamp.fromDate(expiresAt), // Use the calculated time
+        activeBoosts: userData.activeBoosts - 1, // Reduce by exactly 1
       });
 
       // Update local state
       setUserData(prevData => ({
         ...prevData,
-        boostExpiresAt: expiresAt, // Set local expiration
-        activeBoosts: (prevData.activeBoosts || 1) - 1,
+        boostExpiresAt: expiresAt, // Set local expiration to 1 hour from now
+        activeBoosts: (prevData.activeBoosts || 1) - 1, // Reduce by exactly 1
       }));
 
-      console.log('✨ Radiance activated successfully!');
+      console.log(`✨ Radiance activated successfully! Expires at: ${expiresAt.toLocaleTimeString()}`);
+      console.log(`📊 Remaining boosts: ${userData.activeBoosts - 1}`);
     } catch (error: any) {
       console.error("Failed to activate radiance:", error);
       throw error;

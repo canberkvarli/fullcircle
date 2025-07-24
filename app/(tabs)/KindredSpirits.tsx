@@ -81,6 +81,9 @@ const KindredSpirits: React.FC = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
+  // Check if user has Full Circle subscription
+  const hasFullCircle = userData.subscription?.isActive;
+
   // Loading animation ref
   const loadingPulse = useRef(new Animated.Value(0)).current;
 
@@ -160,7 +163,7 @@ const KindredSpirits: React.FC = () => {
   }, [likedByUsers, selectedSort]);
 
   const handleCardPress = (user: any, isFirst: boolean) => {
-    if (userData.subscription?.isActive || isFirst) {
+    if (hasFullCircle || isFirst) {
       router.navigate({
         pathname: "/user/UserShow" as any,
         params: { user: JSON.stringify(user) },
@@ -171,7 +174,7 @@ const KindredSpirits: React.FC = () => {
   };
 
   const handleSortPress = (sortKey: SortOption) => {
-    if (!userData.subscription?.isActive && sortKey !== 'recent') {
+    if (!hasFullCircle && sortKey !== 'recent') {
       router.navigate({ pathname: "/user/FullCircleSubscription" });
       return;
     }
@@ -187,8 +190,8 @@ const KindredSpirits: React.FC = () => {
 
     if ((userData.activeBoosts || 0) > 0) {
       Alert.alert(
-        "Activate Sacred Radiance",
-        `You have ${userData.activeBoosts} boost${userData.activeBoosts !== 1 ? 's' : ''} available. Activate Sacred Radiance to increase your visibility for 1 hour?`,
+        "Activate Radiance",
+        `You have ${userData.activeBoosts} boost${userData.activeBoosts !== 1 ? 's' : ''} available. Activate Radiance to increase your visibility for 1 hour?`,
         [
           {
             text: "Cancel",
@@ -211,13 +214,13 @@ const KindredSpirits: React.FC = () => {
     try {
       await activateRadiance();
       Alert.alert(
-        "Sacred Radiance Activated! ✨",
+        "Radiance Activated! ✨",
         "Your profile is now boosted for the next hour. You'll appear higher in potential matches and your likes will have special radiance energy."
       );
     } catch (error: any) {
       Alert.alert(
         "Activation Failed",
-        error.message || "Failed to activate Sacred Radiance. Please try again."
+        error.message || "Failed to activate Radiance. Please try again."
       );
     } finally {
       setIsActivatingBoost(false);
@@ -281,7 +284,7 @@ const KindredSpirits: React.FC = () => {
     if ((userData.activeBoosts || 0) > 0) {
       return {
         text: `Activate (${userData.activeBoosts})`,
-        color: '#D4AF37',
+        color: '#8B4513', // Changed from #D4AF37 to brown for better visibility
         backgroundColor: colors.background,
         borderColor: '#D4AF37',
         disabled: false
@@ -290,7 +293,7 @@ const KindredSpirits: React.FC = () => {
     
     return {
       text: "Radiance",
-      color: '#D4AF37',
+      color: '#8B4513', // Changed from #D4AF37 to brown for better visibility
       backgroundColor: colors.background,
       borderColor: colors.border,
       disabled: false
@@ -432,20 +435,23 @@ const KindredSpirits: React.FC = () => {
           </Text>
           
           <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Great people are still discovering you. Boost your visibility and connect with those who appreciate your authentic self.
+            Connect with souls who appreciate your authentic self.
           </Text>
           
           <View style={styles.actionContainer}>
-            <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}
-              onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
-              activeOpacity={0.9}
-            >
-              <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-              <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-                Embrace Full Circle
-              </Text>
-            </TouchableOpacity>
+            {/* Only show Full Circle button if user doesn't have it */}
+            {!hasFullCircle && (
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: '#8B4513', shadowColor: '#8B4513' }]}
+                onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
+                activeOpacity={0.9}
+              >
+                <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                  Embrace Full Circle
+                </Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor: '#D4AF37' }]}
@@ -454,7 +460,7 @@ const KindredSpirits: React.FC = () => {
             >
               <Ionicons name="radio-outline" size={18} color="#D4AF37" style={styles.buttonIcon} />
               <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#D4AF37' }]}>
-                {(userData.activeBoosts || 0) > 0 ? 'Activate Sacred Radiance' : 'Sacred Radiance'}
+                {(userData.activeBoosts || 0) > 0 ? 'Activate Radiance' : 'Radiance'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -584,7 +590,7 @@ const KindredSpirits: React.FC = () => {
               </Text>
             </View>
             
-            {!userData.subscription?.isActive && (
+            {!hasFullCircle && (
               <TouchableOpacity 
               onPress={() => router.navigate({ pathname: "/user/FullCircleSubscription" })}
               style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
@@ -605,7 +611,7 @@ const KindredSpirits: React.FC = () => {
                     <View style={styles.cardContainer}>
                       <UserCard
                         user={user}
-                        isBlurred={!userData.subscription?.isActive}
+                        isBlurred={!hasFullCircle}
                         style={styles.smallCard}
                         isOrbLike={user.viaOrb}
                         isRadianceLike={user.viaRadiance}
@@ -773,12 +779,12 @@ const styles = StyleSheet.create({
   },
   
   noLikesSubtitle: {
-    fontSize: Typography.sizes.base,
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: Spacing['2xl'],
     letterSpacing: 0.3,
-    fontStyle: 'italic',
   },
   
   actionContainer: {

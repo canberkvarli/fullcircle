@@ -246,7 +246,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       console.error('Activation failed:', error);
       Alert.alert(
         "Activation Failed",
-        "We couldn't activate your Sacred Radiance right now. Please try again.",
+        "We couldn't activate your Radiance right now. Please try again.",
         [{ text: "OK", style: "default" }]
       );
     } finally {
@@ -295,7 +295,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       // 5. Show success
       Alert.alert(
         "🎉 Purchase Successful!",
-        `You've received ${option.boostCount} Sacred Radiance boost${option.boostCount !== 1 ? 's' : ''}! Use them to get 11x more visibility and connections.`,
+        `You've received ${option.boostCount} Radiance boost${option.boostCount !== 1 ? 's' : ''}! Use them to get 11x more visibility and connections.`,
         [{ text: "Awesome!", style: "default" }]
       );
       
@@ -366,7 +366,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
           {!hasActiveRadiance && hasAvailableBoosts && (
             <View style={styles.availableBoostsSection}>
               <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Activate Your Sacred Radiance
+                Activate Your Radiance
               </Text>
               <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
                 You have {userData.activeBoosts} boost{userData.activeBoosts !== 1 ? 's' : ''} ready to activate
@@ -375,7 +375,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
               <View style={[styles.boostInfoCard, { backgroundColor: colors.card }]}>
                 <Ionicons name="information-circle" size={20} color="#B8860B" />
                 <Text style={[styles.boostInfoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Activating Sacred Radiance will boost your profile for 1 hour with 11x more visibility!
+                  Activating Radiance will boost your profile for 1 hour with 11x more visibility!
                 </Text>
               </View>
               
@@ -403,7 +403,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
               </TouchableOpacity>
               
               <Text style={[styles.orText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                Or get more Sacred Radiance below
+                Or get more Radiance below
               </Text>
             </View>
           )}
@@ -413,7 +413,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
             <>
               <View style={styles.purchaseSection}>
                 <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  {hasActiveRadiance ? "Get More Sacred Radiance" : "Sacred Radiance"}
+                  {hasActiveRadiance ? "Get More Radiance" : "Radiance"}
                 </Text>
                 <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
                   Appear first in discovery and get 11x more connections
