@@ -11,6 +11,7 @@ import {
   useColorScheme,
   Animated,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -260,15 +261,15 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
       onRequestClose={onClose}
     >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          {/* Header */}
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.textDark} />
-            </TouchableOpacity>
-            <View style={{ width: 24 }} />
-          </View>
+        {/* Floating Close Button */}
+        <TouchableOpacity 
+          style={[styles.floatingCloseButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={onClose}
+        >
+          <Ionicons name="close" size={20} color={colors.textDark} />
+        </TouchableOpacity>
 
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <ScrollView 
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -395,6 +396,22 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
   },
+  floatingCloseButton: {
+    position: 'absolute',
+    top: Platform.select({ ios: 50, android: 30 }),
+    right: Spacing.lg,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    zIndex: 1000,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   closeButton: {
     padding: Spacing.xs,
   },
@@ -406,6 +423,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingTop: Platform.select({ ios: 80, android: 60 }),
+    paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
   heroSection: {
@@ -458,7 +477,7 @@ const styles = StyleSheet.create({
   },
   popularBadge: {
     position: 'absolute',
-    top: -10,
+    top: -29,
     left: 0,
     right: 0,
     paddingVertical: 4,

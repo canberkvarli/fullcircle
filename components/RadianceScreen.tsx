@@ -29,6 +29,7 @@ interface BoostOptionProps {
   isSelected: boolean;
   onSelect: () => void;
   tag?: string;
+  popular?: boolean;
 }
 
 const BoostOption: React.FC<BoostOptionProps> = ({
@@ -38,7 +39,8 @@ const BoostOption: React.FC<BoostOptionProps> = ({
   savings,
   isSelected,
   onSelect,
-  tag
+  tag,
+  popular
 }) => {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -49,51 +51,55 @@ const BoostOption: React.FC<BoostOptionProps> = ({
       style={[
         styles.boostOption,
         { 
-          backgroundColor: isSelected ? '#D4AF37' + '10' : colors.card,
-          borderColor: isSelected ? '#B8860B' : '#D4AF37' + '40',
-          borderWidth: 2
+          backgroundColor: isSelected ? '#B8860B' + '15' : colors.card,
+          borderColor: isSelected ? '#B8860B' : colors.border,
+          shadowColor: isSelected ? '#B8860B' : colors.shadow,
         }
       ]}
       onPress={onSelect}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
     >
-      {tag && (
-        <View style={[styles.tagBadge, { backgroundColor: '#FF6B35' }]}>
-          <Text style={[styles.tagText, fonts.spiritualBodyFont]}>{tag}</Text>
+      {popular && (
+        <View style={[styles.popularBadge, { backgroundColor: '#B8860B' }]}>
+          <Text style={[styles.popularText, fonts.captionFont]}>
+            Most Popular
+          </Text>
         </View>
       )}
       
-      <View style={styles.boostHeader}>
-        <View style={styles.boostIconContainer}>
-          <Ionicons name="radio-outline" size={20} color="#B8860B" />
-          <Text style={[styles.boostCount, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+      {tag && !popular && (
+        <View style={[styles.saveBadge, { backgroundColor: colors.success }]}>
+          <Text style={[styles.saveText, fonts.captionFont]}>
+            {tag}
+          </Text>
+        </View>
+      )}
+      
+      <View style={styles.boostDisplay}>
+        <View style={[styles.boostIcon, { backgroundColor: '#B8860B' + '20' }]}>
+          <Text style={[styles.boostCountText, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
             {boostCount}
           </Text>
         </View>
+        <Text style={[styles.boostLabel, fonts.bodyFont, { color: colors.textMuted }]}>
+          boost{boostCount !== 1 ? 's' : ''}
+        </Text>
       </View>
 
       <View style={styles.pricingContainer}>
-        <Text style={[styles.pricePerBoost, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-          ${pricePerBoost.toFixed(2)} each
-        </Text>
-        <Text style={[styles.totalPrice, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+        <Text style={[styles.totalPrice, fonts.titleFont, { color: colors.textDark }]}>
           ${totalPrice.toFixed(2)}
+        </Text>
+        <Text style={[styles.pricePerBoost, fonts.captionFont, { color: colors.textMuted }]}>
+          ${pricePerBoost.toFixed(2)} each
         </Text>
       </View>
 
-      <View
-        style={[
-          styles.selectIndicator,
-          { 
-            backgroundColor: isSelected ? '#B8860B' : 'transparent',
-            borderColor: isSelected ? '#B8860B' : '#D4AF37' + '60',
-          }
-        ]}
-      >
-        {isSelected && (
-          <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-        )}
-      </View>
+      {isSelected && (
+        <View style={[styles.selectedIndicator, { backgroundColor: '#B8860B' }]}>
+          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -120,7 +126,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
   const colors = Colors[colorScheme];
   const fonts = useFont();
   
-  const [selectedOption, setSelectedOption] = useState<number>(1);
+  const [selectedOption, setSelectedOption] = useState<number>(1); // Default to middle option
   const [isProcessing, setIsProcessing] = useState(false);
   const [radianceStatus, setRadianceStatus] = useState({ 
     isActive: false, 
@@ -128,25 +134,32 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     formattedTime: '00:00' 
   });
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const boostOptions = [
     {
       boostCount: 1,
       pricePerBoost: 9.99,
       totalPrice: 9.99,
-      tag: undefined
     },
     {
       boostCount: 3,
       pricePerBoost: 8.99,
       totalPrice: 26.97,
-      tag: "Save 10%"
+      tag: "Save 10%",
+      popular: true,
     },
     {
       boostCount: 5,
       pricePerBoost: 7.99,
       totalPrice: 39.95,
-      tag: "Save 20%"
+      tag: "Save 20%",
+    },
+    {
+      boostCount: 10,
+      pricePerBoost: 6.99,
+      totalPrice: 69.90,
+      tag: "Save 30%",
     }
   ];
 
@@ -223,6 +236,14 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
         duration: 300,
         useNativeDriver: true,
       }).start();
+      
+      // Auto-scroll to popular option
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          x: 160, // Adjusted for wider cards
+          animated: true,
+        });
+      }, 300);
     }
   }, [visible]);
 
@@ -254,7 +275,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
     }
   };
 
-  // 🚀 NEW: Handle Stripe Purchase
+  // Handle Stripe Purchase
   const handlePurchase = async () => {
     setIsProcessing(true);
     const option = boostOptions[selectedOption];
@@ -294,9 +315,9 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       
       // 5. Show success
       Alert.alert(
-        "🎉 Purchase Successful!",
-        `You've received ${option.boostCount} Radiance boost${option.boostCount !== 1 ? 's' : ''}! Use them to get 11x more visibility and connections.`,
-        [{ text: "Awesome!", style: "default" }]
+        "Success! 🎉",
+        `You got ${option.boostCount} Radiance boost${option.boostCount !== 1 ? 's' : ''}!`,
+        [{ text: "Nice!", style: "default" }]
       );
       
       onClose();
@@ -323,531 +344,417 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <TouchableOpacity 
-            style={[styles.closeButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={onClose}
-          >
-            <Ionicons name="close" size={24} color={colors.textDark} />
-          </TouchableOpacity>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <ScrollView 
-          contentContainerStyle={styles.scrollView}
-          showsVerticalScrollIndicator={false}
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Floating Close Button */}
+        <TouchableOpacity 
+          style={[styles.floatingCloseButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={onClose}
         >
-          {/* Active Radiance Status */}
-          {hasActiveRadiance && (
-            <View style={styles.activeRadianceSection}>
-              <View style={[styles.activeRadianceCard, { backgroundColor: '#D4AF37' + '08', borderColor: '#B8860B' }]}>
-                <View style={styles.activeRadianceHeader}>
-                  <Ionicons name="radio" size={24} color="#B8860B" />
-                  <Text style={[styles.activeRadianceTitle, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
-                    Radiance Active
+          <Ionicons name="close" size={20} color={colors.textDark} />
+        </TouchableOpacity>
+
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Active Radiance Status */}
+            {hasActiveRadiance && (
+              <View style={styles.activeRadianceSection}>
+                <View style={[styles.activeRadianceCard, { backgroundColor: '#B8860B' + '08', borderColor: '#B8860B' }]}>
+                  <View style={styles.activeRadianceHeader}>
+                    <Ionicons name="radio" size={24} color="#B8860B" />
+                    <Text style={[styles.activeRadianceTitle, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+                      Radiance Active
+                    </Text>
+                  </View>
+                  <Text style={[styles.activeRadianceTime, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                    {radianceStatus.formattedTime}
+                  </Text>
+                  <Text style={[styles.activeRadianceSubtext, fonts.bodyFont, { color: colors.textMuted }]}>
+                    11x more visibility active!
                   </Text>
                 </View>
-                <Text style={[styles.activeRadianceTime, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  {radianceStatus.formattedTime}
+              </View>
+            )}
+
+            {/* Available Boosts to Activate */}
+            {!hasActiveRadiance && hasAvailableBoosts && (
+              <View style={styles.availableBoostsSection}>
+                <View style={[styles.currentBoostsDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Ionicons name="radio-outline" size={18} color="#B8860B" />
+                  <Text style={[styles.currentBoostsText, fonts.bodyFont, { color: colors.textDark }]}>
+                    {userData.activeBoosts} boost{userData.activeBoosts !== 1 ? 's' : ''} ready
+                  </Text>
+                </View>
+                
+                <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  Activate Your Radiance
                 </Text>
-                <Text style={[styles.activeRadianceSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Your profile is being prioritized in discovery
+                
+                <Text style={[styles.heroSubtitle, fonts.bodyFont, { color: colors.textMuted }]}>
+                  Get 11x more visibility for 1 hour
                 </Text>
-                <Text style={[styles.activeRadianceBonus, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                  11x more visibility active!
+                
+                <TouchableOpacity
+                  style={[styles.activateButton, { backgroundColor: '#B8860B' }]}
+                  onPress={handleActivateExistingBoost}
+                  disabled={isProcessing}
+                  activeOpacity={0.8}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                      <Text style={[styles.activateButtonText, fonts.buttonFont]}>
+                        Activating...
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                      <Text style={[styles.activateButtonText, fonts.buttonFont]}>
+                        Activate for 1 Hour
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                
+                <Text style={[styles.orText, fonts.captionFont, { color: colors.textMuted }]}>
+                  Or get more below
                 </Text>
               </View>
-            </View>
-          )}
+            )}
 
-          {/* Available Boosts to Activate */}
-          {!hasActiveRadiance && hasAvailableBoosts && (
-            <View style={styles.availableBoostsSection}>
-              <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Activate Your Radiance
-              </Text>
-              <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                You have {userData.activeBoosts} boost{userData.activeBoosts !== 1 ? 's' : ''} ready to activate
-              </Text>
-              
-              <View style={[styles.boostInfoCard, { backgroundColor: colors.card }]}>
-                <Ionicons name="information-circle" size={20} color="#B8860B" />
-                <Text style={[styles.boostInfoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Activating Radiance will boost your profile for 1 hour with 11x more visibility!
+            {/* Simple Hero for Purchase */}
+            {(!hasAvailableBoosts || hasActiveRadiance) && (
+              <View style={styles.heroSection}>
+                <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  {hasActiveRadiance ? "Get More Radiance" : "Radiance Boosts"}
                 </Text>
-              </View>
-              
-              <TouchableOpacity
-                style={[styles.activateButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
-                onPress={handleActivateExistingBoost}
-                disabled={isProcessing}
-                activeOpacity={0.8}
-              >
-                {isProcessing ? (
-                  <View style={styles.processingContainer}>
-                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                    <Text style={[styles.activateButtonText, fonts.spiritualBodyFont]}>
-                      Activating...
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.activateContainer}>
-                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                    <Text style={[styles.activateButtonText, fonts.spiritualBodyFont]}>
-                      Activate for 1 Hour
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              
-              <Text style={[styles.orText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                Or get more Radiance below
-              </Text>
-            </View>
-          )}
-
-          {/* Purchase Options */}
-          {(!hasActiveRadiance || hasActiveRadiance) && (
-            <>
-              <View style={styles.purchaseSection}>
-                <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  {hasActiveRadiance ? "Get More Radiance" : "Radiance"}
-                </Text>
-                <Text style={[styles.sectionSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                <Text style={[styles.heroSubtitle, fonts.bodyFont, { color: colors.textMuted }]}>
                   Appear first in discovery and get 11x more connections
                 </Text>
               </View>
+            )}
 
-              {/* Horizontal Boost Options */}
-              <View style={styles.optionsSection}>
-                <ScrollView 
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.optionsScrollView}
-                  snapToInterval={width * 0.7}
-                  decelerationRate="fast"
-                >
-                  {boostOptions.map((option, index) => (
-                    <BoostOption
-                      key={index}
-                      boostCount={option.boostCount}
-                      pricePerBoost={option.pricePerBoost}
-                      totalPrice={option.totalPrice}
-                      tag={option.tag}
-                      isSelected={selectedOption === index}
-                      onSelect={() => setSelectedOption(index)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-
-              {/* How it Works */}
-              <View style={styles.infoSection}>
-                <Text style={[styles.infoTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  How It Works
-                </Text>
-                
-                <View style={styles.infoList}>
-                  <View style={styles.infoItem}>
-                    <View style={[styles.infoIcon, { backgroundColor: '#D4AF37' + '15' }]}>
-                      <Ionicons name="trending-up" size={16} color="#B8860B" />
-                    </View>
-                    <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                      Your profile appears first in discovery for 60 minutes
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.infoItem}>
-                    <View style={[styles.infoIcon, { backgroundColor: '#D4AF37' + '15' }]}>
-                      <Ionicons name="people" size={16} color="#B8860B" />
-                    </View>
-                    <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                      Get 11x more profile views from compatible souls
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.infoItem}>
-                    <View style={[styles.infoIcon, { backgroundColor: '#D4AF37' + '15' }]}>
-                      <Ionicons name="heart" size={16} color="#B8860B" />
-                    </View>
-                    <Text style={[styles.infoText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                      Track radiance connections in Kindred Spirits
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Purchase Button */}
-              <TouchableOpacity
-                style={[
-                  styles.purchaseButton,
-                  { 
-                    backgroundColor: isProcessing ? colors.textMuted : '#B8860B',
-                    shadowColor: '#B8860B'
-                  }
-                ]}
-                onPress={handlePurchase}
-                disabled={isProcessing}
-                activeOpacity={0.8}
+            {/* Horizontal Boost Options */}
+            <View style={styles.optionsSection}>
+              <ScrollView 
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.optionsContainer}
+                decelerationRate="fast"
+                snapToInterval={156}
+                snapToAlignment="start"
               >
-                {isProcessing ? (
-                  <View style={styles.processingContainer}>
-                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                    <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
-                      Processing...
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.purchaseContainer}>
-                    <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                    <Text style={[styles.purchaseButtonText, fonts.spiritualBodyFont]}>
-                      Get {boostOptions[selectedOption].boostCount} for ${boostOptions[selectedOption].totalPrice.toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+                {boostOptions.map((option, index) => (
+                  <BoostOption
+                    key={index}
+                    boostCount={option.boostCount}
+                    pricePerBoost={option.pricePerBoost}
+                    totalPrice={option.totalPrice}
+                    tag={option.tag}
+                    popular={option.popular}
+                    isSelected={selectedOption === index}
+                    onSelect={() => setSelectedOption(index)}
+                  />
+                ))}
+              </ScrollView>
+            </View>
 
-              {/* Trust Indicators */}
-              <View style={styles.trustSection}>
-                <View style={styles.trustItem}>
-                  <Ionicons name="shield-checkmark" size={16} color="#B8860B" />
-                  <Text style={[styles.trustText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                    Secure payment
-                  </Text>
-                </View>
-                <View style={styles.trustItem}>
-                  <Ionicons name="refresh" size={16} color="#B8860B" />
-                  <Text style={[styles.trustText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                    Cancel anytime
-                  </Text>
-                </View>
+            {/* Simple Benefits */}
+            <View style={styles.benefitsSection}>
+              <View style={styles.benefitRow}>
+                <Ionicons name="trending-up" size={16} color="#B8860B" />
+                <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
+                  Appear first for 60 minutes
+                </Text>
               </View>
-            </>
-          )}
-        </ScrollView>
-      </Animated.View>
+              
+              <View style={styles.benefitRow}>
+                <Ionicons name="people" size={16} color="#B8860B" />
+                <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
+                  11x more profile views
+                </Text>
+              </View>
+              
+              <View style={styles.benefitRow}>
+                <Ionicons name="heart" size={16} color="#B8860B" />
+                <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
+                  Higher match rate
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Purchase Button */}
+          <View style={[styles.purchaseSection, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              style={[
+                styles.purchaseButton,
+                { 
+                  backgroundColor: isProcessing ? colors.textMuted : '#B8860B',
+                  opacity: isProcessing ? 0.7 : 1
+                }
+              ]}
+              onPress={handlePurchase}
+              disabled={isProcessing}
+              activeOpacity={0.8}
+            >
+              {isProcessing ? (
+                <>
+                  <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                  <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
+                    Processing...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                  <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
+                    Get {boostOptions[selectedOption].boostCount} Boost{boostOptions[selectedOption].boostCount !== 1 ? 's' : ''} • ${boostOptions[selectedOption].totalPrice.toFixed(2)}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+            
+            <Text style={[styles.disclaimerText, fonts.captionFont, { color: colors.textMuted }]}>
+              Secure payment by Stripe
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
 
-// Keep all your existing styles...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Platform.select({ ios: 50, android: 30 }),
-    paddingBottom: Spacing.lg,
-    borderBottomWidth: 1,
+  content: {
+    flex: 1,
   },
-  
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.full,
+  floatingCloseButton: {
+    position: 'absolute',
+    top: Platform.select({ ios: 50, android: 30 }),
+    right: Spacing.lg,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+    zIndex: 1000,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  
   scrollView: {
+    paddingTop: Platform.select({ ios: 80, android: 60 }),
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['2xl'],
+    paddingBottom: Spacing.xl,
   },
 
   // Active Radiance Section
   activeRadianceSection: {
     marginBottom: Spacing.xl,
-    paddingTop: Spacing.lg,
   },
-
   activeRadianceCard: {
-    borderRadius: BorderRadius.xl,
+    borderRadius: 16,
     padding: Spacing.xl,
     borderWidth: 2,
     alignItems: 'center',
   },
-
   activeRadianceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.md,
   },
-
   activeRadianceTitle: {
     fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
     marginLeft: Spacing.sm,
   },
-
   activeRadianceTime: {
-    fontSize: Typography.sizes['3xl'],
-    fontWeight: Typography.weights.bold,
+    fontSize: Typography.sizes['2xl'],
     marginBottom: Spacing.sm,
   },
-
   activeRadianceSubtext: {
     fontSize: Typography.sizes.sm,
     textAlign: 'center',
-    marginBottom: Spacing.xs,
-  },
-
-  activeRadianceBonus: {
-    fontSize: Typography.sizes.sm,
-    textAlign: 'center',
-    fontWeight: Typography.weights.semibold,
   },
 
   // Available Boosts Section
   availableBoostsSection: {
+    alignItems: 'center',
     marginBottom: Spacing.xl,
-    paddingTop: Spacing.lg,
-    alignItems: 'center',
   },
-
-  boostInfoCard: {
+  currentBoostsDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginVertical: Spacing.md,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
   },
-
-  boostInfoText: {
-    flex: 1,
+  currentBoostsText: {
+    marginLeft: Spacing.sm,
     fontSize: Typography.sizes.sm,
-    lineHeight: Typography.sizes.sm * 1.3,
   },
-
-  activateButton: {
-    borderRadius: BorderRadius.full,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    marginVertical: Spacing.lg,
+  heroSection: {
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    marginBottom: Spacing.xl,
   },
-
-  activateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
+  heroTitle: {
+    fontSize: Typography.sizes.xl,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
-
-  activateButtonText: {
-    color: '#FFFFFF',
-    fontWeight: Typography.weights.semibold,
-    fontSize: Typography.sizes.lg,
-  },
-
-  orText: {
+  heroSubtitle: {
     fontSize: Typography.sizes.sm,
     textAlign: 'center',
+    lineHeight: 20,
+  },
+  activateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 12,
+    marginVertical: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  activateButtonText: {
+    color: '#FFFFFF',
+  },
+  orText: {
+    textAlign: 'center',
     fontStyle: 'italic',
+  },
+
+  // Options Section
+  optionsSection: {
+    marginBottom: Spacing.xl,
+  },
+  optionsContainer: {
+    paddingTop: Spacing.md,
+    gap: Spacing.md,
+  },
+  boostOption: {
+    padding: Spacing.lg,
+    borderRadius: 16,
+    borderWidth: 2,
+    position: 'relative',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     marginTop: Spacing.md,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -29,
+    left: 0,
+    right: 0,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  popularText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontSize: Typography.sizes.xs,
+  },
+  saveBadge: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  saveText: {
+    color: '#FFFFFF',
+    fontSize: Typography.sizes.xs,
+  },
+  boostDisplay: {
+    alignItems: 'center',
+    marginVertical: Spacing.md,
+  },
+  boostIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  boostCountText: {
+    fontSize: Typography.sizes.lg,
+  },
+  boostLabel: {
+    fontSize: Typography.sizes.xs,
+  },
+  pricingContainer: {
+    alignItems: 'center',
+  },
+  totalPrice: {
+    fontSize: Typography.sizes.sm,
+    marginBottom: 2,
+  },
+  pricePerBoost: {
+    fontSize: 10,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: Spacing.sm,
+    left: Spacing.sm,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Benefits Section
+  benefitsSection: {
+    gap: Spacing.sm,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  benefitText: {
+    fontSize: Typography.sizes.sm,
   },
 
   // Purchase Section
   purchaseSection: {
-    marginBottom: Spacing.lg,
-    alignItems: 'center',
-  },
-  
-  sectionTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
-  },
-
-  sectionSubtitle: {
-    fontSize: Typography.sizes.base,
-    textAlign: 'center',
-    lineHeight: Typography.sizes.base * 1.4,
-  },
-  
-  // Options Section - Horizontal
-  optionsSection: {
-    marginBottom: Spacing.xl,
-  },
-
-  optionsScrollView: {
-    paddingLeft: Spacing.md,
-    gap: Spacing.md,
-  },
-  
-  boostOption: {
-    width: width * 0.65,
-    borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
-    position: 'relative',
-    alignItems: 'center',
-    marginRight: Spacing.md,
+    borderTopWidth: 1,
   },
-  
-  tagBadge: {
-    position: 'absolute',
-    right: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.md,
-  },
-  
-  tagText: {
-    fontSize: Typography.sizes.xs,
-    fontWeight: Typography.weights.bold,
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  
-  boostHeader: {
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  
-  boostIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  
-  boostCount: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    marginLeft: Spacing.sm,
-  },
-  
-  pricingContainer: {
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  
-  pricePerBoost: {
-    fontSize: Typography.sizes.sm,
-    marginBottom: Spacing.xs,
-  },
-  
-  totalPrice: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-  },
-
-  selectIndicator: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  // Info Section
-  infoSection: {
-    marginBottom: Spacing.xl,
-  },
-  
-  infoTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.lg,
-    textAlign: 'center',
-  },
-  
-  infoList: {
-    gap: Spacing.md,
-  },
-  
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  
-  infoIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.md,
-  },
-  
-  infoText: {
-    fontSize: Typography.sizes.sm,
-    flex: 1,
-    lineHeight: Typography.sizes.sm * 1.4,
-  },
-  
-  // Purchase Button
   purchaseButton: {
-    borderRadius: BorderRadius.full,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  
-  purchaseContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    borderRadius: 12,
+    marginBottom: Spacing.sm,
     gap: Spacing.sm,
   },
-  
-  processingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  
   purchaseButtonText: {
     color: '#FFFFFF',
-    fontWeight: Typography.weights.semibold,
-    fontSize: Typography.sizes.lg,
   },
-  
-  // Trust Section
-  trustSection: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.lg,
-  },
-  
-  trustItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  
-  trustText: {
-    fontSize: Typography.sizes.sm,
+  disclaimerText: {
+    textAlign: 'center',
   },
 });
 
