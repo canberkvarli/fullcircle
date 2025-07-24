@@ -260,21 +260,26 @@ export default function SacredSelf() {
               
               <View style={styles.featuresContainer}>
                 {/* Unlimited Likes */}
-                <View style={[styles.featureRow, { backgroundColor: colors.card }]}>
-                  <View style={styles.featureIconContainer}>
-                    <View style={[styles.featureIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
-                      <Ionicons name="heart-circle" size={24} color="#FF6B6B" />
+                  <TouchableOpacity 
+                    style={[styles.featureRow, { backgroundColor: colors.card }]}
+                    onPress={() => router.navigate("/user/FullCircleSubscription")}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.featureIconContainer}>
+                      <View style={[styles.featureIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
+                        <Ionicons name="heart-circle" size={24} color="#FF6B6B" />
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.featureContent}>
-                    <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                      Unlimited Likes
-                    </Text>
-                    <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                      Express your interest freely
-                    </Text>
-                  </View>
-                </View>
+                    <View style={styles.featureContent}>
+                      <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                        Unlimited Likes
+                      </Text>
+                      <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                        Express your interest freely
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
 
                 {/* Radiances - Now clickable */}
                 <TouchableOpacity 
@@ -322,7 +327,11 @@ export default function SacredSelf() {
                 </View>
 
                 {/* See Who Likes You */}
-                <View style={[styles.featureRow, { backgroundColor: colors.card }]}>
+                <TouchableOpacity 
+                  style={[styles.featureRow, { backgroundColor: colors.card }]}
+                  onPress={() => router.navigate("/(tabs)/KindredSpirits")}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#9D4EDD' + '20' }]}>
                       <Ionicons name="eye" size={24} color="#9D4EDD" />
@@ -336,10 +345,15 @@ export default function SacredSelf() {
                       Know who's interested in you
                     </Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
 
                 {/* Enhanced Filtering */}
-                <View style={[styles.featureRow, { backgroundColor: colors.card }]}>
+                <TouchableOpacity 
+                  style={[styles.featureRow, { backgroundColor: colors.card }]}
+                  onPress={() => router.navigate("/user/ConnectingPreferences")}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#00BCD4' + '20' }]}>
                       <Ionicons name="filter" size={24} color="#00BCD4" />
@@ -353,7 +367,8 @@ export default function SacredSelf() {
                       Find your perfect spiritual match
                     </Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
               </View>
             </View>
           ) : (
