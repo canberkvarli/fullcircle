@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import ProfilePreview from "@/components/ProfilePreview";
+import { STORAGE } from "@/services/FirebaseConfig";
 
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
@@ -28,6 +29,7 @@ export default function EditUserProfile() {
   const router = useRouter();
   const [isModified, setIsModified] = useState(false);
   const [fieldVisibility, setFieldVisibility] = useState<{ [key: string]: boolean }>({});
+  const [loading, setLoading] = useState(false);
 
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -78,6 +80,9 @@ export default function EditUserProfile() {
       updatedPhotos[index] = result.assets[0].uri;
       setPhotos(updatedPhotos);
       setIsModified(true);
+      
+      // Provide feedback that the photo will be uploaded when saved
+      console.log(`Photo ${index} selected (will upload when saved):`, result.assets[0].uri);
     }
   };
 
@@ -87,6 +92,31 @@ export default function EditUserProfile() {
       params: { fieldName },
     });
   };
+
+  const uploadPhotoToStorage = async (photoUri: string, index: number): Promise<string | null> => {
+  if (!photoUri || !userData.userId) return null;
+
+  // Skip if it's already a Firebase Storage URL
+  if (photoUri.includes('firebasestorage.googleapis.com')) {
+    return photoUri;
+  }
+
+  try {
+    const response = await fetch(photoUri);
+    const blob = await response.blob();
+    
+    // Use user ID + unique identifier + index for proper organization
+    const uniqueId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const storageRef = STORAGE.ref(`users/${userData.userId}/photos/${index}_${uniqueId}.jpg`);
+    
+    await storageRef.putFile(photoUri);
+    const photoURL = await storageRef.getDownloadURL();
+    return photoURL;
+  } catch (error) {
+    console.error(`Error uploading photo ${index}:`, error);
+    return null;
+  }
+};
 
   // Check if field should show visibility toggle
   const shouldShowVisibilityToggle = (fieldName: string) => {
@@ -455,15 +485,39 @@ export default function EditUserProfile() {
 
     if (isModified) {
       try {
-        await updateUserData({ photos });
+        // Show loading state
+        setLoading?.(true); // Add loading state if you don't have it
+
+        // Upload new photos to Storage and get URLs
+        const uploadedPhotos = await Promise.all(
+          photos.map(async (photoUri, index) => {
+            if (photoUri && photoUri !== "") {
+              return await uploadPhotoToStorage(photoUri, index);
+            }
+            return null;
+          })
+        );
+
+        // Filter out failed uploads
+        const validPhotoUrls = uploadedPhotos.filter(url => url !== null) as string[];
+
+        console.log("Original photos (may include local paths):", photos);
+        console.log("Uploaded photos (Storage URLs):", validPhotoUrls);
+
+        // Update user data with Storage URLs
+        await updateUserData({ photos: validPhotoUrls });
         setIsModified(false);
       } catch (error) {
+        console.error("Error saving photos:", error);
         Alert.alert("Error", "Failed to save changes. Please try again.");
         return;
+      } finally {
+        setLoading?.(false);
       }
     }
     router.back();
   };
+
 
   // Helper function to check if spiritual field has valid data
   const hasValidSpiritualData = (fieldValue: any) => {

@@ -39,9 +39,11 @@ function PhotosScreen() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
-  const [selectedPhotos, setSelectedPhotos] = useState<string[]>(
-    userData?.photos || Array(6).fill("")
-  );
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>(() => {
+    const existingPhotos = userData?.photos || [];
+    // Always return array of 6 elements, filling empty slots with empty strings
+    return [...existingPhotos, ...Array(6 - existingPhotos.length).fill("")].slice(0, 6);
+  });
   const [loading, setLoading] = useState<boolean>(false);
 
   // Animations
@@ -152,49 +154,70 @@ function PhotosScreen() {
     }
   };
 
-  const handlePhotoUpload = async (photoUri: string) => {
-    if (!photoUri) return null;
+const handlePhotoUpload = async (photoUri: string) => {
+  if (!photoUri) return null;
 
+  try {
     const response = await fetch(photoUri);
     const blob = await response.blob();
-    const storageRef = STORAGE.ref(`photos/${Date.now()}.jpg`);
+    
+    // Better path structure with user ID
+    const uniqueId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const storageRef = STORAGE.ref(`users/${userData.userId}/photos/${uniqueId}.jpg`);
+    
     await storageRef.putFile(photoUri);
     const photoURL = await storageRef.getDownloadURL();
+    
+    console.log("Photo uploaded successfully:", photoURL);
     return photoURL;
-  };
+  } catch (error) {
+    console.error("Photo upload failed:", error);
+    return null;
+  }
+};
 
-  const handleSubmit = async () => {
-    const filteredPhotos = selectedPhotos.filter(
-      (photo) => photo !== undefined && photo !== null && photo !== ""
+const handleSubmit = async () => {
+  const filteredPhotos = selectedPhotos.filter(
+    (photo) => photo !== undefined && photo !== null && photo !== ""
+  );
+
+  if (filteredPhotos.length < 3) {
+    Alert.alert("Sacred Gallery", "Please share at least 3 photos to complete your spiritual profile.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    // 🚨 CRITICAL: Make sure you're calling handlePhotoUpload here
+    const uploadedPhotos = await Promise.all(
+      selectedPhotos.map((photoUri) =>
+        photoUri && photoUri !== "" ? handlePhotoUpload(photoUri) : Promise.resolve(null)
+      )
     );
 
-    if (filteredPhotos.length < 3) {
-      Alert.alert("Sacred Gallery", "Please share at least 3 photos to complete your spiritual profile.");
-      return;
-    }
+    // Add debugging to see what you're actually saving
+    console.log("Selected photos (local paths):", selectedPhotos);
+    console.log("Uploaded photos (Storage URLs):", uploadedPhotos);
 
-    setLoading(true);
-    try {
-      const uploadedPhotos = await Promise.all(
-        selectedPhotos.map((photoUri) =>
-          photoUri && photoUri !== "" ? handlePhotoUpload(photoUri) : Promise.resolve(null)
-        )
-      );
+    // Filter out nulls and save only Storage URLs
+    const validPhotoUrls = uploadedPhotos.filter(
+      (photo) => photo !== null && photo !== undefined
+    );
 
-      await updateUserData({
-        photos: uploadedPhotos.filter(
-          (photo) => photo !== null && photo !== undefined
-        ),
-      });
+    console.log("Final photos being saved to Firestore:", validPhotoUrls);
 
-      console.log("Photos uploaded successfully!");
-      completeOnboarding();
-    } catch (error: any) {
-      Alert.alert("Cosmic Interference", "The universe had trouble saving your photos: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    await updateUserData({
+      photos: validPhotoUrls, // These should be Firebase Storage URLs, not local paths!
+    });
+
+    console.log("Photos uploaded successfully!");
+    completeOnboarding();
+  } catch (error: any) {
+    Alert.alert("Cosmic Interference", "The universe had trouble saving your photos: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeletePhoto = (index: number) => {
     const newPhotos = [...selectedPhotos];
