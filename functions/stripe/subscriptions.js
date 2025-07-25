@@ -378,67 +378,66 @@ const getSubscriptionStatus = functions.https.onCall(async (data, context) => {
 /**
  * Cancel user's subscription
  */
-const cancelSubscription = functions.https.onCall(async (data, context) => {
-  try {
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    const userId = context.auth.uid;
-    console.log(`🚫 Canceling subscription for user: ${userId}`);
-
-    // Get user data
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'User not found');
-    }
-
-    const userData = userDoc.data();
-    const subscriptionId = userData.subscription?.subscriptionId;
-
-    if (!subscriptionId) {
-      throw new functions.https.HttpsError('not-found', 'No active subscription found');
-    }
-
-    // Cancel subscription at period end
-    const subscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true
-    });
-
-    console.log(`✅ Subscription will cancel at: ${new Date(subscription.cancel_at * 1000)}`);
-
-    // Update Firestore - preserve all existing data
-    const currentSubscription = userData.subscription || {};
-    
-    await db.collection('users').doc(userId).update({
-      subscription: {
-        ...currentSubscription,
-        status: subscription.status,
-        cancelAtPeriodEnd: true,
-        canceledAt: subscription.cancel_at,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  const cancelSubscription = functions.https.onCall(async (data, context) => {
+    try {
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
       }
-    });
-    
-    // ✅ User's data will auto-update via UserContext listener!
-    console.log('✅ User data updated automatically');
 
-    return {
-      success: true,
-      status: subscription.status,
-      cancelAt: subscription.cancel_at
-    };
+      const userId = context.auth.uid;
+      console.log(`🚫 Canceling subscription for user: ${userId}`);
 
-  } catch (error) {
-    console.error('❌ Error canceling subscription:', error);
-    
-    if (error instanceof functions.https.HttpsError) {
-      throw error;
+      // Get user data
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'User not found');
+      }
+
+      const userData = userDoc.data();
+      const subscriptionId = userData.subscription?.subscriptionId;
+
+      if (!subscriptionId) {
+        throw new functions.https.HttpsError('not-found', 'No active subscription found');
+      }
+
+      // Cancel subscription at period end
+      const subscription = await stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true
+      });
+
+      console.log(`✅ Subscription will cancel at: ${new Date(subscription.cancel_at * 1000)}`);
+
+      // ✅ FIXED: Preserve all existing data, only update cancellation fields
+      const currentSubscription = userData.subscription || {};
+      
+      await db.collection('users').doc(userId).update({
+        subscription: {
+          ...currentSubscription, // ✅ Preserve ALL existing fields including status and isActive
+          cancelAtPeriodEnd: true,
+          canceledAt: subscription.cancel_at,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          // ✅ DON'T override status or isActive - keep them as they were
+        }
+      });
+      
+      console.log('✅ Subscription canceled - preserved existing status and isActive');
+
+      return {
+        success: true,
+        status: currentSubscription.status, // Return the preserved status
+        cancelAt: subscription.cancel_at
+      };
+
+    } catch (error) {
+      console.error('❌ Error canceling subscription:', error);
+      
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      
+      throw new functions.https.HttpsError('internal', 'Failed to cancel subscription');
     }
-    
-    throw new functions.https.HttpsError('internal', 'Failed to cancel subscription');
-  }
-});
+  });
 
 /**
  * Reactivate a canceled subscription
@@ -459,42 +458,94 @@ const reactivateSubscription = functions.https.onCall(async (data, context) => {
     }
 
     const userData = userDoc.data();
-    const subscriptionId = userData.subscription?.subscriptionId;
+    const currentSubscription = userData.subscription || {};
+    const subscriptionId = currentSubscription.subscriptionId;
 
     if (!subscriptionId) {
       throw new functions.https.HttpsError('not-found', 'No subscription found to reactivate');
     }
 
-    console.log(`🔍 Reactivating subscription: ${subscriptionId}`);
+    console.log(`🔍 Current subscription state:`, {
+      status: currentSubscription.status,
+      isActive: currentSubscription.isActive,
+      cancelAtPeriodEnd: currentSubscription.cancelAtPeriodEnd
+    });
 
     try {
-      // Remove the cancellation from the subscription
-      const subscription = await stripe.subscriptions.update(subscriptionId, {
+      // Get current subscription status from Stripe
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ['latest_invoice', 'latest_invoice.payment_intent']
+      });
+
+      console.log(`📊 Stripe subscription status: ${subscription.status}`);
+      console.log(`📊 Cancel at period end: ${subscription.cancel_at_period_end}`);
+
+      // ✅ UNIVERSAL APPROACH: Handle any state by checking what needs to be done
+      
+      let needsPayment = false;
+      let clientSecret = null;
+      
+      // Check if payment is needed regardless of status
+      if (subscription.latest_invoice && subscription.latest_invoice.payment_intent) {
+        const paymentIntent = subscription.latest_invoice.payment_intent;
+        console.log(`💳 Payment intent status: ${paymentIntent.status}`);
+        
+        if (paymentIntent.status === 'requires_payment_method' || 
+            paymentIntent.status === 'requires_confirmation' ||
+            paymentIntent.status === 'requires_action') {
+          needsPayment = true;
+          clientSecret = paymentIntent.client_secret;
+        }
+      }
+
+      // ✅ If payment is needed, return payment info
+      if (needsPayment && clientSecret) {
+        // First, remove the cancellation
+        await stripe.subscriptions.update(subscriptionId, {
+          cancel_at_period_end: false
+        });
+        
+        console.log('🔄 Removed cancellation, payment required for activation');
+        
+        return {
+          success: false,
+          needsPayment: true,
+          clientSecret: clientSecret,
+          message: 'Payment required to complete subscription activation',
+          subscriptionId: subscription.id
+        };
+      }
+
+      // ✅ No payment needed - just remove cancellation and activate
+      const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
         cancel_at_period_end: false
       });
 
-      console.log(`✅ Subscription reactivated: ${subscription.status}`);
+      console.log(`✅ Removed cancellation from subscription`);
 
-      // Update Firestore - preserve all data, just update cancellation status
-      const currentSubscription = userData.subscription || {};
-      
+      // ✅ Update Firestore - restore to active state
       const updateData = {
         ...currentSubscription,
-        status: subscription.status,
         cancelAtPeriodEnd: false,
+        isActive: true, // ✅ Always set to active when reactivating
+        status: 'active', // ✅ Set status to active
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
 
       // Remove canceledAt if it was set
-      delete updateData.canceledAt;
+      if (updateData.canceledAt) {
+        delete updateData.canceledAt;
+      }
 
       await db.collection('users').doc(userId).update({
         subscription: updateData
       });
 
+      console.log('✅ Subscription reactivated successfully');
+
       return {
         success: true,
-        status: subscription.status,
+        status: 'active',
         message: 'Subscription reactivated successfully'
       };
 

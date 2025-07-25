@@ -238,8 +238,57 @@ async function handleSubscriptionUpdated(subscription) {
     }
 
     console.log(`🔄 Subscription updated for user ${userId}: ${subscription.status}`);
+    console.log(`🔄 Cancel at period end: ${subscription.cancel_at_period_end}`);
     
-    await updateUserSubscriptionData(userId, subscription);
+    // ✅ IMPORTANT: Don't change status when just canceling/reactivating
+    // Only update the cancellation flag, preserve the current status and active state
+    
+    // Get current user data to preserve existing fields
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const currentSubscription = userData.subscription || {};
+
+    // ✅ KEY FIX: Only update cancellation-related fields, preserve status and isActive
+    const subscriptionUpdate = {
+      ...currentSubscription, // Preserve ALL existing fields
+      cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // ✅ Only update status if it actually changed in a meaningful way
+    // Don't change from active to incomplete just because of cancellation
+    if (subscription.status !== currentSubscription.status) {
+      // Only update status if it's a real status change (not just cancellation)
+      if (subscription.status === 'active' || 
+          subscription.status === 'canceled' || 
+          subscription.status === 'past_due' ||
+          subscription.status === 'unpaid') {
+        subscriptionUpdate.status = subscription.status;
+        
+        // Update isActive based on real status changes
+        if (subscription.status === 'active') {
+          subscriptionUpdate.isActive = true;
+        } else if (subscription.status === 'canceled') {
+          subscriptionUpdate.isActive = false;
+        }
+      }
+    }
+
+    // Handle canceledAt properly
+    if (subscription.cancel_at_period_end && subscription.cancel_at) {
+      subscriptionUpdate.canceledAt = subscription.cancel_at;
+    } else if (!subscription.cancel_at_period_end && currentSubscription.canceledAt) {
+      delete subscriptionUpdate.canceledAt;
+    }
+
+    const updateData = {
+      subscription: subscriptionUpdate
+    };
+
+    await db.collection('users').doc(userId).update(updateData);
+    
+    console.log(`✅ User ${userId} subscription updated - preserved status: ${subscriptionUpdate.status}, isActive: ${subscriptionUpdate.isActive}`);
+    
   } catch (error) {
     console.error('Error handling subscription update:', error);
   }

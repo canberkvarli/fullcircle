@@ -19,7 +19,7 @@ import { FUNCTIONS, FIRESTORE } from "@/services/FirebaseConfig"
 
 export default function FullCircleSubscription() {
   const router = useRouter();
-  const { userData, setUserData, currentUser } = useUserContext();
+  const { userData, setUserData, currentUser } = useUserContext(); // ✅ Added setUserData
   
   const { presentPaymentSheet, initPaymentSheet } = useStripe();
   
@@ -33,17 +33,29 @@ export default function FullCircleSubscription() {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // ✅ SIMPLE: Just trust userData.subscription directly
+  // ✅ ENHANCED: Handle incomplete subscription states properly
   const subscription = userData.subscription;
   const hasSubscription = !!subscription?.subscriptionId;
   
-  const showAsActive = subscription?.isActive === true || 
-                      subscription?.status === 'incomplete';
-  const canCancel = (subscription?.status === 'active' || subscription?.status === 'incomplete') && 
-                  !subscription?.cancelAtPeriodEnd;  
-  const canReactivate = (subscription?.status === 'active' || subscription?.status === 'incomplete') && 
-                     subscription?.cancelAtPeriodEnd;
-  const showUpgradeOptions = !hasSubscription || (!showAsActive && !canReactivate);
+  // For incomplete subscriptions
+  const isIncompleteAndCanceled = subscription?.status === 'incomplete' && subscription?.cancelAtPeriodEnd;
+  const isIncompleteAndPending = subscription?.status === 'incomplete' && !subscription?.cancelAtPeriodEnd;
+  
+  // For active subscriptions  
+  const isActiveAndContinuing = subscription?.status === 'active' && !subscription?.cancelAtPeriodEnd;
+  const isActiveButCanceling = subscription?.status === 'active' && subscription?.cancelAtPeriodEnd;
+  
+  // Show as "active" for UI purposes if status is active OR incomplete but not canceled
+  const showAsActive = isActiveAndContinuing || isIncompleteAndPending;
+  
+  // Can cancel if active and continuing, OR incomplete and not yet canceled
+  const canCancel = isActiveAndContinuing || isIncompleteAndPending;
+  
+  // Can reactivate if canceled (either incomplete+canceled or active+canceled)
+  const canReactivate = isIncompleteAndCanceled || isActiveButCanceling;
+  
+  // Show upgrade options if no subscription, or if subscription is fully canceled
+  const showUpgradeOptions = !hasSubscription || subscription?.status === 'canceled';
 
   // ✅ Manual refresh function
   const refreshUserData = async () => {
@@ -51,10 +63,10 @@ export default function FullCircleSubscription() {
     
     try {
       console.log('🔄 Refreshing user data from Firestore...');
-      const docSnap = await FIRESTORE.collection('users').doc(currentUser.uid).get();
+      const docSnap: any = await FIRESTORE.collection('users').doc(currentUser.uid).get();
       
       if (docSnap.exists) {
-        const freshData: any = docSnap.data();
+        const freshData = docSnap.data();
         console.log('✅ Fresh subscription data:', JSON.stringify(freshData.subscription, null, 2));
         
         setUserData(prevData => ({
@@ -68,6 +80,15 @@ export default function FullCircleSubscription() {
       console.error('❌ Error refreshing user data:', error);
     }
   };
+
+  // ✅ Debug subscription changes
+  useEffect(() => {
+    console.log('🔍 FullCircleSubscription: userData.subscription changed:', JSON.stringify(userData.subscription, null, 2));
+    console.log('🔍 FullCircleSubscription: showAsActive:', showAsActive);
+    console.log('🔍 FullCircleSubscription: canCancel:', canCancel);
+    console.log('🔍 FullCircleSubscription: canReactivate:', canReactivate);
+    console.log('🔍 FullCircleSubscription: showUpgradeOptions:', showUpgradeOptions);
+  }, [userData.subscription, showAsActive, canCancel, canReactivate, showUpgradeOptions]);
 
   const getRemainingDays = () => {
     if (!subscription?.currentPeriodEnd) return 0;
@@ -86,13 +107,14 @@ export default function FullCircleSubscription() {
     }).start();
   }, []);
 
+  // ✅ ENHANCED handleUpgrade with manual refresh
   const handleUpgrade = async () => {
     setIsProcessing(true);
     
     try {
       console.log(`🚀 Creating ${selectedPlan} subscription...`);
       
-      // ✅ Call Cloud Function directly
+      // ✅ Call Cloud Function directly (React Native Firebase syntax)
       const createSubscriptionFunction = FUNCTIONS.httpsCallable('createSubscription');
       const result = await createSubscriptionFunction({ planType: selectedPlan });
       
@@ -144,6 +166,7 @@ export default function FullCircleSubscription() {
 
       console.log('✅ Payment completed successfully!');
 
+      // ✅ Show welcome alert FIRST
       Alert.alert(
         "🌟 Welcome to FullCircle!",
         "Your spiritual journey expands now. Premium features are activating...",
@@ -152,6 +175,7 @@ export default function FullCircleSubscription() {
             text: "Continue Journey", 
             style: "default",
             onPress: async () => {
+              // ✅ THEN refresh data and go back
               console.log('🔄 Refreshing subscription data before going back...');
               await refreshUserData();
               router.back();
@@ -160,6 +184,7 @@ export default function FullCircleSubscription() {
         ]
       );
 
+      // ✅ Also refresh in background while alert is showing
       setTimeout(async () => {
         console.log('🔄 Background refresh after webhook processing...');
         await refreshUserData();
@@ -195,9 +220,11 @@ export default function FullCircleSubscription() {
             try {
               setIsProcessing(true);
               
+              // ✅ Call Cloud Function directly (React Native Firebase syntax)
               const cancelSubscriptionFunction = FUNCTIONS.httpsCallable('cancelSubscription');
               const result = await cancelSubscriptionFunction();
               
+              // ✅ Refresh data after cancellation
               await new Promise(resolve => setTimeout(resolve, 1000));
               await refreshUserData();
               
@@ -220,9 +247,11 @@ export default function FullCircleSubscription() {
     try {
       setIsProcessing(true);
       
+      // ✅ Call Cloud Function directly (React Native Firebase syntax)
       const reactivateFunction = FUNCTIONS.httpsCallable('reactivateSubscription');
       const result: any = await reactivateFunction();
       
+      // ✅ Refresh data after reactivation
       await new Promise(resolve => setTimeout(resolve, 1000));
       await refreshUserData();
       
@@ -259,40 +288,68 @@ export default function FullCircleSubscription() {
       };
     }
     
+    // ✅ Handle incomplete subscriptions
     if (subscription?.status === 'incomplete') {
+      // If incomplete and canceled, show as canceled but offer reactivation
+      if (subscription?.cancelAtPeriodEnd) {
+        return {
+          title: "Subscription Canceled",
+          subtitle: "Your journey was paused before activation. Renew to continue your spiritual path.",
+          icon: "pause-circle",
+          color: "#FF9500",
+          timeText: `Would activate until ${formatCancelDate()}`
+        };
+      } else {
+        // Incomplete but not canceled - payment still pending
+        return {
+          title: "Payment Pending",
+          subtitle: "Complete your payment to activate FullCircle features.",
+          icon: "time",
+          color: "#FF9500",
+          timeText: "Payment required"
+        };
+      }
+    }
+    
+    // ✅ Handle active subscriptions
+    if (subscription?.status === 'active') {
+      // Active but will be canceled
+      if (subscription?.cancelAtPeriodEnd) {
+        return {
+          title: "Journey Ending",
+          subtitle: "Your FullCircle path concludes soon. Renew to continue growing.",
+          icon: "time",
+          color: "#FF9500",
+          timeText: remainingDays > 0 ? `${remainingDays} days left` : "Ends today"
+        };
+      } else {
+        // Active and continuing
+        return {
+          title: "FullCircle Member",
+          subtitle: `${subscription.planType === 'yearly' ? 'Annual' : 'Monthly'} journey in progress`,
+          icon: "checkmark-circle",
+          color: "#FFD700",
+          timeText: remainingDays > 0 ? `${remainingDays} days remaining` : "Renews today"
+        };
+      }
+    }
+    
+    // ✅ Handle fully canceled subscriptions
+    if (subscription?.status === 'canceled') {
       return {
-        title: "FullCircle Active",
-        subtitle: "Your energy is flowing. Enhanced features are yours to explore.",
-        icon: "checkmark-circle",
-        color: "#FFD700",
+        title: "Journey Paused",
+        subtitle: "Your subscription has ended. Restart your FullCircle spiritual exploration.",
+        icon: "pause-circle",
+        color: "#6B7280",
         timeText: null
       };
     }
     
-    if (subscription?.status === 'active' && !subscription?.cancelAtPeriodEnd) {
-      return {
-        title: "FullCircle Member",
-        subtitle: `${subscription.planType === 'yearly' ? 'Annual' : 'Monthly'} journey in progress`,
-        icon: "checkmark-circle",
-        color: "#FFD700",
-        timeText: remainingDays > 0 ? `${remainingDays} days remaining` : "Renews today"
-      };
-    }
-    
-    if (subscription?.status === 'active' && subscription?.cancelAtPeriodEnd) {
-      return {
-        title: "Journey Ending",
-        subtitle: "Your FullCircle path concludes soon. Renew to continue growing.",
-        icon: "time",
-        color: "#FF9500",
-        timeText: remainingDays > 0 ? `${remainingDays} days left` : "Ends today"
-      };
-    }
-    
+    // ✅ Fallback for other statuses
     return {
-      title: "Journey Paused",
-      subtitle: "Restart your FullCircle spiritual exploration",
-      icon: "pause-circle",
+      title: `Subscription ${subscription?.status || 'Unknown'}`,
+      subtitle: "Contact support if you need assistance with your subscription.",
+      icon: "help-circle",
       color: "#6B7280",
       timeText: null
     };
