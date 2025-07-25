@@ -156,48 +156,6 @@ interface PaymentResult {
   transactionId: string;
 }
 
-type SubscriptionStatus = {
-  hasSubscription: boolean;
-  isActive: boolean; // Currently receiving benefits
-  status: 'active' | 'canceled' | 'past_due' | 'incomplete' | 'incomplete_expired' | null;
-  planType: 'monthly' | 'yearly' | null;
-  currentPeriodStart: number | null;
-  currentPeriodEnd: number | null;
-  daysRemaining: number;
-  cancelAtPeriodEnd: boolean;
-  canReactivate: boolean;
-  subscriptionId?: string | null;
-};
-
-type SubscriptionInfo = {
-  hasSubscription: boolean;
-  isActive: boolean;
-  displayText: string;
-  timeRemaining: string | null;
-  canUpgrade: boolean;
-  canCancel: boolean;
-  canReactivate: boolean;
-  planType: 'monthly' | 'yearly' | null | undefined;
-  daysRemaining: number;
-};
-
-interface SubscriptionResponse {
-  clientSecret: string;
-  subscriptionId: string;
-  status: string;
-}
-
-interface CancelResponse {
-  status: string;
-  cancelAt: number;
-}
-
-interface ReactivateResponse {
-  success: boolean;
-  status: string;
-  message: string;
-}
-
 export type UserSettings = {
   isPaused?: boolean;
   showLastActiveStatus?: boolean;
