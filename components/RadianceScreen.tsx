@@ -127,7 +127,8 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
   const fonts = useFont();
   
   const [selectedOption, setSelectedOption] = useState<number>(1); // Default to middle option
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingPurchase, setIsProcessingPurchase] = useState(false);
+  const [isProcessingActivation, setIsProcessingActivation] = useState(false);
   const [radianceStatus, setRadianceStatus] = useState({ 
     isActive: false, 
     timeRemaining: 0, 
@@ -252,7 +253,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       return;
     }
 
-    setIsProcessing(true);
+    setIsProcessingActivation(true);
     try {
       await activateRadiance();
       
@@ -271,13 +272,13 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
         [{ text: "OK", style: "default" }]
       );
     } finally {
-      setIsProcessing(false);
+      setIsProcessingActivation(false);
     }
   };
 
   // Handle Stripe Purchase
   const handlePurchase = async () => {
-    setIsProcessing(true);
+    setIsProcessingPurchase(true);
     const option = boostOptions[selectedOption];
     
     try {
@@ -329,7 +330,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
         [{ text: "OK", style: "default" }]
       );
     } finally {
-      setIsProcessing(false);
+      setIsProcessingPurchase(false);
     }
   };
 
@@ -399,10 +400,10 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
                 <TouchableOpacity
                   style={[styles.activateButton, { backgroundColor: '#B8860B' }]}
                   onPress={handleActivateExistingBoost}
-                  disabled={isProcessing}
+                  disabled={isProcessingActivation}
                   activeOpacity={0.8}
                 >
-                  {isProcessing ? (
+                  {isProcessingActivation ? (
                     <>
                       <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
                       <Text style={[styles.activateButtonText, fonts.buttonFont]}>
@@ -494,19 +495,19 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
               style={[
                 styles.purchaseButton,
                 { 
-                  backgroundColor: isProcessing ? colors.textMuted : '#B8860B',
-                  opacity: isProcessing ? 0.7 : 1
+                  backgroundColor: isProcessingPurchase ? colors.textMuted : '#B8860B',
+                  opacity: isProcessingPurchase ? 0.7 : 1
                 }
               ]}
               onPress={handlePurchase}
-              disabled={isProcessing}
+              disabled={isProcessingPurchase}
               activeOpacity={0.8}
             >
-              {isProcessing ? (
+              {isProcessingPurchase ? (
                 <>
-                  <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                  <Ionicons name="card-outline" size={18} color="#FFFFFF" />
                   <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
-                    Processing...
+                    Processing Payment...
                   </Text>
                 </>
               ) : (
