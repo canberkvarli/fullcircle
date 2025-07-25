@@ -79,6 +79,31 @@ const createSubscription = functions.https.onCall(async (data, context) => {
 
     console.log(`✅ Subscription created: ${subscription.id}`);
 
+    // ✅ EXTRACT PERIOD DATA - This is what was missing!
+    let currentPeriodStart = subscription.current_period_start;
+    let currentPeriodEnd = subscription.current_period_end;
+
+    // If subscription doesn't have period data (incomplete), get it from invoice
+    if (!currentPeriodStart || !currentPeriodEnd) {
+      console.log('🔍 Extracting period data from invoice...');
+      try {
+        const invoice = await stripe.invoices.retrieve(subscription.latest_invoice.id, {
+          expand: ['lines.data']
+        });
+        
+        if (invoice.lines && invoice.lines.data.length > 0) {
+          const lineItem = invoice.lines.data[0];
+          if (lineItem.period) {
+            currentPeriodStart = lineItem.period.start;
+            currentPeriodEnd = lineItem.period.end;
+            console.log(`✅ Found period data in invoice: start=${currentPeriodStart}, end=${currentPeriodEnd}`);
+          }
+        }
+      } catch (invoiceError) {
+        console.log(`⚠️ Could not extract period from invoice: ${invoiceError.message}`);
+      }
+    }
+
     // Get client secret from payment intent
     let clientSecret = subscription.latest_invoice.payment_intent?.client_secret;
 
@@ -125,24 +150,38 @@ const createSubscription = functions.https.onCall(async (data, context) => {
 
     console.log('✅ Valid payment intent client secret obtained');
 
-    // Save subscription info to Firestore - ONLY use subscription object
+    // ✅ SAVE SUBSCRIPTION WITH PERIOD DATA
     console.log('💾 Saving subscription to Firestore...');
     
     const currentSubscription = userData.subscription || {};
     
-    await db.collection('users').doc(userId).update({
-      subscription: {
-        ...currentSubscription,
-        subscriptionId: subscription.id,
-        status: subscription.status,
-        planType: planType,
-        stripeCustomerId: customerId,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }
-    });
-    console.log('✅ Subscription saved to Firestore');
+    const subscriptionData = {
+      ...currentSubscription,
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      planType: planType,
+      stripeCustomerId: customerId,
+      isActive: false, // Will be set to true by webhook when payment succeeds
+      cancelAtPeriodEnd: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
 
+    // ✅ ADD PERIOD DATA IF AVAILABLE
+    if (currentPeriodStart && !isNaN(currentPeriodStart)) {
+      subscriptionData.currentPeriodStart = currentPeriodStart;
+      console.log(`📅 Added period start: ${new Date(currentPeriodStart * 1000)}`);
+    }
+    if (currentPeriodEnd && !isNaN(currentPeriodEnd)) {
+      subscriptionData.currentPeriodEnd = currentPeriodEnd;
+      console.log(`📅 Added period end: ${new Date(currentPeriodEnd * 1000)}`);
+    }
+
+    await db.collection('users').doc(userId).update({
+      subscription: subscriptionData
+    });
+    
+    console.log('✅ Subscription saved to Firestore with period data');
     console.log('🎉 Subscription creation successful');
 
     return {
@@ -368,7 +407,7 @@ const cancelSubscription = functions.https.onCall(async (data, context) => {
 
     console.log(`✅ Subscription will cancel at: ${new Date(subscription.cancel_at * 1000)}`);
 
-    // Update Firestore - ONLY subscription object
+    // Update Firestore - preserve all existing data
     const currentSubscription = userData.subscription || {};
     
     await db.collection('users').doc(userId).update({
@@ -380,8 +419,12 @@ const cancelSubscription = functions.https.onCall(async (data, context) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }
     });
+    
+    // ✅ User's data will auto-update via UserContext listener!
+    console.log('✅ User data updated automatically');
 
     return {
+      success: true,
       status: subscription.status,
       cancelAt: subscription.cancel_at
     };
@@ -432,24 +475,22 @@ const reactivateSubscription = functions.https.onCall(async (data, context) => {
 
       console.log(`✅ Subscription reactivated: ${subscription.status}`);
 
-      // Update Firestore - ONLY subscription object
+      // Update Firestore - preserve all data, just update cancellation status
       const currentSubscription = userData.subscription || {};
       
       const updateData = {
-        subscription: {
-          ...currentSubscription,
-          status: subscription.status,
-          cancelAtPeriodEnd: false,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }
+        ...currentSubscription,
+        status: subscription.status,
+        cancelAtPeriodEnd: false,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
 
       // Remove canceledAt if it was set
-      if (currentSubscription.canceledAt) {
-        delete updateData.subscription.canceledAt;
-      }
+      delete updateData.canceledAt;
 
-      await db.collection('users').doc(userId).update(updateData);
+      await db.collection('users').doc(userId).update({
+        subscription: updateData
+      });
 
       return {
         success: true,

@@ -317,28 +317,30 @@ async function updateUserSubscriptionData(userId, subscription, forceActive = fa
   try {
     const now = Math.floor(Date.now() / 1000);
     
+    // Get current user data to preserve existing fields
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const currentSubscription = userData.subscription || {};
+
     // ✅ KEY FIX: Determine if subscription should be active
     let isActive = false;
     
     if (forceActive) {
-      // When called from invoice.payment_succeeded, force active regardless of Stripe status
       isActive = true;
       console.log('🔥 Forcing subscription to active due to successful payment');
     } else {
-      // Normal logic: active if status is active and period hasn't ended
       isActive = subscription.status === 'active' && 
                 subscription.current_period_end && 
                 subscription.current_period_end > now;
     }
 
-    // ✅ SPECIAL CASE: If status is incomplete but we have a successful payment, treat as active
     if (subscription.status === 'incomplete' && forceActive) {
       console.log('🎯 Converting incomplete subscription to active due to successful payment');
       isActive = true;
     }
 
     // Get plan type
-    let planType = 'monthly'; // default
+    let planType = 'monthly';
     if (subscription.items && subscription.items.data.length > 0) {
       const price = subscription.items.data[0].price;
       if (price.recurring) {
@@ -346,61 +348,46 @@ async function updateUserSubscriptionData(userId, subscription, forceActive = fa
       }
     }
 
-    // Get current user data to preserve other subscription fields
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.exists ? userDoc.data() : {};
-    const currentSubscription = userData.subscription || {};
-
-    // Build the subscription object update
+    // ✅ Build the subscription object update - PRESERVE EXISTING DATA
     const subscriptionUpdate = {
-      isActive: isActive, // ✅ Use our improved logic
+      ...currentSubscription, // ✅ Preserve ALL existing fields first
+      isActive: isActive,
       subscriptionId: subscription.id,
-      status: forceActive && subscription.status === 'incomplete' ? 'active' : subscription.status, // ✅ Override incomplete status
+      status: forceActive && subscription.status === 'incomplete' ? 'active' : subscription.status,
       planType: planType,
       cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    // Add periods if they exist
-    if (subscription.current_period_start) {
+    // ✅ CRITICAL: Only override period data if Stripe has it AND it's different
+    if (subscription.current_period_start && 
+        (!currentSubscription.currentPeriodStart || currentSubscription.currentPeriodStart !== subscription.current_period_start)) {
       subscriptionUpdate.currentPeriodStart = subscription.current_period_start;
+      console.log(`📅 Updated period start: ${new Date(subscription.current_period_start * 1000)}`);
     }
-    if (subscription.current_period_end) {
+    
+    if (subscription.current_period_end && 
+        (!currentSubscription.currentPeriodEnd || currentSubscription.currentPeriodEnd !== subscription.current_period_end)) {
       subscriptionUpdate.currentPeriodEnd = subscription.current_period_end;
+      console.log(`📅 Updated period end: ${new Date(subscription.current_period_end * 1000)}`);
     }
 
-    // Preserve stripeCustomerId if it exists
-    if (currentSubscription.stripeCustomerId) {
-      subscriptionUpdate.stripeCustomerId = currentSubscription.stripeCustomerId;
-    }
-
-    // Preserve createdAt if it exists, otherwise set it
-    if (currentSubscription.createdAt) {
-      subscriptionUpdate.createdAt = currentSubscription.createdAt;
-    } else {
-      subscriptionUpdate.createdAt = admin.firestore.FieldValue.serverTimestamp();
-    }
-
-    // ✅ FIXED: Handle canceledAt properly - don't use FieldValue.delete() in nested object
+    // Handle canceledAt properly
     if (subscription.cancel_at_period_end && subscription.cancel_at) {
       subscriptionUpdate.canceledAt = subscription.cancel_at;
+    } else if (!subscription.cancel_at_period_end && currentSubscription.canceledAt) {
+      delete subscriptionUpdate.canceledAt;
     }
-    // Don't add canceledAt field if subscription is not being canceled
 
-    // ✅ CRITICAL FIX: Handle deletion of canceledAt separately if needed
     const updateData = {
       subscription: subscriptionUpdate
     };
 
-    // If we need to remove canceledAt, do it at the top level
-    if (!subscription.cancel_at_period_end && currentSubscription.canceledAt) {
-      updateData['subscription.canceledAt'] = admin.firestore.FieldValue.delete();
-    }
-
     await db.collection('users').doc(userId).update(updateData);
     
     console.log(`✅ User ${userId} subscription updated: ${subscriptionUpdate.status} (active: ${isActive})`);
-    console.log(`📊 Subscription data:`, JSON.stringify(subscriptionUpdate, null, 2));
+    console.log(`📊 Preserved period data: start=${subscriptionUpdate.currentPeriodStart}, end=${subscriptionUpdate.currentPeriodEnd}`);
+    
   } catch (error) {
     console.error('Error updating user subscription data:', error);
     throw error;

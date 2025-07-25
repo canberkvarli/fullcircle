@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,17 +15,11 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
-import { useFocusEffect } from '@react-navigation/native';
+import { FUNCTIONS, FIRESTORE } from "@/services/FirebaseConfig"
 
 export default function FullCircleSubscription() {
   const router = useRouter();
-  const { 
-    userData, 
-    createSubscription, 
-    cancelSubscription, 
-    getSubscriptionStatus,
-    reactivateSubscription,
-  } = useUserContext();
+  const { userData, setUserData, currentUser } = useUserContext();
   
   const { presentPaymentSheet, initPaymentSheet } = useStripe();
   
@@ -36,15 +30,13 @@ export default function FullCircleSubscription() {
   
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState(true);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Simple subscription logic
+  // ✅ SIMPLE: Just trust userData.subscription directly
   const subscription = userData.subscription;
   const hasSubscription = !!subscription?.subscriptionId;
   
-  // Use the isActive value from subscription data, plus handle incomplete status
   const showAsActive = subscription?.isActive === true || 
                       subscription?.status === 'incomplete';
   const canCancel = (subscription?.status === 'active' || subscription?.status === 'incomplete') && 
@@ -53,7 +45,30 @@ export default function FullCircleSubscription() {
                      subscription?.cancelAtPeriodEnd;
   const showUpgradeOptions = !hasSubscription || (!showAsActive && !canReactivate);
 
-  // Calculate remaining days
+  // ✅ Manual refresh function
+  const refreshUserData = async () => {
+    if (!currentUser?.uid) return;
+    
+    try {
+      console.log('🔄 Refreshing user data from Firestore...');
+      const docSnap = await FIRESTORE.collection('users').doc(currentUser.uid).get();
+      
+      if (docSnap.exists) {
+        const freshData: any = docSnap.data();
+        console.log('✅ Fresh subscription data:', JSON.stringify(freshData.subscription, null, 2));
+        
+        setUserData(prevData => ({
+          ...prevData,
+          ...freshData
+        }));
+        
+        console.log('✅ User data refreshed successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing user data:', error);
+    }
+  };
+
   const getRemainingDays = () => {
     if (!subscription?.currentPeriodEnd) return 0;
     const now = Math.floor(Date.now() / 1000);
@@ -63,39 +78,34 @@ export default function FullCircleSubscription() {
 
   const remainingDays = getRemainingDays();
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSubscriptionStatus();
-    }, [])
-  );
-
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-    loadSubscriptionStatus();
   }, []);
-
-  const loadSubscriptionStatus = async () => {
-    try {
-      setLoadingStatus(true);
-      await getSubscriptionStatus();
-      console.log('📊 Subscription status refreshed');
-    } catch (error) {
-      console.error('Failed to load subscription status:', error);
-    } finally {
-      setLoadingStatus(false);
-    }
-  };
 
   const handleUpgrade = async () => {
     setIsProcessing(true);
     
     try {
       console.log(`🚀 Creating ${selectedPlan} subscription...`);
-      const { clientSecret, subscriptionId } = await createSubscription(selectedPlan);
+      
+      // ✅ Call Cloud Function directly
+      const createSubscriptionFunction = FUNCTIONS.httpsCallable('createSubscription');
+      const result = await createSubscriptionFunction({ planType: selectedPlan });
+      
+      if (!result.data) {
+        throw new Error('No data returned from Cloud Function');
+      }
+      
+      const { clientSecret, subscriptionId, status } = result.data as any;
+      
+      if (!clientSecret || !subscriptionId) {
+        throw new Error('Invalid response from subscription creation');
+      }
+      
       console.log(`✅ Subscription created: ${subscriptionId}`);
       
       const { error: initError } = await initPaymentSheet({
@@ -133,7 +143,7 @@ export default function FullCircleSubscription() {
       }
 
       console.log('✅ Payment completed successfully!');
-      
+
       Alert.alert(
         "🌟 Welcome to FullCircle!",
         "Your spiritual journey expands now. Premium features are activating...",
@@ -141,13 +151,19 @@ export default function FullCircleSubscription() {
           { 
             text: "Continue Journey", 
             style: "default",
-            onPress: () => {
-              loadSubscriptionStatus();
+            onPress: async () => {
+              console.log('🔄 Refreshing subscription data before going back...');
+              await refreshUserData();
               router.back();
             }
           }
         ]
       );
+
+      setTimeout(async () => {
+        console.log('🔄 Background refresh after webhook processing...');
+        await refreshUserData();
+      }, 3000);
       
     } catch (error: any) {
       console.error('💥 Subscription creation failed:', error);
@@ -178,12 +194,17 @@ export default function FullCircleSubscription() {
           onPress: async () => {
             try {
               setIsProcessing(true);
-              await cancelSubscription();
+              
+              const cancelSubscriptionFunction = FUNCTIONS.httpsCallable('cancelSubscription');
+              const result = await cancelSubscriptionFunction();
+              
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              await refreshUserData();
+              
               const message = hasValidPeriodEnd 
                 ? `You'll keep FullCircle access for ${daysLeft} more days until ${formatCancelDate()}`
                 : `You'll keep FullCircle access until ${formatCancelDate()}`;
               Alert.alert("Journey Continues", message);
-              await loadSubscriptionStatus();
             } catch (error) {
               Alert.alert("Unable to Process", "Your cancellation request couldn't be completed. Please try again.");
             } finally {
@@ -198,11 +219,15 @@ export default function FullCircleSubscription() {
   const handleReactivate = async () => {
     try {
       setIsProcessing(true);
-      const result = await reactivateSubscription();
       
-      if (result.success) {
+      const reactivateFunction = FUNCTIONS.httpsCallable('reactivateSubscription');
+      const result: any = await reactivateFunction();
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await refreshUserData();
+      
+      if (result.data?.success) {
         Alert.alert("🌟 Journey Renewed!", "Your spiritual path continues uninterrupted.");
-        await loadSubscriptionStatus();
       } else {
         Alert.alert("Unable to Renew", "We couldn't reactivate your journey. Please try again.");
       }
@@ -285,6 +310,8 @@ export default function FullCircleSubscription() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
+        
+
       </View>
 
       {/* Content */}
@@ -338,48 +365,48 @@ export default function FullCircleSubscription() {
         </View>
 
         {/* Upgrade Options */}
-        <View style={styles.upgradeSection}>
-          <Text style={styles.sectionTitle}>Choose Your Path</Text>
-          
-          {/* Side by Side Plans */}
-          <View style={styles.plansRow}>
-            <TouchableOpacity
-              style={[
-                styles.planCard,
-                styles.planCardHalf,
-                selectedPlan === 'monthly' && styles.planCardSelected
-              ]}
-              onPress={() => setSelectedPlan('monthly')}
-            >
-              <Text style={styles.planTitle}>Monthly</Text>
-              <Text style={styles.planPrice}>$29.99</Text>
-              <Text style={styles.planPeriod}>per month</Text>
-            </TouchableOpacity>
+        {showUpgradeOptions && (
+          <View style={styles.upgradeSection}>
+            <Text style={styles.sectionTitle}>Choose Your Path</Text>
             
-            <TouchableOpacity
-              style={[
-                styles.planCard,
-                styles.planCardHalf,
-                styles.yearlyPlan,
-                selectedPlan === 'yearly' && styles.planCardSelected
-              ]}
-              onPress={() => setSelectedPlan('yearly')}
-            >
-              <View style={styles.bestValueBadge}>
-                <Text style={styles.bestValueText}>BEST VALUE</Text>
-              </View>
-              <Text style={styles.planTitle}>Yearly</Text>
-              <View style={styles.priceColumn}>
-                <Text style={styles.originalPrice}>$359.88</Text>
-                <Text style={styles.planPrice}>$199.99</Text>
-              </View>
-              <Text style={styles.planPeriod}>per year</Text>
-              <Text style={styles.savings}>Save 44%</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Side by Side Plans */}
+            <View style={styles.plansRow}>
+              <TouchableOpacity
+                style={[
+                  styles.planCard,
+                  styles.planCardHalf,
+                  selectedPlan === 'monthly' && styles.planCardSelected
+                ]}
+                onPress={() => setSelectedPlan('monthly')}
+              >
+                <Text style={styles.planTitle}>Monthly</Text>
+                <Text style={styles.planPrice}>$29.99</Text>
+                <Text style={styles.planPeriod}>per month</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.planCard,
+                  styles.planCardHalf,
+                  styles.yearlyPlan,
+                  selectedPlan === 'yearly' && styles.planCardSelected
+                ]}
+                onPress={() => setSelectedPlan('yearly')}
+              >
+                <View style={styles.bestValueBadge}>
+                  <Text style={styles.bestValueText}>BEST VALUE</Text>
+                </View>
+                <Text style={styles.planTitle}>Yearly</Text>
+                <View style={styles.priceColumn}>
+                  <Text style={styles.originalPrice}>$359.88</Text>
+                  <Text style={styles.planPrice}>$199.99</Text>
+                </View>
+                <Text style={styles.planPeriod}>per year</Text>
+                <Text style={styles.savings}>Save 44%</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* Subscribe Button */}
-          {showUpgradeOptions && (
+            {/* Subscribe Button */}
             <TouchableOpacity
               style={[
                 styles.subscribeButton,
@@ -402,8 +429,8 @@ export default function FullCircleSubscription() {
                 </>
               )}
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Features */}
         <View style={styles.featuresSection}>
