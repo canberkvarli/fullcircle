@@ -14,22 +14,15 @@ export const useUserSubscription = () => {
       return;
     }
 
-    console.log('🔄 Starting subscription listener for:', currentUser.uid);
-    console.log('🔍 Current userData.subscription:', JSON.stringify(userData.subscription, null, 2));
-
     const unsubscribe = FIRESTORE.collection('users')
       .doc(currentUser.uid)
       .onSnapshot(
         (doc) => {
-          console.log('📡 Firestore snapshot received for user:', currentUser.uid);
           
           if (doc.exists) {
             const freshData: any = doc.data();
             const newSubscription = freshData.subscription;
-            
-            console.log('🔍 Fresh subscription data from Firestore:', JSON.stringify(newSubscription, null, 2));
-            console.log('🔍 Current subscription data in state:', JSON.stringify(userData.subscription, null, 2));
-            
+
             // Compare with last known data to avoid duplicate processing
             const newDataString = JSON.stringify(newSubscription);
             const lastDataString = JSON.stringify(lastSubscriptionData.current);
@@ -38,10 +31,6 @@ export const useUserSubscription = () => {
               console.log('⏭️ Subscription data unchanged, skipping update');
               return;
             }
-            
-            console.log('📊 Subscription data has changed!');
-            console.log('📊 Old:', lastDataString);
-            console.log('📊 New:', newDataString);
             
             // Update our reference
             lastSubscriptionData.current = newSubscription;
@@ -86,7 +75,6 @@ export const useUserSubscription = () => {
       );
 
     return () => {
-      console.log('🔌 Cleaning up subscription listener');
       unsubscribe();
     };
   }, [currentUser?.uid]); // Minimal dependencies

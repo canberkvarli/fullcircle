@@ -62,33 +62,20 @@ export default function FullCircleSubscription() {
     if (!currentUser?.uid) return;
     
     try {
-      console.log('🔄 Refreshing user data from Firestore...');
       const docSnap: any = await FIRESTORE.collection('users').doc(currentUser.uid).get();
       
       if (docSnap.exists) {
         const freshData = docSnap.data();
-        console.log('✅ Fresh subscription data:', JSON.stringify(freshData.subscription, null, 2));
         
         setUserData(prevData => ({
           ...prevData,
           ...freshData
         }));
-        
-        console.log('✅ User data refreshed successfully');
       }
     } catch (error) {
       console.error('❌ Error refreshing user data:', error);
     }
   };
-
-  // ✅ Debug subscription changes
-  useEffect(() => {
-    console.log('🔍 FullCircleSubscription: userData.subscription changed:', JSON.stringify(userData.subscription, null, 2));
-    console.log('🔍 FullCircleSubscription: showAsActive:', showAsActive);
-    console.log('🔍 FullCircleSubscription: canCancel:', canCancel);
-    console.log('🔍 FullCircleSubscription: canReactivate:', canReactivate);
-    console.log('🔍 FullCircleSubscription: showUpgradeOptions:', showUpgradeOptions);
-  }, [userData.subscription, showAsActive, canCancel, canReactivate, showUpgradeOptions]);
 
   const getRemainingDays = () => {
     if (!subscription?.currentPeriodEnd) return 0;
