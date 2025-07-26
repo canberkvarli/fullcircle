@@ -22,6 +22,7 @@ import {
   Send,
 } from "react-native-gifted-chat";
 import { Ionicons } from '@expo/vector-icons';
+import LottieView from "lottie-react-native";
 import ChatOptionsModal from "@/components/modals/ChatOptionsModal";
 import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -66,6 +67,43 @@ const Chat: React.FC = () => {
   
   // Animation for smooth sliding between tabs
   const slideAnim = useRef(new Animated.Value(0)).current;
+  
+  // Loading animation refs
+  const loadingPulse = useRef(new Animated.Value(0)).current;
+  const loadingFadeIn = useRef(new Animated.Value(0)).current;
+
+  // Start loading animations
+  useEffect(() => {
+    if (isLoading) {
+      // Fade in animation
+      Animated.timing(loadingFadeIn, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+
+      // Pulse animation
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(loadingPulse, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(loadingPulse, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+
+      return () => {
+        pulseAnimation.stop();
+      };
+    }
+  }, [isLoading]);
 
   // Parse matchUser and detect connection method
   useEffect(() => {
@@ -346,17 +384,41 @@ const Chat: React.FC = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.loader}>
-          <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-            <Ionicons name="heart" size={40} color="#8B4513" />
-          </View>
-          <Text style={[styles.loadingText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            Loading conversation...
-          </Text>
-          <Text style={[styles.loadingSubtext, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            Getting your chat ready
-          </Text>
-        </View>
+        <Animated.View 
+          style={[
+            styles.loader,
+            { opacity: loadingFadeIn }
+          ]}
+        >
+          {/* Animated Lottie Container */}
+          <Animated.View
+            style={[
+              styles.lottieContainer,
+              {
+                opacity: loadingPulse.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+                transform: [
+                  {
+                    scale: loadingPulse.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.95, 1.05, 0.95],
+                    }),
+                  },
+                ],
+              }
+            ]}
+          >
+            <LottieView
+              source={require('../../../../assets/animations/loading_mandala.json')}
+              autoPlay
+              loop
+              style={styles.lottieAnimation}
+              speed={0.8}
+            />
+          </Animated.View>
+        </Animated.View>
       </SafeAreaView>
     );
   }
@@ -558,9 +620,33 @@ const Chat: React.FC = () => {
                 </ScrollView>
               ) : (
                 <View style={styles.profileLoader}>
-                  <View style={[styles.loadingMandala, { backgroundColor: '#8B4513' + '10' }]}>
-                    <Ionicons name="person" size={40} color="#8B4513" />
-                  </View>
+                  <Animated.View
+                    style={[
+                      styles.lottieContainer,
+                      {
+                        opacity: loadingPulse.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.8, 1],
+                        }),
+                        transform: [
+                          {
+                            scale: loadingPulse.interpolate({
+                              inputRange: [0, 0.5, 1],
+                              outputRange: [0.95, 1.05, 0.95],
+                            }),
+                          },
+                        ],
+                      }
+                    ]}
+                  >
+                    <LottieView
+                      source={require('../../../../assets/animations/loading_mandala.json')}
+                      autoPlay
+                      loop
+                      style={styles.lottieAnimation}
+                      speed={0.8}
+                    />
+                  </Animated.View>
                   <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
                     Loading profile...
                   </Text>
@@ -693,13 +779,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
   },
-  loadingMandala: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  lottieContainer: {
+    width: 150,
+    height: 150,
     marginBottom: Spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  lottieAnimation: {
+    width: '100%',
+    height: '100%',
   },
   loadingText: {
     fontSize: Typography.sizes.xl,

@@ -167,7 +167,7 @@ const healingModalitiesArray = [
   "Plant Medicine",
 ];
 
-// --- Helper: Fetch Unsplash images with rate limiting ---
+// --- FIXED: Improved Unsplash fetching with better error handling ---
 const fetchUnsplashImages = async (
   query: string,
   count: number,
@@ -176,54 +176,63 @@ const fetchUnsplashImages = async (
   try {
     const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
     if (!UNSPLASH_ACCESS_KEY) {
-      console.warn("No Unsplash API key found, using placeholder images");
-      // Generate diverse placeholder images instead
-      const placeholderColors = [
-        "FF6B6B/FFFFFF", // Red
-        "4ECDC4/FFFFFF", // Teal  
-        "45B7D1/FFFFFF", // Blue
-        "96CEB4/FFFFFF", // Green
-        "FFEAA7/333333", // Yellow
-        "DDA0DD/FFFFFF", // Plum
-        "98D8C8/333333", // Mint
-        "F7DC6F/333333", // Gold
-      ];
-      
-      return Array(count).fill(null).map((_, index) => {
-        const colorCombo = placeholderColors[index % placeholderColors.length];
-        return `https://via.placeholder.com/400x400/${colorCombo}?text=User+${index + 1}`;
-      });
+      console.warn("🚨 No Unsplash API key found, using Picsum photos");
+      return Array(count).fill(null).map((_, index) => 
+        `https://picsum.photos/400/400?random=${Date.now() + index}`
+      );
     }
 
+    console.log(`🔍 Fetching ${count} photos from Unsplash: "${query}"`);
+    
     // Add delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     const res = await fetch(
       `https://api.unsplash.com/search/photos?page=${page}&query=${encodeURIComponent(
         query
-      )}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}`
+      )}&client_id=${UNSPLASH_ACCESS_KEY}&per_page=${count}&orientation=portrait`
     );
     
     if (res.status === 403) {
-      console.warn("Unsplash rate limit exceeded, using placeholder images");
-      return Array(count).fill("https://via.placeholder.com/400x400");
+      console.warn("🚨 Unsplash rate limit exceeded, using Picsum photos");
+      return Array(count).fill(null).map((_, index) => 
+        `https://picsum.photos/400/400?random=${Date.now() + index}`
+      );
     }
     
     if (!res.ok) {
-      console.warn(`Unsplash API failed (${res.status}), using placeholder images`);
-      return Array(count).fill("https://via.placeholder.com/400x400");
+      console.warn(`🚨 Unsplash API failed (${res.status}), using Picsum photos`);
+      return Array(count).fill(null).map((_, index) => 
+        `https://picsum.photos/400/400?random=${Date.now() + index}`
+      );
     }
     
     const data = await res.json();
     if (!data.results || data.results.length === 0) {
-      console.warn("No Unsplash results found, using placeholder images");
-      return Array(count).fill("https://via.placeholder.com/400x400");
+      console.warn("🚨 No Unsplash results found, using Picsum photos");
+      return Array(count).fill(null).map((_, index) => 
+        `https://picsum.photos/400/400?random=${Date.now() + index}`
+      );
     }
     
-    return data.results.map((img: any) => img.urls.small);
+    const photos = data.results.map((img: any) => img.urls.regular || img.urls.small);
+    console.log(`✅ Got ${photos.length} photos from Unsplash`);
+    
+    // Fill remaining with Picsum if needed
+    if (photos.length < count) {
+      const needed = count - photos.length;
+      const picsumPhotos = Array(needed).fill(null).map((_, index) => 
+        `https://picsum.photos/400/400?random=${Date.now() + photos.length + index}`
+      );
+      photos.push(...picsumPhotos);
+    }
+    
+    return photos.slice(0, count);
   } catch (error) {
-    console.warn(`Unsplash fetch failed: ${error}, using placeholder images`);
-    return Array(count).fill("https://via.placeholder.com/400x400");
+    console.warn(`🚨 Unsplash fetch failed: ${error}, using Picsum photos`);
+    return Array(count).fill(null).map((_, index) => 
+      `https://picsum.photos/400/400?random=${Date.now() + index}`
+    );
   }
 };
 
@@ -255,36 +264,85 @@ const getGenderSpecificPhotos = async (
 
   let photos = await fetchUnsplashImages(query, count, page);
   
-  // Always return the requested number of photos, even if some are placeholders
+  // Always return the requested number of photos
   if (photos.length < count) {
     const needed = count - photos.length;
-    const placeholders = Array(needed).fill("https://via.placeholder.com/400x400");
-    photos = [...photos, ...placeholders];
+    const picsumPhotos = Array(needed).fill(null).map((_, index) => 
+      `https://picsum.photos/400/400?random=${Date.now() + photos.length + index}`
+    );
+    photos = [...photos, ...picsumPhotos];
   }
   
-  return photos.slice(0, count); // Ensure we don't exceed the requested count
+  return photos.slice(0, count);
 };
 
-// --- Helper: Upload to Storage
+// --- FIXED: Upload to Storage with proper fallback handling ---
 const uploadPhotoToStorage = async (
   photoUrl: string,
   userId: string,
   index: number
 ): Promise<string> => {
-
   try {
+    console.log(`📸 Uploading photo ${index + 1} for user ${userId.slice(0, 8)}...: ${photoUrl}`);
+    
     const res = await fetch(photoUrl);
-    if (!res.ok) throw new Error(`Failed to fetch ${photoUrl}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.startsWith("image/")) {
+      throw new Error(`Invalid content type: ${contentType}`);
+    }
+    
     const buffer = Buffer.from(await res.arrayBuffer());
     const filePath = `users/photos/${userId}/photo_${index}.jpg`;
     const file = bucket.file(filePath);
+    
     await file.save(buffer, {
-      metadata: { contentType: res.headers.get("content-type") || "image/jpeg" },
+      metadata: { 
+        contentType: "image/jpeg",
+        metadata: {
+          source: photoUrl.includes('unsplash') ? "unsplash" : "picsum",
+          originalUrl: photoUrl
+        }
+      },
     });
-    return filePath;
-  } catch (e) {
-    console.warn(`Upload failed for ${photoUrl}, using placeholder:`, e);
-    return `https://via.placeholder.com/400x400/cccccc/666666?text=Photo+${index + 1}`;
+    
+    console.log(`✅ Successfully uploaded: ${filePath}`);
+    return filePath; // Return Firebase Storage path
+  } catch (e: any) {
+    console.warn(`❌ Upload failed for ${photoUrl}:`, e.message);
+    
+    // Try a different Picsum photo as fallback
+    const fallbackUrl = `https://picsum.photos/400/400?random=${index + Date.now()}`;
+    console.log(`🔄 Trying fallback: ${fallbackUrl}`);
+    
+    try {
+      const fallbackRes = await fetch(fallbackUrl);
+      if (fallbackRes.ok) {
+        const fallbackBuffer = Buffer.from(await fallbackRes.arrayBuffer());
+        const filePath = `users/photos/${userId}/photo_${index}.jpg`;
+        const file = bucket.file(filePath);
+        
+        await file.save(fallbackBuffer, {
+          metadata: { 
+            contentType: "image/jpeg",
+            metadata: {
+              source: "picsum-fallback"
+            }
+          },
+        });
+        
+        console.log(`✅ Fallback upload successful: ${filePath}`);
+        return filePath;
+      }
+    } catch (fallbackError: any) {
+      console.warn(`❌ Fallback also failed:`, fallbackError.message);
+    }
+    
+    // Last resort: return a working image URL that can be used directly
+    return `https://picsum.photos/400/400?random=${index + Date.now()}`;
   }
 };
 
@@ -374,75 +432,19 @@ const generateMatchPreferences = (connectionIntent: string) => {
   };
 };
 
-// --- Generate Subscription Data ---
-const generateSubscription = () => {
-  const hasSubscription = faker.datatype.boolean(0.25); // 25% have subscription
-  
-  if (!hasSubscription) {
-    return {
-      isActive: false,
-      stripeCustomerId: undefined,
-      subscriptionId: undefined,
-      status: undefined,
-      planType: undefined,
-      currentPeriodStart: undefined,
-      currentPeriodEnd: undefined,
-      cancelAtPeriodEnd: false,
-      canceledAt: undefined,
-      createdAt: undefined,
-      updatedAt: undefined
-    };
-  }
-
-  const planType = faker.helpers.arrayElement(['monthly', 'yearly']);
-  const subscriptionDate = faker.date.recent({ days: 365 });
-  const currentPeriodStart = Math.floor(subscriptionDate.getTime() / 1000);
-  
-  // Calculate period end based on plan type
-  const periodEndDate = new Date(subscriptionDate);
-  if (planType === 'yearly') {
-    periodEndDate.setFullYear(periodEndDate.getFullYear() + 1);
-  } else {
-    periodEndDate.setMonth(periodEndDate.getMonth() + 1);
-  }
-  const currentPeriodEnd = Math.floor(periodEndDate.getTime() / 1000);
-  
-  const now = Math.floor(Date.now() / 1000);
-  const isActive = currentPeriodEnd > now;
-  const status = isActive ? 'active' : 'canceled';
-  
-  // Some active subscriptions might be set to cancel at period end
-  const cancelAtPeriodEnd = isActive ? faker.datatype.boolean(0.1) : false;
-
-  return {
-    isActive,
-    stripeCustomerId: faker.string.alphanumeric(24), // Mock Stripe customer ID
-    subscriptionId: faker.string.alphanumeric(24), // Mock Stripe subscription ID
-    status,
-    planType,
-    currentPeriodStart,
-    currentPeriodEnd,
-    cancelAtPeriodEnd,
-    canceledAt: status === 'canceled' ? currentPeriodStart + (currentPeriodEnd - currentPeriodStart) * 0.8 : undefined,
-    createdAt: admin.firestore.Timestamp.fromDate(subscriptionDate),
-    updatedAt: admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 30 }))
-  };
-};
-
 // --- Main Seed Function ---
 async function seedFirestore(numUsers: number) {
-  console.group("🔥 Starting Firestore seeding with updated subscription schema");
+  console.group("🔥 Starting Firestore seeding with REAL photos");
   console.info(`Target number of users: ${numUsers}`);
 
   const usersCol = db.collection("users");
   const userIds: string[] = [];
   const userDataList: Record<string, any> = {};
 
-  console.group("1) Generating base user documents");
+  console.group("📸 Generating users with real photos");
   for (let i = 0; i < numUsers; i++) {
     const userId = uuidv4();
     userIds.push(userId);
-    console.info(`  -> Creating user #${i + 1}/${numUsers}: ${userId}`);
 
     // Birth info and age calculation
     const birthDate = faker.date.birthdate({ min: 18, max: 65, mode: "age" });
@@ -482,15 +484,23 @@ async function seedFirestore(numUsers: number) {
       lastName = faker.person.lastName("female");
     }
 
-    // Photos generation
+    console.info(`👤 Creating user #${i + 1}/${numUsers}: ${firstName} (${primaryGender})`);
+
+    // Photos generation with better logging
+    console.log(`📸 Fetching photos for ${firstName} (${primaryGender})...`);
     const unsplashPhotos = await getGenderSpecificPhotos(
       gender,
       faker.number.int({ min: 3, max: 6 }),
       faker.number.int({ min: 1, max: 10 })
     );
+    
+    console.log(`📤 Uploading ${unsplashPhotos.length} photos to Firebase Storage...`);
     const photos = await Promise.all(
       unsplashPhotos.map((url, j) => uploadPhotoToStorage(url, userId, j))
     );
+    
+    console.log(`✅ User ${firstName} photos: ${photos.length} uploaded successfully`);
+    console.log(`   Photo paths:`, photos.map(p => p.includes('users/') ? p.split('/').pop() : 'external-url'));
 
     // Location generation (SF Bay Area focused)
     const latitude = faker.number.float({ min: 36.5, max: 38.5 });
@@ -530,9 +540,6 @@ async function seedFirestore(numUsers: number) {
     // Generate connection intent and match preferences
     const connectionIntent = faker.helpers.arrayElement(connectionIntents);
     const matchPreferences = generateMatchPreferences(connectionIntent);
-
-    // 💳 Generate subscription data with new structure
-    const subscription = generateSubscription();
 
     // Settings generation
     const settings = {
@@ -622,9 +629,6 @@ async function seedFirestore(numUsers: number) {
       // 🔮 Spiritual Profile Section
       spiritualProfile,
 
-      // 💳 NEW Simplified Subscription Structure
-      subscription,
-
       // Engagement
       likesGivenCount: 0,
       likesReceivedCount: 0,
@@ -657,7 +661,7 @@ async function seedFirestore(numUsers: number) {
 
   console.group("2) Writing user documents to Firestore");
   for (const [id, data] of Object.entries(userDataList)) {
-    console.info(`  ↳ Writing user ${id} to Firestore`);
+    console.info(`  ↳ Writing user ${data.firstName} (${id.slice(0, 8)}...) to Firestore`);
     await db.collection("users").doc(id).set(data);
   }
   console.groupEnd();
@@ -665,8 +669,9 @@ async function seedFirestore(numUsers: number) {
   console.group("3) Seeding likes sub-collections");
   for (let i = 0; i < userIds.length; i++) {
     const fromUserId = userIds[i];
+    const fromUserData = userDataList[fromUserId];
     console.log(
-      `  -> Seeding likes for user ${fromUserId} (${i + 1}/${userIds.length})`
+      `  -> Seeding likes for ${fromUserData.firstName} (${i + 1}/${userIds.length})`
     );
     
     // Generate likes (fewer for more realistic data)
@@ -685,7 +690,8 @@ async function seedFirestore(numUsers: number) {
       });
 
     for (const toUserId of liked) {
-      console.debug(`     • ${fromUserId} likes ${toUserId}`);
+      const toUserData = userDataList[toUserId];
+      console.debug(`     • ${fromUserData.firstName} likes ${toUserData.firstName}`);
       
       // Create like records
       await db
@@ -720,14 +726,14 @@ async function seedFirestore(numUsers: number) {
   }
   console.groupEnd();
 
-  console.log("✅ Seed complete: all users with updated subscription schema created!");
+  console.log("✅ Seed complete: all users created with REAL photos!");
   console.groupEnd();
 }
 
 // Run the seeding
 seedFirestore(50)
   .then(() => {
-    console.log("🎉 Done seeding Firestore with updated subscription schema.");
+    console.log("🎉 Done seeding Firestore with real photos from Unsplash/Picsum!");
     process.exit(0);
   })
   .catch((err) => {
