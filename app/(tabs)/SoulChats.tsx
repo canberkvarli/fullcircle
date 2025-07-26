@@ -66,10 +66,15 @@ const SoulChats: React.FC = () => {
     return unsubscribe;
   }, [userData.userId, subscribeToChatMatches, getImageUrl]);
 
-  const handleChatPress = async (match: any) => {
+  const handleChatPress = (match: any) => {
+    // Navigate immediately without waiting
     const chatId = [userData.userId, match.userId].sort().join("_");
-    await createOrFetchChat(userData.userId, match.userId);
     router.navigate(`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`);
+    
+    // Create/fetch chat in background (don't await)
+    createOrFetchChat(userData.userId, match.userId).catch(error => {
+      console.error("Error creating/fetching chat in background:", error);
+    });
   };
 
   // Helper function to get connection methods for this match

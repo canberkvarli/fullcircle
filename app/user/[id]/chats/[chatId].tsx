@@ -56,6 +56,8 @@ const Chat: React.FC = () => {
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [otherUserData, setOtherUserData] = useState<any>(null);
   const [fullUserData, setFullUserData] = useState<any>(null);
   const [matchDate, setMatchDate] = useState<Date | null>(null);
@@ -71,39 +73,92 @@ const Chat: React.FC = () => {
   // Loading animation refs
   const loadingPulse = useRef(new Animated.Value(0)).current;
   const loadingFadeIn = useRef(new Animated.Value(0)).current;
+  const loadingFadeOut = useRef(new Animated.Value(1)).current;
+  const contentFadeIn = useRef(new Animated.Value(0)).current;
 
-  // Start loading animations
+  // Enhanced loading state management with immediate mandala display
   useEffect(() => {
-    if (isLoading) {
-      // Fade in animation
-      Animated.timing(loadingFadeIn, {
-        toValue: 1,
-        duration: 500,
+    // Show mandala immediately when component mounts
+    setShowLoadingScreen(true);
+    
+    let minimumTimeElapsed = false;
+    let dataReady = false;
+
+    // Minimum display time timer (1 second to see the animation)
+    const minimumTimer = setTimeout(() => {
+      minimumTimeElapsed = true;
+      if (dataReady) {
+        handleTransitionToContent();
+      }
+    }, 1000);
+
+    // Check if data is ready
+    const checkDataReady = () => {
+      if (!isLoading && chatId) {
+        dataReady = true;
+        if (minimumTimeElapsed) {
+          handleTransitionToContent();
+        }
+      }
+    };
+
+    const handleTransitionToContent = () => {
+      // Smooth fade out loading screen
+      Animated.timing(loadingFadeOut, {
+        toValue: 0,
+        duration: 50,
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        setShowLoadingScreen(false);
+        setShowContent(true);
+        // Fade in main content
+        Animated.timing(contentFadeIn, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      });
+    };
 
-      // Pulse animation
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(loadingPulse, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(loadingPulse, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulseAnimation.start();
+    // Initial check
+    checkDataReady();
 
-      return () => {
-        pulseAnimation.stop();
-      };
-    }
-  }, [isLoading]);
+    // Cleanup
+    return () => {
+      clearTimeout(minimumTimer);
+    };
+  }, [isLoading, chatId]);
+
+  // Start loading animations immediately
+  useEffect(() => {
+    // Start animations immediately when component mounts
+    Animated.timing(loadingFadeIn, {
+      toValue: 1,
+      duration: 300, // Faster initial fade-in
+      useNativeDriver: true,
+    }).start();
+
+    // Pulse animation
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loadingPulse, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(loadingPulse, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+
+    return () => {
+      pulseAnimation.stop();
+    };
+  }, []); // Remove dependencies to start immediately
 
   // Parse matchUser and detect connection method
   useEffect(() => {
@@ -137,21 +192,32 @@ const Chat: React.FC = () => {
     }
   }, [matchUser, otherUserId]);
 
-  // Create/fetch chatId and get match date
+  // Create/fetch chatId and get match date - with immediate response
   useEffect(() => {
     let mounted = true;
 
     // Don't try to create chat if unmatching
     if (isUnmatching) return;
 
-    (async () => {
-      const id = await createOrFetchChat(userData.userId, otherUserId);
-      if (mounted && !isUnmatching) {
-        setChatId(id);
-        setMatchDate(new Date());
-        setIsLoading(false);
+    // Start the async operation immediately but don't block
+    const initializeChat = async () => {
+      try {
+        const id = await createOrFetchChat(userData.userId, otherUserId);
+        if (mounted && !isUnmatching) {
+          setChatId(id);
+          setMatchDate(new Date());
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error creating/fetching chat:", error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    })();
+    };
+
+    initializeChat();
+
     return () => {
       mounted = false;
     };
@@ -381,16 +447,19 @@ const Chat: React.FC = () => {
     </Send>
   );
 
-  if (isLoading) {
+  // Show loading screen immediately, then check for content readiness
+  if (showLoadingScreen) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Animated.View 
           style={[
             styles.loader,
-            { opacity: loadingFadeIn }
+            { 
+              opacity: Animated.multiply(loadingFadeIn, loadingFadeOut)
+            }
           ]}
         >
-          {/* Animated Lottie Container */}
+          {/* Animated Lottie Container - Only the mandala */}
           <Animated.View
             style={[
               styles.lottieContainer,
@@ -458,204 +527,208 @@ const Chat: React.FC = () => {
           }, 300);
         }}
       />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={[styles.header, { 
-          backgroundColor: colors.background,
-          borderBottomColor: colors.border
-        }]}>
-          {/* Connection Method Indicator */}
-          {connectionInfo && (
-            <View style={[styles.connectionBanner, { 
-              backgroundColor: connectionInfo.color + '08',
-              borderColor: connectionInfo.color + '20'
-            }]}>
-              <Ionicons name={connectionInfo.icon} size={16} color={connectionInfo.color} />
-              <Text style={[styles.connectionText, fonts.spiritualBodyFont, { color: connectionInfo.color }]}>
-                {connectionInfo.text}
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.headerTop}>
-            <View style={styles.backAndTitle}>
-              <TouchableOpacity
-                onPress={() => router.back()}
-                style={styles.backButton}
-              >
-                <Ionicons name="chevron-back" size={24} color="#8B4513" />
-              </TouchableOpacity>
-              <View style={styles.titleContainer}>
-                <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  {otherUserData?.firstName || "Soul"}
-                </Text>
-                <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                  Connected ✨
+      
+      {/* Main Content with Fade-in Animation */}
+      <Animated.View style={[{ flex: 1 }, { opacity: contentFadeIn }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+          {/* Header */}
+          <View style={[styles.header, { 
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border
+          }]}>
+            {/* Connection Method Indicator */}
+            {connectionInfo && (
+              <View style={[styles.connectionBanner, { 
+                backgroundColor: connectionInfo.color + '08',
+                borderColor: connectionInfo.color + '20'
+              }]}>
+                <Ionicons name={connectionInfo.icon} size={16} color={connectionInfo.color} />
+                <Text style={[styles.connectionText, fonts.spiritualBodyFont, { color: connectionInfo.color }]}>
+                  {connectionInfo.text}
                 </Text>
               </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => setOptionsVisible(true)}
-              style={styles.moreButton}
-            >
-              <Ionicons name="ellipsis-vertical" size={20} color="#8B4513" />
-            </TouchableOpacity>
-          </View>
+            )}
 
-          {/* Tabs */}
-          <View style={styles.tabsContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "chat" && styles.activeTab]}
-              onPress={() => handleTabChange("chat")}
-            >
-              <Ionicons 
-                name="chatbubble-ellipses" 
-                size={16} 
-                color={activeTab === "chat" ? "#8B4513" : colors.textLight}
-                style={styles.tabIcon}
-              />
-              <Text style={[
-                styles.tabText, 
-                fonts.spiritualBodyFont,
-                { color: activeTab === "chat" ? "#8B4513" : colors.textLight },
-                activeTab === "chat" && styles.activeTabText
-              ]}>
-                Chat
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "profile" && styles.activeTab]}
-              onPress={() => handleTabChange("profile")}
-            >
-              <Ionicons 
-                name="person-circle" 
-                size={16} 
-                color={activeTab === "profile" ? "#8B4513" : colors.textLight}
-                style={styles.tabIcon}
-              />
-              <Text style={[
-                styles.tabText, 
-                fonts.spiritualBodyFont,
-                { color: activeTab === "profile" ? "#8B4513" : colors.textLight },
-                activeTab === "profile" && styles.activeTabText
-              ]}>
-                Essence
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Content with Smooth Sliding Animation */}
-        <View style={styles.contentWrapper}>
-          <Animated.View
-            style={[
-              styles.slidingContainer,
-              {
-                transform: [{ translateX: slideAnim }],
-              },
-            ]}
-          >
-            {/* Chat View */}
-            <View style={styles.tabContent}>
-              <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-              >
-                <GiftedChat
-                  messages={messages}
-                  onSend={handleSend}
-                  user={{
-                    _id: userData.userId,
-                    name: userData.firstName,
-                    avatar: userData.photos?.[0],
-                  }}
-                  placeholder="Send a message..."
-                  showUserAvatar={false}
-                  renderBubble={renderBubble}
-                  renderInputToolbar={renderInputToolbar}
-                  renderSend={renderSend}
-                  renderSystemMessage={renderSystemMessage}
-                  alwaysShowSend
-                  minInputToolbarHeight={72}
-                  bottomOffset={Platform.OS === "ios" ? 20 : 0}
-                  keyboardShouldPersistTaps="never"
-                  messagesContainerStyle={{ backgroundColor: colors.background }}
-                  renderChatEmpty={() => <View />}
-                  renderChatFooter={() => null}
-                  scrollToBottomComponent={() => null}
-                  loadEarlier={false}
-                  infiniteScroll={false}
-                  isLoadingEarlier={false}
-                  renderLoadEarlier={() => null}
-                  textInputProps={{
-                    style: [styles.textInput, { 
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      color: colors.textDark,
-                      fontFamily: fonts.spiritualBodyFont?.fontFamily,
-                    }],
-                    placeholder: "Send a message...",
-                    placeholderTextColor: colors.textLight,
-                    multiline: true,
-                    maxLength: 1000,
-                    underlineColorAndroid: 'transparent',
-                  }}
-                />
-              </KeyboardAvoidingView>
-            </View>
-
-            {/* Profile View */}
-            <View style={styles.tabContent}>
-              {fullUserData ? (
-                <ScrollView
-                  style={[{ flex: 1 }, { backgroundColor: colors.background }]}
-                  contentContainerStyle={{ paddingBottom: 20 }}
-                  showsVerticalScrollIndicator={false}
+            <View style={styles.headerTop}>
+              <View style={styles.backAndTitle}>
+                <TouchableOpacity
+                  onPress={() => router.back()}
+                  style={styles.backButton}
                 >
-                  <PotentialMatch
-                    currentPotentialMatch={fullUserData}
-                    isMatched={true}
-                  />
-                </ScrollView>
-              ) : (
-                <View style={styles.profileLoader}>
-                  <Animated.View
-                    style={[
-                      styles.lottieContainer,
-                      {
-                        opacity: loadingPulse.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1],
-                        }),
-                        transform: [
-                          {
-                            scale: loadingPulse.interpolate({
-                              inputRange: [0, 0.5, 1],
-                              outputRange: [0.95, 1.05, 0.95],
-                            }),
-                          },
-                        ],
-                      }
-                    ]}
-                  >
-                    <LottieView
-                      source={require('../../../../assets/animations/loading_mandala.json')}
-                      autoPlay
-                      loop
-                      style={styles.lottieAnimation}
-                      speed={0.8}
-                    />
-                  </Animated.View>
-                  <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-                    Loading profile...
+                  <Ionicons name="chevron-back" size={24} color="#8B4513" />
+                </TouchableOpacity>
+                <View style={styles.titleContainer}>
+                  <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                    {otherUserData?.firstName || "Soul"}
+                  </Text>
+                  <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+                    Connected ✨
                   </Text>
                 </View>
-              )}
+              </View>
+              <TouchableOpacity
+                onPress={() => setOptionsVisible(true)}
+                style={styles.moreButton}
+              >
+                <Ionicons name="ellipsis-vertical" size={20} color="#8B4513" />
+              </TouchableOpacity>
             </View>
-          </Animated.View>
-        </View>
-      </SafeAreaView>
+
+            {/* Tabs */}
+            <View style={styles.tabsContainer}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "chat" && styles.activeTab]}
+                onPress={() => handleTabChange("chat")}
+              >
+                <Ionicons 
+                  name="chatbubble-ellipses" 
+                  size={16} 
+                  color={activeTab === "chat" ? "#8B4513" : colors.textLight}
+                  style={styles.tabIcon}
+                />
+                <Text style={[
+                  styles.tabText, 
+                  fonts.spiritualBodyFont,
+                  { color: activeTab === "chat" ? "#8B4513" : colors.textLight },
+                  activeTab === "chat" && styles.activeTabText
+                ]}>
+                  Chat
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === "profile" && styles.activeTab]}
+                onPress={() => handleTabChange("profile")}
+              >
+                <Ionicons 
+                  name="person-circle" 
+                  size={16} 
+                  color={activeTab === "profile" ? "#8B4513" : colors.textLight}
+                  style={styles.tabIcon}
+                />
+                <Text style={[
+                  styles.tabText, 
+                  fonts.spiritualBodyFont,
+                  { color: activeTab === "profile" ? "#8B4513" : colors.textLight },
+                  activeTab === "profile" && styles.activeTabText
+                ]}>
+                  Essence
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Content with Smooth Sliding Animation */}
+          <View style={styles.contentWrapper}>
+            <Animated.View
+              style={[
+                styles.slidingContainer,
+                {
+                  transform: [{ translateX: slideAnim }],
+                },
+              ]}
+            >
+              {/* Chat View */}
+              <View style={styles.tabContent}>
+                <KeyboardAvoidingView
+                  style={{ flex: 1 }}
+                  behavior={Platform.OS === "ios" ? "padding" : undefined}
+                  keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+                >
+                  <GiftedChat
+                    messages={messages}
+                    onSend={handleSend}
+                    user={{
+                      _id: userData.userId,
+                      name: userData.firstName,
+                      avatar: userData.photos?.[0],
+                    }}
+                    placeholder="Send a message..."
+                    showUserAvatar={false}
+                    renderBubble={renderBubble}
+                    renderInputToolbar={renderInputToolbar}
+                    renderSend={renderSend}
+                    renderSystemMessage={renderSystemMessage}
+                    alwaysShowSend
+                    minInputToolbarHeight={72}
+                    bottomOffset={Platform.OS === "ios" ? 20 : 0}
+                    keyboardShouldPersistTaps="never"
+                    messagesContainerStyle={{ backgroundColor: colors.background }}
+                    renderChatEmpty={() => <View />}
+                    renderChatFooter={() => null}
+                    scrollToBottomComponent={() => null}
+                    loadEarlier={false}
+                    infiniteScroll={false}
+                    isLoadingEarlier={false}
+                    renderLoadEarlier={() => null}
+                    textInputProps={{
+                      style: [styles.textInput, { 
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.textDark,
+                        fontFamily: fonts.spiritualBodyFont?.fontFamily,
+                      }],
+                      placeholder: "Send a message...",
+                      placeholderTextColor: colors.textLight,
+                      multiline: true,
+                      maxLength: 1000,
+                      underlineColorAndroid: 'transparent',
+                    }}
+                  />
+                </KeyboardAvoidingView>
+              </View>
+
+              {/* Profile View */}
+              <View style={styles.tabContent}>
+                {fullUserData ? (
+                  <ScrollView
+                    style={[{ flex: 1 }, { backgroundColor: colors.background }]}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <PotentialMatch
+                      currentPotentialMatch={fullUserData}
+                      isMatched={true}
+                    />
+                  </ScrollView>
+                ) : (
+                  <View style={styles.profileLoader}>
+                    <Animated.View
+                      style={[
+                        styles.lottieContainer,
+                        {
+                          opacity: loadingPulse.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.8, 1],
+                          }),
+                          transform: [
+                            {
+                              scale: loadingPulse.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: [0.95, 1.05, 0.95],
+                              }),
+                            },
+                          ],
+                        }
+                      ]}
+                    >
+                      <LottieView
+                        source={require('../../../../assets/animations/loading_mandala.json')}
+                        autoPlay
+                        loop
+                        style={styles.lottieAnimation}
+                        speed={0.8}
+                      />
+                    </Animated.View>
+                    <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                      Loading profile...
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Animated.View>
+          </View>
+        </SafeAreaView>
+      </Animated.View>
     </>
   );
 };
