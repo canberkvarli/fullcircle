@@ -434,6 +434,10 @@ const initialUserData: UserDataType = {
     },
     datePreferences: [] // Keep for backward compatibility
   },
+
+  subscription:{
+    isActive: false
+  },
   
   // Settings
   settings: {
@@ -2120,7 +2124,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       // Handle daily likes for non-subscribers
-      if (!fromData.subscription.isActive && !__DEV__) {
+      if (!fromData?.subscription?.isActive && !__DEV__) {
         const needsReset = shouldResetDailyLikes(fromData.lastLikeResetDate);
         if (needsReset) {
           fromUpdates.dailyLikesCount = 1;

@@ -217,7 +217,7 @@ const LocationScreen = () => {
             </View>
           ) : (
             <>
-              {/* <MapView
+              <MapView
                 style={styles.map}
                 region={region}
                 onRegionChangeComplete={(newRegion) => {
@@ -242,7 +242,7 @@ const LocationScreen = () => {
                     <Ionicons name="location" size={30} color={colors.primary} />
                   </View>
                 </Marker>
-              </MapView> */}
+              </MapView>
 
               <TouchableOpacity
                 style={styles.currentLocationButton}
