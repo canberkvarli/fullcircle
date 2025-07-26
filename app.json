@@ -32,7 +32,8 @@
       "package": "com.fullcircle.app",
       "gradleVersion": "8.8",
       "kotlinVersion": "1.9.25",
-      "googleServicesFile": "./android/app/google-services.json",
+      "kotlinCompilerExtensionVersion": "1.5.15",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff",
