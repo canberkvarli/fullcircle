@@ -10,6 +10,7 @@ import {
   StatusBar,
   useColorScheme,
   Animated,
+  RefreshControl
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
@@ -78,6 +79,8 @@ const ConnectScreen: React.FC = () => {
   const divineGlow = useRef(new Animated.Value(0)).current;
   
   const orbButtonGlow = useRef(new Animated.Value(0)).current;
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Check if user has FullCircle subscription
   const hasFullCircleSubscription = userData?.subscription?.isActive || false;
@@ -262,6 +265,9 @@ const ConnectScreen: React.FC = () => {
       
       console.log(`✅ ${action} action completed successfully for user: ${userId}`);
       
+      console.log('🔄 Checking if need to prefetch more matches...');
+      await loadNextMatch();
+      
     } catch (error: any) {
       console.error(`❌ ${action} action failed:`, error);
       
@@ -407,25 +413,6 @@ const ConnectScreen: React.FC = () => {
     }
   }, [currentPotentialMatch?.userId, showContent]);
 
-  // Helper functions for action feedback
-  const getActionColor = (action: 'like' | 'pass' | 'orb') => {
-    switch (action) {
-      case 'like': return '#B8860B';
-      case 'pass': return '#8B7355';
-      case 'orb': return '#CD853F';
-      default: return '#CD853F';
-    }
-  };
-
-  const getActionIcon = (action: 'like' | 'pass' | 'orb') => {
-    switch (action) {
-      case 'like': return 'heart' as const;
-      case 'pass': return 'close' as const;
-      case 'orb': return 'sparkles' as const;
-      default: return 'heart' as const;
-    }
-  };
-
   const showDailyLimitModalFunc = () => {
     setShowDailyLimitModal(true);
     
@@ -482,6 +469,28 @@ const ConnectScreen: React.FC = () => {
       router.push('/user/FullCircleSubscription');
     }, 500);
   };
+
+  // 🆕 Pull-to-refresh handler
+    const onRefresh = async () => {
+      if (isRefreshing) return;
+      
+      console.log('🔄 User pulled to refresh - resetting matches...');
+      setIsRefreshing(true);
+      
+      try {
+        // Reset the matching system to pick up new users
+        await resetMatching();
+        
+        // Give it a moment to initialize with fresh data
+        setTimeout(() => {
+          setIsRefreshing(false);
+          console.log('✅ Refresh complete');
+        }, 2000);
+      } catch (error) {
+        console.error('❌ Error during refresh:', error);
+        setIsRefreshing(false);
+      }
+    };
 
   // 🔄 UPDATED: Use new state for no more matches condition
   if (matchingState.noMoreMatches) {
@@ -691,6 +700,16 @@ const ConnectScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           bounces={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              tintColor="#B8860B"
+              colors={["#B8860B"]}
+              progressBackgroundColor={colors.card} 
+              titleColor="#B8860B"
+            />
+          }
         >
           {/* Only render PotentialMatch when we have content AND it's ready to show */}
           {showContent && currentPotentialMatch ? (
@@ -1060,6 +1079,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 80,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    minHeight: screenHeight * 0.8,
   },
   
   buttonsContainer: {

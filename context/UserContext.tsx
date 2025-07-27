@@ -552,9 +552,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         FIRESTORE.collection("users").doc(userId).collection("dislikesGiven").get(),
         FIRESTORE.collection("users").doc(userId).collection("matches").get(),
         FIRESTORE.collection("users").doc(userId).collection("likesReceived").get(),
-        // 🆕 NEW: Fetch reported users
         FIRESTORE.collection("users").doc(userId).collection("reportedUsers").get(),
-        // 🆕 NEW: Fetch unmatched users
         FIRESTORE.collection("users").doc(userId).collection("unmatchedUsers").get(),
       ]);
       
@@ -564,9 +562,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         ...dislikesSnap.docs.map(doc => doc.id),
         ...matchesSnap.docs.map(doc => doc.id),
         ...receivedLikesSnap.docs.map(doc => doc.id),
-        // 🆕 NEW: Add reported users to exclusions
         ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id),
-        // 🆕 NEW: Add unmatched users to exclusions
         ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id),
       ]);
 
@@ -575,7 +571,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         likesGiven: likesSnap.docs.length,
         dislikesGiven: dislikesSnap.docs.length,
         matches: matchesSnap.docs.length,
-        receivedLikes: receivedLikesSnap.docs.length,
+        receivedLikes: receivedLikesSnap.docs.length, // ✅ People who liked you
         reportedUsers: reportsSnap.docs.length,
         unmatchedUsers: unmatchesSnap.docs.length,
         totalExcluded: exclusions.size
@@ -1306,29 +1302,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       spiritualPrefs: prefs?.spiritualCompatibility
     });
     
-    // 🔥 CRITICAL FIX: Add current user ID to exclusion check
     console.log('🚫 Current user ID for exclusion:', userData.userId);
     console.log('🚫 Exclusion set contents:', Array.from(matchingState.exclusionSet));
 
     const filteredUsers = users.filter(user => {
-      // 1. 🚫 EXCLUSION CHECK - THIS MUST BE FIRST AND MOST IMPORTANT
+      // 1. 🚫 EXCLUSION CHECK - Use the exclusion set from matching state
       if (matchingState.exclusionSet.has(user.userId)) {
         console.log(`❌ ${user.firstName} (${user.userId}) - Already excluded from exclusion set`);
         return false;
       }
-      // 1. 🚫 EXCLUSION CHECK - IF WE MATCHED
-      if (userData?.matches?.includes(user.userId)) {
-        console.log(`❌ ${user.firstName} (${user.userId}) - Already matched with this user`);
-        return false;
-      }
       
-      // 🔥 CRITICAL FIX: Also explicitly check if user is viewing themselves
+      // 2. 🔥 CRITICAL: Explicit self-check as backup
       if (user.userId === userData.userId) {
         console.log(`❌ ${user.firstName} (${user.userId}) - Cannot show user themselves!`);
         return false;
       }
 
-      // 2. 🎯 AGE FILTER (Most Important - Apply Strictly)
+      // 3. 🎯 AGE FILTER 
       if (prefs?.preferredAgeRange?.min && prefs?.preferredAgeRange?.max) {
         const userAge = user.age;
         
@@ -1340,7 +1330,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log(`✅ ${user.firstName} (age ${userAge}) - Within age range ${prefs.preferredAgeRange.min}-${prefs.preferredAgeRange.max}`);
       }
 
-      // 3. 🎯 GENDER/CONNECTION PREFERENCES
+      // 4. 🎯 GENDER/CONNECTION PREFERENCES
       if (prefs?.connectionPreferences?.length && !prefs.connectionPreferences.includes("Everyone")) {
         const userGender = Array.isArray(user.gender) ? user.gender[0] : user.gender;
         
@@ -1360,7 +1350,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log(`✅ ${user.firstName} (${userGender}) - Matches connection preferences`);
       }
 
-      // 4. 🎯 CONNECTION INTENT COMPATIBILITY
+      // 5. 🎯 CONNECTION INTENT COMPATIBILITY
       if (prefs?.connectionIntent && prefs.connectionIntent !== "both") {
         const userIntent = user.matchPreferences?.connectionIntent || "both";
         
@@ -1380,7 +1370,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log(`✅ ${user.firstName} - Intent compatible: User wants "${prefs.connectionIntent}", they want "${userIntent}"`);
       }
 
-      // 5. 🔮 SPIRITUAL COMPATIBILITY FILTER
+      // 6. 🔮 SPIRITUAL COMPATIBILITY FILTER
       const spiritualResult = applySpiritualFilter(user);
       if (!spiritualResult.passes) {
         return false;
@@ -1390,7 +1380,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       (user as any)._spiritualScore = spiritualResult.score;
       (user as any)._spiritualReason = spiritualResult.reason;
 
-      // 6. 🎯 DISTANCE FILTER
+      // 7. 🎯 DISTANCE FILTER
       if (prefs?.preferredDistance && userData.latitude && userData.longitude && user.latitude && user.longitude) {
         const distance = calculateHaversineDistance(
           userData.latitude,
@@ -1407,7 +1397,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log(`✅ ${user.firstName} - Within distance: ${distance.toFixed(1)} miles <= ${prefs.preferredDistance} miles`);
       }
 
-      // 7. 🎯 HEIGHT FILTER (if specified)
+      // 8. 🎯 HEIGHT FILTER (if specified)
       if (prefs?.preferredHeightRange?.min && prefs?.preferredHeightRange?.max && user.height) {
         if (user.height < prefs.preferredHeightRange.min || user.height > prefs.preferredHeightRange.max) {
           console.log(`❌ ${user.firstName} - Height ${user.height} outside range ${prefs.preferredHeightRange.min}-${prefs.preferredHeightRange.max}`);
@@ -1438,21 +1428,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     }
 
+    // 🚀 Apply boost priority sorting to spiritually sorted users
     const finalSortedUsers = applyBoostPrioritySorting(sortedUsers);
     console.log(`📊 FINAL PRIORITIZED USERS: ${finalSortedUsers.length} out of ${users.length} raw users`);
 
-    // 🔥 FINAL SAFETY CHECK: Remove self if somehow still present
-    const safeFinalUsers = finalSortedUsers.filter(user => {
-      if (user.userId === userData.userId) {
-        console.log(`🚨 FINAL SAFETY: Removing self (${user.firstName}) from final results!`);
-        return false;
-      }
-      return true;
-    });
-
-    console.log(`📊 SAFE FINAL USERS: ${safeFinalUsers.length} (after final self-removal check)`);
-    
-    return safeFinalUsers;
+    return finalSortedUsers;
 
   }, [userData.matchPreferences, userData.latitude, userData.longitude, userData.userId, matchingState.exclusionSet, applySpiritualFilter, applyBoostPrioritySorting]);
 
@@ -1475,14 +1455,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
-      // 🔧 CRITICAL FIX: Also exclude users already in potentialMatches to prevent duplicates
-      const existingUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
-      const combinedExclusions = new Set([...exclusionsToUse, ...existingUserIds]);
-      
-      console.log('🔍 Combined exclusions (including existing):', Array.from(combinedExclusions));
+      // ✅ FIXED: Only exclude users from the current exclusion set, not from existing potentialMatches
+      // The exclusion set should already contain all users we've interacted with
+      console.log('🔍 Using exclusions for query:', Array.from(exclusionsToUse));
       
       // Build and execute query
-      const query = buildMatchQuery(combinedExclusions, lastDoc, 30);
+      const query = buildMatchQuery(exclusionsToUse, lastDoc, 8); // Using your 8 batch size
       const snapshot = await query.get();
       
       if (snapshot.empty) {
@@ -1506,9 +1484,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // Apply all client-side filters
       const filteredUsers = applyAllFilters(rawUsers);
       
-      // 🔧 CRITICAL FIX: Final duplicate check
+      // ✅ FIXED: Simple duplicate check - just make sure we don't add users already in potentialMatches
+      const currentUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
       const uniqueFilteredUsers = filteredUsers.filter(user => 
-        !existingUserIds.has(user.userId) && !exclusionsToUse.has(user.userId)
+        !currentUserIds.has(user.userId) // Only check against current potentialMatches, not exclusions
       );
       
       console.log(`📊 FINAL UNIQUE USERS: ${uniqueFilteredUsers.length} out of ${rawUsers.length} raw users`);
@@ -1736,139 +1715,144 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return remainingSeconds;
   }, []);
 
-  // 🔧 FINAL FIX: Replace your optimizedLikeMatch function with this version
-  // This captures the radiance status BEFORE any state changes happen
-  // 🔧 FIXED FOR INTERPRETATION 2: Check if the RECIPIENT has radiance
   const optimizedLikeMatch = useCallback(async (matchId: string) => {
-    console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
-    
-    try {
-      // Check daily limit for non-FullCircle users in production
-      if (!userDataRef.current.subscription?.isActive && !__DEV__) {
-        const remaining = getRemainingDailyLikes();
-        
-        if (remaining <= 0) {
-          throw new Error("DAILY_LIMIT_REACHED");
-        }
-      }
-
-      // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
-      console.log(`🔍 Checking if target user ${matchId} has radiance...`);
-      
-      let targetHasRadiance = false;
+      console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
       
       try {
-        // Fetch the target user's data to check their radiance status
-        const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
-        
-        if (targetUserDoc.exists) {
-          const targetUserData = targetUserDoc.data() as UserDataType;
+        // Check daily limit for non-FullCircle users in production
+        if (!userDataRef.current.subscription?.isActive && !__DEV__) {
+          const remaining = getRemainingDailyLikes();
           
-          console.log('🎯 Target user data:', {
-            userId: matchId,
-            boostExpiresAt: targetUserData.boostExpiresAt,
-            hasBoostField: !!targetUserData.boostExpiresAt
-          });
-          
-          if (targetUserData.boostExpiresAt) {
-            const expiresAt = targetUserData.boostExpiresAt.toDate 
-              ? targetUserData.boostExpiresAt.toDate()
-              : new Date(targetUserData.boostExpiresAt);
-            
-            targetHasRadiance = new Date() < expiresAt;
-            
-            console.log('🔍 Target user radiance check:', {
-              expiresAt: expiresAt.toISOString(),
-              currentTime: new Date().toISOString(),
-              targetHasRadiance
-            });
-          } else {
-            console.log('🔍 Target user has no boostExpiresAt field');
+          if (remaining <= 0) {
+            throw new Error("DAILY_LIMIT_REACHED");
           }
-        } else {
-          console.log('❌ Target user document not found');
         }
-      } catch (error) {
-        console.error('❌ Error checking target user radiance:', error);
-        // Continue with targetHasRadiance = false
-      }
-      
-      console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
-        targetUserId: matchId,
-        targetHasRadiance,
-        meaning: targetHasRadiance 
-          ? 'This like will be marked as viaRadiance because recipient has active boost' 
-          : 'Normal like - recipient has no active boost'
-      });
-      
-      // 🔧 CRITICAL FIX: Remove user from current array immediately and move to next
-      setMatchingState(prev => {
-        const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+
+        // Check if the TARGET USER (person being liked) has radiance
+        console.log(`🔍 Checking if target user ${matchId} has radiance...`);
         
-        // 🔧 CRITICAL: Remove liked user from potentialMatches array entirely
-        const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+        let targetHasRadiance = false;
         
-        // 🔧 CRITICAL: Find next valid user that's not excluded
-        let nextIndex = prev.currentIndex;
-        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-          nextIndex++;
+        try {
+          const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
+          
+          if (targetUserDoc.exists) {
+            const targetUserData = targetUserDoc.data() as UserDataType;
+            
+            console.log('🎯 Target user data:', {
+              userId: matchId,
+              boostExpiresAt: targetUserData.boostExpiresAt,
+              hasBoostField: !!targetUserData.boostExpiresAt
+            });
+            
+            if (targetUserData.boostExpiresAt) {
+              const expiresAt = targetUserData.boostExpiresAt.toDate 
+                ? targetUserData.boostExpiresAt.toDate()
+                : new Date(targetUserData.boostExpiresAt);
+              
+              targetHasRadiance = new Date() < expiresAt;
+              
+              console.log('🔍 Target user radiance check:', {
+                expiresAt: expiresAt.toISOString(),
+                currentTime: new Date().toISOString(),
+                targetHasRadiance
+              });
+            } else {
+              console.log('🔍 Target user has no boostExpiresAt field');
+            }
+          } else {
+            console.log('❌ Target user document not found');
+          }
+        } catch (error) {
+          console.error('❌ Error checking target user radiance:', error);
         }
         
-        // If no valid user at current or next positions, look from beginning
-        if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-          nextIndex = 0;
+        console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
+          targetUserId: matchId,
+          targetHasRadiance,
+          meaning: targetHasRadiance 
+            ? 'This like will be marked as viaRadiance because recipient has active boost' 
+            : 'Normal like - recipient has no active boost'
+        });
+        
+        // ✅ CRITICAL FIX: Update exclusion set BEFORE removing from UI
+        setMatchingState(prev => {
+          const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+          
+          // Remove liked user from potentialMatches array entirely
+          const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+          
+          // Find next valid user that's not excluded
+          let nextIndex = prev.currentIndex;
           while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
             nextIndex++;
           }
-        }
-        
-        console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
-        
-        return {
-          ...prev,
-          exclusionSet: newExclusionSet,
-          potentialMatches: filteredMatches,
-          currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-          noMoreMatches: filteredMatches.length === 0
-        };
-      });
-      
-      // 🔧 FIXED: Pass the target's radiance status, not the sender's
-      await recordLikeWithBatch(
-        userDataRef.current.userId, 
-        matchId, 
-        false, // viaOrb = false for regular likes
-        targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
-      );
-      
-      console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
-      
-    } catch (error: any) {
-      console.error('❌ Error in optimized like:', error);
-      
-      // 🔧 CRITICAL FIX: Only rollback for non-daily-limit errors
-      if (error.message !== "DAILY_LIMIT_REACHED") {
-        console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
-        setMatchingState(prev => {
-          const newSet = new Set(prev.exclusionSet);
-          newSet.delete(matchId);
           
-          // Add user back to potentialMatches if rollback
-          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          // If no valid user at current or next positions, look from beginning
+          if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+            nextIndex = 0;
+            while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+              nextIndex++;
+            }
+          }
           
-          return { 
-            ...prev, 
-            exclusionSet: newSet,
-            potentialMatches: newMatches
+          console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+          console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+          
+          return {
+            ...prev,
+            exclusionSet: newExclusionSet,
+            potentialMatches: filteredMatches,
+            currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+            noMoreMatches: filteredMatches.length === 0
           };
         });
+        
+        // ✅ IMPROVED: Record like with proper error handling for already matched users
+        try {
+          await recordLikeWithBatch(
+            userDataRef.current.userId, 
+            matchId, 
+            false, // viaOrb = false for regular likes
+            targetHasRadiance
+          );
+          
+          console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
+        } catch (likeError: any) {
+          // ✅ NEW: Handle case where users are already matched
+          if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
+            console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping like recording`);
+            // Don't rollback the exclusion since we still want them removed from the list
+          } else {
+            throw likeError; // Re-throw other errors for normal error handling
+          }
+        }
+        
+      } catch (error: any) {
+        console.error('❌ Error in optimized like:', error);
+        
+        // Only rollback exclusion for certain errors
+        if (error.message !== "DAILY_LIMIT_REACHED" && !error.message?.includes('already matched')) {
+          console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
+          setMatchingState(prev => {
+            const newSet = new Set(prev.exclusionSet);
+            newSet.delete(matchId);
+            
+            // Add user back to potentialMatches if rollback
+            const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+            const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+            
+            return { 
+              ...prev, 
+              exclusionSet: newSet,
+              potentialMatches: newMatches
+            };
+          });
+        }
+        
+        throw error;
       }
-      
-      throw error;
-    }
-  }, [getRemainingDailyLikes]);
+    }, [getRemainingDailyLikes]);
 
   // 🔧 ALSO UPDATE: optimizedOrbLike with the same logic
   const optimizedOrbLike = useCallback(async (matchId: string) => {
@@ -1880,13 +1864,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error("No orbs available");
       }
 
-      // 🔧 NEW LOGIC: Check if the TARGET USER (person being liked) has radiance
+      // Check if the TARGET USER (person being liked) has radiance
       console.log(`🔍 Checking if target user ${matchId} has radiance for orb like...`);
       
       let targetHasRadiance = false;
       
       try {
-        // Fetch the target user's data to check their radiance status
         const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
         
         if (targetUserDoc.exists) {
@@ -1924,7 +1907,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         numOfOrbs: (prev.numOfOrbs || 0) - 1
       }));
       
-      // 🔧 CRITICAL FIX: Same pattern - remove immediately and move to next
+      // ✅ CRITICAL FIX: Same pattern - remove immediately and move to next
       setMatchingState(prev => {
         const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
         
@@ -1957,36 +1940,46 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       });
       
-      // 🔧 FIXED: Pass the target's radiance status
-      await recordLikeWithBatch(
-        userDataRef.current.userId, 
-        matchId, 
-        true, // viaOrb = true for orb likes
-        targetHasRadiance // ✅ TRUE if the RECIPIENT has radiance
-      );
+      // ✅ IMPROVED: Record orb like with proper error handling
+      try {
+        await recordLikeWithBatch(
+          userDataRef.current.userId, 
+          matchId, 
+          true, // viaOrb = true for orb likes
+          targetHasRadiance
+        );
 
-      console.log(`✅ Optimized orb like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal orb like)'}`);
+        console.log(`✅ Optimized orb like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal orb like)'}`);
+      } catch (likeError: any) {
+        // Handle case where users are already matched
+        if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
+          console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping orb like recording`);
+          // Don't rollback the exclusion since we still want them removed from the list
+        } else {
+          throw likeError;
+        }
+      }
       
     } catch (error: any) {
       console.error('❌ Error orb liking match:', error);
       
-      // Rollback exclusion and orb count on error
-      setMatchingState(prev => {
-        const newSet = new Set(prev.exclusionSet);
-        newSet.delete(matchId);
+      // Rollback exclusion and orb count on error (except for already matched)
+      if (error.message !== "No orbs available" && !error.message?.includes('already matched')) {
+        setMatchingState(prev => {
+          const newSet = new Set(prev.exclusionSet);
+          newSet.delete(matchId);
+          
+          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          
+          return { 
+            ...prev, 
+            exclusionSet: newSet,
+            potentialMatches: newMatches
+          };
+        });
         
-        const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-        const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
-        
-        return { 
-          ...prev, 
-          exclusionSet: newSet,
-          potentialMatches: newMatches
-        };
-      });
-      
-      // Rollback orb count if it was decremented
-      if (error.message !== "No orbs available") {
+        // Rollback orb count if it was decremented
         setUserData(prev => ({
           ...prev,
           numOfOrbs: (prev.numOfOrbs || 0) + 1
@@ -2003,7 +1996,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log(`👎 OPTIMIZED DISLIKING USER: ${matchId}`);
     
     try {
-      // 🔧 CRITICAL FIX: Same pattern as like - remove immediately and move to next
+      // ✅ CRITICAL FIX: Same pattern as like - remove immediately and move to next
       setMatchingState(prev => {
         const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
         
@@ -2036,28 +2029,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       });
       
-      // Perform dislike action in background
-      await recordDislikeWithBatch(userDataRef.current.userId, matchId);
+      // Perform dislike action in background with error handling
+      try {
+        await recordDislikeWithBatch(userDataRef.current.userId, matchId);
+        console.log(`✅ Optimized dislike completed for ${matchId}`);
+      } catch (dislikeError: any) {
+        // Handle case where user doesn't exist
+        if (dislikeError.message?.includes('User documents do not exist')) {
+          console.log(`⚠️ User ${matchId} doesn't exist, skipping dislike recording`);
+          // Don't rollback the exclusion since we still want them removed from the list
+        } else {
+          throw dislikeError;
+        }
+      }
       
-      console.log(`✅ Optimized dislike completed for ${matchId}`);
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error disliking match:', error);
       
-      // Rollback on error
-      setMatchingState(prev => {
-        const newSet = new Set(prev.exclusionSet);
-        newSet.delete(matchId);
-        
-        const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-        const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
-        
-        return { 
-          ...prev, 
-          exclusionSet: newSet,
-          potentialMatches: newMatches
-        };
-      });
+      // Rollback on error (except for non-existent users)
+      if (!error.message?.includes('User documents do not exist')) {
+        setMatchingState(prev => {
+          const newSet = new Set(prev.exclusionSet);
+          newSet.delete(matchId);
+          
+          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          
+          return { 
+            ...prev, 
+            exclusionSet: newSet,
+            potentialMatches: newMatches
+          };
+        });
+      }
       
       throw error;
     }
@@ -2089,6 +2093,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error('User documents do not exist');
       }
       
+      // ✅ NEW: Check if we already have this user in our likesGiven (shouldn't happen but let's be safe)
+      const alreadyLikedSnap = await givenRef.get();
+      if (alreadyLikedSnap.exists) {
+        console.log('⚠️ Already liked this user, checking for match...');
+        // Check if they're already matched
+        const matchRef = fromRef.collection("matches").doc(toUserId);
+        const matchSnap = await matchRef.get();
+        if (matchSnap.exists) {
+          throw new Error('Users are already matched');
+        }
+      }
+      
       const fromData: any = fromSnap.data()!;
       const toData = toSnap.data()!;
       const hadLikedUs = incomingSnap.exists;
@@ -2098,7 +2114,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         toExists: toSnap.exists, 
         hadLikedUs,
         fromLikesGiven: fromData.likesGivenCount,
-        hasActiveRadiance: hasActiveRadiance(fromData) // Check if user has active boost
+        hasActiveRadiance: hasActiveRadiance(fromData)
       });
       
       // Check orb allowance
@@ -2113,7 +2129,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const likeData = {
         matchId: toUserId,
         viaOrb,
-        viaRadiance, // NEW: Track radiance connections
+        viaRadiance,
         timestamp: firestore.FieldValue.serverTimestamp(),
       };
       
@@ -2135,7 +2151,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       // Handle orb consumption
-      if (viaOrb && !fromData.subscription.isActive) {
+      if (viaOrb && !fromData?.subscription?.isActive) {
         fromUpdates.numOfOrbs = Math.max(0, (fromData.numOfOrbs ?? 0) - 1);
       }
       
@@ -2158,12 +2174,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         // Store match data with connection methods from both sides
         const matchData = {
           timestamp: firestore.FieldValue.serverTimestamp(),
-          // Track how the match was formed (from current user's perspective)
           myConnectionMethod: {
             viaOrb,
             viaRadiance
           },
-          // Track how they originally liked us
           theirConnectionMethod: {
             viaOrb: originalViaOrb,
             viaRadiance: originalViaRadiance
@@ -2172,7 +2186,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         
         const theirMatchData = {
           timestamp: firestore.FieldValue.serverTimestamp(),
-          // From their perspective (reversed)
           myConnectionMethod: {
             viaOrb: originalViaOrb,
             viaRadiance: originalViaRadiance
@@ -2199,7 +2212,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           lastMessageSender: "",
           createdAt: firestore.FieldValue.serverTimestamp(),
           lastUpdated: firestore.FieldValue.serverTimestamp(),
-          // NEW: Store connection metadata for chat UI
           connectionMethods: {
             [fromUserId]: { viaOrb, viaRadiance },
             [toUserId]: { viaOrb: originalViaOrb, viaRadiance: originalViaRadiance }
@@ -2209,9 +2221,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         // Update the other user for the match
         batch.update(toRef, {
           matches: firestore.FieldValue.arrayUnion(fromUserId),
-          // DON'T increment likesReceivedCount for mutual matches - they become matches immediately
-          // likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1, // REMOVED
-          likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1), // They liked us first
+          likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1),
         });
         
         console.log('🔥 Match and chat will be created with connection methods:', {
@@ -2222,11 +2232,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         // Only for NON-MUTUAL likes: create received like record and increment counter
         console.log('🔥 Creating received like record (not mutual)');
         
-        // For received likes, we need to track how the sender connected
         const receivedLikeData = {
           matchId: fromUserId,
           viaOrb,
-          viaRadiance, // NEW: Track how this person liked us
+          viaRadiance,
           timestamp: firestore.FieldValue.serverTimestamp(),
         };
         
@@ -2538,42 +2547,47 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // In your getImageUrl function, add better error handling:
+
   const getImageUrl = useCallback(
     async (imagePath: string): Promise<string | null> => {
       if (!imagePath) return null;
       
-      // 1) http URLs: just forward & resolve via STORAGE.refFromURL
+      // 1) HTTP URLs: already download URLs, return directly
       if (imagePath.startsWith("http")) {
-        return STORAGE.refFromURL(imagePath)
-          .getDownloadURL()
-          .catch((err) => {
-            console.warn("Image not found:", imagePath);
-            return null; // Return null instead of throwing
-          });
+        return imagePath;
       }
 
-      // 2) cached?
+      // 2) Check cache first
       const cached = imageCache[imagePath];
       if (cached) {
         return typeof cached === "string" ? Promise.resolve(cached) : cached;
       }
 
-      // 3) kick off download & cache the promise
-      const loader = STORAGE.ref(imagePath)
-        .getDownloadURL()
-        .then((url) => {
-          imageCache[imagePath] = url;
-          return url;
-        })
-        .catch((err) => {
-          console.warn("Image not found:", imagePath);
-          imageCache[imagePath] = Promise.resolve(null); // Cache the failure
-          return null;
-        });
+      // 3) Firebase Storage paths: convert to download URL
+      try {
+        console.log(`🔍 Converting storage path to download URL: ${imagePath}`);
+        
+        const loader = STORAGE.ref(imagePath)
+          .getDownloadURL()
+          .then((url) => {
+            console.log(`✅ Got download URL for ${imagePath}: ${url.substring(0, 50)}...`);
+            imageCache[imagePath] = url;
+            return url;
+          })
+          .catch((err) => {
+            console.warn(`❌ Failed to get download URL for ${imagePath}:`, err.code);
+            
+            // Cache the failure to avoid repeated attempts
+            imageCache[imagePath] = Promise.resolve(null);
+            return null;
+          });
 
-      imageCache[imagePath] = loader;
-      return loader;
+        imageCache[imagePath] = loader;
+        return loader;
+      } catch (error) {
+        console.warn(`❌ Error processing image path ${imagePath}:`, error);
+        return null;
+      }
     },
     []
   );
