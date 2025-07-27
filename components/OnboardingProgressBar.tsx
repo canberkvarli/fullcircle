@@ -46,9 +46,8 @@ const spiritualProgressBarIcons: Record<string, IconConfig> = {
     iconType: 'vector'
   },
   "LocationScreen": { 
-    type: "FontAwesome", 
-    name: "home",
-    iconType: 'vector'
+    source: require('../assets/icons/temple.png'),
+    iconType: 'custom'
   },
   "GenderScreen": { 
     type: "MaterialCommunityIcons", 
