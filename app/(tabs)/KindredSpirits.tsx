@@ -335,7 +335,7 @@ const KindredSpirits: React.FC = () => {
           >
             <Ionicons 
               name="radio-outline" 
-              size={16} 
+              size={14} 
               color={radianceConfig.color} 
             />
             <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: radianceConfig.color }]}>
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   radianceButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   },
 
   radianceButtonText: {
-    fontSize: Typography.sizes.sm,
+    fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
     marginLeft: Spacing.xs,
   },
