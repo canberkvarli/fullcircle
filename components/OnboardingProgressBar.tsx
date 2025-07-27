@@ -1,31 +1,83 @@
 import React from "react";
-import { View, StyleSheet, useColorScheme, Platform } from "react-native";
-import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, StyleSheet, useColorScheme, Platform, Image } from "react-native";
+import { FontAwesome, MaterialCommunityIcons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { Colors, Spacing } from "@/constants/Colors";
 
 const iconLibraries = {
   FontAwesome,
   MaterialCommunityIcons,
+  MaterialIcons,
+  FontAwesome5
 };
 
-interface IconConfig {
+interface VectorIconConfig {
   type: keyof typeof iconLibraries;
   name: string;
+  iconType: 'vector';
 }
 
-// Spiritual icons - you can replace these with custom Flaticon SVGs
-const spiritualProgressBarIcons = {
-  "NameScreen": { "type": "MaterialCommunityIcons", "name": "account-heart" },
-  "EmailScreen": { "type": "MaterialCommunityIcons", "name": "email" },
-  "BirthdateScreen": { "type": "MaterialCommunityIcons", "name": "calendar-star" },
-  "HeightScreen": { "type": "MaterialCommunityIcons", "name": "human-handsup" },
-  "LocationScreen": { "type": "MaterialCommunityIcons", "name": "map-marker-radius" },
-  "GenderScreen": { "type": "MaterialCommunityIcons", "name": "human-male-female" },
-  "ConnectionPreferenceScreen": { "type": "MaterialCommunityIcons", "name": "heart-circle" },
-  "SpiritualDrawsScreen": { "type": "MaterialCommunityIcons", "name": "human" },
-  "SpiritualPracticesScreen": { "type": "MaterialCommunityIcons", "name": "human" },
-  "HealingModalitiesScreen": { "type": "MaterialCommunityIcons", "name": "human" },
-  "PhotosScreen": { "type": "MaterialCommunityIcons", "name": "camera-iris" }
+interface CustomIconConfig {
+  source: any; // require() result
+  iconType: 'custom';
+}
+
+type IconConfig = VectorIconConfig | CustomIconConfig;
+
+// Mixed icons - vector icons and custom PNGs
+const spiritualProgressBarIcons: Record<string, IconConfig> = {
+  "NameScreen": { 
+    type: "MaterialCommunityIcons", 
+    name: "account-heart",
+    iconType: 'vector'
+  },
+  "EmailScreen": { 
+    type: "MaterialCommunityIcons", 
+    name: "email",
+    iconType: 'vector'
+  },
+  "BirthdateScreen": { 
+    type: "MaterialCommunityIcons", 
+    name: "cake",
+    iconType: 'vector'
+  },
+  "HeightScreen": { 
+    type: "FontAwesome", 
+    name: "tree",
+    iconType: 'vector'
+  },
+  "LocationScreen": { 
+    type: "FontAwesome", 
+    name: "home",
+    iconType: 'vector'
+  },
+  "GenderScreen": { 
+    type: "MaterialCommunityIcons", 
+    name: "human-male-female",
+    iconType: 'vector'
+  },
+  "ConnectionPreferenceScreen": { 
+    type: "FontAwesome5", 
+    name: "hand-holding-heart",
+    iconType: 'vector'
+  },
+  // Custom spiritual icons - replace these with your Flaticon PNGs
+  "SpiritualDrawsScreen": { 
+    source: require('../assets/icons/ohm.png'),
+    iconType: 'custom'
+  },
+  "SpiritualPracticesScreen": { 
+    source: require('../assets/icons/yoga.png'),
+    iconType: 'custom'
+  },
+  "HealingModalitiesScreen": { 
+    source: require('../assets/icons/pigeon.png'),
+    iconType: 'custom'
+  },
+  "PhotosScreen": { 
+    type: "MaterialCommunityIcons", 
+    name: "camera-iris",
+    iconType: 'vector'
+  }
 };
 
 const OnboardingProgressBar = ({
@@ -53,17 +105,49 @@ const OnboardingProgressBar = ({
 
   const currentIndex = onboardingScreens.indexOf(currentScreen);
 
+  const renderIcon = (iconConfig: IconConfig, isActive: boolean, isCompleted: boolean) => {
+    if (iconConfig.iconType === 'custom') {
+      // Custom PNG icon
+      const iconSize = isActive ? 18 : 14;
+      const iconColor = isActive ? colors.primary : colors.text;
+      
+      return (
+        <Image 
+          source={iconConfig.source}
+          style={[
+            { 
+              width: iconSize, 
+              height: iconSize,
+              tintColor: iconColor
+            }
+          ]}
+          resizeMode="contain"
+        />
+      );
+    } else {
+      // Vector icon
+      const { type, name } = iconConfig;
+      const IconComponent = iconLibraries[type];
+      const iconSize = isActive ? 18 : 14;
+      const iconColor = isActive ? colors.primary : colors.text;
+      
+      return (
+        <IconComponent 
+          name={name as any} 
+          size={iconSize} 
+          color={iconColor} 
+        />
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       {onboardingScreens.map((screen, index) => {
-        const iconConfig = spiritualProgressBarIcons[
-          screen as keyof typeof spiritualProgressBarIcons
-        ] as IconConfig;
+        const iconConfig = spiritualProgressBarIcons[screen];
 
         if (!iconConfig) return <View key={screen} style={styles.dot} />;
 
-        const { type, name } = iconConfig;
-        const IconComponent = iconLibraries[type];
         const isActive = index === currentIndex;
         const isCompleted = index < currentIndex;
 
@@ -71,17 +155,13 @@ const OnboardingProgressBar = ({
           <View key={screen} style={styles.stepContainer}>
             {isActive ? (
               <View style={styles.activeIconContainer}>
-                <IconComponent 
-                  name={name as any} 
-                    size={16} 
-                  color={colors.primary} 
-                />
+                {renderIcon(iconConfig, true, false)}
               </View>
             ) : isCompleted ? (
               <View style={styles.completedIconContainer}>
                 <MaterialCommunityIcons 
                   name="check" 
-                  size={10} 
+                  size={12} 
                   color={colors.background} 
                 />
               </View>
@@ -111,12 +191,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     stepContainer: {
       alignItems: "center",
       justifyContent: "center",
-      minWidth: 12, // Smaller for more compact layout
+      minWidth: 14, // Slightly larger for better touch targets
     },
     activeIconContainer: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: colors.tertiary,
       borderWidth: 2,
       borderColor: colors.primary,
@@ -135,17 +215,17 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     completedIconContainer: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
       backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
     },
     dot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
       backgroundColor: colors.border,
     },
   });
