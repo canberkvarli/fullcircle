@@ -1,6 +1,7 @@
 import React from "react";
-import { View, StyleSheet, useColorScheme, Platform, Image } from "react-native";
+import { View, StyleSheet, useColorScheme, Platform } from "react-native";
 import { FontAwesome, MaterialCommunityIcons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon"; // Import your CustomIcon component
 import { Colors, Spacing } from "@/constants/Colors";
 
 const iconLibraries = {
@@ -17,13 +18,13 @@ interface VectorIconConfig {
 }
 
 interface CustomIconConfig {
-  source: any; // require() result
+  name: string; // Use name instead of source for CustomIcon
   iconType: 'custom';
 }
 
 type IconConfig = VectorIconConfig | CustomIconConfig;
 
-// Mixed icons - vector icons and custom PNGs
+// Mixed icons - vector icons and custom icons using CustomIcon component
 const spiritualProgressBarIcons: Record<string, IconConfig> = {
   "NameScreen": { 
     type: "MaterialCommunityIcons", 
@@ -46,7 +47,7 @@ const spiritualProgressBarIcons: Record<string, IconConfig> = {
     iconType: 'vector'
   },
   "LocationScreen": { 
-    source: require('../assets/icons/temple.png'),
+    name: "temple", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "GenderScreen": { 
@@ -59,17 +60,16 @@ const spiritualProgressBarIcons: Record<string, IconConfig> = {
     name: "hand-holding-heart",
     iconType: 'vector'
   },
-  // Custom spiritual icons - replace these with your Flaticon PNGs
   "SpiritualDrawsScreen": { 
-    source: require('../assets/icons/ohm.png'),
+    name: "ohm", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "SpiritualPracticesScreen": { 
-    source: require('../assets/icons/yoga.png'),
+    name: "yoga", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "HealingModalitiesScreen": { 
-    source: require('../assets/icons/pigeon.png'),
+    name: "pigeon", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "PhotosScreen": { 
@@ -105,30 +105,22 @@ const OnboardingProgressBar = ({
   const currentIndex = onboardingScreens.indexOf(currentScreen);
 
   const renderIcon = (iconConfig: IconConfig, isActive: boolean, isCompleted: boolean) => {
+    const iconSize = isActive ? 18 : 14;
+    const iconColor = isActive ? colors.primary : colors.text;
+
     if (iconConfig.iconType === 'custom') {
-      // Custom PNG icon
-      const iconSize = isActive ? 18 : 14;
-      const iconColor = isActive ? colors.primary : colors.text;
-      
+      // Use CustomIcon component
       return (
-        <Image 
-          source={iconConfig.source}
-          style={[
-            { 
-              width: iconSize, 
-              height: iconSize,
-              tintColor: iconColor
-            }
-          ]}
-          resizeMode="contain"
+        <CustomIcon 
+          name={iconConfig.name}
+          size={iconSize}
+          color={iconColor}
         />
       );
     } else {
       // Vector icon
       const { type, name } = iconConfig;
       const IconComponent = iconLibraries[type];
-      const iconSize = isActive ? 18 : 14;
-      const iconColor = isActive ? colors.primary : colors.text;
       
       return (
         <IconComponent 

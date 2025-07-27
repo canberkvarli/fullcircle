@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
+import { CustomIcon } from "@/components/CustomIcon";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
@@ -41,25 +42,28 @@ const combinedStyles = [
   "Soul Supporters",
 ];
 
-// Connection Intent Options
+// Connection Intent Options - Updated with custom icon support
 const connectionIntents = [
   { 
     id: "romantic", 
     label: "Dating", 
     subtitle: "Seeking romantic & intimate connections",
-    icon: "heart"
+    icon: "heart", // Keep as Ionicon
+    iconType: "ionicon"
   },
   { 
     id: "friendship", 
     label: "Friendship", 
     subtitle: "Building meaningful platonic bonds",
     icon: "people"
+    // iconType: "custom"
   },
   { 
     id: "both", 
     label: "Both", 
     subtitle: "Open to all types of meaningful connections",
     icon: "infinite"
+    // iconType: "custom"
   },
 ];
 
@@ -147,6 +151,15 @@ const ConnectionPreferenceScreen = () => {
       ...prev,
       [fieldName]: !prev[fieldName],
     }));
+  };
+
+  // Custom icon renderer function
+  const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
+    if (iconType === "custom") {
+      return <CustomIcon name={iconName} size={size} color={color} />;
+    } else {
+      return <Ionicons name={iconName as any} size={size} color={color} />;
+    }
   };
 
   // 🎨 SIMPLIFIED: Just get subtle selection colors - no text color changes
@@ -329,11 +342,12 @@ const ConnectionPreferenceScreen = () => {
                 onPress={() => toggleConnectionIntent(intent.id)}
               >
                 <View style={styles.intentContent}>
-                  <Ionicons 
-                    name={intent.icon as any} 
-                    size={24} 
-                    color={connectionIntent === intent.id ? '#D4AF37' : colors.textMuted} 
-                  />
+                  {renderIcon(
+                    intent.icon,
+                    intent.iconType,
+                    24,
+                    connectionIntent === intent.id ? '#D4AF37' : colors.textMuted
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.intentTitle}>
                       {intent.label}
@@ -372,6 +386,14 @@ const ConnectionPreferenceScreen = () => {
                     onPress={() => togglePreference(option.id)}
                   >
                     <View style={styles.optionContent}>
+                      <View style={styles.iconContainer}>
+                        {renderIcon(
+                          option.icon,
+                          option.iconType,
+                          20,
+                          selectedPreferences.includes(option.id) ? '#D4AF37' : colors.textMuted
+                        )}
+                      </View>
                       <View style={styles.optionTextContainer}>
                         <Text style={styles.preferenceTitle}>
                           {option.label}
@@ -567,11 +589,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: 'center',
       position: 'relative',
     },
-    // 🎨 FIXED: Consistent text colors
     intentTitle: {
       ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
-      color: colors.textDark, // Always same color
+      color: colors.textDark,
       marginLeft: Spacing.md,
       marginBottom: Spacing.xs,
       fontWeight: Typography.weights.bold,
@@ -579,14 +600,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     intentSubtitle: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.base,
-      color: colors.textLight, // Always same color
+      color: colors.textLight,
       fontStyle: "italic",
       marginLeft: Spacing.md,
     },
     sectionTitle: {
       ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
-      color: colors.textDark, // 🎨 FIXED: Always consistent
+      color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.lg,
       marginBottom: Spacing.lg,
@@ -617,24 +638,30 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
-    // 🎨 FIXED: Consistent text colors
     preferenceTitle: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.lg,
-      color: colors.textDark, // Always same color
+      color: colors.textDark,
       marginBottom: Spacing.xs,
       fontWeight: Typography.weights.medium,
     },
     preferenceSubtitle: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.base,
-      color: colors.textLight, // Always same color
+      color: colors.textLight,
       fontStyle: "italic",
     },
     optionContent: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+    },
+    iconContainer: {
+      width: 32,
+      height: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: Spacing.sm,
     },
     optionTextContainer: {
       flex: 1,
@@ -650,7 +677,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       width: 16,
       height: 16,
       borderRadius: 8,
-      backgroundColor: '#D4AF37', // 🎨 FIXED: Consistent golden color
+      backgroundColor: '#D4AF37',
       ...Platform.select({
         ios: {
           shadowOffset: { width: 0, height: 0 },
@@ -693,15 +720,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
-    // 🎨 FIXED: Consistent text colors
     pillText: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.sm,
-      color: colors.textDark, // Always same color
+      color: colors.textDark,
       textAlign: "center",
     },
     pillSelectedText: {
-      color: colors.textDark, // Always same color
+      color: colors.textDark,
       fontWeight: Typography.weights.medium,
     },
     pillOrbSpace: {
@@ -715,7 +741,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: '#D4AF37', // 🎨 FIXED: Consistent golden color
+      backgroundColor: '#D4AF37',
       ...Platform.select({
         ios: {
           shadowOffset: { width: 0, height: 0 },
@@ -762,12 +788,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
     },
-    // 🎨 FIXED: Submit button - exactly like GenderScreen
     submitButton: {
       position: "absolute",
       bottom: Platform.select({ ios: 50, android: 30 }),
       right: Spacing.xl,
-      backgroundColor: colors.primary, // Use colors.primary like GenderScreen
+      backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       width: 56,
       height: 56,
