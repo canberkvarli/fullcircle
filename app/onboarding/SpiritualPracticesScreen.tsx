@@ -12,6 +12,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon";
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
@@ -20,22 +21,22 @@ import { useFont } from "@/hooks/useFont";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
 
 const spiritualPractices = [
-  { name: "Meditation", category: "mindfulness", icon: "flower-outline" },
-  { name: "Yoga", category: "movement", icon: "body-outline" },
-  { name: "Prayer", category: "devotion", icon: "heart-outline" },
-  { name: "Journaling", category: "reflection", icon: "create-outline" },
-  { name: "Energy Healing", category: "healing", icon: "hand-left-outline" },
-  { name: "Crystal Work", category: "healing", icon: "diamond-outline" },
-  { name: "Tarot & Oracle", category: "divination", icon: "library-outline" },
-  { name: "Astrology", category: "divination", icon: "telescope-outline" },
-  { name: "Nature Rituals", category: "earth", icon: "leaf-outline" },
-  { name: "Sound Healing", category: "healing", icon: "musical-notes-outline" },
-  { name: "Breathwork", category: "mindfulness", icon: "pulse-outline" },
-  { name: "Sacred Dance", category: "movement", icon: "walk-outline" },
-  { name: "Plant Medicine", category: "healing", icon: "flask-outline" },
-  { name: "Shamanic Journey", category: "mystical", icon: "trail-sign-outline" },
-  { name: "Martial Arts", category: "movement", icon: "fitness-outline" },
-  { name: "Fasting", category: "purification", icon: "moon-outline" },
+  { name: "Meditation", category: "mindfulness", icon: "meditation", iconType: "custom" },
+  { name: "Yoga", category: "movement", icon: "yoga", iconType: "custom" },
+  { name: "Prayer", category: "devotion", icon: "prayer", iconType: "custom" },
+  { name: "Journaling", category: "reflection", icon: "journal", iconType: "custom" },
+  { name: "Energy Healing", category: "healing", icon: "aura", iconType: "custom" },
+  { name: "Crystal Work", category: "healing", icon: "crystal", iconType: "custom" },
+  { name: "Tarot & Oracle", category: "divination", icon: "tarot", iconType: "custom" },
+  { name: "Astrology", category: "divination", icon: "aries", iconType: "custom" },
+  { name: "Nature Rituals", category: "earth", icon: "hiking", iconType: "custom" },
+  { name: "Sound Healing", category: "healing", icon: "gong", iconType: "custom" },
+  { name: "Breathwork", category: "mindfulness", icon: "breathwork", iconType: "custom" },
+  { name: "Sacred Dance", category: "movement", icon: "dance", iconType: "custom" },
+  { name: "Plant Medicine", category: "healing", icon: "leaf", iconType: "custom" },
+  { name: "Shamanic Journey", category: "mystical", icon: "shaman", iconType: "custom" },
+  { name: "Martial Arts", category: "movement", icon: "martial-arts", iconType: "custom" },
+  { name: "Fasting", category: "purification", icon: "fasting", iconType: "custom" },
 ];
 
 const categoryColors = {
@@ -137,6 +138,15 @@ function SpiritualPracticesScreen() {
     return categoryColors[category as keyof typeof categoryColors] || '#6B7280';
   };
 
+  // Icon renderer function
+  const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
+    if (iconType === "custom") {
+      return <CustomIcon name={iconName} size={size} color={color} />;
+    } else {
+      return <Ionicons name={iconName as any} size={size} color={color} />;
+    }
+  };
+
   const renderPracticeCard = (practice: typeof spiritualPractices[0], index: number) => {
     const isSelected = selectedPractices.includes(practice.name);
     const practiceColor = getPracticeColor(practice.category);
@@ -168,11 +178,12 @@ function SpiritualPracticesScreen() {
             styles.iconContainer,
             { backgroundColor: practiceColor + '20' }
           ]}>
-            <Ionicons 
-              name={practice.icon as any} 
-              size={24} 
-              color={practiceColor} 
-            />
+            {renderIcon(
+              practice.icon,
+              practice.iconType,
+              24,
+              practiceColor
+            )}
           </View>
           
           {/* Practice Info */}

@@ -8,7 +8,22 @@ type CustomIconNames =
   | 'ohm'
   | 'yoga'
   | 'pigeon'
-  | 'friendship';
+  | 'friendship'
+  | 'meditation'
+  | 'prayer'
+  | 'journal'
+  | 'aura'
+  | 'crystal'
+  | 'tarot'
+  | 'aries'
+  | 'hiking'
+  | 'gong'
+  | 'breathwork'
+  | 'dance'
+  | 'leaf'
+  | 'shaman'
+  | 'martial-arts'
+  | 'fasting';
 
 type UsedIoniconNames = 
   | 'heart' 
@@ -19,7 +34,7 @@ type UsedIoniconNames =
   | 'chevron-back'
   | 'chevron-forward'
   | 'people'
-  | 'infinite';
+  | 'infinite'
 
 type IconProps = {
   name: CustomIconNames | UsedIoniconNames | string;
@@ -35,6 +50,21 @@ const iconMap: Record<string, any> = {
   "yoga": require('../assets/icons/yoga.png'),
   "pigeon": require('../assets/icons/pigeon.png'),
   "friendship": require('../assets/icons/friendship.png'),
+  "meditation": require('../assets/icons/meditation.png'),
+  "prayer": require('../assets/icons/prayer.png'),
+  "journal": require('../assets/icons/journal.png'),
+  "aries": require('../assets/icons/aries.png'),
+  "aura": require('../assets/icons/aura.png'),
+  "crystal": require('../assets/icons/crystal.png'),
+  "dance": require('../assets/icons/dance.png'),
+  "fasting": require('../assets/icons/fasting.png'),
+  "hiking": require('../assets/icons/hiking.png'),
+  "tarot": require('../assets/icons/tarot.png'),
+  "shaman": require('../assets/icons/shaman.png'),
+  'martial-arts': require('../assets/icons/martial-arts.png'),
+  'breathwork': require('../assets/icons/breathwork.png'),
+  'gong': require('../assets/icons/gong.png'),
+  'leaf': require('../assets/icons/leaf.png'),
 };
 
 // SVG-based icons (if you choose to use SVGs instead)
@@ -51,7 +81,22 @@ const customIconNames: CustomIconNames[] = [
   'ohm', 
   'yoga',
   'pigeon',
-  'friendship'
+  'friendship',
+  'meditation',
+  'prayer',
+  'journal',
+  'aura',
+  'crystal',
+  'tarot',
+  'aries',
+  'hiking',
+  'gong',
+  'breathwork',
+  'dance',
+  'leaf',
+  'shaman',
+  'martial-arts',
+  'fasting',
 ];
 
 export const CustomIcon: React.FC<IconProps> = ({ 
