@@ -3,23 +3,12 @@ import React from 'react';
 import { Image, ImageStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// SVG imports (if using SVGs)
-// import SpiritualDrawIcon from '../assets/icons/spiritual-draw.svg';
-// import SoulConnectionIcon from '../assets/icons/soul-connection.svg';
-// import InfiniteEnergyIcon from '../assets/icons/infinite-energy.svg';
-
 type CustomIconNames = 
-  | 'spiritual-draw' 
-  | 'healing-modality'
-  | 'practice-meditation'
-  | 'chakra-alignment'
-  // New icons for ConnectionPreferenceScreen
-  | 'soul-connection'
-  | 'infinite-energy'
-  | 'masculine-energy'
-  | 'feminine-energy'
-  | 'non-binary-soul'
-  | 'universal-love';
+  | 'temple'
+  | 'ohm'
+  | 'yoga'
+  | 'pigeon'
+  | 'friendship';
 
 type UsedIoniconNames = 
   | 'heart' 
@@ -45,6 +34,7 @@ const iconMap: Record<string, any> = {
   "ohm": require('../assets/icons/ohm.png'),
   "yoga": require('../assets/icons/yoga.png'),
   "pigeon": require('../assets/icons/pigeon.png'),
+  "friendship": require('../assets/icons/friendship.png'),
 };
 
 // SVG-based icons (if you choose to use SVGs instead)
@@ -55,17 +45,13 @@ const svgIconMap: Record<string, React.ComponentType<any>> = {
   // Add more SVG components here
 };
 
+// FIXED: Include all the icons you have in iconMap
 const customIconNames: CustomIconNames[] = [
-  'spiritual-draw',
-  'healing-modality', 
-  'practice-meditation',
-  'chakra-alignment',
-  'soul-connection',
-  'infinite-energy',
-  'masculine-energy',
-  'feminine-energy',
-  'non-binary-soul',
-  'universal-love'
+  'temple',
+  'ohm', 
+  'yoga',
+  'pigeon',
+  'friendship'
 ];
 
 export const CustomIcon: React.FC<IconProps> = ({ 

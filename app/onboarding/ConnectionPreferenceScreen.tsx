@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
 import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
-import { CustomIcon } from "@/components/CustomIcon";
+import {CustomIcon} from "@/components/CustomIcon"; // Import your custom icon component
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
@@ -48,31 +48,47 @@ const connectionIntents = [
     id: "romantic", 
     label: "Dating", 
     subtitle: "Seeking romantic & intimate connections",
-    icon: "heart", // Keep as Ionicon
+    icon: "heart", 
     iconType: "ionicon"
   },
   { 
     id: "friendship", 
     label: "Friendship", 
     subtitle: "Building meaningful platonic bonds",
-    icon: "people"
-    // iconType: "custom"
+    icon: "friendship",
+    iconType: "custom"
   },
   { 
     id: "both", 
     label: "Both", 
     subtitle: "Open to all types of meaningful connections",
-    icon: "infinite"
-    // iconType: "custom"
+    icon: "infinite",
+    iconType: "ionicon" // Fixed: added missing iconType
   },
 ];
 
 // Romantic dating preferences (for when "romantic" is selected)
 const romanticOptions = [
-  { id: "Men", label: "Masculine Energy", subtitle: "Drawn to masculine souls" },
-  { id: "Women", label: "Feminine Energy", subtitle: "Attracted to feminine essence" },
-  { id: "Non-Binary", label: "Non-Binary Souls", subtitle: "Connected to fluid expressions" },
-  { id: "Everyone", label: "All Energies", subtitle: "Open to every beautiful soul" },
+  { 
+    id: "Men", 
+    label: "Masculine Energy", 
+    subtitle: "Drawn to masculine souls",
+  },
+  { 
+    id: "Women", 
+    label: "Feminine Energy", 
+    subtitle: "Attracted to feminine essence",
+  },
+  { 
+    id: "Non-Binary", 
+    label: "Non-Binary Souls", 
+    subtitle: "Connected to fluid expressions",
+  },
+  { 
+    id: "Everyone", 
+    label: "All Energies", 
+    subtitle: "Open to every beautiful soul",
+  },
 ];
 
 // Romantic connection styles (pills for romantic)
@@ -386,14 +402,6 @@ const ConnectionPreferenceScreen = () => {
                     onPress={() => togglePreference(option.id)}
                   >
                     <View style={styles.optionContent}>
-                      <View style={styles.iconContainer}>
-                        {renderIcon(
-                          option.icon,
-                          option.iconType,
-                          20,
-                          selectedPreferences.includes(option.id) ? '#D4AF37' : colors.textMuted
-                        )}
-                      </View>
                       <View style={styles.optionTextContainer}>
                         <Text style={styles.preferenceTitle}>
                           {option.label}
