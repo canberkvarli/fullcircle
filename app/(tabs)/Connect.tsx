@@ -13,6 +13,7 @@ import {
   RefreshControl
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon"; // Import CustomIcon
 import LottieView from 'lottie-react-native';
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
@@ -516,7 +517,7 @@ const ConnectScreen: React.FC = () => {
             // FullCircle Subscriber Experience
             <>
               <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-                <Ionicons name="infinite" size={32} color="#B8860B" />
+                <CustomIcon name="infinite" size={32} color="#B8860B" />
               </View>
               
               <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -533,7 +534,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={() => router.navigate('/user/EditUserProfile')}
                   activeOpacity={0.9}
                 >
-                  <Ionicons name="person" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <CustomIcon name="person" size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
                     Enhance Your Profile
                   </Text>
@@ -544,7 +545,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={() => router.navigate('/user/ConnectingPreferences')}
                   activeOpacity={0.9}
                 >
-                  <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+                  <CustomIcon name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
                   <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
                     Adjust Preferences
                   </Text>
@@ -555,7 +556,7 @@ const ConnectScreen: React.FC = () => {
             // Non-Subscriber Experience
             <>
               <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-                <Ionicons name="infinite" size={32} color="#B8860B" />
+                <CustomIcon name="infinite" size={32} color="#B8860B" />
               </View>
               
               <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -572,7 +573,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={() => router.navigate('/user/FullCircleSubscription')}
                   activeOpacity={0.9}
                 >
-                  <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <CustomIcon name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
                     Expand Your Circle
                   </Text>
@@ -583,7 +584,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={() => router.navigate('/user/ConnectingPreferences')}
                   activeOpacity={0.9}
                 >
-                  <Ionicons name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+                  <CustomIcon name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
                   <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
                     Adjust Preferences
                   </Text>
@@ -625,7 +626,7 @@ const ConnectScreen: React.FC = () => {
           onPress={() => router.push('/user/ConnectingPreferences')}
           activeOpacity={0.7}
         >
-          <Ionicons name="options" size={22} color="#B8860B" />
+          <CustomIcon name="options" size={22} color="#B8860B" />
         </TouchableOpacity>
 
         <Animated.View 
@@ -683,7 +684,7 @@ const ConnectScreen: React.FC = () => {
         onPress={() => router.push('/user/ConnectingPreferences')}
         activeOpacity={0.7}
       >
-        <Ionicons name="options" size={22} color="#B8860B" />
+        <CustomIcon name="options" size={22} color="#B8860B" />
       </TouchableOpacity>
       
       <Animated.View 
@@ -741,7 +742,7 @@ const ConnectScreen: React.FC = () => {
             onPress={() => handleAction('pass')}
             activeOpacity={0.8}
           >
-            <Ionicons name="close" size={20} color="#8B7355" />
+            <CustomIcon name="close" size={20} color="#8B7355" />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -753,7 +754,7 @@ const ConnectScreen: React.FC = () => {
             onPress={() => handleAction('like')}
             activeOpacity={0.8}
           >
-            <Ionicons name="heart" size={20} color="#B8860B" />
+            <CustomIcon name="heart" size={20} color="#B8860B" />
           </TouchableOpacity>
 
           <View style={styles.orbButtonContainer}>
@@ -775,7 +776,7 @@ const ConnectScreen: React.FC = () => {
                 styles.actionButton, 
                 styles.centerAction,
                 { 
-                  backgroundColor: '#8B4513',
+                  backgroundColor: '#680439ff',
                   shadowColor: '#CD853F',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.3,
@@ -786,14 +787,13 @@ const ConnectScreen: React.FC = () => {
               onPress={() => handleAction('orb')}
               activeOpacity={0.8}
             >
-              <Ionicons name="sparkles" size={22} color="#CD853F" />
-              <View style={[styles.orbRing, { borderColor: '#CD853F' + '60' }]} />
+              <CustomIcon name="lotus2" size={36}/>
             </TouchableOpacity>
           </View>
         </Animated.View>
       ) : null}
 
-      {/* Divine Orb Modal - unchanged */}
+      {/* Divine Orb Modal - updated with CustomIcon */}
       {showOrbModal && (
         <Animated.View 
           style={[
@@ -817,14 +817,14 @@ const ConnectScreen: React.FC = () => {
                 styles.divineGlow,
                 {
                   opacity: divineGlow,
-                  backgroundColor: '#B8860B',
+                  backgroundColor: '#FF1493', // Deep pink to match lotus
                 }
               ]}
             />
             
             <View style={styles.divineContent}>
               <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
-                <Ionicons name="sparkles" size={36} color="#B8860B" />
+                <CustomIcon name="lotus2" size={36}/>
               </View>
               
               <Text style={[
@@ -855,7 +855,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={navigateToSubscription}
                   activeOpacity={0.9}
                 >
-                  <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <CustomIcon name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
                     Join Full Circle
                   </Text>
@@ -899,15 +899,15 @@ const ConnectScreen: React.FC = () => {
               styles.actionIconContainer,
               {
                 backgroundColor: lastAction === 'like' ? '#B8860B' : 
-                                 lastAction === 'pass' ? '#8B7355' : '#CD853F',
+                                 lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
                 shadowColor: lastAction === 'like' ? '#B8860B' : 
-                            lastAction === 'pass' ? '#8B7355' : '#CD853F',
+                            lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
               }
             ]}
           >
-            <Ionicons 
+            <CustomIcon 
               name={lastAction === 'like' ? 'heart' : 
-                   lastAction === 'pass' ? 'close' : 'sparkles'} 
+                   lastAction === 'pass' ? 'close' : 'lotus2'} 
               size={36} 
               color="#FFFFFF" 
             />
@@ -915,7 +915,7 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       ) : null}
 
-      {/* Daily Limit Modal */}
+      {/* Daily Limit Modal - updated with CustomIcon */}
       {showDailyLimitModal && (
         <Animated.View 
           style={[
@@ -949,7 +949,7 @@ const ConnectScreen: React.FC = () => {
             
             <View style={styles.divineContent}>
               <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
-                <Ionicons name="heart" size={36} color="#B8860B" />
+                <CustomIcon name="heart" size={36} color="#B8860B" />
               </View>
               
               <Text style={[
@@ -989,7 +989,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={navigateToFullCircle}
                   activeOpacity={0.9}
                 >
-                  <Ionicons name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <CustomIcon name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
                     Get Unlimited Hearts
                   </Text>
@@ -1120,17 +1120,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 0,
-  },
-  
-  orbRing: {
-    position: 'absolute',
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 1,
-    top: -6,
-    left: -6,
-    opacity: 0.3,
   },
   
   settingsFloating: {
