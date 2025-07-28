@@ -25,7 +25,7 @@ const spiritualPractices = [
   { name: "Yoga", category: "movement", icon: "yoga", iconType: "custom" },
   { name: "Prayer", category: "devotion", icon: "prayer", iconType: "custom" },
   { name: "Journaling", category: "reflection", icon: "journal", iconType: "custom" },
-  { name: "Energy Healing", category: "healing", icon: "aura", iconType: "custom" },
+  { name: "Energy Healing", category: "healing", icon: "energy-healing", iconType: "custom" },
   { name: "Crystal Work", category: "healing", icon: "crystal", iconType: "custom" },
   { name: "Tarot & Oracle", category: "divination", icon: "tarot", iconType: "custom" },
   { name: "Astrology", category: "divination", icon: "aries", iconType: "custom" },
