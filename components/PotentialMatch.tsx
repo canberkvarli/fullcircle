@@ -100,7 +100,7 @@ const getConnectionIntentIcon = (intent: string) => {
     case "romantic":
       return { name: "heart", iconType: "ionicon" };
     case "friendship":
-      return { name: "friendship2", iconType: "custom" }; // Custom friendship icon
+      return { name: "friendship", iconType: "custom" }; // Custom friendship icon
     case "both":
       return { name: "infinity", iconType: "custom" }; // Custom infinite energy icon
     default:

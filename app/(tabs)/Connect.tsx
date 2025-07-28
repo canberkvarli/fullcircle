@@ -701,16 +701,16 @@ const ConnectScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           bounces={true}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="#B8860B"
-              colors={["#B8860B"]}
-              progressBackgroundColor={colors.card} 
-              titleColor="#B8860B"
-            />
-          }
+          // refreshControl={
+          //   <RefreshControl
+          //     refreshing={isRefreshing}
+          //     onRefresh={onRefresh}
+          //     tintColor="#B8860B"
+          //     colors={["#B8860B"]}
+          //     progressBackgroundColor={colors.card} 
+          //     titleColor="#B8860B"
+          //   />
+          // }
         >
           {/* Only render PotentialMatch when we have content AND it's ready to show */}
           {showContent && currentPotentialMatch ? (
@@ -817,7 +817,6 @@ const ConnectScreen: React.FC = () => {
                 styles.divineGlow,
                 {
                   opacity: divineGlow,
-                  backgroundColor: '#FF1493', // Deep pink to match lotus
                 }
               ]}
             />
@@ -899,16 +898,16 @@ const ConnectScreen: React.FC = () => {
               styles.actionIconContainer,
               {
                 backgroundColor: lastAction === 'like' ? '#B8860B' : 
-                                 lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
+                                 lastAction === 'pass' ? '#8B7355' : '#680439ff', // Deep pink for lotus
                 shadowColor: lastAction === 'like' ? '#B8860B' : 
-                            lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
+                            lastAction === 'pass' ? '#8B7355' : '#680439ff', // Deep pink for lotus
               }
             ]}
           >
             <CustomIcon 
               name={lastAction === 'like' ? 'heart' : 
                    lastAction === 'pass' ? 'close' : 'lotus2'} 
-              size={36} 
+              size={45}
               color="#FFFFFF" 
             />
           </View>
@@ -949,7 +948,7 @@ const ConnectScreen: React.FC = () => {
             
             <View style={styles.divineContent}>
               <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
-                <CustomIcon name="heart" size={36} color="#B8860B" />
+                <CustomIcon name="heart" size={36} color="#b80ba1ff" />
               </View>
               
               <Text style={[
