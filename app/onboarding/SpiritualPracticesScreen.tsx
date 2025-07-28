@@ -26,29 +26,30 @@ const spiritualPractices = [
   { name: "Prayer", category: "devotion", icon: "prayer", iconType: "custom" },
   { name: "Journaling", category: "reflection", icon: "journal", iconType: "custom" },
   { name: "Energy Healing", category: "healing", icon: "energy-healing", iconType: "custom" },
-  { name: "Crystal Work", category: "healing", icon: "crystal", iconType: "custom" },
+  { name: "Crystal Work", category: "healing", icon: "crystal2", iconType: "custom" },
   { name: "Tarot & Oracle", category: "divination", icon: "tarot", iconType: "custom" },
   { name: "Astrology", category: "divination", icon: "aries", iconType: "custom" },
   { name: "Nature Rituals", category: "earth", icon: "hiking", iconType: "custom" },
   { name: "Sound Healing", category: "healing", icon: "gong", iconType: "custom" },
   { name: "Breathwork", category: "mindfulness", icon: "breathwork", iconType: "custom" },
-  { name: "Sacred Dance", category: "movement", icon: "dance", iconType: "custom" },
+  { name: "Ecstatic Dance", category: "movement", icon: "dance", iconType: "custom" },
   { name: "Plant Medicine", category: "healing", icon: "leaf", iconType: "custom" },
   { name: "Shamanic Journey", category: "mystical", icon: "shaman", iconType: "custom" },
   { name: "Martial Arts", category: "movement", icon: "martial-arts", iconType: "custom" },
   { name: "Fasting", category: "purification", icon: "fasting", iconType: "custom" },
 ];
 
+// Enhanced color palette with better spiritual vibes
 const categoryColors = {
-  mindfulness: '#8B5CF6', // Purple
-  movement: '#F59E0B', // Amber
-  devotion: '#EC4899', // Pink
-  reflection: '#06B6D4', // Cyan
-  healing: '#10B981', // Emerald
-  divination: '#6366F1', // Indigo
-  earth: '#84CC16', // Lime
-  mystical: '#8B5A2B', // Brown
-  purification: '#64748B', // Slate
+  mindfulness: '#8B5CF6', // Purple - for meditation, breathwork
+  movement: '#F59E0B', // Amber - for yoga, dance, martial arts
+  devotion: '#EC4899', // Pink - for prayer
+  reflection: '#8B4513', // Saddle Brown - for journaling (more brownish!)
+  healing: '#10B981', // Emerald - for energy healing, crystals, sound, plant medicine
+  divination: '#6366F1', // Indigo - for tarot, astrology
+  earth: '#22C55E', // Green - for nature rituals
+  mystical: '#7C2D12', // Dark brown - for shamanic journey
+  purification: '#64748B', // Slate - for fasting
 };
 
 function SpiritualPracticesScreen() {
@@ -82,20 +83,20 @@ function SpiritualPracticesScreen() {
         Animated.timing(fadeAnimations[index], {
           toValue: 1,
           duration: 600,
-          delay: index * 40,
+          delay: index * 30,
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnimations[index], {
           toValue: 1,
-          delay: index * 40,
+          delay: index * 30,
           useNativeDriver: true,
-          tension: 100,
+          tension: 120,
           friction: 8,
         })
       ])
     );
 
-    Animated.stagger(20, animations).start();
+    Animated.stagger(15, animations).start();
   }, []);
 
   const handlePracticesSubmit = async () => {
@@ -167,50 +168,70 @@ function SpiritualPracticesScreen() {
             isSelected && {
               ...styles.selectedPracticeCard,
               borderColor: practiceColor,
-              backgroundColor: practiceColor + '15',
+              backgroundColor: practiceColor + '08', // More subtle background
+              shadowColor: practiceColor,
             }
           ]}
           onPress={() => handlePracticeSelect(practice.name)}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          {/* Icon Container */}
+          {/* Icon Container - Much Bigger! */}
           <View style={[
             styles.iconContainer,
-            { backgroundColor: practiceColor + '20' }
+            { 
+              backgroundColor: isSelected ? practiceColor + '20' : practiceColor + '10',
+              borderWidth: isSelected ? 2 : 1,
+              borderColor: isSelected ? practiceColor : practiceColor + '30',
+            }
           ]}>
             {renderIcon(
               practice.icon,
               practice.iconType,
-              24,
+              32, // Much bigger icons!
               practiceColor
             )}
           </View>
           
-          {/* Practice Info */}
+          {/* Practice Info - Better Typography */}
           <View style={styles.practiceInfo}>
             <Text style={[
               styles.practiceName,
-              isSelected && { color: practiceColor }
+              { 
+                color: isSelected ? practiceColor : colors.textDark,
+                fontWeight: isSelected ? Typography.weights.bold : Typography.weights.medium 
+              }
             ]}>
               {practice.name}
             </Text>
             <Text style={[
               styles.practiceCategory,
-              { color: practiceColor }
+              { 
+                color: practiceColor,
+                opacity: isSelected ? 0.9 : 0.7,
+                fontWeight: isSelected ? Typography.weights.medium : Typography.weights.medium
+              }
             ]}>
               {practice.category}
             </Text>
           </View>
           
-          {/* Selection Indicator */}
+          {/* Enhanced Selection Indicator */}
           <View style={styles.selectionContainer}>
-            {isSelected && (
+            {isSelected ? (
               <View style={[
                 styles.selectedIndicator,
-                { backgroundColor: practiceColor }
+                { 
+                  backgroundColor: practiceColor,
+                  shadowColor: practiceColor,
+                }
               ]}>
-                <Ionicons name="checkmark" size={16} color="white" />
+                <Ionicons name="checkmark" size={18} color="white" />
               </View>
+            ) : (
+              <View style={[
+                styles.unselectedIndicator,
+                { borderColor: practiceColor + '40' }
+              ]} />
             )}
           </View>
         </TouchableOpacity>
@@ -240,7 +261,7 @@ function SpiritualPracticesScreen() {
           {/* Header */}
           <Text style={styles.title}>Your Spiritual Practices</Text>
           <Text style={styles.subtitle}>
-            Choose the practices that nourish your soul
+            Choose the practices that nourish your soul ✨
           </Text>
 
           {/* Practices Grid */}
@@ -321,11 +342,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
-    headerContainer: {
-      paddingHorizontal: Spacing.lg,
-      marginTop: Spacing.lg,
-      marginBottom: Spacing.xl,
-    },
     title: {
       ...fonts.spiritualTitleFont,
       color: colors.textDark,
@@ -343,32 +359,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "italic",
     },
     highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
-    },
-    selectedOrb: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      backgroundColor: '#FFD700',
-      ...Platform.select({
-        ios: {
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.8,
-          shadowRadius: 6,
-        },
-        android: {
-          elevation: 6,
-        },
-      }),
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     practicesGrid: {
       paddingHorizontal: Spacing.lg,
-      gap: Spacing.md,
+      gap: Spacing.sm,
     },
     practiceCard: {
       flexDirection: 'row',
@@ -376,8 +376,112 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
       padding: Spacing.lg,
-      marginBottom: Spacing.sm,
+      marginBottom: Spacing.md,
       borderWidth: 2,
+      borderColor: colors.border,
+      minHeight: 88, // Consistent height for better alignment
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 3,
+        },
+      }),
+    },
+    selectedPracticeCard: {
+      transform: [{ scale: 1.03 }],
+      ...Platform.select({
+        ios: {
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 16,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
+    },
+    iconContainer: {
+      width: 64, // Much bigger container
+      height: 64,
+      borderRadius: BorderRadius.xl,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: Spacing.lg,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    practiceInfo: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    practiceName: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.medium,
+      marginBottom: Spacing.xs,
+      lineHeight: Typography.sizes.lg * 1.2,
+    },
+    practiceCategory: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      textTransform: 'capitalize',
+      letterSpacing: 0.5,
+    },
+    selectionContainer: {
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    selectedIndicator: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
+    },
+    unselectedIndicator: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      backgroundColor: 'transparent',
+    },
+    privacyContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginHorizontal: Spacing.lg,
+      marginTop: Spacing.xl,
+      marginBottom: Spacing.lg,
+      backgroundColor: colors.card,
+      padding: Spacing.lg,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 1,
       borderColor: colors.border,
       ...Platform.select({
         ios: {
@@ -390,81 +494,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
           elevation: 2,
         },
       }),
-    },
-    selectedPracticeCard: {
-      transform: [{ scale: 1.02 }],
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-        },
-        android: {
-          elevation: 4,
-        },
-      }),
-    },
-    iconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: BorderRadius.lg,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: Spacing.md,
-    },
-    practiceInfo: {
-      flex: 1,
-    },
-    practiceName: {
-      ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.lg,
-      fontWeight: Typography.weights.medium,
-      color: colors.textDark,
-      marginBottom: Spacing.xs,
-    },
-    practiceCategory: {
-      ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.sm,
-      textTransform: 'capitalize',
-      opacity: 0.8,
-    },
-    selectionContainer: {
-      width: 32,
-      height: 32,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    selectedIndicator: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 4,
-        },
-      }),
-    },
-    privacyContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginHorizontal: Spacing.lg,
-      marginTop: Spacing.xl,
-      marginBottom: Spacing.lg,
-      backgroundColor: colors.card,
-      padding: Spacing.lg,
-      borderRadius: BorderRadius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     privacyText: {
       ...fonts.spiritualBodyFont,

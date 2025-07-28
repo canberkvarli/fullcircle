@@ -14,6 +14,7 @@ type CustomIconNames =
   | 'journal'
   | 'energy-healing'
   | 'crystal'
+  | 'crystal2'
   | 'tarot'
   | 'aries'
   | 'hiking'
@@ -56,6 +57,7 @@ const iconMap: Record<string, any> = {
   "aries": require('../assets/icons/aries.png'),
   "energy-healing": require('../assets/icons/energy-healing.png'),
   "crystal": require('../assets/icons/crystal.png'),
+  "crystal2": require('../assets/icons/crystal2.png'),
   "dance": require('../assets/icons/dance.png'),
   "fasting": require('../assets/icons/fasting.png'),
   "hiking": require('../assets/icons/hiking.png'),
@@ -87,6 +89,7 @@ const customIconNames: CustomIconNames[] = [
   'journal',
   'energy-healing',
   'crystal',
+  'crystal2',
   'tarot',
   'aries',
   'hiking',
