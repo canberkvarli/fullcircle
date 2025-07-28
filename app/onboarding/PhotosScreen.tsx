@@ -77,7 +77,7 @@ function PhotosScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Sacred Permission",
+          "Permission",
           "To complete your spiritual profile, please allow access to your photo library."
         );
       }
@@ -182,7 +182,7 @@ const handleSubmit = async () => {
   );
 
   if (filteredPhotos.length < 3) {
-    Alert.alert("Sacred Gallery", "Please share at least 3 photos to complete your spiritual profile.");
+    Alert.alert("Gallery", "Please share at least 3 photos to complete your spiritual profile.");
     return;
   }
 
@@ -275,12 +275,6 @@ const handleSubmit = async () => {
                   color={colors.primary} 
                 />
               </View>
-              <Text style={[
-                styles.placeholderText,
-                isMainPhoto && styles.mainPlaceholderText
-              ]}>
-                {isMainPhoto ? "Main Photo" : `Photo ${index + 1}`}
-              </Text>
             </View>
           )}
         </TouchableOpacity>
@@ -357,16 +351,11 @@ const handleSubmit = async () => {
             </View>
           </View>
 
-          {/* Instructions */}
-          <Text style={styles.instructions}>
-            Your first photo will be your main profile image. Choose photos that show your personality and energy.
-          </Text>
-
           {/* Submit Button */}
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Uploading your sacred gallery...</Text>
+              <Text style={styles.loadingText}>Uploading your gallery...</Text>
             </View>
           ) : (
             <Animated.View style={[
@@ -396,7 +385,7 @@ const handleSubmit = async () => {
                   styles.buttonText,
                   photoCount < 3 && styles.buttonTextDisabled
                 ]}>
-                  Complete Sacred Profile
+                  Complete Your Essence
                 </Text>
               </TouchableOpacity>
             </Animated.View>

@@ -14,7 +14,6 @@ type CustomIconNames =
   | 'journal'
   | 'energy-healing'
   | 'crystal'
-  | 'crystal2'
   | 'tarot'
   | 'aries'
   | 'hiking'
@@ -28,6 +27,15 @@ type CustomIconNames =
   | 'lotus'
   | 'healing-journey'
   | 'yinyang'
+  | 'acupuncture'
+  | 'sound'
+  | 'aroma'
+  | 'light'
+  | 'massage'
+  | 'therapy'
+  | 'homeopathy'
+  | 'plant'
+  | 'mushroom'
 
 type UsedIoniconNames = 
   | 'heart' 
@@ -60,7 +68,6 @@ const iconMap: Record<string, any> = {
   "aries": require('../assets/icons/aries.png'),
   "energy-healing": require('../assets/icons/energy-healing.png'),
   "crystal": require('../assets/icons/crystal.png'),
-  "crystal2": require('../assets/icons/crystal2.png'),
   "dance": require('../assets/icons/dance.png'),
   "fasting": require('../assets/icons/fasting.png'),
   "hiking": require('../assets/icons/hiking.png'),
@@ -73,6 +80,15 @@ const iconMap: Record<string, any> = {
   'lotus': require('../assets/icons/lotus.png'),
   'healing-journey': require('../assets/icons/healing-journey.png'),
   'yinyang': require('../assets/icons/yinyang.png'),
+  'acupuncture': require('../assets/icons/acupuncture.png'),
+  'sound': require('../assets/icons/sound.png'),
+  'aroma': require('../assets/icons/aroma.png'),
+  'light': require('../assets/icons/light.png'),
+  'massage': require('../assets/icons/massage.png'),
+  'therapy': require('../assets/icons/therapy.png'),
+  'homeopathy': require('../assets/icons/homeopathy.png'),
+  'plant': require('../assets/icons/plant.png'),
+  'mushroom': require('../assets/icons/mushroom.png'),
 };
 
 // SVG-based icons (if you choose to use SVGs instead)
@@ -95,7 +111,6 @@ const customIconNames: CustomIconNames[] = [
   'journal',
   'energy-healing',
   'crystal',
-  'crystal2',
   'tarot',
   'aries',
   'hiking',
@@ -108,7 +123,16 @@ const customIconNames: CustomIconNames[] = [
   'fasting',
   'lotus',
   'healing-journey',
-  'yinyang'
+  'yinyang',
+  'acupuncture',
+  'sound',
+  'aroma',
+  'light',
+  'massage',
+  'therapy',
+  'homeopathy',
+  'plant',
+  'mushroom'
 ];
 
 export const CustomIcon: React.FC<IconProps> = ({ 

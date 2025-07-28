@@ -24,17 +24,17 @@ import RoundedCheckbox from "@/components/RoundedCheckbox";
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const healingModalities = [
-  { name: "Reiki", icon: "reiki", iconType: "custom", color: "#E74C3C" },
+  { name: "Reiki", icon: "energy-healing", iconType: "custom", color: "#E74C3C" },
   { name: "Acupuncture", icon: "acupuncture", iconType: "custom", color: "#F39C12" },
-  { name: "Sound Therapy", icon: "sound-healing", iconType: "custom", color: "#F1C40F" },
+  { name: "Sound Therapy", icon: "sound", iconType: "custom", color: "#F1C40F" },
   { name: "Crystal Healing", icon: "crystal", iconType: "custom", color: "#2ECC71" },
-  { name: "Aromatherapy", icon: "aromatherapy", iconType: "custom", color: "#3498DB" },
-  { name: "Light Therapy", icon: "light-therapy", iconType: "custom", color: "#E91E63" },
+  { name: "Aromatherapy", icon: "aroma", iconType: "custom", color: "#3498DB" },
+  { name: "Light Therapy", icon: "light", iconType: "custom", color: "#E91E63" },
   { name: "Massage Therapy", icon: "massage", iconType: "custom", color: "#FF5722" },
-  { name: "Hypnotherapy", icon: "hypnotherapy", iconType: "custom", color: "#607D8B" },
+  { name: "Hypnotherapy", icon: "therapy", iconType: "custom", color: "#607D8B" },
   { name: "Homeopathy", icon: "homeopathy", iconType: "custom", color: "#009688" },
-  { name: "Herbalism", icon: "herbalism", iconType: "custom", color: "#4CAF50" },
-  { name: "Plant Medicine", icon: "leaf", iconType: "custom", color: "#8E24AA" },
+  { name: "Herbalism", icon: "plant", iconType: "custom", color: "#4CAF50" },
+  { name: "Plant Medicine", icon: "mushroom", iconType: "custom", color: "#8E24AA" },
 ];
 
 function HealingModalitiesScreen() {
@@ -82,7 +82,7 @@ function HealingModalitiesScreen() {
     const radius = containerSize * 0.37; 
     
     // Orb and center sizes based on available space - bigger for custom icons
-    const orbSize = Math.max(Math.min(containerSize * 0.095, 58), 42); // Increased for better icon visibility
+    const orbSize = Math.max(Math.min(containerSize * 0.095, 58), 45); // Increased for better icon visibility
     const centerSize = Math.max(Math.min(containerSize * 0.17, 100), 70); 
     
     // Label container size based on spacing between orbs
@@ -337,10 +337,10 @@ function HealingModalitiesScreen() {
     const animation = modalityAnimations[index];
 
     // Calculate font size based on container size
-    const fontSize = Math.max(Math.min(labelContainerSize * 0.16, Typography.sizes.xs), 10);
+    const fontSize = Math.max(Math.min(labelContainerSize * 0.14, Typography.sizes.xs), 10);
     
     // Calculate icon size - bigger for better visibility
-    const iconSize = Math.max(Math.min(orbSize * 0.50, 28), 18); // Increased from 0.45 to 0.50
+    const iconSize = Math.max(Math.min(orbSize * 65, 28), 18); // Increased from 0.45 to 0.65
 
     // Better color logic for readability
     let orbColor, textColor, iconColor, backgroundColor;
@@ -439,7 +439,7 @@ function HealingModalitiesScreen() {
           styles.selectedText,
           allSelected && { color: '#B8860B' } // Darker golden text for better readability
         ]}>
-          {allSelected ? 'All healing modalities selected! ✨' : `${selectedModalities.length} healing modalit${selectedModalities.length === 1 ? 'y' : 'ies'} selected`}
+          {allSelected ? 'All healing modalities selected!' : `${selectedModalities.length} healing modalit${selectedModalities.length === 1 ? 'y' : 'ies'} selected`}
         </Text>
         <View style={styles.selectedDots}>
           {selectedModalities.slice(0, 6).map((_, index) => (
@@ -478,7 +478,7 @@ function HealingModalitiesScreen() {
         {/* Header */}
         <Text style={styles.title}>Your Healing Journey</Text>
         <Text style={styles.subtitle}>
-          Select the modalities that resonate with your healing essence ✨
+          Select the modalities that resonate with your healing essence
         </Text>
 
         {/* Selected Count - Reserved Space */}
