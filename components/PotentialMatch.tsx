@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon"; // Import your CustomIcon component
 import InfoCard from "@/components/InfoCard";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -51,6 +52,15 @@ const getLocation = (user: UserDataType) => {
   return 'Location not shared';
 };
 
+// Icon renderer function
+const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
+  if (iconType === "custom") {
+    return <CustomIcon name={iconName} size={size} color={color} />;
+  } else {
+    return <Ionicons name={iconName as any} size={size} color={color} />;
+  }
+};
+
 // Get connection intent colors and styling
 const getConnectionIntentColors = (intent: string) => {
   if (intent === "romantic") {
@@ -81,6 +91,20 @@ const getConnectionIntentColors = (intent: string) => {
       accent: '#0E7490', // Cyan-700
       tertiary: '#22D3EE', // Cyan-400
     };
+  }
+};
+
+// Get connection intent icon with custom icons for spiritual concepts
+const getConnectionIntentIcon = (intent: string) => {
+  switch (intent) {
+    case "romantic":
+      return { name: "heart", iconType: "ionicon" };
+    case "friendship":
+      return { name: "friendship2", iconType: "custom" }; // Custom friendship icon
+    case "both":
+      return { name: "infinity", iconType: "custom" }; // Custom infinite energy icon
+    default:
+      return { name: "sparkles", iconType: "ionicon" };
   }
 };
 
@@ -116,20 +140,20 @@ const generateInfoCards = (user: UserDataType) => {
   const cards = [];
   const connectionColors = getConnectionIntentColors(user.matchPreferences?.connectionIntent || "romantic");
 
-  // 1. Basic Demographics (no title, just the info in column format)
+  // 1. Basic Demographics with custom icons for spiritual elements
   const age = calculateAge(user);
   const location = getLocation(user);
   const warmNeutral = '#8B7355'; // Warm brown-gray color for all basic info
   
   const basicItems = [
-    { icon: "calendar-outline", text: age ? `${age}` : "Age not shared", color: warmNeutral },
+    { icon: "cake", iconType: "custom", text: age ? `${age}` : "Age not shared", color: warmNeutral },
     { icon: "swap-vertical-outline", text: user.height ? `${user.height}` : "Height not shared", color: warmNeutral },
-    { icon: "location-outline", text: location, color: warmNeutral }
+    { icon: "temple", iconType: "custom", text: location, color: warmNeutral } // Custom location icon
   ];
   
   // Add identity to basic info if available
   if (user.gender && user.gender.length > 0) {
-    basicItems.push({ icon: "person-outline", text: user.gender.join(", "), color: warmNeutral });
+    basicItems.push({ icon: "person-outline", iconType: "ionicon", text: user.gender.join(", "), color: warmNeutral });
   }
   
   cards.push({
@@ -138,51 +162,55 @@ const generateInfoCards = (user: UserDataType) => {
     type: 'basic-info'
   });
 
-  // 2. Connection Styles using InfoCard - only show the pills, no connection preferences text
+  // 2. Connection Styles using InfoCard with custom heart icon
   if (user.matchPreferences?.connectionStyles && user.matchPreferences.connectionStyles.length > 0) {
     cards.push({
       title: "Connection Style",
-      content: "", // No content text
-      icon: "heart-outline",
+      content: "",
+      icon: "hand-heart",
+      iconType: "custom",
       pillsData: user.matchPreferences.connectionStyles,
-      color: connectionColors.primary, // Use connection intent color
+      color: connectionColors.primary,
       type: 'info-card'
     });
   }
 
-  // 3. Spiritual Practices using InfoCard with specific colors
+  // 3. Spiritual Practices using InfoCard with custom lotus icon
   if (user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
     cards.push({
       title: "Spiritual Practices",
       content: user.spiritualProfile.practices.slice(0, 3).join(", "),
-      icon: "leaf-outline",
+      icon: "meditation",
+      iconType: "custom",
       pillsData: user.spiritualProfile.practices,
-      color: '#059669', // Emerald green for practices
+      color: '#059669',
       type: 'info-card'
     });
   }
 
-  // 4. Healing Modalities using InfoCard with specific colors
+  // 4. Healing Modalities using InfoCard with custom healing hands icon
   if (user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
     cards.push({
       title: "Healing Path",
       content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
-      icon: "medical-outline",
+      icon: "yinyang", // Custom healing hands icon
+      iconType: "custom",
       pillsData: user.spiritualProfile.healingModalities,
       color: '#0891B2', // Cyan for healing
       type: 'info-card'
     });
   }
 
-  // 5. Spiritual Draws using InfoCard with specific colors
+  // 5. Spiritual Draws using InfoCard with custom spiritual energy icon
   if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
     const spiritualDrawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
     
     cards.push({
       title: "Spiritual Draws",
-      content: spiritualDrawLabels.slice(0, 3).join(", "), // Use labels instead of values
-      icon: "heart-outline",
-      pillsData: spiritualDrawLabels, // Use labels instead of values
+      content: spiritualDrawLabels.slice(0, 3).join(", "),
+      icon: "ohm", // Custom spiritual energy icon
+      iconType: "custom",
+      pillsData: spiritualDrawLabels,
       color: '#DC2626', // Red for draws
       type: 'info-card'
     });
@@ -222,6 +250,7 @@ const PotentialMatch: React.FC<Props> = ({
 
   const infoCards = generateInfoCards(currentPotentialMatch);
   const connectionColors = getConnectionIntentColors(currentPotentialMatch.matchPreferences?.connectionIntent || "romantic");
+  const connectionIcon = getConnectionIntentIcon(currentPotentialMatch.matchPreferences?.connectionIntent || "romantic");
   
   const styles = createStyles(colors, fonts, connectionColors);
 
@@ -251,13 +280,13 @@ const PotentialMatch: React.FC<Props> = ({
     </View>
   );
 
-  // Render basic info items in a card container (no header since you removed it)
+  // Render basic info items with custom icons
   const renderBasicInfo = (items: any[]) => (
     <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
       <View style={styles.basicInfoColumn}>
         {items.map((item, index) => (
           <View key={index} style={styles.basicInfoItem}>
-            <Ionicons name={item.icon as any} size={18} color={item.color} />
+            {renderIcon(item.icon, item.iconType, 18, item.color)}
             <Text style={[styles.basicInfoText, { color: colors.textLight }]}>
               {item.text}
             </Text>
@@ -281,6 +310,7 @@ const PotentialMatch: React.FC<Props> = ({
           title={card.title}
           content={card.content}
           icon={card.icon}
+          iconType={card.iconType}
           pillsData={card.pillsData}
           customColor={card.color}
         />
@@ -290,14 +320,15 @@ const PotentialMatch: React.FC<Props> = ({
     return null;
   };
 
-  // Custom InfoCard component that accepts color override
+  // Custom InfoCard component that accepts color override and icon type
   const InfoCardWithColor: React.FC<{
     title: string;
     content: string;
     icon: string;
+    iconType?: string;
     pillsData: string[];
     customColor?: string;
-  }> = ({ title, content, icon, pillsData, customColor }) => {
+  }> = ({ title, content, icon, iconType = "ionicon", pillsData, customColor }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const shouldTruncate = pillsData.length > 4 || content.length > 120;
     const canExpand = shouldTruncate;
@@ -352,7 +383,7 @@ const PotentialMatch: React.FC<Props> = ({
       >
         <View style={styles.infoHeader}>
           <View style={[styles.iconContainer, { backgroundColor: cardColor + '15' }]}>
-            <Ionicons name={icon as any} size={18} color={cardColor} />
+            {renderIcon(icon, iconType, 28, cardColor)}
           </View>
           <Text style={[styles.infoTitle, { color: colors.textDark }]}>
             {title}
@@ -476,18 +507,11 @@ const PotentialMatch: React.FC<Props> = ({
             </Text>
           </View>
 
-          {/* Connection Intent Description */}
+          {/* Connection Intent Description with custom icons */}
           <View style={[styles.connectionIntentRow, { 
             backgroundColor: connectionColors.secondary,
           }]}>
-            <Ionicons 
-              name={currentPotentialMatch.matchPreferences?.connectionIntent === "romantic" ? "heart" 
-                   : currentPotentialMatch.matchPreferences?.connectionIntent === "friendship" ? "people" 
-                   : currentPotentialMatch.matchPreferences?.connectionIntent === "both" ? "infinite"
-                   : "sparkles"} 
-              size={14} 
-              color={connectionColors.primary} 
-            />
+            {renderIcon(connectionIcon.name, connectionIcon.iconType, 26, connectionColors.primary)}
             <Text style={[styles.connectionIntentDescription, { color: connectionColors.primary }]}>
               {currentPotentialMatch.matchPreferences?.connectionIntent === "romantic" ? "Looking for romantic connections" 
                : currentPotentialMatch.matchPreferences?.connectionIntent === "friendship" ? "Looking for meaningful friendships"
@@ -520,11 +544,11 @@ const PotentialMatch: React.FC<Props> = ({
         </View>
       ))}
 
-      {/* Handle case when no photos */}
+      {/* Handle case when no photos - with custom camera icon */}
       {photoUrls.length === 0 && (
         <View style={styles.noPhotosContainer}>
           <View style={[styles.noPhotosIcon, { backgroundColor: connectionColors.secondary }]}>
-            <Ionicons name="camera-outline" size={40} color={connectionColors.primary} />
+            {renderIcon("camera-spiritual", "custom", 40, connectionColors.primary)}
           </View>
           <Text style={[styles.noPhotosText, { color: colors.textMuted }]}>
             No photos to preview
@@ -641,9 +665,9 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   },
   
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -666,13 +690,13 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
     alignItems: 'center',
     gap: Spacing.sm,
     width: '100%',
-    justifyContent: 'flex-start', // LEFT ALIGNED
+    justifyContent: 'flex-start',
   },
   
   basicInfoText: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
-    textAlign: 'left', // LEFT ALIGNED
+    textAlign: 'left',
   },
   
   pillsContainer: {

@@ -36,6 +36,10 @@ type CustomIconNames =
   | 'homeopathy'
   | 'plant'
   | 'mushroom'
+  | 'ruler'
+  | 'cake'
+  | 'hand-heart'
+  | 'infinity'
 
 type UsedIoniconNames = 
   | 'heart' 
@@ -89,6 +93,10 @@ const iconMap: Record<string, any> = {
   'homeopathy': require('../assets/icons/homeopathy.png'),
   'plant': require('../assets/icons/plant.png'),
   'mushroom': require('../assets/icons/mushroom.png'),
+  'ruler': require('../assets/icons/ruler.png'),
+  'cake': require('../assets/icons/cake.png'),
+  'hand-heart': require('../assets/icons/hand-heart.png'),
+  'infinity': require('../assets/icons/infinity.png'),
 };
 
 // SVG-based icons (if you choose to use SVGs instead)
@@ -132,7 +140,11 @@ const customIconNames: CustomIconNames[] = [
   'therapy',
   'homeopathy',
   'plant',
-  'mushroom'
+  'mushroom',
+  'ruler',
+  'cake',
+  'hand-heart',
+  'infinity',
 ];
 
 export const CustomIcon: React.FC<IconProps> = ({ 
