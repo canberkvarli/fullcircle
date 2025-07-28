@@ -22,7 +22,7 @@ interface UserCardProps {
   onPress?: () => void;
   showDetails?: boolean;
   getImageUrl?: (photoPath: string) => Promise<string | null>;
-  isOrbLike?: boolean;
+  islotusLike?: boolean;
   isRadianceLike?: boolean;
   showConnectionBadges?: boolean;
   isRecentlyActive?: boolean;
@@ -37,7 +37,7 @@ const UserCard: React.FC<UserCardProps> = ({
   onPress,
   showDetails = false,
   getImageUrl,
-  isOrbLike = false,
+  islotusLike = false,
   isRadianceLike = false,
   showConnectionBadges = true,
   isRecentlyActive = false,
@@ -103,7 +103,7 @@ const UserCard: React.FC<UserCardProps> = ({
         ]}
       >
         {/* Only show ONE set of badges in top-right corner */}
-        {(shouldShowTextActivity || shouldShowDotActivity || (showConnectionBadges && (isOrbLike || isRadianceLike))) && (
+        {(shouldShowTextActivity || shouldShowDotActivity || (showConnectionBadges && (islotusLike || isRadianceLike))) && (
           <View style={[
             styles.allBadgesContainer,
             isSmallCard && styles.smallCardBadgesContainer
@@ -125,10 +125,10 @@ const UserCard: React.FC<UserCardProps> = ({
             )}
             
             {/* Connection Badges - After activity */}
-            {showConnectionBadges && isOrbLike && (
+            {showConnectionBadges && islotusLike && (
               <View style={[
                 styles.connectionBadge, 
-                styles.orbBadge,
+                styles.lotusBadge,
                 isSmallCard && styles.smallConnectionBadge
               ]}>
                 <Ionicons 
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  orbBadge: {
+  lotusBadge: {
     backgroundColor: "#FFD700", // Gold background for star
   },
 

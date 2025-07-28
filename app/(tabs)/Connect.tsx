@@ -31,7 +31,7 @@ const ConnectScreen: React.FC = () => {
     // New consolidated functions
     likeMatch,
     dislikeMatch,
-    orbLike,
+    lotusLike,
     loadNextMatch,
     resetMatching,
     
@@ -218,7 +218,7 @@ const ConnectScreen: React.FC = () => {
       return;
     }
     
-    if (action === 'lotus' && (!userDataRef.current?.numOfOrbs || userDataRef.current.numOfOrbs <= 0)) {
+    if (action === 'lotus' && (!userDataRef.current?.numOfLotus || userDataRef.current.numOfLotus <= 0)) {
       showDivineLotusModal();
       return;
     }
@@ -256,7 +256,7 @@ const ConnectScreen: React.FC = () => {
           await dislikeMatch(userId);
           break;
         case 'lotus':
-          await orbLike(userId); // Backend function name stays the same
+          await lotusLike(userId); // Backend function name stays the same
           break;
         case 'like':
           await likeMatch(userId);
@@ -375,7 +375,7 @@ const ConnectScreen: React.FC = () => {
   const navigateToLotusShop = () => {
     closeDivineLotusModal();
     setTimeout(() => {
-      router.push('/user/OrbsScreen'); // Component name stays same for now
+      router.push('/user/LotusScreen'); // Component name stays same for now
     }, 500);
   };
 
@@ -396,7 +396,7 @@ const ConnectScreen: React.FC = () => {
       useNativeDriver: true,
     }).start();
     
-    if (userData?.numOfOrbs && userData.numOfOrbs > 0) {
+    if (userData?.numOfLotus && userData.numOfLotus > 0) {
       Animated.loop(
         Animated.timing(lotusButtonGlow, {
           toValue: 1,
@@ -763,11 +763,11 @@ const ConnectScreen: React.FC = () => {
             <CustomIcon name="heart" size={20} color="#B8860B" />
           </TouchableOpacity>
 
-          <View style={styles.orbButtonContainer}>
-            {userData?.numOfOrbs && userData.numOfOrbs > 0 ? (
+          <View style={styles.lotusButtonContainer}>
+            {userData?.numOfLotus && userData.numOfLotus > 0 ? (
               <Animated.View 
                 style={[
-                  styles.orbGlow,
+                  styles.lotusGlow,
                   {
                     shadowOpacity: lotusButtonGlow.interpolate({
                       inputRange: [0, 0.5, 1],
@@ -799,7 +799,7 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       ) : null}
 
-      {/* Divine Orb Modal - updated with CustomIcon */}
+      {/* Divine Lotus Modal - updated with CustomIcon */}
       {showLotusModal && (
         <Animated.View 
           style={[
@@ -1167,7 +1167,6 @@ const styles = StyleSheet.create({
     height: 100,
   },
   
-  // Divine orb modal styles
   divineModalOverlay: {
     position: 'absolute',
     top: 0,
@@ -1207,7 +1206,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   
-  orbButtonContainer: {
+  lotusButtonContainer: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 125 : 105,
     left: '50%',
@@ -1218,7 +1217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  orbGlow: {
+  lotusGlow: {
     position: 'absolute',
     width: 56,
     height: 56,

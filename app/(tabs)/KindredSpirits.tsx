@@ -23,7 +23,7 @@ import RadianceScreen from "@/components/RadianceScreen";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-type SortOption = 'recent' | 'lastActive' | 'newest' | 'viaOrb';
+type SortOption = 'recent' | 'lastActive' | 'newest' | 'viaLotus';
 
 interface SortConfig {
   key: SortOption;
@@ -52,10 +52,10 @@ const SORT_OPTIONS: SortConfig[] = [
     description: 'Newest members first'
   },
   {
-    key: 'viaOrb',
-    label: 'Orb Connections',
+    key: 'viaLotus',
+    label: 'Lotus Connections',
     icon: 'planet-outline',
-    description: 'Sacred orb likes first'
+    description: 'Sacred lotus likes first'
   }
 ];
 
@@ -147,12 +147,12 @@ const KindredSpirits: React.FC = () => {
           const bCreated = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
           return new Date(bCreated).getTime() - new Date(aCreated).getTime();
           
-        case 'viaOrb':
-          if (a.viaOrb && !b.viaOrb) return -1;
-          if (!a.viaOrb && b.viaOrb) return 1;
-          const aTimeOrb = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
-          const bTimeOrb = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
-          return new Date(bTimeOrb).getTime() - new Date(aTimeOrb).getTime();
+        case 'viaLotus':
+          if (a.viaLotus && !b.viaLotus) return -1;
+          if (!a.viaLotus && b.viaLotus) return 1;
+          const aTimeLotus = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
+          const bTimeLotus = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
+          return new Date(bTimeLotus).getTime() - new Date(aTimeLotus).getTime();
           
         default:
           return 0;
@@ -570,7 +570,7 @@ const KindredSpirits: React.FC = () => {
                 user={firstUser}
                 isBlurred={false}
                 style={styles.largeCard}
-                isOrbLike={firstUser.viaOrb}
+                islotusLike={firstUser.viaLotus}
                 isRadianceLike={firstUser.viaRadiance}
                 getImageUrl={getImageUrl}
                 isRecentlyActive={isRecentlyActive(firstUser)}
@@ -613,7 +613,7 @@ const KindredSpirits: React.FC = () => {
                         user={user}
                         isBlurred={!hasFullCircle}
                         style={styles.smallCard}
-                        isOrbLike={user.viaOrb}
+                        islotusLike={user.viaLotus}
                         isRadianceLike={user.viaRadiance}
                         getImageUrl={getImageUrl}
                         isRecentlyActive={isRecentlyActive(user)}

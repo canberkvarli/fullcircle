@@ -81,9 +81,9 @@ const SoulChats: React.FC = () => {
   const getConnectionMethods = (match: any) => {
     return {
       theirMethod: {
-        viaOrb: match.theirConnectionMethod?.viaOrb || 
-                match.connectionMethods?.[match.userId]?.viaOrb || 
-                match.viaOrb || 
+        viaLotus: match.theirConnectionMethod?.viaLotus || 
+                match.connectionMethods?.[match.userId]?.viaLotus || 
+                match.viaLotus || 
                 false,
         viaRadiance: match.theirConnectionMethod?.viaRadiance || 
                      match.connectionMethods?.[match.userId]?.viaRadiance || 
@@ -91,8 +91,8 @@ const SoulChats: React.FC = () => {
                      false
       },
       ourMethod: {
-        viaOrb: match.myConnectionMethod?.viaOrb || 
-                match.connectionMethods?.[userData.userId]?.viaOrb || 
+        viaLotus: match.myConnectionMethod?.viaLotus || 
+                match.connectionMethods?.[userData.userId]?.viaLotus || 
                 false,
         viaRadiance: match.myConnectionMethod?.viaRadiance || 
                      match.connectionMethods?.[userData.userId]?.viaRadiance || 
@@ -272,10 +272,10 @@ const SoulChats: React.FC = () => {
                   </View>
                   
                   {/* Connection Method Indicators - Top Right of Avatar */}
-                  {(connectionMethods.theirMethod.viaOrb || connectionMethods.theirMethod.viaRadiance) && (
+                  {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                     <View style={styles.connectionIndicators}>
-                      {connectionMethods.theirMethod.viaOrb && (
-                        <View style={[styles.connectionBadge, styles.orbIndicator]}>
+                      {connectionMethods.theirMethod.viaLotus && (
+                        <View style={[styles.connectionBadge, styles.lotusIndicator]}>
                           <Ionicons name="planet" size={11} color="#FFFFFF" />
                         </View>
                       )}
@@ -309,9 +309,9 @@ const SoulChats: React.FC = () => {
                       </Text>
                       
                       {/* Connection icons next to name */}
-                      {(connectionMethods.theirMethod.viaOrb || connectionMethods.theirMethod.viaRadiance) && (
+                      {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                         <View style={styles.nameConnectionIcons}>
-                          {connectionMethods.theirMethod.viaOrb && (
+                          {connectionMethods.theirMethod.viaLotus && (
                             <View style={styles.nameConnectionIcon}>
                               <Ionicons name="planet" size={13} color="#8B4513" />
                             </View>
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
-  orbIndicator: {
+  lotusIndicator: {
     backgroundColor: '#8B4513',
   },
   

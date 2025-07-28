@@ -96,12 +96,12 @@ async function handlePaymentSucceeded(paymentIntent) {
     }
   }
   
-  // Handle orb purchases
-  if (paymentIntent.metadata.type === 'orb_purchase') {
-    console.log('🌟 Processing orb purchase');
-    const orbCount = parseInt(paymentIntent.metadata.orbCount || '0');
-    if (orbCount > 0) {
-      await handleOrbPurchase(userId, orbCount, paymentIntent);
+  // Handle lotus purchases
+  if (paymentIntent.metadata.type === 'lotus_purchase') {
+    console.log('🌟 Processing lotus purchase');
+    const lotusCount = parseInt(paymentIntent.metadata.lotusCount || '0');
+    if (lotusCount > 0) {
+      await handleLotusPurchase(userId, lotusCount, paymentIntent);
     }
   }
   
@@ -138,13 +138,13 @@ async function handlePaymentSucceeded(paymentIntent) {
   }
 }
 
-async function handleOrbPurchase(userId, orbCount, paymentIntent) {
+async function handleLotusPurchase(userId, lotusCount, paymentIntent) {
   try {
     const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.exists ? userDoc.data() : {};
     
     const purchase = {
-      orbCount: orbCount,
+      lotusCount: lotusCount,
       totalPrice: paymentIntent.amount / 100, // Convert from cents
       purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
       transactionId: paymentIntent.id,
@@ -153,15 +153,15 @@ async function handleOrbPurchase(userId, orbCount, paymentIntent) {
     };
 
     const updateData = {
-      numOfOrbs: (userData.numOfOrbs || 0) + orbCount,
-      orbPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+      numOfLotus: (userData.numOfLotus || 0) + lotusCount,
+      lotusPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
     };
 
     await db.collection('users').doc(userId).update(updateData);
     
-    console.log(`✅ Added ${orbCount} orbs to user ${userId}`);
+    console.log(`✅ Added ${lotusCount} lotus flowers to user ${userId}`);
   } catch (error) {
-    console.error('Error handling orb purchase:', error);
+    console.error('Error handling lotus purchase:', error);
   }
 }
 

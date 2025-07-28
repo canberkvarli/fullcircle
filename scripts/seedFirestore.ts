@@ -583,9 +583,9 @@ async function seedFirestore(numUsers: number) {
       faker.date.recent({ days: 7 })
     );
 
-    // Orb system data
-    const numOfOrbs = faker.number.int({ min: 1, max: 50 });
-    const lastOrbAssignedAt = numOfOrbs > 0 ? 
+    // Litus system data
+    const numOfLotus = faker.number.int({ min: 1, max: 50 });
+    const lastLotusAssignedAt = numOfLotus > 0 ? 
       admin.firestore.Timestamp.fromDate(faker.date.recent({ days: 7 })) : null;
 
     // Assemble complete user document
@@ -595,8 +595,8 @@ async function seedFirestore(numUsers: number) {
       createdAt,
       lastActive,
       isSeedUser: true,
-      numOfOrbs,
-      lastOrbAssignedAt,
+      numOfLotus,
+      lastLotusAssignedAt,
       currentOnboardingScreen: "Connect", // Completed onboarding
       
       // Contact Info
@@ -701,7 +701,7 @@ async function seedFirestore(numUsers: number) {
         .doc(toUserId)
         .set({
           matchId: toUserId,
-          viaOrb: faker.datatype.boolean(0.1), // 10% via orb
+          viaLotus: faker.datatype.boolean(0.1), // 10% via litus
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
         
@@ -719,7 +719,7 @@ async function seedFirestore(numUsers: number) {
         .doc(fromUserId)
         .set({
           matchId: fromUserId,
-          viaOrb: faker.datatype.boolean(0.1),
+          viaLotus: faker.datatype.boolean(0.1),
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
     }

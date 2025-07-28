@@ -20,7 +20,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import RadianceScreen from "@/components/RadianceScreen";
-import OrbsScreen from "@/components/OrbsScreen"
+import LotusScreen from "@/components/LotusScreen"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -35,7 +35,7 @@ export default function SacredSelf() {
   
   const [verified, _] = useState(userData.settings?.isSelfieVerified || false);
   const [showRadianceModal, setShowRadianceModal] = useState(false);
-  const [showOrbsModal, setShowOrbsModal] = useState(false);
+  const [showLotusModal, setshowLotusModal] = useState(false);
   const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
   
@@ -56,8 +56,8 @@ export default function SacredSelf() {
     router.navigate("/user/SelfieVerificationScreen");
   };
 
-  const handleOrbsPress = () => {
-    setShowOrbsModal(true);
+  const handleLotusPress = () => {
+    setshowLotusModal(true);
   };
 
   // New handler for radiance clicks
@@ -324,23 +324,23 @@ export default function SacredSelf() {
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                {/* Orbs */}
+                {/* Lotus Flowers */}
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
-                  onPress={handleOrbsPress}
+                  onPress={handleLotusPress}
                   activeOpacity={0.7}
                 >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#8B4513' + '20' }]}>
                       <Ionicons name="sparkles" size={24} color="#8B4513" />
                       <View style={[styles.countBadge, { backgroundColor: '#8B4513' }]}>
-                        <Text style={styles.countText}>{userData.numOfOrbs || 0}</Text>
+                        <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                       </View>
                     </View>
                   </View>
                   <View style={styles.featureContent}>
                     <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                      Orbs
+                      Lotus Flowers
                     </Text>
                     <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
                       Super likes with cosmic energy
@@ -438,23 +438,23 @@ export default function SacredSelf() {
                     <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   </TouchableOpacity>
 
-                  {/* Orbs */}
+                  {/* Lotus Flowers */}
                   <TouchableOpacity 
                     style={[styles.resourceItem, { backgroundColor: colors.card }]}
-                    onPress={handleOrbsPress}
+                    onPress={handleLotusPress}
                     activeOpacity={0.7}
                   >
                     <View style={styles.resourceIconContainer}>
                       <View style={[styles.resourceIcon, { backgroundColor: '#8B4513' + '20' }]}>
                         <Ionicons name="sparkles" size={20} color="#8B4513" />
                         <View style={[styles.countBadge, { backgroundColor: '#8B4513' }]}>
-                          <Text style={styles.countText}>{userData.numOfOrbs || 0}</Text>
+                          <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                         </View>
                       </View>
                     </View>
                     <View style={styles.resourceContent}>
                       <Text style={[styles.resourceTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                        Orbs
+                        Lotus Flowers
                       </Text>
                       <Text style={[styles.resourceSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
                         Super likes with cosmic energy
@@ -477,9 +477,9 @@ export default function SacredSelf() {
         onClose={() => setShowRadianceModal(false)}
       />
 
-      <OrbsScreen
-        visible={showOrbsModal}
-        onClose={() => setShowOrbsModal(false)}
+      <LotusScreen
+        visible={showLotusModal}
+        onClose={() => setshowLotusModal(false)}
       />
     </SafeAreaView>
   );

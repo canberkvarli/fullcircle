@@ -65,7 +65,7 @@ const Chat: React.FC = () => {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isUnmatching, setIsUnmatching] = useState(false);
-  const [connectionMethod, setConnectionMethod] = useState<{ viaOrb: boolean; viaRadiance: boolean } | null>(null);
+  const [connectionMethod, setConnectionMethod] = useState<{ viaLotus: boolean; viaRadiance: boolean } | null>(null);
   
   // Animation for smooth sliding between tabs
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -169,9 +169,9 @@ const Chat: React.FC = () => {
 
         // Detect connection method
         const method = {
-          viaOrb: parsedUser.theirConnectionMethod?.viaOrb || 
-                  parsedUser.connectionMethods?.[parsedUser.userId]?.viaOrb || 
-                  parsedUser.viaOrb || 
+          viaLotus: parsedUser.theirConnectionMethod?.viaLotus || 
+                  parsedUser.connectionMethods?.[parsedUser.userId]?.viaLotus || 
+                  parsedUser.viaLotus || 
                   false,
           viaRadiance: parsedUser.theirConnectionMethod?.viaRadiance || 
                        parsedUser.connectionMethods?.[parsedUser.userId]?.viaRadiance || 
@@ -314,16 +314,16 @@ const Chat: React.FC = () => {
   const getConnectionInfo = () => {
     if (!connectionMethod) return null;
     
-    if (connectionMethod.viaOrb && connectionMethod.viaRadiance) {
+    if (connectionMethod.viaLotus && connectionMethod.viaRadiance) {
       return {
         icon: "planet" as const,
-        text: "Orb & Radiance Match",
+        text: "Lotus & Radiance Match",
         color: "#8B4513"
       };
-    } else if (connectionMethod.viaOrb) {
+    } else if (connectionMethod.viaLotus) {
       return {
         icon: "planet" as const,
-        text: "Orb Match",
+        text: "Lotus Match",
         color: "#8B4513"
       };
     } else if (connectionMethod.viaRadiance) {

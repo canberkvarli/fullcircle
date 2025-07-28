@@ -124,7 +124,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(toUserId)
       .set({
         matchId: toUserId,
-        viaOrb: faker.datatype.boolean(0.2), // 20% chance via orb
+        viaLotus: faker.datatype.boolean(0.2), // 20% chance via lotus
         viaRadiant: faker.datatype.boolean(0.2), // 20% chance via radiant
         timestamp: FieldValue.serverTimestamp(),
       });
@@ -135,7 +135,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(fromUserId)
       .set({
         matchId: fromUserId,
-        viaOrb: faker.datatype.boolean(0.2), // 20% chance via orb
+        viaLotus: faker.datatype.boolean(0.2), // 20% chance via lotus
         viaRadiant: faker.datatype.boolean(0.2), // 20% chance via radiant
         timestamp: FieldValue.serverTimestamp(),
       });
@@ -163,13 +163,13 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(CURRENT_USER_ID)
       .set({
         matchId: CURRENT_USER_ID,
-        viaOrb: faker.datatype.boolean(0.1),
+        viaLotus: faker.datatype.boolean(0.1),
         viaRadiant: faker.datatype.boolean(0.1),
         timestamp: FieldValue.serverTimestamp(),
       });
     await currentUserRef.collection("likesReceived").doc(otherId).set({
       matchId: otherId,
-      viaOrb: faker.datatype.boolean(0.1),
+      viaLotus: faker.datatype.boolean(0.1),
       viaRadiant: faker.datatype.boolean(0.1),
       timestamp: FieldValue.serverTimestamp(),
     });
@@ -182,7 +182,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .update({ likesReceivedCount: FieldValue.increment(1) });
     await currentUserRef.collection("likesGiven").doc(otherId).set({
       matchId: otherId,
-      viaOrb: faker.datatype.boolean(0.1),
+      viaLotus: faker.datatype.boolean(0.1),
       viaRadiant: faker.datatype.boolean(0.1),
       timestamp: FieldValue.serverTimestamp(),
     });
@@ -193,7 +193,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(CURRENT_USER_ID)
       .set({
         matchId: CURRENT_USER_ID,
-        viaOrb: faker.datatype.boolean(0.1),
+        viaLotus: faker.datatype.boolean(0.1),
         viaRadiant: faker.datatype.boolean(0.1),
         timestamp: FieldValue.serverTimestamp(),
       });

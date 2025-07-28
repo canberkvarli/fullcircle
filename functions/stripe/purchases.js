@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const { stripe, RADIANCE_PRICING, ORB_PRICES } = require('./config');
+const { stripe, RADIANCE_PRICING, LOTUS_PRICES } = require('./config');
 
 const db = admin.firestore();
 
@@ -196,24 +196,24 @@ const db = admin.firestore();
   });
 
   /**
-   * Create payment intent for orb purchase
+   * Create payment intent for lotus purchase
    */
-  const createOrbPayment = functions.https.onCall(async (data, context) => {
+  const createLotusPayment = functions.https.onCall(async (data, context) => {
     try {
       if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
       }
 
-      const { orbCount } = data;
+      const { lotusCount } = data;
       const userId = context.auth.uid;
 
-      console.log(`🌟 Creating orb payment for user: ${userId}, orbCount: ${orbCount}`);
+      console.log(`🌟 Creating lotus payment for user: ${userId}, lotusCount: ${lotusCount}`);
 
-      if (!ORB_PRICES[orbCount]) {
-        throw new functions.https.HttpsError('invalid-argument', 'Invalid orb count');
+      if (!LOTUS_PRICES[lotusCount]) {
+        throw new functions.https.HttpsError('invalid-argument', 'Invalid lotus count');
       }
 
-      const { amount } = ORB_PRICES[orbCount];
+      const { amount } = LOTUS_PRICES[lotusCount];
 
       // Get user data for customer info
       const userDoc = await db.collection('users').doc(userId).get();
@@ -229,17 +229,17 @@ const db = admin.firestore();
         currency: 'usd',
         metadata: {
           firebaseUID: userId,
-          type: 'orb_purchase',
-          orbCount: orbCount.toString(),
-          pricePerOrb: ORB_PRICES[orbCount].pricePerOrb.toString(),
+          type: 'lotus_purchase',
+          lotusCount: lotusCount.toString(),
+          pricePerLotus: LOTUS_PRICES[lotusCount].pricePerLotus.toString(),
         },
-        description: `${orbCount} Cosmic Orb${orbCount > 1 ? 's' : ''}`,
+        description: `${lotusCount} Lotus flower${lotusCount > 1 ? 's' : ''}`,
         automatic_payment_methods: {
           enabled: true,
         },
       });
 
-      console.log(`✅ Orb payment intent created: ${paymentIntent.id}`);
+      console.log(`✅ Lotus payment intent created: ${paymentIntent.id}`);
 
       return {
         clientSecret: paymentIntent.client_secret,
@@ -248,20 +248,20 @@ const db = admin.firestore();
       };
 
     } catch (error) {
-      console.error('❌ Error creating orb payment:', error);
+      console.error('❌ Error creating lotus payment:', error);
       
       if (error instanceof functions.https.HttpsError) {
         throw error;
       }
       
-      throw new functions.https.HttpsError('internal', `Orb payment creation failed: ${error.message}`);
+      throw new functions.https.HttpsError('internal', `Lotus payment creation failed: ${error.message}`);
     }
   });
 
   /**
-   * Confirm orb payment and update user data
+   * Confirm lotus payment and update user data
    */
-  const confirmOrbPayment = functions.https.onCall(async (data, context) => {
+  const confirmLotusPayment = functions.https.onCall(async (data, context) => {
     try {
       if (!context.auth) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
@@ -270,7 +270,7 @@ const db = admin.firestore();
       const { paymentIntentId } = data;
       const userId = context.auth.uid;
 
-      console.log(`🔄 Confirming orb payment: ${paymentIntentId} for user: ${userId}`);
+      console.log(`🔄 Confirming lotus payment: ${paymentIntentId} for user: ${userId}`);
 
       // Retrieve payment intent from Stripe
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -285,10 +285,10 @@ const db = admin.firestore();
       }
 
       // Extract purchase details
-      const orbCount = parseInt(paymentIntent.metadata.orbCount);
+      const lotusCount = parseInt(paymentIntent.metadata.lotusCount);
       const totalPrice = paymentIntent.amount / 100; // Convert from cents
 
-      console.log(`💎 Processing ${orbCount} orbs for ${totalPrice}`);
+      console.log(`💎 Processing ${lotusCount} lotus flowers for ${totalPrice}`);
 
       // Get current user data
       const userDoc = await db.collection('users').doc(userId).get();
@@ -297,11 +297,11 @@ const db = admin.firestore();
       }
 
       const userData = userDoc.data();
-      const currentOrbs = userData.numOfOrbs || 0;
+      const currentLotusFlowers = userData.numOfLotus || 0;
 
       // Create purchase record
       const purchase = {
-        orbCount: orbCount,
+        lotusCount: lotusCount,
         totalPrice: totalPrice,
         purchaseDate: admin.firestore.FieldValue.serverTimestamp(),
         transactionId: paymentIntent.id,
@@ -311,35 +311,35 @@ const db = admin.firestore();
 
       // Update user data
       const updateData = {
-        numOfOrbs: currentOrbs + orbCount,
-        orbPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
+        numOfLotus: currentLotusFlowers + lotusCount,
+        lotusPurchases: admin.firestore.FieldValue.arrayUnion(purchase)
       };
 
       await db.collection('users').doc(userId).update(updateData);
 
-      console.log(`✅ User ${userId} now has ${currentOrbs + orbCount} orbs (added ${orbCount})`);
+      console.log(`✅ User ${userId} now has ${currentLotusFlowers + lotusCount} lotus flowers (added ${lotusCount})`);
 
       return {
         success: true,
-        orbCount: orbCount,
+        lotusCount: lotusCount,
         totalPrice: totalPrice,
         transactionId: paymentIntent.id
       };
 
     } catch (error) {
-      console.error('❌ Error confirming orb payment:', error);
+      console.error('❌ Error confirming lotus payment:', error);
       
       if (error instanceof functions.https.HttpsError) {
         throw error;
       }
       
-      throw new functions.https.HttpsError('internal', `Orb payment confirmation failed: ${error.message}`);
+      throw new functions.https.HttpsError('internal', `Lotus payment confirmation failed: ${error.message}`);
     }
   });
 
 module.exports = {
   createRadiancePayment,
   confirmRadiancePayment,
-  createOrbPayment,
-  confirmOrbPayment,
+  createLotusPayment,
+  confirmLotusPayment,
 };

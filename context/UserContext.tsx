@@ -7,25 +7,22 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useRouter, useSegments } from "expo-router";
+import { useRouter } from "expo-router";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { FIREBASE_AUTH, FIRESTORE, STORAGE, FUNCTIONS } from "@/services/FirebaseConfig";
 import auth from "@react-native-firebase/auth";
 
-import firestore, { 
-  FirebaseFirestoreTypes 
-} from "@react-native-firebase/firestore";
-import { Alert } from "react-native";
+import firestore from "@react-native-firebase/firestore";
 
 export type UserDataType = {
   userId: string;
   createdAt: any;
   lastActive?: any;
   isSeedUser: boolean;
-  numOfOrbs?: number;
-  orbPurchases?: OrbPurchase[];
-  lastOrbAssignedAt?: any;
+  numOfLotus?: number;
+  lotusPurchases?: LotusPurchase[];
+  lastLotusAssignedAt?: any;
   currentOnboardingScreen: string;
   phoneNumber: string;
   verificationId?: string | null;
@@ -133,8 +130,8 @@ export interface BoostPurchase {
   status: 'succeeded' | 'processing' | 'failed'; 
 }
 
-export interface OrbPurchase {
-  orbCount: number;
+export interface LotusPurchase {
+  lotusCount: number;
   totalPrice: number;
   purchaseDate: any;
   transactionId: string;
@@ -151,7 +148,7 @@ interface PaymentIntent {
 interface PaymentResult {
   success: boolean;
   boostCount: number;
-  orbCount: number;
+  lotusCount: number;
   totalPrice: number;
   transactionId: string;
 }
@@ -217,7 +214,7 @@ export interface MatchType {
 }
 export interface LikeRecord {
   matchId: string;
-  viaOrb: boolean;
+  viaLotus: boolean;
   viaRadiance?: boolean;
   timestamp: any;
 }
@@ -273,7 +270,7 @@ type UserContextType = {
   signOut: () => Promise<void>;
   completeOnboarding: () => void;
   likeMatch: (matchId: string) => any;
-  orbLike: (matchId: string) => Promise<void>;
+  lotusLike: (matchId: string) => Promise<void>;
   dislikeMatch: (matchId: string) => any;
   currentPotentialMatch: UserDataType | null;
   loadingNextBatch: boolean;
@@ -348,13 +345,13 @@ type UserContextType = {
     formattedTime: string | null;
   };
   formatRadianceTime: (seconds: number) => string;
-  createOrbPaymentIntent: (orbCount: number) => Promise<{
+  createLotusPaymentIntent: (lotusCount: number) => Promise<{
   clientSecret: string;
   paymentIntentId: string;
   }>;
-  confirmOrbPayment: (paymentIntentId: string) => Promise<{
+  confirmLotusPayment: (paymentIntentId: string) => Promise<{
   success: boolean;
-  orbCount: number;
+  lotusCount: number;
   totalPrice: number;
   }>;
   isUserBoosted: (userData: UserDataType) => boolean;
@@ -388,8 +385,8 @@ const initialUserData: UserDataType = {
   createdAt: firestore.FieldValue.serverTimestamp(),
   lastActive: null,
   isSeedUser: false,
-  numOfOrbs: 1,
-  lastOrbAssignedAt: null,
+  numOfLotus: 1,
+  lastLotusAssignedAt: null,
   phoneNumber: "",
   email: "",
   firstName: "",
@@ -670,42 +667,42 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => unsubscribe();
   }, [currentUser]);
 
-  const assignWeeklyOrb = useCallback(async () => {
+  const assignWeeklyLotus = useCallback(async () => {
     if (!userData.userId) return;
 
     const userRef = FIRESTORE.collection("users").doc(userData.userId);
 
-    // If they already have >=1 orb, or we assigned within the last week, bail out.
-    const last = userData.lastOrbAssignedAt?.toMillis?.() ?? 0;
+    // If they already have >=1 lotus, or we assigned within the last week, bail out.
+    const last = userData.lastLotusAssignedAt?.toMillis?.() ?? 0;
     const now = Date.now();
     const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-    if ((userData.numOfOrbs ?? 0) >= 1 || now - last < oneWeekMs) {
+    if ((userData.numOfLotus ?? 0) >= 1 || now - last < oneWeekMs) {
       return;
     }
 
-    // Give them one orb and update the timestamp.
+    // Give them one lotus and update the timestamp.
     await userRef.update({
-      numOfOrbs: 1,
-      lastOrbAssignedAt: firestore.FieldValue.serverTimestamp()
+      numOfLotus: 1,
+      lastLotusAssignedAt: firestore.FieldValue.serverTimestamp()
     });
 
     // Optimistically update local state:
     setUserData((prev) => ({
       ...prev,
-      numOfOrbs: 1,
-      lastOrbAssignedAt: { toMillis: () => now }, // mirror the TS Timestamp shape
+      numOfLotus: 1,
+      lastLotusAssignedAt: { toMillis: () => now }, // mirror the TS Timestamp shape
     }));
-  }, [userData.userId, userData.numOfOrbs, userData.lastOrbAssignedAt]);
+  }, [userData.userId, userData.numOfLotus, userData.lastLotusAssignedAt]);
 
   useEffect(() => {
-    assignWeeklyOrb();
+    assignWeeklyLotus();
     // Also as a safety, every 24h in case the app never backgrounds:
-    const id = setInterval(assignWeeklyOrb, 1000 * 60 * 60 * 24);
+    const id = setInterval(assignWeeklyLotus, 1000 * 60 * 60 * 24);
 
     return () => {
       clearInterval(id);
     };
-  }, [assignWeeklyOrb]);
+  }, [assignWeeklyLotus]);
 
   useEffect(() => {
     if (!userData.userId || !userData.onboardingCompleted) return;
@@ -1813,7 +1810,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           await recordLikeWithBatch(
             userDataRef.current.userId, 
             matchId, 
-            false, // viaOrb = false for regular likes
+            false, // viaLotus = false for regular likes
             targetHasRadiance
           );
           
@@ -1854,18 +1851,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }, [getRemainingDailyLikes]);
 
-  // 🔧 ALSO UPDATE: optimizedOrbLike with the same logic
-  const optimizedOrbLike = useCallback(async (matchId: string) => {
-    console.log(`✨ OPTIMIZED ORB LIKING USER: ${matchId}`);
+  // 🔧 ALSO UPDATE: optimizedlotusLike with the same logic
+  const optimizedlotusLike = useCallback(async (matchId: string) => {
+    console.log(`✨ OPTIMIZED LOTUS LIKING USER: ${matchId}`);
     
     try {
-      // Check orb availability first
-      if (!userDataRef.current.numOfOrbs || userDataRef.current.numOfOrbs <= 0) {
-        throw new Error("No orbs available");
+      // Check lotus availability first
+      if (!userDataRef.current.numOfLotus || userDataRef.current.numOfLotus <= 0) {
+        throw new Error("No lotus available");
       }
 
       // Check if the TARGET USER (person being liked) has radiance
-      console.log(`🔍 Checking if target user ${matchId} has radiance for orb like...`);
+      console.log(`🔍 Checking if target user ${matchId} has radiance for lotus like...`);
       
       let targetHasRadiance = false;
       
@@ -1882,7 +1879,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             
             targetHasRadiance = new Date() < expiresAt;
             
-            console.log('🔍 Target user radiance check (orb):', {
+            console.log('🔍 Target user radiance check (lotus):', {
               expiresAt: expiresAt.toISOString(),
               currentTime: new Date().toISOString(),
               targetHasRadiance
@@ -1890,28 +1887,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       } catch (error) {
-        console.error('❌ Error checking target user radiance (orb):', error);
+        console.error('❌ Error checking target user radiance (lotus):', error);
       }
       
-      console.log('🚀 ORB + RADIANCE CHECK RESULT:', {
+      console.log('🚀 LOTUS + RADIANCE CHECK RESULT:', {
         targetUserId: matchId,
         targetHasRadiance,
         meaning: targetHasRadiance 
-          ? 'This orb like will be marked as viaRadiance because recipient has active boost' 
-          : 'Normal orb like - recipient has no active boost'
+          ? 'This lotus like will be marked as viaRadiance because recipient has active boost' 
+          : 'Normal lotus like - recipient has no active boost'
       });
       
-      // Update user data to reflect orb usage immediately
+      // Update user data to reflect lotus usage immediately
       setUserData(prev => ({
         ...prev,
-        numOfOrbs: (prev.numOfOrbs || 0) - 1
+        numOfLotus: (prev.numOfLotus || 0) - 1
       }));
       
       // ✅ CRITICAL FIX: Same pattern - remove immediately and move to next
       setMatchingState(prev => {
         const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
         
-        // Remove orb-liked user from potentialMatches array entirely
+        // Remove lotus-liked user from potentialMatches array entirely
         const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
         
         // Find next valid user that's not excluded
@@ -1928,7 +1925,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
         
-        console.log(`🔧 After orb like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+        console.log(`🔧 After lotus like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
         console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
         
         return {
@@ -1940,20 +1937,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       });
       
-      // ✅ IMPROVED: Record orb like with proper error handling
+      // ✅ IMPROVED: Record lotus like with proper error handling
       try {
         await recordLikeWithBatch(
           userDataRef.current.userId, 
           matchId, 
-          true, // viaOrb = true for orb likes
+          true, // viaLotus = true for lotus likes
           targetHasRadiance
         );
 
-        console.log(`✅ Optimized orb like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal orb like)'}`);
+        console.log(`✅ Optimized lotus like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal lotus like)'}`);
       } catch (likeError: any) {
         // Handle case where users are already matched
         if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
-          console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping orb like recording`);
+          console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping lotus like recording`);
           // Don't rollback the exclusion since we still want them removed from the list
         } else {
           throw likeError;
@@ -1961,10 +1958,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
     } catch (error: any) {
-      console.error('❌ Error orb liking match:', error);
+      console.error('❌ Error lotus liking match:', error);
       
-      // Rollback exclusion and orb count on error (except for already matched)
-      if (error.message !== "No orbs available" && !error.message?.includes('already matched')) {
+      // Rollback exclusion and lotus count on error (except for already matched)
+      if (error.message !== "No lotuss available" && !error.message?.includes('already matched')) {
         setMatchingState(prev => {
           const newSet = new Set(prev.exclusionSet);
           newSet.delete(matchId);
@@ -1979,12 +1976,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           };
         });
         
-        // Rollback orb count if it was decremented
+        // Rollback lotus count if it was decremented
         setUserData(prev => ({
           ...prev,
-          numOfOrbs: (prev.numOfOrbs || 0) + 1
+          numOfLotus: (prev.numOfLotus || 0) + 1
         }));
-        console.log(`🔄 Rolled back orb count`);
+        console.log(`🔄 Rolled back lotus count`);
       }
       
       throw error;
@@ -2070,10 +2067,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const recordLikeWithBatch = async (
     fromUserId: string,
     toUserId: string,
-    viaOrb: boolean = false,
+    viaLotus: boolean = false,
     viaRadiance: boolean = false
   ): Promise<void> => {
-    console.log('🔥 Using batch approach for like...', { viaOrb, viaRadiance });
+    console.log('🔥 Using batch approach for like...', { viaLotus, viaRadiance });
     
     try {
       const fromRef = FIRESTORE.collection("users").doc(fromUserId);
@@ -2117,9 +2114,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         hasActiveRadiance: hasActiveRadiance(fromData)
       });
       
-      // Check orb allowance
-      if (viaOrb && (fromData.numOfOrbs ?? 0) < 1) {
-        throw new Error("No orbs left this week");
+      // Check lotus allowance
+      if (viaLotus && (fromData.numOfLotus ?? 0) < 1) {
+        throw new Error("No lotus left this week");
       }
       
       // Prepare batch
@@ -2128,7 +2125,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // Always set the likesGiven record with connection method tracking
       const likeData = {
         matchId: toUserId,
-        viaOrb,
+        viaLotus,
         viaRadiance,
         timestamp: firestore.FieldValue.serverTimestamp(),
       };
@@ -2150,9 +2147,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
       
-      // Handle orb consumption
-      if (viaOrb && !fromData?.subscription?.isActive) {
-        fromUpdates.numOfOrbs = Math.max(0, (fromData.numOfOrbs ?? 0) - 1);
+      // Handle lotus consumption
+      if (viaLotus && !fromData?.subscription?.isActive) {
+        fromUpdates.numOfLotus = Math.max(0, (fromData.numOfLotus ?? 0) - 1);
       }
       
       // Handle mutual match creation
@@ -2161,7 +2158,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         
         // Get the original like data to preserve connection method
         const incomingLikeData = incomingSnap.data();
-        const originalViaOrb = incomingLikeData?.viaOrb || false;
+        const originalviaLotus = incomingLikeData?.viaLotus || false;
         const originalViaRadiance = incomingLikeData?.viaRadiance || false;
         
         // Remove the incoming like since we're creating a match
@@ -2175,11 +2172,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const matchData = {
           timestamp: firestore.FieldValue.serverTimestamp(),
           myConnectionMethod: {
-            viaOrb,
+            viaLotus,
             viaRadiance
           },
           theirConnectionMethod: {
-            viaOrb: originalViaOrb,
+            viaLotus: originalviaLotus,
             viaRadiance: originalViaRadiance
           }
         };
@@ -2187,11 +2184,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const theirMatchData = {
           timestamp: firestore.FieldValue.serverTimestamp(),
           myConnectionMethod: {
-            viaOrb: originalViaOrb,
+            viaLotus: originalviaLotus,
             viaRadiance: originalViaRadiance
           },
           theirConnectionMethod: {
-            viaOrb,
+            viaLotus,
             viaRadiance
           }
         };
@@ -2213,8 +2210,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           createdAt: firestore.FieldValue.serverTimestamp(),
           lastUpdated: firestore.FieldValue.serverTimestamp(),
           connectionMethods: {
-            [fromUserId]: { viaOrb, viaRadiance },
-            [toUserId]: { viaOrb: originalViaOrb, viaRadiance: originalViaRadiance }
+            [fromUserId]: { viaLotus, viaRadiance },
+            [toUserId]: { viaLotus: originalviaLotus, viaRadiance: originalViaRadiance }
           }
         });
         
@@ -2225,8 +2222,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         });
         
         console.log('🔥 Match and chat will be created with connection methods:', {
-          current: { viaOrb, viaRadiance },
-          original: { viaOrb: originalViaOrb, viaRadiance: originalViaRadiance }
+          current: { viaLotus, viaRadiance },
+          original: { viaLotus: originalviaLotus, viaRadiance: originalViaRadiance }
         });
       } else {
         // Only for NON-MUTUAL likes: create received like record and increment counter
@@ -2234,7 +2231,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         
         const receivedLikeData = {
           matchId: fromUserId,
-          viaOrb,
+          viaLotus,
           viaRadiance,
           timestamp: firestore.FieldValue.serverTimestamp(),
         };
@@ -2255,10 +2252,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('✅ Batch committed successfully');
       
       // Update local state
-      if (viaOrb && !userData.subscription?.isActive) {
+      if (viaLotus && !userData.subscription?.isActive) {
         setUserData((prev) => ({
           ...prev,
-          numOfOrbs: Math.max(0, (prev.numOfOrbs ?? 1) - 1),
+          numOfLotus: Math.max(0, (prev.numOfLotus ?? 1) - 1),
           likesGivenCount: (prev.likesGivenCount ?? 0) + 1,
         }));
       } else {
@@ -2374,7 +2371,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getReceivedLikesDetailed = async (): Promise<
-    Array<any & { viaOrb: boolean; likedAt: Date }>
+    Array<any & { viaLotus: boolean; likedAt: Date }>
   > => {
   const uid = userData.userId!;
   const recSnap = await FIRESTORE
@@ -2394,7 +2391,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       return {
         ...profile,
         userId: uSnap.id,
-        viaOrb: rec.viaOrb,
+        viaLotus: rec.viaLotus,
         likedAt: rec.timestamp.toDate(),
       };
     })
@@ -2717,7 +2714,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       .onSnapshot(async (snapshot) => {
         const likeRecords = snapshot.docs.map((doc) => ({
           userId: doc.id,
-          viaOrb: doc.data().viaOrb || false,
+          viaLotus: doc.data().viaLotus || false,
           viaRadiance: doc.data().viaRadiance || false, // NEW
           timestamp: doc.data().timestamp,
         }));
@@ -2734,7 +2731,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
                 return {
                   ...userSnap.data(),
                   userId: record.userId,
-                  viaOrb: record.viaOrb,
+                  viaLotus: record.viaLotus,
                   viaRadiance: record.viaRadiance, // NEW
                   timestamp: record.timestamp,
                 };
@@ -3440,52 +3437,52 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // 💎 Create Orb Payment Intent
-  const createOrbPaymentIntent = async (orbCount: number) => {
+  // 💎 Create Lotus Payment Intent
+  const createLotusPaymentIntent = async (lotusCount: number) => {
     try {
       if (!userData.userId) {
         throw new Error("User ID is required");
       }
 
-      console.log(`Creating payment for ${orbCount} orbs...`);
+      console.log(`Creating payment for ${lotusCount} lotus flowers...`);
       
-      const createPaymentFunction = FUNCTIONS.httpsCallable('createOrbPayment');
-      const result = await createPaymentFunction({ orbCount });
+      const createPaymentFunction = FUNCTIONS.httpsCallable('createLotusPayment');
+      const result = await createPaymentFunction({ lotusCount });
       
       const { clientSecret, paymentIntentId, amount } = result.data as PaymentIntent;
       
-      console.log(`Orb payment intent created: ${paymentIntentId} for $${amount / 100}`);
+      console.log(`Lotus payment intent created: ${paymentIntentId} for $${amount / 100}`);
       
       return { clientSecret, paymentIntentId };
     } catch (error: any) {
-      console.error("Failed to create orb payment:", error);
-      throw new Error(`Orb payment creation failed: ${error.message}`);
+      console.error("Failed to create lotus payment:", error);
+      throw new Error(`Lotus payment creation failed: ${error.message}`);
     }
   };
 
-  // 💎 Confirm Orb Payment (after Stripe payment succeeds)
-  const confirmOrbPayment = async (paymentIntentId: string) => {
+  // 💎 Confirm Lotus Payment (after Stripe payment succeeds)
+  const confirmLotusPayment = async (paymentIntentId: string) => {
     try {
       if (!userData.userId) {
         throw new Error("User ID is required");
       }
 
-      console.log(`🔄 Confirming orb payment: ${paymentIntentId}`);
+      console.log(`🔄 Confirming lotus payment: ${paymentIntentId}`);
       console.log(`👤 User ID: ${userData.userId}`);
       
-      const confirmPaymentFunction = FUNCTIONS.httpsCallable('confirmOrbPayment');
+      const confirmPaymentFunction = FUNCTIONS.httpsCallable('confirmLotusPayment');
       
-      console.log('📞 Calling confirmOrbPayment function...');
+      console.log('📞 Calling confirmLotusPayment function...');
       const result = await confirmPaymentFunction({ paymentIntentId });
       
-      console.log('✅ Orb payment confirmation successful:', result);
+      console.log('✅ Lotus payment confirmation successful:', result);
       
-      const { success, orbCount, totalPrice, transactionId } = result.data as PaymentResult;
+      const { success, lotusCount, totalPrice, transactionId } = result.data as PaymentResult;
       
       if (success) {
-        // Update local state with new orb count
-        const purchase: OrbPurchase = {
-          orbCount,
+        // Update local state with new lotus count
+        const purchase: LotusPurchase = {
+          lotusCount,
           totalPrice,
           purchaseDate: new Date(),
           transactionId,
@@ -3495,24 +3492,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         
         setUserData(prevData => ({
           ...prevData,
-          numOfOrbs: (prevData.numOfOrbs || 0) + orbCount,
-          orbPurchases: [
-            ...(prevData.orbPurchases || []),
+          numOfLotus: (prevData.numOfLotus || 0) + lotusCount,
+          lotusPurchases: [
+            ...(prevData.lotusPurchases || []),
             purchase
           ]
         }));
         
-        console.log(`✅ Successfully confirmed purchase of ${orbCount} orbs`);
-        return { success: true, orbCount, totalPrice };
+        console.log(`✅ Successfully confirmed purchase of ${lotusCount} lotus flowers`);
+        return { success: true, lotusCount, totalPrice };
       } else {
-        throw new Error('Orb payment confirmation failed');
+        throw new Error('Lotus payment confirmation failed');
       }
     } catch (error: any) {
-      console.error("❌ Failed to confirm orb payment:", error);
+      console.error("❌ Failed to confirm lotus payment:", error);
       console.error("❌ Error code:", error.code);
       console.error("❌ Error message:", error.message);
       console.error("❌ Error details:", error.details);
-      throw new Error(`Orb payment confirmation failed: ${error.message}`);
+      throw new Error(`Lotus payment confirmation failed: ${error.message}`);
     }
   };
 
@@ -3541,7 +3538,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     completeOnboarding,
     likeMatch: optimizedLikeMatch,
     dislikeMatch: optimizedDislikeMatch,
-    orbLike: optimizedOrbLike,
+    lotusLike: optimizedlotusLike,
     loadNextMatch,
     getReceivedLikesDetailed,
     createOrFetchChat,
@@ -3578,8 +3575,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     isUserBoosted,
     isUserRecentlyActive,
     createRadiancePaymentIntent,
-    createOrbPaymentIntent,
-    confirmOrbPayment,
+    createLotusPaymentIntent,
+    confirmLotusPayment,
   };
 
   if (initializing) {

@@ -21,22 +21,22 @@ import { useFont } from '@/hooks/useFont';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-interface OrbOption {
-  orbCount: number;
-  pricePerOrb: number;
+interface LotusOption {
+  lotusCount: number;
+  pricePerLotus: number;
   totalPrice: number;
   tag?: string;
   popular?: boolean;
 }
 
-interface OrbsScreenProps {
+interface LotusScreenProps {
   visible: boolean;
   onClose: () => void;
-  onPurchaseSuccess?: (orbCount: number, totalPrice: number, transactionId: string) => void;
+  onPurchaseSuccess?: (lotusCount: number, totalPrice: number, transactionId: string) => void;
 }
 
-const OrbOptionCard: React.FC<{
-  option: OrbOption;
+const LotusOptionCard: React.FC<{
+  option: LotusOption;
   isSelected: boolean;
   onSelect: () => void;
   colorScheme: 'light' | 'dark';
@@ -73,14 +73,14 @@ const OrbOptionCard: React.FC<{
         </View>
       )}
       
-      <View style={styles.orbDisplay}>
-        <View style={[styles.orbIcon, { backgroundColor: '#8B4513' + '20' }]}>
-          <Text style={[styles.orbCountText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            {option.orbCount}
+      <View style={styles.lotusDisplay}>
+        <View style={[styles.lotusIcon, { backgroundColor: '#8B4513' + '20' }]}>
+          <Text style={[styles.lotusCountText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
+            {option.lotusCount}
           </Text>
         </View>
-        <Text style={[styles.orbLabel, fonts.bodyFont, { color: colors.textMuted }]}>
-          orb{option.orbCount !== 1 ? 's' : ''}
+        <Text style={[styles.lotusLabel, fonts.bodyFont, { color: colors.textMuted }]}>
+          lotus{option.lotusCount !== 1 ? 's' : ''}
         </Text>
       </View>
       
@@ -89,7 +89,7 @@ const OrbOptionCard: React.FC<{
           ${option.totalPrice.toFixed(2)}
         </Text>
         <Text style={[styles.unitPrice, fonts.captionFont, { color: colors.textMuted }]}>
-          ${option.pricePerOrb.toFixed(2)} each
+          ${option.pricePerLotus.toFixed(2)} each
         </Text>
       </View>
       
@@ -102,10 +102,10 @@ const OrbOptionCard: React.FC<{
   );
 };
 
-const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuccess }) => {
+const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseSuccess }) => {
   const { 
     userData, 
-    createOrbPaymentIntent,
+    createLotusPaymentIntent,
     updateUserData
   } = useUserContext();
   
@@ -119,28 +119,28 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const orbOptions: OrbOption[] = [
+  const LotusOptions: LotusOption[] = [
     {
-      orbCount: 1,
-      pricePerOrb: 4.99,
+      lotusCount: 1,
+      pricePerLotus: 4.99,
       totalPrice: 4.99,
     },
     {
-      orbCount: 3,
-      pricePerOrb: 4.49,
+      lotusCount: 3,
+      pricePerLotus: 4.49,
       totalPrice: 13.47,
       tag: "Save 10%",
       popular: true,
     },
     {
-      orbCount: 5,
-      pricePerOrb: 3.99,
+      lotusCount: 5,
+      pricePerLotus: 3.99,
       totalPrice: 19.95,
       tag: "Save 20%",
     },
     {
-      orbCount: 10,
-      pricePerOrb: 3.49,
+      lotusCount: 10,
+      pricePerLotus: 3.49,
       totalPrice: 34.90,
       tag: "Save 30%",
     }
@@ -168,11 +168,11 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
     try {
       setIsProcessing(true);
       
-      const selectedOrbOption = orbOptions[selectedOption];
-      console.log('🚀 Starting orb purchase:', selectedOrbOption);
+      const selectedLotusOption = LotusOptions[selectedOption];
+      console.log('🚀 Starting lotus purchase:', selectedLotusOption);
 
       // Step 1: Create payment intent
-      const paymentData = await createOrbPaymentIntent(selectedOrbOption.orbCount);
+      const paymentData = await createLotusPaymentIntent(selectedLotusOption.lotusCount);
       console.log('✅ Payment intent created:', paymentData);
 
       // Step 2: Initialize payment sheet
@@ -211,12 +211,12 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
       console.log('✅ Payment completed successfully!');
 
       // Step 4: Update local state immediately using updateUserData
-      console.log(`🎯 Updating local state: adding ${selectedOrbOption.orbCount} orbs`);
+      console.log(`🎯 Updating local state: adding ${selectedLotusOption.lotusCount} lotus flowers`);
       
       // Create purchase record
       const purchase = {
-        orbCount: selectedOrbOption.orbCount,
-        totalPrice: selectedOrbOption.totalPrice,
+        lotusCount: selectedLotusOption.lotusCount,
+        totalPrice: selectedLotusOption.totalPrice,
         purchaseDate: new Date(),
         transactionId: paymentData.paymentIntentId,
         stripePaymentIntentId: paymentData.paymentIntentId,
@@ -225,13 +225,13 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
       
       // Update using your existing updateUserData method
       await updateUserData({
-        numOfOrbs: (userData.numOfOrbs || 0) + selectedOrbOption.orbCount,
-        orbPurchases: [...(userData.orbPurchases || []), purchase]
+        numOfLotus: (userData.numOfLotus || 0) + selectedLotusOption.lotusCount,
+        lotusPurchases: [...(userData.lotusPurchases || []), purchase]
       });
       
       Alert.alert(
         'Success! ✨',
-        `You got ${selectedOrbOption.orbCount} cosmic orb${selectedOrbOption.orbCount !== 1 ? 's' : ''}!`,
+        `You got ${selectedLotusOption.lotusCount} lotus flower${selectedLotusOption.lotusCount !== 1 ? 's' : ''}!`,
         [
           {
             text: 'Nice!',
@@ -277,10 +277,10 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
           >
             {/* Simple Hero */}
             <View style={styles.heroSection}>
-              <View style={[styles.currentOrbsDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.currentLotusFlowersDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Ionicons name="sparkles" size={18} color="#8B4513" />
-                <Text style={[styles.currentOrbsText, fonts.bodyFont, { color: colors.textDark }]}>
-                  {userData.numOfOrbs || 0} orbs
+                <Text style={[styles.currentLotusFlowersText, fonts.bodyFont, { color: colors.textDark }]}>
+                  {userData.numOfLotus || 0} lotus flowers
                 </Text>
               </View>
               
@@ -304,8 +304,8 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
                 snapToInterval={156} // Adjusted for wider cards (140 + 16 gap)
                 snapToAlignment="start"
               >
-                {orbOptions.map((option, index) => (
-                  <OrbOptionCard
+                {LotusOptions.map((option, index) => (
+                  <LotusOptionCard
                     key={index}
                     option={option}
                     isSelected={selectedOption === index}
@@ -365,7 +365,7 @@ const OrbsScreen: React.FC<OrbsScreenProps> = ({ visible, onClose, onPurchaseSuc
               <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
                 {isProcessing 
                   ? 'Processing...' 
-                  : `Get ${orbOptions[selectedOption].orbCount} Orb${orbOptions[selectedOption].orbCount !== 1 ? 's' : ''} • $${orbOptions[selectedOption].totalPrice.toFixed(2)}`
+                  : `Get ${LotusOptions[selectedOption].lotusCount} Lotus Flower${LotusOptions[selectedOption].lotusCount !== 1 ? 's' : ''} • $${LotusOptions[selectedOption].totalPrice.toFixed(2)}`
                 }
               </Text>
             </TouchableOpacity>
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xl,
   },
-  currentOrbsDisplay: {
+  currentLotusFlowersDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: Spacing.lg,
   },
-  currentOrbsText: {
+  currentLotusFlowersText: {
     marginLeft: Spacing.sm,
     fontSize: Typography.sizes.sm,
   },
@@ -503,11 +503,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: Typography.sizes.xs,
   },
-  orbDisplay: {
+  lotusDisplay: {
     alignItems: 'center',
     marginVertical: Spacing.md,
   },
-  orbIcon: {
+  lotusIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -515,10 +515,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.xs,
   },
-  orbCountText: {
+  lotusCountText: {
     fontSize: Typography.sizes.lg,
   },
-  orbLabel: {
+  lotusLabel: {
     fontSize: Typography.sizes.xs,
   },
   priceDisplay: {
@@ -574,4 +574,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrbsScreen;
+export default LotusScreen;

@@ -33,16 +33,16 @@ const RADIANCE_PRICING = {
   10: { price: 7499, description: '10 Sacred Radiance Boosts (Save 30%)' },
 };
 
-const ORB_PRICES = {
-  1: { amount: 499, pricePerOrb: 4.99 },   // $4.99 for 1 orb
-  3: { amount: 1347, pricePerOrb: 4.49 },  // $13.47 for 3 orbs (10% off)
-  5: { amount: 1995, pricePerOrb: 3.99 },  // $19.95 for 5 orbs (20% off)
-  10: { amount: 3999, pricePerOrb: 3.99 },  // $39.99 for 10 orbs (30% off)
+const LOTUS_PRICES = {
+  1: { amount: 499, pricePerLotus: 4.99 },   // $4.99 for 1 lotus
+  3: { amount: 1347, pricePerLotus: 4.49 },  // $13.47 for 3 lotus flowers (10% off)
+  5: { amount: 1995, pricePerLotus: 3.99 },  // $19.95 for 5 lotus flowers (20% off)
+  10: { amount: 3999, pricePerLotus: 3.99 },  // $39.99 for 10 lotus flowers (30% off)
 };
 
 module.exports = {
   stripe,
   SUBSCRIPTION_PRICES,
   RADIANCE_PRICING,
-  ORB_PRICES
+  LOTUS_PRICES
 };
