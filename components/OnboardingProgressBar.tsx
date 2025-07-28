@@ -65,7 +65,7 @@ const spiritualProgressBarIcons: Record<string, IconConfig> = {
     iconType: 'custom'
   },
   "SpiritualPracticesScreen": { 
-    name: "yoga", // Matches your CustomIcon iconMap
+    name: "lotus", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "HealingModalitiesScreen": { 
@@ -105,7 +105,7 @@ const OnboardingProgressBar = ({
   const currentIndex = onboardingScreens.indexOf(currentScreen);
 
   const renderIcon = (iconConfig: IconConfig, isActive: boolean, isCompleted: boolean) => {
-    const iconSize = isActive ? 18 : 14;
+    const iconSize = isActive ? 22 : 18; // Even bigger icons: 20→22, 16→18
     const iconColor = isActive ? colors.primary : colors.text;
 
     if (iconConfig.iconType === 'custom') {
@@ -150,9 +150,8 @@ const OnboardingProgressBar = ({
               </View>
             ) : isCompleted ? (
               <View style={styles.completedIconContainer}>
-                <MaterialCommunityIcons 
-                  name="check" 
-                  size={12} 
+                <MaterialCommunityIcons
+                  size={12} // Back to original size
                   color={colors.background} 
                 />
               </View>
@@ -182,12 +181,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     stepContainer: {
       alignItems: "center",
       justifyContent: "center",
-      minWidth: 14, // Slightly larger for better touch targets
+      minWidth: 16, // Slightly bigger: 14→16
     },
     activeIconContainer: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 50, // Even bigger active container: 36→40
+      height: 50,
+      borderRadius: 30,
       backgroundColor: colors.tertiary,
       borderWidth: 2,
       borderColor: colors.primary,
@@ -206,7 +205,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     completedIconContainer: {
-      width: 18,
+      width: 18, // Back to original size
       height: 18,
       borderRadius: 9,
       backgroundColor: colors.primary,
@@ -214,7 +213,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       justifyContent: "center",
     },
     dot: {
-      width: 8,
+      width: 8, // Back to original size
       height: 8,
       borderRadius: 4,
       backgroundColor: colors.border,
