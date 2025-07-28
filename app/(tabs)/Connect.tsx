@@ -54,8 +54,8 @@ const ConnectScreen: React.FC = () => {
   // Local component state (unchanged)
   const [photosLoaded, setPhotosLoaded] = useState(false);
   const [actionInProgress, setActionInProgress] = useState(false);
-  const [lastAction, setLastAction] = useState<'like' | 'pass' | 'orb' | null>(null);
-  const [showOrbModal, setShowOrbModal] = useState(false);
+  const [lastAction, setLastAction] = useState<'like' | 'pass' | 'lotus' | null>(null);
+  const [showLotusModal, setShowLotusModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
@@ -75,11 +75,11 @@ const ConnectScreen: React.FC = () => {
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const overlayScale = useRef(new Animated.Value(0.8)).current;
   
-  const orbModalOpacity = useRef(new Animated.Value(0)).current;
-  const orbModalScale = useRef(new Animated.Value(0.8)).current;
+  const lotusModalOpacity = useRef(new Animated.Value(0)).current;
+  const lotusModalScale = useRef(new Animated.Value(0.8)).current;
   const divineGlow = useRef(new Animated.Value(0)).current;
   
-  const orbButtonGlow = useRef(new Animated.Value(0)).current;
+  const lotusButtonGlow = useRef(new Animated.Value(0)).current;
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -184,7 +184,7 @@ const ConnectScreen: React.FC = () => {
       buttonsOpacity.setValue(0);
       overlayOpacity.setValue(0);
       overlayScale.setValue(0.8);
-      orbButtonGlow.setValue(0);
+      lotusButtonGlow.setValue(0);
       setPhotosLoaded(false);
     }
   }, [currentPotentialMatch?.userId, showContent, actionInProgress]);
@@ -212,15 +212,14 @@ const ConnectScreen: React.FC = () => {
     });
   }, [currentPotentialMatch, matchingState, isLoading, hasMinimumLoadingTime, showContent]);
 
-  // 🔄 UPDATED: Use new optimized action handlers with loading feedback
-  const handleAction = async (action: 'like' | 'pass' | 'orb') => {
+  const handleAction = async (action: 'like' | 'pass' | 'lotus') => {
     if (actionInProgress || !currentPotentialMatchRef.current) {
       console.log('🚫 Action blocked: already in progress or no current match');
       return;
     }
     
-    if (action === 'orb' && (!userDataRef.current?.numOfOrbs || userDataRef.current.numOfOrbs <= 0)) {
-      showDivineOrbModal();
+    if (action === 'lotus' && (!userDataRef.current?.numOfOrbs || userDataRef.current.numOfOrbs <= 0)) {
+      showDivineLotusModal();
       return;
     }
     
@@ -256,8 +255,8 @@ const ConnectScreen: React.FC = () => {
         case 'pass':
           await dislikeMatch(userId);
           break;
-        case 'orb':
-          await orbLike(userId);
+        case 'lotus':
+          await orbLike(userId); // Backend function name stays the same
           break;
         case 'like':
           await likeMatch(userId);
@@ -322,17 +321,17 @@ const ConnectScreen: React.FC = () => {
     }, 800);
   };
 
-  // Divine orb modal functions (unchanged)
-  const showDivineOrbModal = () => {
-    setShowOrbModal(true);
+  // Divine lotus modal functions
+  const showDivineLotusModal = () => {
+    setShowLotusModal(true);
     
     Animated.parallel([
-      Animated.timing(orbModalOpacity, {
+      Animated.timing(lotusModalOpacity, {
         toValue: 1,
         duration: 500,
         useNativeDriver: true,
       }),
-      Animated.spring(orbModalScale, {
+      Animated.spring(lotusModalScale, {
         toValue: 1,
         tension: 80,
         friction: 8,
@@ -355,32 +354,39 @@ const ConnectScreen: React.FC = () => {
     ]).start();
   };
 
-  const closeDivineOrbModal = () => {
+  const closeDivineLotusModal = () => {
     Animated.parallel([
-      Animated.timing(orbModalOpacity, {
+      Animated.timing(lotusModalOpacity, {
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
       }),
-      Animated.timing(orbModalScale, {
+      Animated.timing(lotusModalScale, {
         toValue: 0.8,
         duration: 400,
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setShowOrbModal(false);
+      setShowLotusModal(false);
       divineGlow.setValue(0);
     });
   };
 
+  const navigateToLotusShop = () => {
+    closeDivineLotusModal();
+    setTimeout(() => {
+      router.push('/user/OrbsScreen'); // Component name stays same for now
+    }, 500);
+  };
+
   const navigateToSubscription = () => {
-    closeDivineOrbModal();
+    closeDivineLotusModal();
     setTimeout(() => {
       router.push('/user/FullCircleSubscription');
     }, 500);
   };
 
-  // Photos loaded handler (unchanged)
+  // Photos loaded handler
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
     Animated.timing(buttonsOpacity, {
@@ -392,7 +398,7 @@ const ConnectScreen: React.FC = () => {
     
     if (userData?.numOfOrbs && userData.numOfOrbs > 0) {
       Animated.loop(
-        Animated.timing(orbButtonGlow, {
+        Animated.timing(lotusButtonGlow, {
           toValue: 1,
           duration: 2000,
           useNativeDriver: false,
@@ -402,14 +408,14 @@ const ConnectScreen: React.FC = () => {
     }
   };
 
-  // Reset animations when match changes (unchanged)
+  // Reset animations when match changes
   useEffect(() => {
     if (currentPotentialMatch && !actionInProgress && showContent) {
       contentOpacity.setValue(1);
       buttonsOpacity.setValue(0);
       overlayOpacity.setValue(0);
       overlayScale.setValue(0.8);
-      orbButtonGlow.setValue(0);
+      lotusButtonGlow.setValue(0);
       setPhotosLoaded(false);
     }
   }, [currentPotentialMatch?.userId, showContent]);
@@ -763,7 +769,7 @@ const ConnectScreen: React.FC = () => {
                 style={[
                   styles.orbGlow,
                   {
-                    shadowOpacity: orbButtonGlow.interpolate({
+                    shadowOpacity: lotusButtonGlow.interpolate({
                       inputRange: [0, 0.5, 1],
                       outputRange: [0.3, 0.8, 0.3]
                     }),
@@ -784,7 +790,7 @@ const ConnectScreen: React.FC = () => {
                   elevation: 8,
                 }
               ]}
-              onPress={() => handleAction('orb')}
+              onPress={() => handleAction('lotus')}
               activeOpacity={0.8}
             >
               <CustomIcon name="lotus2" size={36}/>
@@ -794,35 +800,38 @@ const ConnectScreen: React.FC = () => {
       ) : null}
 
       {/* Divine Orb Modal - updated with CustomIcon */}
-      {showOrbModal && (
+      {showLotusModal && (
         <Animated.View 
           style={[
             styles.divineModalOverlay,
-            { opacity: orbModalOpacity }
+            { opacity: lotusModalOpacity }
           ]}
         >
           <Animated.View 
             style={[
               styles.divineModal,
               {
-                transform: [{ scale: orbModalScale }],
+                transform: [{ scale: lotusModalScale }],
                 backgroundColor: colors.card,
                 borderColor: '#CD853F',
                 shadowColor: '#CD853F',
               }
             ]}
           >
-            <Animated.View 
+            {/* Close button in top left */}
+            <TouchableOpacity 
               style={[
-                styles.divineGlow,
-                {
-                  opacity: divineGlow,
-                }
+                styles.modalCloseButton,
+                { backgroundColor: colors.background, borderColor: colors.border }
               ]}
-            />
-            
+              onPress={closeDivineLotusModal}
+              activeOpacity={0.7}
+            >
+              <CustomIcon name="close" size={20} color={colors.textLight} />
+            </TouchableOpacity>
+
             <View style={styles.divineContent}>
-              <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
+              <View style={styles.divineIcon}>
                 <CustomIcon name="lotus2" size={36}/>
               </View>
               
@@ -831,7 +840,7 @@ const ConnectScreen: React.FC = () => {
                 fonts.spiritualTitleFont, 
                 { color: colors.textDark }
               ]}>
-                More Orbs Needed
+                Lotus Needed
               </Text>
               
               <Text style={[
@@ -839,10 +848,27 @@ const ConnectScreen: React.FC = () => {
                 fonts.spiritualBodyFont, 
                 { color: colors.textLight }
               ]}>
-                You've shared all your orbs with fellow connections. To continue spreading this energy, join the Full Circle experience.
+                You've shared all your lotus flowers with fellow connections. Purchase more or join FullCircle for unlimited connections.
               </Text>
               
               <View style={styles.divineActions}>
+                <TouchableOpacity 
+                  style={[
+                    styles.divineButton, 
+                    { 
+                      backgroundColor: '#680439ff',
+                      shadowColor: '#680439ff'
+                    }
+                  ]}
+                  onPress={navigateToLotusShop}
+                  activeOpacity={0.9}
+                >
+                  <CustomIcon name="lotus2" size={20} style={styles.buttonIcon} />
+                  <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
+                    Get More Lotus
+                  </Text>
+                </TouchableOpacity>
+                
                 <TouchableOpacity 
                   style={[
                     styles.divineButton, 
@@ -857,23 +883,6 @@ const ConnectScreen: React.FC = () => {
                   <CustomIcon name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
                     Join Full Circle
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.divineSecondaryButton,
-                    { borderColor: colors.border }
-                  ]}
-                  onPress={closeDivineOrbModal}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[
-                    styles.divineSecondaryText, 
-                    fonts.spiritualBodyFont,
-                    { color: colors.textLight }
-                  ]}>
-                    Continue with Hearts
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -898,16 +907,16 @@ const ConnectScreen: React.FC = () => {
               styles.actionIconContainer,
               {
                 backgroundColor: lastAction === 'like' ? '#B8860B' : 
-                                 lastAction === 'pass' ? '#8B7355' : '#680439ff', // Deep pink for lotus
+                                 lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
                 shadowColor: lastAction === 'like' ? '#B8860B' : 
-                            lastAction === 'pass' ? '#8B7355' : '#680439ff', // Deep pink for lotus
+                            lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
               }
             ]}
           >
             <CustomIcon 
               name={lastAction === 'like' ? 'heart' : 
                    lastAction === 'pass' ? 'close' : 'lotus2'} 
-              size={45}
+              size={36} 
               color="#FFFFFF" 
             />
           </View>
@@ -948,7 +957,7 @@ const ConnectScreen: React.FC = () => {
             
             <View style={styles.divineContent}>
               <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
-                <CustomIcon name="heart" size={36} color="#b80ba1ff" />
+                <CustomIcon name="heart" size={36} color="#B8860B" />
               </View>
               
               <Text style={[
@@ -1230,8 +1239,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xl,
-    borderWidth: 2,
-    borderColor: '#B8860B' + '40',
   },
   
   divineTitle: {
@@ -1418,6 +1425,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
     fontWeight: Typography.weights.medium,
+  },
+    modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 
