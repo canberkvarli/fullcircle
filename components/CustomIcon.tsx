@@ -26,6 +26,8 @@ type CustomIconNames =
   | 'martial-arts'
   | 'fasting'
   | 'lotus'
+  | 'healing-journey'
+  | 'yinyang'
 
 type UsedIoniconNames = 
   | 'heart' 
@@ -69,6 +71,8 @@ const iconMap: Record<string, any> = {
   'gong': require('../assets/icons/gong.png'),
   'leaf': require('../assets/icons/leaf.png'),
   'lotus': require('../assets/icons/lotus.png'),
+  'healing-journey': require('../assets/icons/healing-journey.png'),
+  'yinyang': require('../assets/icons/yinyang.png'),
 };
 
 // SVG-based icons (if you choose to use SVGs instead)
@@ -103,6 +107,8 @@ const customIconNames: CustomIconNames[] = [
   'martial-arts',
   'fasting',
   'lotus',
+  'healing-journey',
+  'yinyang'
 ];
 
 export const CustomIcon: React.FC<IconProps> = ({ 

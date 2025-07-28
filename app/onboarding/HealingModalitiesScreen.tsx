@@ -13,6 +13,7 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon"; // Import your CustomIcon component
 import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
@@ -23,17 +24,17 @@ import RoundedCheckbox from "@/components/RoundedCheckbox";
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const healingModalities = [
-  { name: "Reiki", icon: "hand-left-outline", color: "#E74C3C" },
-  { name: "Acupuncture", icon: "location-outline", color: "#F39C12" },
-  { name: "Sound Therapy", icon: "musical-notes-outline", color: "#F1C40F" },
-  { name: "Crystal Healing", icon: "diamond-outline", color: "#2ECC71" },
-  { name: "Aromatherapy", icon: "flower-outline", color: "#3498DB" },
-  { name: "Light Therapy", icon: "sunny-outline", color: "#E91E63" },
-  { name: "Massage Therapy", icon: "body-outline", color: "#FF5722" },
-  { name: "Hypnotherapy", icon: "eye-outline", color: "#607D8B" },
-  { name: "Homeopathy", icon: "water-outline", color: "#009688" },
-  { name: "Herbalism", icon: "leaf-outline", color: "#4CAF50" },
-  { name: "Plant Medicine", icon: "flask-outline", color: "#8E24AA" },
+  { name: "Reiki", icon: "reiki", iconType: "custom", color: "#E74C3C" },
+  { name: "Acupuncture", icon: "acupuncture", iconType: "custom", color: "#F39C12" },
+  { name: "Sound Therapy", icon: "sound-healing", iconType: "custom", color: "#F1C40F" },
+  { name: "Crystal Healing", icon: "crystal", iconType: "custom", color: "#2ECC71" },
+  { name: "Aromatherapy", icon: "aromatherapy", iconType: "custom", color: "#3498DB" },
+  { name: "Light Therapy", icon: "light-therapy", iconType: "custom", color: "#E91E63" },
+  { name: "Massage Therapy", icon: "massage", iconType: "custom", color: "#FF5722" },
+  { name: "Hypnotherapy", icon: "hypnotherapy", iconType: "custom", color: "#607D8B" },
+  { name: "Homeopathy", icon: "homeopathy", iconType: "custom", color: "#009688" },
+  { name: "Herbalism", icon: "herbalism", iconType: "custom", color: "#4CAF50" },
+  { name: "Plant Medicine", icon: "leaf", iconType: "custom", color: "#8E24AA" },
 ];
 
 function HealingModalitiesScreen() {
@@ -56,7 +57,7 @@ function HealingModalitiesScreen() {
     userData?.hiddenFields || {}
   );
 
-  // Responsive dimensions - much more adaptive approach
+  // Enhanced responsive dimensions - slightly bigger for better icon visibility
   const getResponsiveDimensions = () => {
     const isTablet = screenWidth > 768;
     const isSmallDevice = screenWidth < 375;
@@ -65,29 +66,29 @@ function HealingModalitiesScreen() {
     // More conservative sizing that works on all devices
     let containerSize;
     if (isVerySmall) {
-      containerSize = screenWidth * 0.88; // Increased from 85% to 88%
+      containerSize = screenWidth * 0.90; // Increased for better visibility
     } else if (isSmallDevice) {
-      containerSize = screenWidth * 0.91; // Increased from 88% to 91%
+      containerSize = screenWidth * 0.93; 
     } else if (isTablet) {
-      containerSize = Math.min(screenWidth * 0.75, 520); // Increased from 500px to 520px
+      containerSize = Math.min(screenWidth * 0.75, 540); 
     } else {
-      containerSize = screenWidth * 0.93; // Increased from 90% to 93%
+      containerSize = screenWidth * 0.95; 
     }
     
     // Ensure minimum viable size
-    containerSize = Math.max(containerSize, 320);
+    containerSize = Math.max(containerSize, 340);
     
     // Radius proportional to container but with safety margins
-    const radius = containerSize * 0.36; // Increased from 0.35 to 0.36
+    const radius = containerSize * 0.37; 
     
-    // Orb and center sizes based on available space - slightly bigger
-    const orbSize = Math.max(Math.min(containerSize * 0.085, 52), 37); // Increased from 0.08 to 0.085, max 52
-    const centerSize = Math.max(Math.min(containerSize * 0.16, 95), 65); // Increased from 0.15 to 0.16, max 95
+    // Orb and center sizes based on available space - bigger for custom icons
+    const orbSize = Math.max(Math.min(containerSize * 0.095, 58), 42); // Increased for better icon visibility
+    const centerSize = Math.max(Math.min(containerSize * 0.17, 100), 70); 
     
-    // Label container size based on spacing between orbs - slightly bigger
+    // Label container size based on spacing between orbs
     const circumference = 2 * Math.PI * radius;
     const spaceBetweenOrbs = circumference / healingModalities.length;
-    const labelContainerSize = Math.max(Math.min(spaceBetweenOrbs * 1.40, 85), 65); // Increased from 0.8 to 0.85, max 85
+    const labelContainerSize = Math.max(Math.min(spaceBetweenOrbs * 0.90, 90), 70); 
     
     return {
       containerSize,
@@ -194,6 +195,15 @@ function HealingModalitiesScreen() {
         ? prev.filter((item) => item !== modalityName)
         : [...prev, modalityName]
     );
+  };
+
+  // Icon renderer function
+  const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
+    if (iconType === "custom") {
+      return <CustomIcon name={iconName} size={size} color={color} />;
+    } else {
+      return <Ionicons name={iconName as any} size={size} color={color} />;
+    }
   };
 
   // Helper function to get orb color - divine gold when all selected
@@ -313,7 +323,6 @@ function HealingModalitiesScreen() {
     );
   };
 
-
   const renderModalityOrb = (modality: typeof healingModalities[0], index: number) => {
     const isSelected = selectedModalities.includes(modality.name);
     const allSelected = selectedModalities.length === healingModalities.length;
@@ -329,6 +338,9 @@ function HealingModalitiesScreen() {
 
     // Calculate font size based on container size
     const fontSize = Math.max(Math.min(labelContainerSize * 0.16, Typography.sizes.xs), 10);
+    
+    // Calculate icon size - bigger for better visibility
+    const iconSize = Math.max(Math.min(orbSize * 0.50, 28), 18); // Increased from 0.45 to 0.50
 
     // Better color logic for readability
     let orbColor, textColor, iconColor, backgroundColor;
@@ -389,11 +401,12 @@ function HealingModalitiesScreen() {
           onPress={() => handleModalitySelect(modality.name)}
           activeOpacity={0.8}
         >
-          <Ionicons 
-            name={modality.icon as any} 
-            size={Math.max(Math.min(orbSize * 0.45, 22), 15)}
-            color={iconColor}
-          />
+          {renderIcon(
+            modality.icon,
+            modality.iconType,
+            iconSize,
+            iconColor
+          )}
         </TouchableOpacity>
         <Text 
           style={[
@@ -465,7 +478,7 @@ function HealingModalitiesScreen() {
         {/* Header */}
         <Text style={styles.title}>Your Healing Journey</Text>
         <Text style={styles.subtitle}>
-          Select the modalities that resonate with your healing essence.
+          Select the modalities that resonate with your healing essence ✨
         </Text>
 
         {/* Selected Count - Reserved Space */}
@@ -574,12 +587,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "italic",
     },
     highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
     selectedCountSpace: {
       height: 45,
@@ -666,7 +679,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       position: 'absolute',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 10, // Ensure it's on top
+      zIndex: 10,
     },
     innerCore: {
       backgroundColor: '#FFD700',
@@ -695,7 +708,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     energyWaves: {
       position: 'absolute',
-      zIndex: 1, // Behind the touchable area
+      zIndex: 1,
     },
     wave: {
       position: 'absolute',

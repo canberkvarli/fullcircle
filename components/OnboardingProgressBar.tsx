@@ -65,11 +65,11 @@ const spiritualProgressBarIcons: Record<string, IconConfig> = {
     iconType: 'custom'
   },
   "SpiritualPracticesScreen": { 
-    name: "lotus", // Matches your CustomIcon iconMap
+    name: "meditation", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "HealingModalitiesScreen": { 
-    name: "pigeon", // Matches your CustomIcon iconMap
+    name: "yinyang", // Matches your CustomIcon iconMap
     iconType: 'custom'
   },
   "PhotosScreen": { 
@@ -105,7 +105,7 @@ const OnboardingProgressBar = ({
   const currentIndex = onboardingScreens.indexOf(currentScreen);
 
   const renderIcon = (iconConfig: IconConfig, isActive: boolean, isCompleted: boolean) => {
-    const iconSize = isActive ? 22 : 18; // Even bigger icons: 20→22, 16→18
+    const iconSize = isActive ? 26 : 20; // Bigger icons to match larger containers: 22→26, 18→20
     const iconColor = isActive ? colors.primary : colors.text;
 
     if (iconConfig.iconType === 'custom') {
@@ -150,7 +150,8 @@ const OnboardingProgressBar = ({
               </View>
             ) : isCompleted ? (
               <View style={styles.completedIconContainer}>
-                <MaterialCommunityIcons
+                <MaterialCommunityIcons 
+                  name="check" 
                   size={12} // Back to original size
                   color={colors.background} 
                 />
@@ -184,9 +185,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       minWidth: 16, // Slightly bigger: 14→16
     },
     activeIconContainer: {
-      width: 50, // Even bigger active container: 36→40
+      width: 50, // Your bigger container size
       height: 50,
-      borderRadius: 30,
+      borderRadius: 25,
       backgroundColor: colors.tertiary,
       borderWidth: 2,
       borderColor: colors.primary,
