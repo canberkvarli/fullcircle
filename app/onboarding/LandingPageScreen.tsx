@@ -1,8 +1,8 @@
 import React from "react";
-import LottieView from "lottie-react-native";
 import { View, useColorScheme } from "react-native";
 import createStyles from "@/styles/LandingPageStyles";
 import { useRouter } from "expo-router";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 function LandingPageScreen(): JSX.Element {
   const router = useRouter();
@@ -15,12 +15,13 @@ function LandingPageScreen(): JSX.Element {
 
   return (
     <View style={styles.container}>
-      <LottieView
-        source={require("../../assets/animations/loading_mandala.json")}
-        style={styles.animation}
-        autoPlay
-        loop={false}
-        onAnimationFinish={handleAnimationFinish}
+      <OuroborosLoader
+        size={200}
+        duration={3000}
+        onComplete={handleAnimationFinish}
+        fillColor="#F5E6D3"
+        strokeColor="#7B6B5C"
+        strokeWidth={1.5}
       />
     </View>
   );

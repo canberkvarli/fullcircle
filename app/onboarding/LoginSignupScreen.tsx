@@ -134,15 +134,9 @@ function LoginSignupScreen(): JSX.Element {
             </Animated.View>
           )}
           
-          {/* Logo */}
-          <Image
-            source={require("../../assets/circle.svg")}
-            style={styles.logo}
-          />
-          
           {/* Title Section */}
           <View style={styles.titleSection}>
-            <Text style={styles.title}>CIRCLE</Text>
+            <Text style={styles.title}>FullCircle</Text>
             <Text style={styles.subTitle}>Where intention meets connection</Text>
           </View>
           
@@ -262,15 +256,11 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       left: "50%",
       transform: [{ translateX: -25 }, { translateY: -25 }],
     },
-    logo: {
-      width: 100,
-      height: 100,
-      tintColor: colors.background,
-    },
     titleSection: {
       alignItems: 'center',
-      marginTop: -50,
+      marginTop: Spacing["4xl"],
     },
+
     title: {
       ...logoFont,
       color: colors.background,
