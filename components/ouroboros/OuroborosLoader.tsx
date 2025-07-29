@@ -1,7 +1,8 @@
-// components/OuroborosLoader.tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
 import OuroborosSVG from './OuroborosSVG';
+
+export type LoaderVariant = 'landing' | 'spinner' | 'pulse' | 'breathe';
 
 interface OuroborosLoaderProps {
   size?: number;
@@ -9,7 +10,9 @@ interface OuroborosLoaderProps {
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
-  duration?: number; // Total duration before calling onComplete
+  duration?: number;
+  loop?: boolean; // Enable continuous looping
+  variant?: LoaderVariant; // Different animation styles
 }
 
 const OuroborosLoader: React.FC<OuroborosLoaderProps> = ({
@@ -18,76 +21,179 @@ const OuroborosLoader: React.FC<OuroborosLoaderProps> = ({
   fillColor = '#F5E6D3',
   strokeColor = '#7B6B5C',
   strokeWidth = 1.5,
-  duration = 3000, // Default 3 seconds like your Lottie
+  duration = 3000,
+  loop = false, // Default: one-time animation
+  variant = 'landing',
 }) => {
   // Animation values
   const rotateAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current; // Start at normal size
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    // Create ultra-smooth animation with custom easing
     const createAnimation = () => {
       // Reset values
       rotateAnim.setValue(0);
       scaleAnim.setValue(1);
 
-      // Custom easing function for Hinge-style speed burst
-      const hingeEasing = (t: number) => {
-        // Create speed burst in the middle with immediate start
-        if (t < 0.25) {
-          // Immediate responsive start - not too slow
-          return 0.3 * t;
-        } else if (t < 0.65) {
-          // FAST middle section (speed burst)
-          const localT = (t - 0.25) / 0.4;
-          return 0.075 + 0.65 * localT * localT * localT; // Cubic for extra speed
-        } else {
-          // Smooth finish
-          const localT = (t - 0.65) / 0.35;
-          return 0.725 + 0.275 * (2 * localT - localT * localT);
-        }
-      };
+      switch (variant) {
+        case 'landing':
+          // Hinge-style speed burst for landing pages
+          const hingeEasing = (t: number) => {
+            if (t < 0.25) {
+              return 0.3 * t;
+            } else if (t < 0.65) {
+              const localT = (t - 0.25) / 0.4;
+              return 0.075 + 0.65 * localT * localT * localT;
+            } else {
+              const localT = (t - 0.65) / 0.35;
+              return 0.725 + 0.275 * (2 * localT - localT * localT);
+            }
+          };
 
-      return Animated.parallel([
-        // Single ultra-smooth rotation - no phases, no stops
-        Animated.timing(rotateAnim, {
-          toValue: 4, // 4 full rotations total
-          duration: duration,
-          easing: hingeEasing, // Custom smooth curve with speed burst
-          useNativeDriver: true,
-        }),
-        
-        // Gentle continuous breathing
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(scaleAnim, {
-              toValue: 1.03,
-              duration: duration * 0.33,
-              easing: Easing.inOut(Easing.sin),
+          return Animated.parallel([
+            Animated.timing(rotateAnim, {
+              toValue: 4,
+              duration: duration,
+              easing: hingeEasing,
               useNativeDriver: true,
             }),
-            Animated.timing(scaleAnim, {
-              toValue: 1,
-              duration: duration * 0.33,
-              easing: Easing.inOut(Easing.sin),
+            Animated.loop(
+              Animated.sequence([
+                Animated.timing(scaleAnim, {
+                  toValue: 1.03,
+                  duration: duration * 0.33,
+                  easing: Easing.inOut(Easing.sin),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                  toValue: 1,
+                  duration: duration * 0.33,
+                  easing: Easing.inOut(Easing.sin),
+                  useNativeDriver: true,
+                }),
+              ]),
+              { iterations: loop ? -1 : Math.ceil(duration / (duration * 0.66)) }
+            ),
+          ]);
+
+        case 'spinner':
+          // Simple continuous rotation for activity indicators
+          return Animated.parallel([
+            Animated.timing(rotateAnim, {
+              toValue: duration / 1000, // 1 rotation per second
+              duration: duration,
+              easing: Easing.linear,
               useNativeDriver: true,
             }),
-          ]),
-          { iterations: Math.ceil(duration / (duration * 0.66)) }
-        ),
-      ]);
+            Animated.loop(
+              Animated.sequence([
+                Animated.timing(scaleAnim, {
+                  toValue: 1.02,
+                  duration: 800,
+                  easing: Easing.inOut(Easing.sin),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                  toValue: 1,
+                  duration: 800,
+                  easing: Easing.inOut(Easing.sin),
+                  useNativeDriver: true,
+                }),
+              ]),
+              { iterations: loop ? -1 : 1 }
+            ),
+          ]);
+
+        case 'pulse':
+          // Pulsing effect for data loading
+          return Animated.parallel([
+            Animated.timing(rotateAnim, {
+              toValue: duration / 2000, // Slower rotation
+              duration: duration,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.loop(
+              Animated.sequence([
+                Animated.timing(scaleAnim, {
+                  toValue: 1.1,
+                  duration: 600,
+                  easing: Easing.inOut(Easing.quad),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                  toValue: 1,
+                  duration: 600,
+                  easing: Easing.inOut(Easing.quad),
+                  useNativeDriver: true,
+                }),
+              ]),
+              { iterations: loop ? -1 : Math.ceil(duration / 1200) }
+            ),
+          ]);
+
+        case 'breathe':
+          // Slow, meditative breathing for spiritual contexts
+          return Animated.parallel([
+            Animated.timing(rotateAnim, {
+              toValue: duration / 4000, // Very slow rotation
+              duration: duration,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.loop(
+              Animated.sequence([
+                Animated.timing(scaleAnim, {
+                  toValue: 1.06,
+                  duration: 1500,
+                  easing: Easing.inOut(Easing.sin),
+                  useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                  toValue: 1,
+                  duration: 1500,
+                  easing: Easing.inOut(Easing.sin),
+                  useNativeDriver: true,
+                }),
+              ]),
+              { iterations: loop ? -1 : Math.ceil(duration / 3000) }
+            ),
+          ]);
+
+        default:
+          return Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: duration,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          });
+      }
     };
 
-    const animation = createAnimation();
-    animation.start(() => {
-      // Animation completed naturally, navigate
-      onComplete?.();
-    });
+    const startAnimation = () => {
+      const animation = createAnimation();
+      
+      if (loop) {
+        // For looping animations
+        animationRef.current = Animated.loop(animation);
+        animationRef.current.start();
+      } else {
+        // For one-time animations
+        animation.start(() => {
+          onComplete?.();
+        });
+      }
+    };
+
+    startAnimation();
 
     return () => {
-      animation.stop();
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
     };
-  }, [duration, onComplete]);
+  }, [duration, onComplete, loop, variant]);
 
   // Interpolations
   const rotateInterpolate = rotateAnim.interpolate({

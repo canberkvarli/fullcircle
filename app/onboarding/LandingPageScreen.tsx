@@ -1,3 +1,4 @@
+// app/onboarding/LandingPageScreen.tsx
 import React from "react";
 import { View, useColorScheme } from "react-native";
 import createStyles from "@/styles/LandingPageStyles";
@@ -17,7 +18,7 @@ function LandingPageScreen(): JSX.Element {
     <View style={styles.container}>
       <OuroborosLoader
         size={200}
-        duration={3000}
+        duration={3000} // 3 seconds total, just like your Lottie
         onComplete={handleAnimationFinish}
         fillColor="#F5E6D3"
         strokeColor="#7B6B5C"

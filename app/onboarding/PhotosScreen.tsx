@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  ActivityIndicator,
   useColorScheme,
   Platform,
   StyleSheet,
@@ -23,6 +22,7 @@ import OnboardingProgressBar from "@/components/OnboardingProgressBar";
 import { STORAGE } from "@/services/FirebaseConfig";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -354,7 +354,13 @@ const handleSubmit = async () => {
           {/* Submit Button */}
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <OuroborosLoader 
+                size={100}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1.5}
+                loop={true}
+              />
               <Text style={styles.loadingText}>Uploading your gallery...</Text>
             </View>
           ) : (

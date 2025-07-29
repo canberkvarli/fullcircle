@@ -20,6 +20,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -208,10 +209,13 @@ const LocationScreen = () => {
         <View style={styles.mapContainer}>
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator
-                size="large"
-                color={colors.primary}
-                style={styles.loadingIndicator}
+              <OuroborosLoader
+                size={100}
+                duration={3000}
+                loop={true}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1.5}
               />
               <Text style={styles.loadingText}>Finding your location...</Text>
             </View>

@@ -4,11 +4,9 @@ import {
   SafeAreaView,
   Text,
   View,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   useColorScheme,
   StyleSheet,
 } from "react-native";
@@ -19,6 +17,7 @@ import PhoneInput from "react-native-phone-number-input";
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -116,7 +115,14 @@ function PhoneNumberScreen(): JSX.Element {
         <View style={styles.bottomBar}>
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
+              <OuroborosLoader 
+                size={50}
+                duration={3000}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1.5}
+                loop={true}
+              />
               <Text style={styles.loadingText}>Making the connection...</Text>
             </View>
           ) : (

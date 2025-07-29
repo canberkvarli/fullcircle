@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   useColorScheme,
   Animated,
 } from "react-native";
@@ -15,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Platform } from "react-native";
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const videoSource = require("../../assets/videos/danielle.mp4");
 
@@ -104,13 +104,15 @@ function LoginSignupScreen(): JSX.Element {
         onPlaybackStatusUpdate={(status) => setStatus(() => status)}
         onLoad={handleVideoLoad}
       />
-      {!videoLoaded && (
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-          style={styles.loadingIndicator}
+      {/* {!videoLoaded && (
+        <OuroborosLoader
+          size={100}
+          duration={3000}
+          fillColor="#F5E6D3"
+          strokeColor="#7B6B5C"
+          strokeWidth={1.5}
         />
-      )}
+      )} */}
       {videoLoaded && (
         <View style={styles.overlay}>
           {showSSOButtons && (
