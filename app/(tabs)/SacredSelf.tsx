@@ -307,9 +307,9 @@ export default function SacredSelf() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.featureIconContainer}>
-                    <View style={[styles.featureIcon, { backgroundColor: '#FFD700' + '20' }]}>
-                      <Ionicons name="flash" size={24} color="#FFD700" />
-                      <View style={[styles.countBadge, { backgroundColor: '#FFD700' }]}>
+                    <View style={styles.featureIcon}>
+                        <CustomIcon name="halo" size={32} color="#e0be00ff" />
+                        <View style={[styles.countBadge, { backgroundColor: 'rgba(208, 177, 0, 1)' }]}>
                         <Text style={styles.countText}>{userData.activeBoosts || 0}</Text>
                       </View>
                     </View>
@@ -421,9 +421,9 @@ export default function SacredSelf() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.resourceIconContainer}>
-                      <View style={[styles.resourceIcon, { backgroundColor: '#FFD700' + '20' }]}>
-                        <Ionicons name="flash" size={20} color="#FFD700" />
-                        <View style={[styles.countBadge, { backgroundColor: '#FFD700' }]}>
+                      <View style={[styles.resourceIcon]}>
+                        <CustomIcon name="halo" size={32} color="#e0be00ff" />
+                        <View style={[styles.countBadge, { backgroundColor: 'rgba(208, 177, 0, 1)' }]}>
                           <Text style={styles.countText}>{userData.activeBoosts || 0}</Text>
                         </View>
                       </View>
@@ -446,8 +446,8 @@ export default function SacredSelf() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.resourceIconContainer}>
-                      <View style={[styles.resourceIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                        <CustomIcon name="lotus" size={26}  />
+                      <View style={[styles.resourceIcon]}>
+                        <CustomIcon name="lotus" size={32}  />
                         <View style={[styles.countBadge, { backgroundColor: '#680439ff' }]}>
                           <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                         </View>
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   countBadge: {
     position: 'absolute',
-    top: -4,
+    top: -6,
     right: -4,
     width: 20,
     height: 20,

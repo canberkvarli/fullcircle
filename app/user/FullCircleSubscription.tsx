@@ -8,6 +8,7 @@ import {
   Platform,
   Animated,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,10 +17,22 @@ import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
 import { FUNCTIONS, FIRESTORE } from "@/services/FirebaseConfig"
+import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
+import { CustomIcon } from "@/components/CustomIcon";
+
+interface PricingPlan {
+  title: string;
+  price: number;
+  weeklyPrice: number;
+  totalPrice: number;
+  originalTotal?: number; // Made optional since not all plans have it
+  savings: string | null;
+  popular: boolean;
+}
 
 export default function FullCircleSubscription() {
   const router = useRouter();
-  const { userData, setUserData, currentUser } = useUserContext(); // ✅ Added setUserData
+  const { userData, setUserData, currentUser } = useUserContext();
   
   const { presentPaymentSheet, initPaymentSheet } = useStripe();
   
@@ -28,36 +41,87 @@ export default function FullCircleSubscription() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
   
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [selectedPlan, setSelectedPlan] = useState<'1month' | '3months' | '6months'>('3months');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  // ✅ ENHANCED: Handle incomplete subscription states properly
   const subscription = userData.subscription;
   const hasSubscription = !!subscription?.subscriptionId;
   
-  // For incomplete subscriptions
   const isIncompleteAndCanceled = subscription?.status === 'incomplete' && subscription?.cancelAtPeriodEnd;
   const isIncompleteAndPending = subscription?.status === 'incomplete' && !subscription?.cancelAtPeriodEnd;
   
-  // For active subscriptions  
   const isActiveAndContinuing = subscription?.status === 'active' && !subscription?.cancelAtPeriodEnd;
   const isActiveButCanceling = subscription?.status === 'active' && subscription?.cancelAtPeriodEnd;
   
-  // Show as "active" for UI purposes if status is active OR incomplete but not canceled
   const showAsActive = isActiveAndContinuing || isIncompleteAndPending;
-  
-  // Can cancel if active and continuing, OR incomplete and not yet canceled
   const canCancel = isActiveAndContinuing || isIncompleteAndPending;
-  
-  // Can reactivate if canceled (either incomplete+canceled or active+canceled)
   const canReactivate = isIncompleteAndCanceled || isActiveButCanceling;
-  
-  // Show upgrade options if no subscription, or if subscription is fully canceled
   const showUpgradeOptions = !hasSubscription || subscription?.status === 'canceled';
 
-  // ✅ Manual refresh function
+  const pricingPlans: Record<'1month' | '3months' | '6months', PricingPlan> = {
+    '1month': {
+      title: '1 Month',
+      price: 29.99,
+      weeklyPrice: 7.50,
+      totalPrice: 29.99,
+      savings: null,
+      popular: false
+    },
+    '3months': {
+      title: '3 Months',
+      price: 24.99,
+      weeklyPrice: 6.25,
+      totalPrice: 74.97,
+      originalTotal: 89.97,
+      savings: '17%',
+      popular: true
+    },
+    '6months': {
+      title: '6 Months',
+      price: 19.99,
+      weeklyPrice: 5.00,
+      totalPrice: 119.94,
+      originalTotal: 179.94,
+      savings: '33%',
+      popular: false
+    }
+  };
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.3,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
   const refreshUserData = async () => {
     if (!currentUser?.uid) return;
     
@@ -86,22 +150,12 @@ export default function FullCircleSubscription() {
 
   const remainingDays = getRemainingDays();
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  // ✅ ENHANCED handleUpgrade with manual refresh
   const handleUpgrade = async () => {
     setIsProcessing(true);
     
     try {
       console.log(`🚀 Creating ${selectedPlan} subscription...`);
       
-      // ✅ Call Cloud Function directly (React Native Firebase syntax)
       const createSubscriptionFunction = FUNCTIONS.httpsCallable('createSubscription');
       const result = await createSubscriptionFunction({ planType: selectedPlan });
       
@@ -126,7 +180,7 @@ export default function FullCircleSubscription() {
         },
         appearance: {
           colors: {
-            primary: '#8B4513',
+            primary: '#B8860B',
           },
         },
       });
@@ -153,16 +207,14 @@ export default function FullCircleSubscription() {
 
       console.log('✅ Payment completed successfully!');
 
-      // ✅ Show welcome alert FIRST
       Alert.alert(
         "🌟 Welcome to FullCircle!",
-        "Your spiritual journey expands now. Premium features are activating...",
+        "Your spiritual journey expands now. FullCircle Features are activating...",
         [
           { 
             text: "Continue Journey", 
             style: "default",
             onPress: async () => {
-              // ✅ THEN refresh data and go back
               console.log('🔄 Refreshing subscription data before going back...');
               await refreshUserData();
               router.back();
@@ -171,7 +223,6 @@ export default function FullCircleSubscription() {
         ]
       );
 
-      // ✅ Also refresh in background while alert is showing
       setTimeout(async () => {
         console.log('🔄 Background refresh after webhook processing...');
         await refreshUserData();
@@ -181,7 +232,7 @@ export default function FullCircleSubscription() {
       console.error('💥 Subscription creation failed:', error);
       Alert.alert(
         "Journey Interrupted",
-        error.message || "We couldn't begin your premium journey. Please try again.",
+        error.message || "We couldn't begin your FullCircle journey. Please try again.",
         [{ text: "Try Again", style: "default" }]
       );
     } finally {
@@ -207,11 +258,9 @@ export default function FullCircleSubscription() {
             try {
               setIsProcessing(true);
               
-              // ✅ Call Cloud Function directly (React Native Firebase syntax)
               const cancelSubscriptionFunction = FUNCTIONS.httpsCallable('cancelSubscription');
               const result = await cancelSubscriptionFunction();
               
-              // ✅ Refresh data after cancellation
               await new Promise(resolve => setTimeout(resolve, 1000));
               await refreshUserData();
               
@@ -234,11 +283,9 @@ export default function FullCircleSubscription() {
     try {
       setIsProcessing(true);
       
-      // ✅ Call Cloud Function directly (React Native Firebase syntax)
       const reactivateFunction = FUNCTIONS.httpsCallable('reactivateSubscription');
       const result: any = await reactivateFunction();
       
-      // ✅ Refresh data after reactivation
       await new Promise(resolve => setTimeout(resolve, 1000));
       await refreshUserData();
       
@@ -267,17 +314,15 @@ export default function FullCircleSubscription() {
   const getStatusDisplay = () => {
     if (!hasSubscription) {
       return {
-        title: "Begin Your FullCircle Journey",
-        subtitle: "Unlock deeper connections and spiritual growth",
+        title: "Unlock Your Infinite Potential",
+        subtitle: "Transform your connections with FullCircle spiritual features",
         icon: "sparkles",
         color: colors.primary,
         timeText: null
       };
     }
     
-    // ✅ Handle incomplete subscriptions
     if (subscription?.status === 'incomplete') {
-      // If incomplete and canceled, show as canceled but offer reactivation
       if (subscription?.cancelAtPeriodEnd) {
         return {
           title: "Subscription Canceled",
@@ -287,7 +332,6 @@ export default function FullCircleSubscription() {
           timeText: `Would activate until ${formatCancelDate()}`
         };
       } else {
-        // Incomplete but not canceled - payment still pending
         return {
           title: "Payment Pending",
           subtitle: "Complete your payment to activate FullCircle features.",
@@ -298,9 +342,7 @@ export default function FullCircleSubscription() {
       }
     }
     
-    // ✅ Handle active subscriptions
     if (subscription?.status === 'active') {
-      // Active but will be canceled
       if (subscription?.cancelAtPeriodEnd) {
         return {
           title: "Journey Ending",
@@ -310,18 +352,16 @@ export default function FullCircleSubscription() {
           timeText: remainingDays > 0 ? `${remainingDays} days left` : "Ends today"
         };
       } else {
-        // Active and continuing
         return {
           title: "FullCircle Member",
-          subtitle: `${subscription.planType === 'yearly' ? 'Annual' : 'Monthly'} journey in progress`,
+          subtitle: `Premium spiritual journey in progress`,
           icon: "checkmark-circle",
-          color: "#FFD700",
+          color: "#B8860B",
           timeText: remainingDays > 0 ? `${remainingDays} days remaining` : "Renews today"
         };
       }
     }
     
-    // ✅ Handle fully canceled subscriptions
     if (subscription?.status === 'canceled') {
       return {
         title: "Journey Paused",
@@ -332,7 +372,6 @@ export default function FullCircleSubscription() {
       };
     }
     
-    // ✅ Fallback for other statuses
     return {
       title: `Subscription ${subscription?.status || 'Unknown'}`,
       subtitle: "Contact support if you need assistance with your subscription.",
@@ -343,6 +382,7 @@ export default function FullCircleSubscription() {
   };
 
   const status = getStatusDisplay();
+  const selectedPlanData = pricingPlans[selectedPlan];
 
   return (
     <View style={styles.container}>
@@ -354,24 +394,59 @@ export default function FullCircleSubscription() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        
-
       </View>
 
-      {/* Content */}
-      <View style={styles.content}>
+      {/* Scrollable Content */}
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="radio-button-on" size={60} color="#8B4513" />
-          </View>
+          <Animated.View 
+            style={[
+              styles.iconContainer,
+              {
+                transform: [{
+                  rotate: rotateAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                }],
+              }
+            ]}
+          >
+            <Animated.View 
+              style={[
+                styles.glowContainer,
+                {
+                  shadowOpacity: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.3, 0.8],
+                  }),
+                }
+              ]}
+            >
+              <OuroborosSVG
+                size={120}
+                fillColor='#F5E6D3'
+                strokeColor='#B8860B'
+                strokeWidth={2}
+              />
+              
+              <View style={styles.sparklesOverlay}>
+                <CustomIcon name="infinite" size={20} color="#B8860B" />
+              </View>
+            </Animated.View>
+          </Animated.View>
+          
           <Text style={styles.spiritualTitle}>FullCircle</Text>
         </View>
 
         {/* Status Section */}
         <View style={styles.statusSection}>
           <View style={[styles.statusCard, { borderColor: status.color }]}>
-            <Ionicons name={status.icon as any} size={28} color={status.color} />
             <Text style={styles.statusTitle}>{status.title}</Text>
             <Text style={styles.statusSubtitle}>{status.subtitle}</Text>
             
@@ -411,97 +486,130 @@ export default function FullCircleSubscription() {
         {/* Upgrade Options */}
         {showUpgradeOptions && (
           <View style={styles.upgradeSection}>
-            <Text style={styles.sectionTitle}>Choose Your Path</Text>
+            <Text style={styles.sectionTitle}>Choose Your Sacred Path</Text>
             
-            {/* Side by Side Plans */}
-            <View style={styles.plansRow}>
-              <TouchableOpacity
-                style={[
-                  styles.planCard,
-                  styles.planCardHalf,
-                  selectedPlan === 'monthly' && styles.planCardSelected
-                ]}
-                onPress={() => setSelectedPlan('monthly')}
-              >
-                <Text style={styles.planTitle}>Monthly</Text>
-                <Text style={styles.planPrice}>$29.99</Text>
-                <Text style={styles.planPeriod}>per month</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.planCard,
-                  styles.planCardHalf,
-                  styles.yearlyPlan,
-                  selectedPlan === 'yearly' && styles.planCardSelected
-                ]}
-                onPress={() => setSelectedPlan('yearly')}
-              >
-                <View style={styles.bestValueBadge}>
-                  <Text style={styles.bestValueText}>BEST VALUE</Text>
-                </View>
-                <Text style={styles.planTitle}>Yearly</Text>
-                <View style={styles.priceColumn}>
-                  <Text style={styles.originalPrice}>$359.88</Text>
-                  <Text style={styles.planPrice}>$199.99</Text>
-                </View>
-                <Text style={styles.planPeriod}>per year</Text>
-                <Text style={styles.savings}>Save 44%</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Subscribe Button */}
-            <TouchableOpacity
-              style={[
-                styles.subscribeButton,
-                { backgroundColor: isProcessing ? colors.textMuted : colors.primary }
-              ]}
-              onPress={handleUpgrade}
-              disabled={isProcessing}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.plansScrollContainer}
+              decelerationRate="fast"
+              snapToInterval={180}
+              snapToAlignment="center"
             >
-              {isProcessing ? (
+              {Object.entries(pricingPlans).map(([planKey, plan]) => (
                 <>
-                  <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
-                  <Text style={styles.subscribeButtonText}>Manifesting...</Text>
+                  {plan.popular && (
+                    <View style={styles.popularBadge}>
+                      <Text style={styles.popularText}>MOST POPULAR</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    key={planKey}
+                    style={[
+                      styles.planCard,
+                      styles.planCardColumn,
+                      selectedPlan === planKey && styles.planCardSelected,
+                      plan.popular && styles.popularPlan
+                    ]}
+                    onPress={() => setSelectedPlan(planKey as any)}
+                  > 
+                    <View style={styles.planContent}>
+                      {plan.savings && (
+                        <Text style={styles.savingsText}>Save {plan.savings}</Text>
+                      )}
+                      <Text style={styles.planTitle}>{plan.title}</Text>
+                      <Text style={styles.weeklyPrice}>${plan.weeklyPrice.toFixed(2)}/wk</Text>
+                    </View>
+                    
+                    {selectedPlan === planKey && (
+                      <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark-circle" size={20} color="#B8860B" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
                 </>
-              ) : (
-                <>
-                  <Text style={styles.subscribeButtonText}>
-                    Begin FullCircle Journey
-                  </Text>
-                  <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                </>
-              )}
-            </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
 
-        {/* Features */}
+        {/* Enhanced Features */}
         <View style={styles.featuresSection}>
-          <Text style={styles.featuresTitle}>Enhanced Features</Text>
+          <Text style={styles.featuresTitle}>Sacred Features Unlocked</Text>
           <View style={styles.featuresList}>
             <View style={styles.feature}>
-              <Ionicons name="infinite" size={18} color="#FFD700" />
+              <View style={styles.featureIcon}>
+                <CustomIcon name="infinite" size={24} color="#B8860B" />
+              </View>
               <Text style={styles.featureText}>Unlimited Soul Connections</Text>
             </View>
             <View style={styles.feature}>
-              <Ionicons name="eye" size={18} color="#FFD700" />
+              <View style={styles.featureIcon}>
+                <CustomIcon name="heart" size={24} color="#B8860B" />
+              </View>
               <Text style={styles.featureText}>See Who Resonates With You</Text>
             </View>
             <View style={styles.feature}>
-              <Ionicons name="filter" size={18} color="#FFD700" />
-              <Text style={styles.featureText}>Spiritual Compatibility Filters</Text>
+              <View style={styles.featureIcon}>
+                <Ionicons name="options" size={24} color="#B8860B" />
+              </View>
+              <Text style={styles.featureText}>Advanced Spiritual Filters</Text>
             </View>
             <View style={styles.feature}>
-              <Ionicons name="flash" size={18} color="#FFD700" />
-              <Text style={styles.featureText}>Radiance Boosts</Text>
+              <View style={styles.featureIcon}>
+                <CustomIcon name="lotus" size={24} />
+              </View>
+              <Text style={styles.featureText}>Priority Spiritual Visibility</Text>
             </View>
           </View>
           <Text style={styles.cancelAnytimeText}>
-            Cancel anytime and keep using enhanced features until your period ends
+            Cancel anytime and keep all premium features until your cycle ends
           </Text>
         </View>
-      </View>
+
+        {/* Bottom Spacer for Floating Button */}
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+
+      {/* Floating Purchase Button - Pure Floating */}
+      {showUpgradeOptions && (
+        <TouchableOpacity
+          style={[
+            styles.floatingSubscribeButton,
+            { 
+              backgroundColor: isProcessing ? colors.textMuted : '#B8860B',
+              shadowColor: '#B8860B',
+            }
+          ]}
+          onPress={handleUpgrade}
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <>
+              <Animated.View 
+                style={{
+                  transform: [{
+                    rotate: rotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  }],
+                }}
+              >
+                <CustomIcon name="infinite" size={18} color="#FFFFFF" />
+              </Animated.View>
+              <Text style={styles.subscribeButtonText}>Processing...</Text>
+            </>
+          ) : (
+            <>
+              <CustomIcon name="infinite" size={20} color="#FFFFFF" />
+              <Text style={styles.subscribeButtonText}>
+                Start {selectedPlanData.title} Journey • ${selectedPlanData.totalPrice.toFixed(2)}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -533,30 +641,55 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       borderWidth: 1,
       borderColor: colors.border,
     },
-    content: {
+    // Scroll Container
+    scrollContainer: {
       flex: 1,
+    },
+    scrollContent: {
       paddingHorizontal: Spacing.lg,
+      paddingBottom: 100,
     },
     
-    // Hero Section
+    bottomSpacer: {
+      height: 20,
+    },
+    
     heroSection: {
       alignItems: 'center',
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.lg,
     },
     iconContainer: {
-      marginBottom: Spacing.sm,
-      opacity: 0.9,
+      marginTop: -20,
+    },
+    glowContainer: {
+      position: 'relative',
+      shadowColor: '#B8860B',
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    sparklesOverlay: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width: 32,
+      height: 32,
+      marginTop: -16,
+      marginLeft: -16,
+      backgroundColor: '#B8860B' + '20',
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     spiritualTitle: {
       ...fonts.spiritualTitleFont,
-      fontSize: Typography.sizes['2xl'],
+      fontSize: Typography.sizes['3xl'],
       fontWeight: Typography.weights.bold,
       color: colors.textDark,
       textAlign: 'center',
-      marginBottom: Spacing.xs,
-    },
-    
-    // Status Section
+      marginTop: Spacing.md,
+      letterSpacing: 1,
+    },    
     statusSection: {
       marginBottom: Spacing.lg,
     },
@@ -582,9 +715,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       color: colors.textLight,
       textAlign: 'center',
       marginBottom: Spacing.md,
+      lineHeight: 20,
     },
     timeContainer: {
-      backgroundColor: '#FFD700' + '20',
+      backgroundColor: '#B8860B' + '20',
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.sm,
       borderRadius: BorderRadius.sm,
@@ -625,139 +759,219 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       fontSize: Typography.sizes.sm,
     },
     
-    // Upgrade Section
+    // Enhanced Upgrade Section
     upgradeSection: {
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.lg,
     },
     sectionTitle: {
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
+      marginBottom: Spacing.lg,
+      textAlign: 'center',
+      letterSpacing: 0.5,
+    },
+    
+    // Horizontal Scrollable Plans
+    plansScrollContainer: {
+      paddingHorizontal: Spacing.sm,
+    },
+    planCardColumn: {
+      width: 160, // Fixed width for each column
+      minHeight: 150, // Minimum height for content
+      marginRight: Spacing.md, // Space between cards
+    },
+    planCard: {
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      borderWidth: 2,
+      borderColor: colors.border,
+      position: 'relative',
+    },
+    planCardSelected: {
+      borderColor: '#B8860B',
+      backgroundColor: '#B8860B' + '10',
+      transform: [{ scale: 1.01 }],
+    },
+    popularPlan: {
+      borderColor: '#B8860B',
+      shadowColor: '#B8860B',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    // Smaller Popular Badge at Top Border
+    popularBadge: {
+      position: 'absolute',
+      left: '50%',
+      marginLeft: -75, // Smaller width (80px total)
+      backgroundColor: '#B8860B',
+      paddingHorizontal: Spacing.sm, // Reduced padding
+      paddingVertical: 2, // Reduced padding
+      borderRadius: BorderRadius.sm, // Smaller radius
+      zIndex: 1,
+    },
+    popularText: {
+      color: '#FFFFFF',
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+      letterSpacing: 0.8, // Reduced letter spacing
+    },
+    
+    // Centered Plan Content
+    planContent: {
+      justifyContent: 'center',
+      alignItems: 'center', // Center everything
+      width: '100%',
+      marginTop: Spacing.md,
+    },
+    planHeader: {
+      alignItems: 'center', // Center the header content
+      width: '100%',
+    },
+    planLeft: {
+      alignItems: 'center', // Center title and weekly price
+      marginBottom: Spacing.sm,
+    },
+    planRight: {
+      alignItems: 'center', // Center price info
+    },
+    planTitle: {
       ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.lg,
       fontWeight: Typography.weights.bold,
       color: colors.textDark,
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.xs,
       textAlign: 'center',
     },
-    plansRow: {
-      flexDirection: 'row',
-      gap: Spacing.md,
-      marginBottom: Spacing.lg,
+    weeklyPrice: {
+      fontSize: Typography.sizes.sm,
+      color: '#B8860B',
+      fontWeight: Typography.weights.medium,
+      textAlign: 'center',
     },
-    planCard: {
-      backgroundColor: colors.card,
-      borderRadius: BorderRadius.md,
-      padding: Spacing.md,
-      borderWidth: 2,
-      borderColor: colors.border,
-      alignItems: 'center',
+    originalPrice: {
+      fontSize: Typography.sizes.sm,
+      color: colors.textMuted,
+      textDecorationLine: 'line-through',
+      marginBottom: 2,
+      textAlign: 'center',
     },
-    planCardHalf: {
-      flex: 1,
+    planPrice: {
+      ...fonts.spiritualTitleFont,
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      color: colors.textDark,
+      textAlign: 'center',
     },
-    planCardSelected: {
-      borderColor: '#FFD700',
-      backgroundColor: '#FFD700' + '15',
+    planPeriod: {
+      fontSize: Typography.sizes.sm,
+      color: colors.textMuted,
+      fontStyle: 'italic',
+      marginBottom: Spacing.xs,
+      textAlign: 'center',
     },
-    yearlyPlan: {
-      position: 'relative',
-    },
-    bestValueBadge: {
-      position: 'absolute',
-      top: -8,
-      backgroundColor: '#FFD700',
+    savingsContainer: {
+      backgroundColor: '#B8860B' + '15',
       paddingHorizontal: Spacing.sm,
       paddingVertical: 2,
       borderRadius: BorderRadius.sm,
     },
-    bestValueText: {
-      color: '#FFFFFF',
-      fontSize: 10,
-      fontWeight: Typography.weights.bold,
-    },
-    planTitle: {
-      ...fonts.spiritualTitleFont,
-      fontSize: Typography.sizes.base,
-      fontWeight: Typography.weights.semibold,
-      color: colors.textDark,
-      marginBottom: Spacing.xs,
-    },
-    priceColumn: {
-      alignItems: 'center',
-    },
-    originalPrice: {
-      fontSize: Typography.sizes.xs,
-      color: colors.textMuted,
-      textDecorationLine: 'line-through',
-      marginBottom: 2,
-    },
-    planPrice: {
-      ...fonts.spiritualTitleFont,
-      fontSize: Typography.sizes.lg,
-      fontWeight: Typography.weights.bold,
-      color: colors.textDark,
-    },
-    planPeriod: {
-      fontSize: Typography.sizes.xs,
-      color: colors.textMuted,
-      marginBottom: Spacing.xs,
-      fontStyle: 'italic',
-    },
     savings: {
       fontSize: Typography.sizes.xs,
-      color: '#FFD700',
-      fontWeight: Typography.weights.semibold,
+      color: '#B8860B',
+      fontWeight: Typography.weights.bold,
+      textAlign: 'center',
+    },
+    selectedIndicator: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
     },
     
-    // Subscribe Button
-    subscribeButton: {
+    // Pure Floating Purchase Button (No Container)
+    floatingSubscribeButton: {
+      position: 'absolute',
+      bottom: 30,
+      left: Spacing.lg,
+      right: Spacing.lg,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: Spacing.sm,
       borderRadius: BorderRadius.full,
-      paddingVertical: Spacing.md,
+      paddingVertical: Spacing.lg,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 12,
     },
     subscribeButtonText: {
       color: '#FFFFFF',
-      fontWeight: Typography.weights.semibold,
+      fontWeight: Typography.weights.bold,
       fontSize: Typography.sizes.base,
+      letterSpacing: 0.5,
     },
     
-    // Features Section
+    // Enhanced Features Section
     featuresSection: {
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.md,
-      padding: Spacing.md,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     featuresTitle: {
       ...fonts.spiritualTitleFont,
-      fontSize: Typography.sizes.base,
+      fontSize: Typography.sizes.lg,
       fontWeight: Typography.weights.bold,
       color: colors.textDark,
-      marginBottom: Spacing.sm,
+      marginBottom: Spacing.lg,
       textAlign: 'center',
     },
     featuresList: {
-      gap: Spacing.sm,
+      gap: Spacing.md,
+      marginBottom: Spacing.lg,
     },
     feature: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: Spacing.sm,
+      gap: Spacing.md,
+    },
+    featureIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: '#B8860B' + '15',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     featureText: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.sm,
+      fontSize: Typography.sizes.base,
       color: colors.textDark,
       fontWeight: Typography.weights.medium,
       flex: 1,
+      lineHeight: 22,
     },
     cancelAnytimeText: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.xs,
+      fontSize: Typography.sizes.sm,
       color: colors.textMuted,
       textAlign: 'center',
       fontStyle: 'italic',
-      marginTop: Spacing.sm,
+      lineHeight: 18,
+    },
+    savingsText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+      fontWeight: Typography.weights.medium,
+      marginBottom: Spacing.sm
+      // lineHeight: 22,
     },
   });
 };

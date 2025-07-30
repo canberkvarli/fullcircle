@@ -14,7 +14,7 @@ const createSubscription = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
 
-    const { planType } = data; // 'monthly' or 'yearly'
+    const { planType } = data; // Now supports: 'monthly', 'yearly', '1month', '3months', '6months'
     const userId = context.auth.uid;
 
     console.log(`🚀 Creating ${planType} subscription for user: ${userId}`);
@@ -61,7 +61,9 @@ const createSubscription = functions.https.onCall(async (data, context) => {
 
     // Create subscription
     console.log('📝 Creating subscription...');
-    const subscription = await stripe.subscriptions.create({
+    
+    // Build subscription create params
+    const subscriptionParams = {
       customer: customerId,
       items: [{
         price: priceId
@@ -75,7 +77,16 @@ const createSubscription = functions.https.onCall(async (data, context) => {
         firebaseUID: userId,
         planType: planType
       }
-    });
+    };
+
+    // Add billing cycle anchor for multi-month subscriptions
+    const priceConfig = SUBSCRIPTION_PRICES[planType];
+    if (priceConfig.interval_count && priceConfig.interval_count > 1) {
+      // For 3-month and 6-month plans, set billing cycle
+      subscriptionParams.billing_cycle_anchor = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // Start in 30 days
+    }
+
+    const subscription = await stripe.subscriptions.create(subscriptionParams);
 
     console.log(`✅ Subscription created: ${subscription.id}`);
 
