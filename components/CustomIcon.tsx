@@ -25,7 +25,6 @@ type CustomIconNames =
   | 'martial-arts'
   | 'fasting'
   | 'lotus'
-  | 'lotus2'
   | 'healing-journey'
   | 'yinyang'
   | 'acupuncture'
@@ -83,7 +82,6 @@ const iconMap: Record<string, any> = {
   'gong': require('../assets/icons/gong.png'),
   'leaf': require('../assets/icons/leaf.png'),
   'lotus': require('../assets/icons/lotus.png'),
-  'lotus2': require('../assets/icons/lotus2.png'),
   'healing-journey': require('../assets/icons/healing-journey.png'),
   'yinyang': require('../assets/icons/yinyang.png'),
   'acupuncture': require('../assets/icons/acupuncture.png'),
@@ -132,7 +130,6 @@ const customIconNames: CustomIconNames[] = [
   'martial-arts',
   'fasting',
   'lotus',
-  'lotus2',
   'healing-journey',
   'yinyang',
   'acupuncture',

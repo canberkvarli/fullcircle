@@ -767,7 +767,7 @@ const ConnectScreen: React.FC = () => {
               onPress={() => handleAction('lotus')}
               activeOpacity={0.8}
             >
-              <CustomIcon name="lotus2" size={36}/>
+              <CustomIcon name="lotus" size={36}/>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -806,7 +806,7 @@ const ConnectScreen: React.FC = () => {
 
             <View style={styles.divineContent}>
               <View style={styles.divineIcon}>
-                <CustomIcon name="lotus2" size={36}/>
+                <CustomIcon name="lotus" size={36}/>
               </View>
               
               <Text style={[
@@ -837,7 +837,7 @@ const ConnectScreen: React.FC = () => {
                   onPress={navigateToLotusShop}
                   activeOpacity={0.9}
                 >
-                  <CustomIcon name="lotus2" size={20} style={styles.buttonIcon} />
+                  <CustomIcon name="lotus" size={20} style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
                     Get More Lotus
                   </Text>
@@ -889,7 +889,7 @@ const ConnectScreen: React.FC = () => {
           >
             <CustomIcon 
               name={lastAction === 'like' ? 'heart' : 
-                   lastAction === 'pass' ? 'close' : 'lotus2'} 
+                   lastAction === 'pass' ? 'close' : 'lotus'} 
               size={36} 
               color="#FFFFFF" 
             />

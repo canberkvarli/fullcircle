@@ -15,9 +15,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
 import { useUserContext } from '@/context/UserContext';
+import { CustomIcon } from "@/components/CustomIcon"; // Import CustomIcon
 import { Colors, Typography, Spacing } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
 import OuroborosLoader from './ouroboros/OuroborosLoader';
+import colors from 'native-base/lib/typescript/theme/base/colors';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -49,16 +51,16 @@ const LotusOptionCard: React.FC<{
       style={[
         styles.optionCard,
         {
-          backgroundColor: isSelected ? '#8B4513' + '15' : colors.card,
-          borderColor: isSelected ? '#8B4513' : colors.border,
-          shadowColor: isSelected ? '#8B4513' : colors.shadow,
+          backgroundColor: isSelected ? '#680439ff' + '15' : colors.card,
+          borderColor: isSelected ? '#680439ff' : colors.border,
+          shadowColor: isSelected ? '#680439ff' : colors.shadow,
         }
       ]}
       onPress={onSelect}
       activeOpacity={0.7}
     >
       {option.popular && (
-        <View style={[styles.popularBadge, { backgroundColor: '#8B4513' }]}>
+        <View style={[styles.popularBadge, { backgroundColor: '#680439ff' }]}>
           <Text style={[styles.popularText, fonts.captionFont]}>
             Most Popular
           </Text>
@@ -66,7 +68,7 @@ const LotusOptionCard: React.FC<{
       )}
       
       {option.tag && !option.popular && (
-        <View style={[styles.saveBadge, { backgroundColor: colors.success }]}>
+        <View style={[styles.saveBadge, { backgroundColor: '#B8860B' }]}>
           <Text style={[styles.saveText, fonts.captionFont]}>
             {option.tag}
           </Text>
@@ -74,13 +76,17 @@ const LotusOptionCard: React.FC<{
       )}
       
       <View style={styles.lotusDisplay}>
-        <View style={[styles.lotusIcon, { backgroundColor: '#8B4513' + '20' }]}>
-          <Text style={[styles.lotusCountText, fonts.spiritualTitleFont, { color: '#8B4513' }]}>
-            {option.lotusCount}
-          </Text>
+        <View style={[styles.lotusIcon, { backgroundColor: '#680439ff' + '15' }]}>
+          <CustomIcon 
+            name="lotus" 
+            size={38} 
+          />
         </View>
+        <Text style={[styles.lotusCountText, fonts.spiritualTitleFont]}>
+          {option.lotusCount}
+        </Text>
         <Text style={[styles.lotusLabel, fonts.bodyFont, { color: colors.textMuted }]}>
-          lotus{option.lotusCount !== 1 ? 's' : ''}
+          Lotus flower{option.lotusCount !== 1 ? 's' : ''}
         </Text>
       </View>
       
@@ -94,7 +100,7 @@ const LotusOptionCard: React.FC<{
       </View>
       
       {isSelected && (
-        <View style={[styles.selectedIndicator, { backgroundColor: '#8B4513' }]}>
+        <View style={[styles.selectedIndicator]}>
           <Ionicons name="checkmark" size={14} color="#FFFFFF" />
         </View>
       )}
@@ -275,21 +281,21 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Simple Hero */}
+            {/* Enhanced Hero Section */}
             <View style={styles.heroSection}>
               <View style={[styles.currentLotusFlowersDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Ionicons name="sparkles" size={18} color="#8B4513" />
+                <CustomIcon name="lotus" size={18} color="#680439ff" />
                 <Text style={[styles.currentLotusFlowersText, fonts.bodyFont, { color: colors.textDark }]}>
                   {userData.numOfLotus || 0} lotus flowers
                 </Text>
               </View>
               
               <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                Stand Out with Super Likes
+                Express Deep Connection
               </Text>
               
               <Text style={[styles.heroSubtitle, fonts.bodyFont, { color: colors.textMuted }]}>
-                Get priority placement and make meaningful connections
+                Send meaningful lotus flowers to show special interest
               </Text>
             </View>
 
@@ -317,39 +323,46 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
               </ScrollView>
             </View>
 
-            {/* Simple Benefits */}
+            {/* Enhanced Benefits */}
             <View style={styles.benefitsSection}>
               <View style={styles.benefitRow}>
-                <Ionicons name="flash" size={16} color="#8B4513" />
+                <View style={[styles.benefitIcon, { backgroundColor: '#680439ff' + '15' }]}>
+                  <CustomIcon name="heart" size={14} color="#680439ff" />
+                </View>
                 <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
-                  Priority placement
+                  Shows deeper interest than regular likes
                 </Text>
               </View>
               
               <View style={styles.benefitRow}>
-                <Ionicons name="heart" size={16} color="#8B4513" />
+                <View style={[styles.benefitIcon, { backgroundColor: '#680439ff' + '15' }]}>
+                  <Ionicons name="notifications" size={14} color="#680439ff" />
+                </View>
                 <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
-                  Higher match rate
+                  Recipient gets special notification
                 </Text>
               </View>
               
               <View style={styles.benefitRow}>
-                <Ionicons name="notifications" size={16} color="#8B4513" />
+                <View style={[styles.benefitIcon, { backgroundColor: '#680439ff' + '15' }]}>
+                  <Ionicons name="trending-up" size={14} color="#680439ff" />
+                </View>
                 <Text style={[styles.benefitText, fonts.captionFont, { color: colors.textMuted }]}>
-                  Instant notification
+                  Higher chance of meaningful connection
                 </Text>
               </View>
             </View>
           </ScrollView>
 
-          {/* Purchase Button */}
+          {/* Enhanced Purchase Button */}
           <View style={[styles.purchaseSection, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
             <TouchableOpacity
               style={[
                 styles.purchaseButton,
                 { 
-                  backgroundColor: isProcessing ? colors.textMuted : '#8B4513',
-                  opacity: isProcessing ? 0.7 : 1
+                  backgroundColor: isProcessing ? colors.textMuted : '#680439ff',
+                  opacity: isProcessing ? 0.7 : 1,
+                  shadowColor: '#680439ff',
                 }
               ]}
               onPress={handlePurchase}
@@ -366,7 +379,7 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
                   loop={true}
                 />
               ) : (
-                <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+                <CustomIcon name="lotus" size={28} />
               )}
               
               <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
@@ -456,6 +469,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.xl,
     textAlign: 'center',
     marginBottom: Spacing.sm,
+    letterSpacing: 0.3,
   },
   heroSubtitle: {
     fontSize: Typography.sizes.sm,
@@ -496,6 +510,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.medium,
   },
   saveBadge: {
     position: 'absolute',
@@ -509,6 +524,7 @@ const styles = StyleSheet.create({
   saveText: {
     color: '#FFFFFF',
     fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.medium,
   },
   lotusDisplay: {
     alignItems: 'center',
@@ -517,22 +533,26 @@ const styles = StyleSheet.create({
   lotusIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   lotusCountText: {
     fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    marginBottom: 2,
   },
   lotusLabel: {
     fontSize: Typography.sizes.xs,
+    textAlign: 'center',
   },
   priceDisplay: {
     alignItems: 'center',
   },
   mainPrice: {
-    fontSize: Typography.sizes.sm,
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
     marginBottom: 2,
   },
   unitPrice: {
@@ -550,15 +570,24 @@ const styles = StyleSheet.create({
   },
   benefitsSection: {
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   benefitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.md,
+  },
+  benefitIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   benefitText: {
     fontSize: Typography.sizes.sm,
+    flex: 1,
+    lineHeight: 18,
   },
   purchaseSection: {
     padding: Spacing.lg,
@@ -568,16 +597,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    borderRadius: 12,
+    paddingVertical: Spacing.lg,
+    borderRadius: 16,
     marginBottom: Spacing.sm,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   purchaseButtonText: {
     color: '#FFFFFF',
     marginLeft: Spacing.sm,
+    fontWeight: Typography.weights.semibold,
+    fontSize: Typography.sizes.base,
   },
   disclaimerText: {
     textAlign: 'center',
+    fontSize: Typography.sizes.xs,
   },
 });
 
