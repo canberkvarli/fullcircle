@@ -29,6 +29,7 @@
     "DoubleConversion": [],
     "React-runtimeexecutor": [],
     "React-jsi": [],
-    "React-perflogger": []
+    "React-perflogger": [],
+    "hermes-engine": []
   }
 }

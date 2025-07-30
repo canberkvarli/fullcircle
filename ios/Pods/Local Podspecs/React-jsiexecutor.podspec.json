@@ -28,6 +28,7 @@
     "fast_float": [],
     "fmt": [],
     "glog": [],
-    "React-jsinspector": []
+    "React-jsinspector": [],
+    "hermes-engine": []
   }
 }

@@ -47,7 +47,7 @@
     "React-ImageManager": [],
     "React-rendererdebug": [],
     "DoubleConversion": [],
-    "React-jsi": [],
+    "hermes-engine": [],
     "React-RCTImage": []
   },
   "pod_target_xcconfig": {

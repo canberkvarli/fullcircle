@@ -24,12 +24,14 @@
     "fast_float": [],
     "fmt": [],
     "RCT-Folly": [],
-    "glog": []
+    "glog": [],
+    "hermes-engine": []
   },
   "source_files": "**/*.{cpp,h}",
   "exclude_files": [
     "jsi/jsilib-posix.cpp",
     "jsi/jsilib-windows.cpp",
-    "**/test/*"
+    "**/test/*",
+    "jsi/jsi.cpp"
   ]
 }

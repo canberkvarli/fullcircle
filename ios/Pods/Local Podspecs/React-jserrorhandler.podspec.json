@@ -29,6 +29,7 @@
     "React-jsi": [],
     "React-cxxreact": [],
     "glog": [],
-    "React-debug": []
+    "React-debug": [],
+    "hermes-engine": []
   }
 }

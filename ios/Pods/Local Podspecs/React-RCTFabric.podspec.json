@@ -55,7 +55,7 @@
     "React-rendererconsistency": [],
     "React-runtimescheduler": [],
     "React-jsinspector": [],
-    "React-jsc": []
+    "hermes-engine": []
   },
   "testspecs": [
     {

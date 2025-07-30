@@ -30,9 +30,6 @@
     },
     "android": {
       "package": "com.fullcircle.app",
-      "gradleVersion": "8.8",
-      "kotlinVersion": "1.9.25",
-      "kotlinCompilerExtensionVersion": "1.5.15",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -101,7 +98,8 @@
           },
           "android": {
             "kotlinVersion": "1.9.25",
-            "gradleVersion": "8.8"
+            "gradleVersion": "8.8",
+            "kotlinCompilerExtensionVersion": "1.5.15"
           }
         }
       ],

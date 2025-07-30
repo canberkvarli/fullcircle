@@ -25,10 +25,11 @@
     <key>CFBundleURLTypes</key>
     <array>
       <dict>
+        <key>CFBundleURLName</key>
+        <string>fullcircle</string>
         <key>CFBundleURLSchemes</key>
         <array>
           <string>fullcircle</string>
-          <string>com.fullcircle.app</string>
         </array>
       </dict>
       <dict>

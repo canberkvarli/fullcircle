@@ -47,7 +47,8 @@
     "React-Mapbuffer": [],
     "React-jserrorhandler": [],
     "React-jsinspector": [],
-    "React-jsc": []
+    "hermes-engine": [],
+    "React-RuntimeHermes": []
   },
-  "exclude_files": "ReactCommon/RCTHermesInstance.{mm,h}"
+  "exclude_files": "ReactCommon/RCTJscInstance.{mm,h}"
 }

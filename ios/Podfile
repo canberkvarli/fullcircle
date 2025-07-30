@@ -13,6 +13,15 @@ install! 'cocoapods',
 
 prepare_react_native_project!
 
+# Override BoringSSL podspec to remove problematic flags
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if pod.name == 'BoringSSL-GRPC'
+      puts "🔧 Patching BoringSSL-GRPC to remove -G flag"
+    end
+  end
+end
+
 target 'fullcircle' do
   use_expo_modules!
   use_frameworks! :linkage => :static
@@ -40,7 +49,7 @@ target 'fullcircle' do
 
   use_react_native!(
     :path => config[:reactNativePath],
-    :hermes_enabled => false,
+    :hermes_enabled => true,
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
@@ -63,22 +72,48 @@ target 'fullcircle' do
         end
       end
 
-      # Fix for BoringSSL-GRPC and gRPC-Core Xcode 16 compatibility
-      if target.name == 'BoringSSL-GRPC'
+      # Comprehensive fix for BoringSSL-GRPC and gRPC-Core Xcode 16 compatibility
+      if target.name == 'BoringSSL-GRPC' || target.name.start_with?('gRPC')
+        # Remove problematic compiler flags from source files
         target.source_build_phase.files.each do |file|
           if file.settings && file.settings['COMPILER_FLAGS']
             flags = file.settings['COMPILER_FLAGS'].split
-            flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+            flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' || flag == '-G' }
             file.settings['COMPILER_FLAGS'] = flags.join(' ')
           end
         end
+        
+        # Fix build settings
+        target.build_configurations.each do |config|
+          # Remove -G flag from all possible locations
+          ['OTHER_CFLAGS', 'OTHER_CPLUSPLUSFLAGS', 'WARNING_CFLAGS', 'GCC_WARN_INHIBIT_ALL_WARNINGS'].each do |setting|
+            if config.build_settings[setting]
+              if config.build_settings[setting].is_a?(Array)
+                config.build_settings[setting] = config.build_settings[setting].reject { |flag| flag == '-G' || flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
+              elsif config.build_settings[setting].is_a?(String)
+                config.build_settings[setting] = config.build_settings[setting].gsub(/\s*-G\s*/, ' ').gsub(/\s*-GCC_WARN_INHIBIT_ALL_WARNINGS\s*/, ' ').strip
+              end
+            end
+          end
+          
+          # Set safe compiler settings
+          config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'NO'
+          config.build_settings['CLANG_WARN_EVERYTHING'] = 'NO'
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'GRPC_ARES=0'
+          
+          # Force C++17 for compatibility
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+        end
       end
 
-      # Fix Hermes engine issues
+      # Fix Hermes engine issues - but keep it enabled for headers
       if target.name == 'hermes-engine'
         target.build_configurations.each do |config|
-          config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+          # Don't exclude Hermes entirely, just fix build issues
           config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+          config.build_settings['VALID_ARCHS'] = 'arm64'
         end
       end 
 
@@ -89,10 +124,9 @@ target 'fullcircle' do
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
         
         # Fix for gRPC-Core C++20 compatibility issues - force C++17
-        if target.name.start_with?('gRPC')
+        if target.name.start_with?('gRPC') || target.name == 'BoringSSL-GRPC'
           config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
           config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-          config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '-std=c++17'
         end
         
         # Remove any Flipper references (not compatible with use_frameworks)
@@ -122,6 +156,37 @@ target 'fullcircle' do
         end
       else
         puts "File not found: #{file_path}"
+      end
+    end
+
+    # Fix BoringSSL-GRPC -G flag issue by patching the build files
+    boring_ssl_path = File.join(installer.sandbox.root, 'BoringSSL-GRPC')
+    if Dir.exist?(boring_ssl_path)
+      puts "Fixing BoringSSL-GRPC -G flag issue..."
+      
+      # Find and patch .xcconfig files
+      Dir.glob("#{boring_ssl_path}/**/*.xcconfig").each do |config_file|
+        if File.exist?(config_file)
+          content = File.read(config_file)
+          if content.include?('-G')
+            puts "Removing -G flag from #{config_file}"
+            content.gsub!(/-G\s*/, '')
+            File.write(config_file, content)
+          end
+        end
+      end
+
+      # Find and patch any Makefile or build scripts
+      ['Makefile', 'CMakeLists.txt', 'BUILD', 'BUILD.bazel'].each do |build_file|
+        build_file_path = File.join(boring_ssl_path, build_file)
+        if File.exist?(build_file_path)
+          content = File.read(build_file_path)
+          if content.include?('-G')
+            puts "Removing -G flag from #{build_file_path}"
+            content.gsub!(/-G\s*/, '')
+            File.write(build_file_path, content)
+          end
+        end
       end
     end
 

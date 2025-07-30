@@ -44,7 +44,7 @@
     "React-runtimescheduler": [],
     "React-utils": [],
     "React-featureflags": [],
-    "React-jsc": [],
+    "hermes-engine": [],
     "React-jsinspector": []
   }
 }
