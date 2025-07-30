@@ -13,6 +13,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon";
 import UserCard from "@/components/UserCard";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
@@ -28,7 +29,6 @@ type SortOption = 'recent' | 'lastActive' | 'newest' | 'viaLotus';
 interface SortConfig {
   key: SortOption;
   label: string;
-  icon: string;
   description: string;
 }
 
@@ -36,25 +36,21 @@ const SORT_OPTIONS: SortConfig[] = [
   {
     key: 'recent',
     label: 'Most Recent',
-    icon: 'time-outline',
     description: 'Latest likes first'
   },
   {
     key: 'lastActive',
     label: 'Recently Active',
-    icon: 'radio-outline',
     description: 'Active users first'
   },
   {
     key: 'newest',
     label: 'New Souls',
-    icon: 'sparkles-outline',
     description: 'Newest members first'
   },
   {
     key: 'viaLotus',
     label: 'Lotus Connections',
-    icon: 'planet-outline',
     description: 'Sacred lotus likes first'
   }
 ];
@@ -191,14 +187,14 @@ const KindredSpirits: React.FC = () => {
     if ((userData.activeBoosts || 0) > 0) {
       Alert.alert(
         "Activate Radiance",
-        `You have ${userData.activeBoosts} boost${userData.activeBoosts !== 1 ? 's' : ''} available. Activate Radiance to increase your visibility for 1 hour?`,
+        `You have ${userData.activeBoosts} radiance${userData.activeBoosts !== 1 ? ' boosts' : ''} available. Activate Radiance to increase your visibility for 1 hour?`,
         [
           {
             text: "Cancel",
             style: "cancel"
           },
           {
-            text: "Activate",
+            text: "Radiate",
             onPress: handleActivateBoost
           }
         ]
@@ -283,7 +279,7 @@ const KindredSpirits: React.FC = () => {
     
     if ((userData.activeBoosts || 0) > 0) {
       return {
-        text: `Activate (${userData.activeBoosts})`,
+        text: `Radiate (${userData.activeBoosts})`,
         color: '#8B4513', // Changed from #D4AF37 to brown for better visibility
         backgroundColor: colors.background,
         borderColor: '#D4AF37',
@@ -333,8 +329,8 @@ const KindredSpirits: React.FC = () => {
             activeOpacity={0.8}
             disabled={radianceConfig.disabled}
           >
-            <Ionicons 
-              name="radio-outline" 
+            <CustomIcon 
+              name="halo" 
               size={14} 
               color={radianceConfig.color} 
             />
@@ -395,8 +391,8 @@ const KindredSpirits: React.FC = () => {
             activeOpacity={0.8}
             disabled={radianceConfig.disabled}
           >
-            <Ionicons 
-              name="radio-outline" 
+            <CustomIcon 
+              name="radiance" 
               size={16} 
               color={radianceConfig.color} 
             />
@@ -440,7 +436,7 @@ const KindredSpirits: React.FC = () => {
               onPress={handleRadiancePress}
               activeOpacity={0.9}
             >
-              <Ionicons name="radio-outline" size={18} color="#D4AF37" style={styles.buttonIcon} />
+              <CustomIcon name="halo" size={18} color="#D4AF37" style={styles.buttonIcon} />
               <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#D4AF37' }]}>
                 {(userData.activeBoosts || 0) > 0 ? 'Activate Radiance' : 'Radiance'}
               </Text>
@@ -487,8 +483,8 @@ const KindredSpirits: React.FC = () => {
           activeOpacity={0.8}
           disabled={radianceConfig.disabled}
         >
-          <Ionicons 
-            name="radio-outline" 
+          <CustomIcon 
+            name="halo" 
             size={16} 
             color={radianceConfig.color} 
           />
@@ -518,11 +514,6 @@ const KindredSpirits: React.FC = () => {
               onPress={() => handleSortPress(option.key)}
               activeOpacity={0.8}
             >
-              <Ionicons 
-                name={option.icon as any} 
-                size={16} 
-                color={selectedSort === option.key ? '#FFFFFF' : '#8B4513'} 
-              />
               <Text style={[
                 styles.sortChipText, 
                 fonts.spiritualBodyFont, 
@@ -566,7 +557,7 @@ const KindredSpirits: React.FC = () => {
         {rest.length > 0 && (
           <View style={styles.othersSection}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="people" size={20} color="#8B4513" />
+              <CustomIcon name="friendship" size={32} color="#8B4513" />
               <Text style={[styles.sectionTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
                 Other Connections ({rest.length})
               </Text>

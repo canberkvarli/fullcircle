@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
+import { CustomIcon } from "@/components/CustomIcon";
 import { useFont } from "@/hooks/useFont";
 import RadianceScreen from "@/components/RadianceScreen";
 import LotusScreen from "@/components/LotusScreen"
@@ -332,8 +333,8 @@ export default function SacredSelf() {
                 >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                      <Ionicons name="sparkles" size={24} color="#8B4513" />
-                      <View style={[styles.countBadge, { backgroundColor: '#8B4513' }]}>
+                        <CustomIcon name="lotus" size={26}  />
+                      <View style={[styles.countBadge, { backgroundColor: '#680439ff' }]}>
                         <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                       </View>
                     </View>
@@ -446,8 +447,8 @@ export default function SacredSelf() {
                   >
                     <View style={styles.resourceIconContainer}>
                       <View style={[styles.resourceIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                        <Ionicons name="sparkles" size={20} color="#8B4513" />
-                        <View style={[styles.countBadge, { backgroundColor: '#8B4513' }]}>
+                        <CustomIcon name="lotus" size={26}  />
+                        <View style={[styles.countBadge, { backgroundColor: '#680439ff' }]}>
                           <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                         </View>
                       </View>

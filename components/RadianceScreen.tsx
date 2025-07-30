@@ -19,6 +19,7 @@ import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
 import OuroborosLoader from "./ouroboros/OuroborosLoader";
+import { CustomIcon } from "./CustomIcon";
 
 const { width } = Dimensions.get('window');
 
@@ -83,7 +84,7 @@ const BoostOption: React.FC<BoostOptionProps> = ({
           </Text>
         </View>
         <Text style={[styles.boostLabel, fonts.bodyFont, { color: colors.textMuted }]}>
-          boost{boostCount !== 1 ? 's' : ''}
+          Radiance{boostCount !== 1 ? '' : ''}
         </Text>
       </View>
 
@@ -318,7 +319,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
       // 5. Show success
       Alert.alert(
         "Success! 🎉",
-        `You got ${option.boostCount} Radiance boost${option.boostCount !== 1 ? 's' : ''}!`,
+        `You got ${option.boostCount} Radiance${option.boostCount !== 1 ? 's' : ''}!`,
         [{ text: "Nice!", style: "default" }]
       );
       
@@ -384,9 +385,9 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
             {!hasActiveRadiance && hasAvailableBoosts && (
               <View style={styles.availableBoostsSection}>
                 <View style={[styles.currentBoostsDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Ionicons name="radio-outline" size={18} color="#B8860B" />
+                  <CustomIcon name="halo" size={28} color="#B8860B" />
                   <Text style={[styles.currentBoostsText, fonts.bodyFont, { color: colors.textDark }]}>
-                    {userData.activeBoosts} boost{userData.activeBoosts !== 1 ? 's' : ''} ready
+                    {userData.activeBoosts} radiance ready
                   </Text>
                 </View>
                 
@@ -406,14 +407,14 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
                 >
                   {isProcessingActivation ? (
                     <>
-                      <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                      <CustomIcon name="halo" size={28} color="#FFFFFF" />
                       <Text style={[styles.activateButtonText, fonts.buttonFont]}>
                         Activating...
                       </Text>
                     </>
                   ) : (
                     <>
-                      <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                      <CustomIcon name="halo" size={28} color="#FFFFFF" />
                       <Text style={[styles.activateButtonText, fonts.buttonFont]}>
                         Activate for 1 Hour
                       </Text>
@@ -520,9 +521,9 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
                 </>
               ) : (
                 <>
-                  <Ionicons name="radio-outline" size={18} color="#FFFFFF" />
+                  <CustomIcon name="halo" size={38} color="#FFFFFF" />
                   <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
-                    Get {boostOptions[selectedOption].boostCount} Boost{boostOptions[selectedOption].boostCount !== 1 ? 's' : ''} • ${boostOptions[selectedOption].totalPrice.toFixed(2)}
+                    Get {boostOptions[selectedOption].boostCount} Radiance • ${boostOptions[selectedOption].totalPrice.toFixed(2)}
                   </Text>
                 </>
               )}

@@ -7,7 +7,6 @@ type CustomIconNames =
   | 'temple'
   | 'ohm'
   | 'yoga'
-  | 'pigeon'
   | 'friendship'
   | 'meditation'
   | 'prayer'
@@ -25,7 +24,6 @@ type CustomIconNames =
   | 'martial-arts'
   | 'fasting'
   | 'lotus'
-  | 'healing-journey'
   | 'yinyang'
   | 'acupuncture'
   | 'sound'
@@ -40,6 +38,7 @@ type CustomIconNames =
   | 'cake'
   | 'hand-heart'
   | 'infinity'
+  | 'halo'
 
 type UsedIoniconNames = 
   | 'heart' 
@@ -64,7 +63,6 @@ const iconMap: Record<string, any> = {
   "temple": require('../assets/icons/temple.png'),
   "ohm": require('../assets/icons/ohm.png'),
   "yoga": require('../assets/icons/yoga.png'),
-  "pigeon": require('../assets/icons/pigeon.png'),
   "friendship": require('../assets/icons/friendship.png'),
   "meditation": require('../assets/icons/meditation.png'),
   "prayer": require('../assets/icons/prayer.png'),
@@ -82,7 +80,6 @@ const iconMap: Record<string, any> = {
   'gong': require('../assets/icons/gong.png'),
   'leaf': require('../assets/icons/leaf.png'),
   'lotus': require('../assets/icons/lotus.png'),
-  'healing-journey': require('../assets/icons/healing-journey.png'),
   'yinyang': require('../assets/icons/yinyang.png'),
   'acupuncture': require('../assets/icons/acupuncture.png'),
   'sound': require('../assets/icons/sound.png'),
@@ -97,6 +94,7 @@ const iconMap: Record<string, any> = {
   'cake': require('../assets/icons/cake.png'),
   'hand-heart': require('../assets/icons/hand-heart.png'),
   'infinity': require('../assets/icons/infinity.png'),
+  'halo': require('../assets/icons/halo.png'),
 };
 
 // SVG-based icons (if you choose to use SVGs instead)
@@ -112,7 +110,6 @@ const customIconNames: CustomIconNames[] = [
   'temple',
   'ohm', 
   'yoga',
-  'pigeon',
   'friendship',
   'meditation',
   'prayer',
@@ -130,7 +127,6 @@ const customIconNames: CustomIconNames[] = [
   'martial-arts',
   'fasting',
   'lotus',
-  'healing-journey',
   'yinyang',
   'acupuncture',
   'sound',
@@ -145,6 +141,7 @@ const customIconNames: CustomIconNames[] = [
   'cake',
   'hand-heart',
   'infinity',
+  'halo',
 ];
 
 export const CustomIcon: React.FC<IconProps> = ({ 

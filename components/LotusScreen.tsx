@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    marginTop: Spacing.md, // Add top margin to prevent badge cutoff
+    marginTop: Spacing.md,
   },
   popularBadge: {
     position: 'absolute',
