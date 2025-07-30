@@ -12,14 +12,13 @@ import {
   Animated,
   RefreshControl
 } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
 import { CustomIcon } from "@/components/CustomIcon"; // Import CustomIcon
-import LottieView from 'lottie-react-native';
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -635,43 +634,18 @@ const ConnectScreen: React.FC = () => {
           <CustomIcon name="options" size={22} color="#B8860B" />
         </TouchableOpacity>
 
-        <Animated.View 
-          style={[
-            styles.centeredContainer,
-            { opacity: loadingFadeIn }
-          ]}
-        >
-          <View style={styles.loadingContainer}>
-            {/* Clean Lottie Animation */}
-            <Animated.View
-              style={[
-                styles.lottieContainer,
-                {
-                  opacity: loadingPulse.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1],
-                  }),
-                  transform: [
-                    {
-                      scale: loadingPulse.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [0.95, 1.05, 0.95],
-                      }),
-                    },
-                  ],
-                }
-              ]}
-            >
-              <LottieView
-                source={require('../../assets/animations/loading_mandala.json')}
-                autoPlay
-                loop
-                style={styles.lottieAnimation}
-                speed={0.8}
-              />
-            </Animated.View>
-          </View>
-        </Animated.View>
+        {/* Centered OuroborosLoader */}
+        <View style={styles.centeredLoadingContainer}>
+          <OuroborosLoader
+            variant="pulse"              
+            size={120}                   
+            duration={800}              
+            loop={true}                  
+            fillColor="#F5E6D3"          
+            strokeColor="#7B6B5C"        
+            strokeWidth={1}
+          />
+        </View>
       </View>
     );
   }
@@ -1441,6 +1415,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+    centeredLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing["4xl"],
   },
 });
 

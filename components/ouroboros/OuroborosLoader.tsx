@@ -1,3 +1,4 @@
+// components/OuroborosLoader.tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
 import OuroborosSVG from './OuroborosSVG';
@@ -175,8 +176,39 @@ const OuroborosLoader: React.FC<OuroborosLoaderProps> = ({
       const animation = createAnimation();
       
       if (loop) {
-        // For looping animations
-        animationRef.current = Animated.loop(animation);
+        // For looping animations - create a simple continuous rotation
+        const continuousRotation = Animated.loop(
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: duration,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          })
+        );
+        
+        // Separate scale animation for pulsing
+        const continuousScale = Animated.loop(
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: variant === 'pulse' ? 1.1 : 1.03,
+              duration: variant === 'pulse' ? 600 : 800,
+              easing: Easing.inOut(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 1,
+              duration: variant === 'pulse' ? 600 : 800,
+              easing: Easing.inOut(Easing.quad),
+              useNativeDriver: true,
+            }),
+          ])
+        );
+        
+        // Start both animations in parallel
+        animationRef.current = Animated.parallel([
+          continuousRotation,
+          continuousScale
+        ]);
         animationRef.current.start();
       } else {
         // For one-time animations
