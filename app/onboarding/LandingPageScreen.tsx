@@ -20,7 +20,8 @@ function LandingPageScreen(): JSX.Element {
         duration={3000}
         onComplete={handleAnimationFinish}
         fillColor="#F5E6D3"
-        strokeColor="#7B6B5C"
+        strokeColor="#B8860B"
+        // strokeColor="#7B6B5C"
         strokeWidth={1.5}
       />
     </View>

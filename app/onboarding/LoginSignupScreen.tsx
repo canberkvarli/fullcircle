@@ -15,6 +15,7 @@ import { StyleSheet, Platform } from "react-native";
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 
 const videoSource = require("../../assets/videos/danielle.mp4");
 
@@ -34,11 +35,21 @@ function LoginSignupScreen(): JSX.Element {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const initialButtonsFade = useRef(new Animated.Value(1)).current;
   const ssoButtonsFade = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (video.current) {
       (video.current as Video).playAsync();
     }
+    
+    // Start the ouroboros rotation animation
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    ).start();
   }, []);
 
   const handleVideoLoad = () => {
@@ -136,16 +147,36 @@ function LoginSignupScreen(): JSX.Element {
             </Animated.View>
           )}
           
-          {/* Title Section */}
+          {/* Logo and Title Section */}
           <View style={styles.titleSection}>
-            <Text style={styles.title}>FullCircle</Text>
+            {/* Ouroboros Logo */}
+            <Animated.View 
+              style={[
+                styles.logoContainer,
+                {
+                  transform: [{
+                    rotate: rotateAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '360deg'],
+                    }),
+                  }],
+                }
+              ]}
+            >
+              <View style={styles.logoGlow}>
+                <OuroborosSVG
+                  size={120}
+                  fillColor="#F5E6D3"
+                  // strokeColor="#B8860B"
+                  strokeColor="#7B6B5C"
+                  strokeWidth={2}
+                />
+              </View>
+            </Animated.View>
+            
+            <Text style={styles.title}>Circle</Text>
             <Text style={styles.subTitle}>Where intention meets connection</Text>
           </View>
-          
-          {/* Affirmation */}
-          <Text style={styles.affirmation}>
-            Embark on a journey of love and self-discovery
-          </Text>
           
           {/* Buttons Section - Fixed positioning */}
           <View style={styles.buttonSection}>
@@ -262,7 +293,17 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
       marginTop: Spacing["4xl"],
     },
-
+    logoContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoGlow: {
+      shadowColor: '#B8860B',
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 15,
+      shadowOpacity: 0.6,
+      elevation: 10,
+    },
     title: {
       ...logoFont,
       color: colors.background,
@@ -277,16 +318,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       color: colors.text,
       fontStyle: "italic",
       textShadowColor: 'rgba(0, 0, 0, 0.6)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3,
-    },
-    affirmation: {
-      ...affirmationFont,
-      color: colors.text,
-      textAlign: "center",
-      lineHeight: Typography.sizes.lg * 1.4,
-      paddingHorizontal: Spacing.lg,
-      textShadowColor: 'rgba(0, 0, 0, 0.7)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
     },

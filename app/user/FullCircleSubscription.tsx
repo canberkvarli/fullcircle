@@ -500,7 +500,7 @@ export default function FullCircleSubscription() {
                 <>
                   {plan.popular && (
                     <View style={styles.popularBadge}>
-                      <Text style={styles.popularText}>MOST POPULAR</Text>
+                      <Text style={styles.popularText}>POPULAR</Text>
                     </View>
                   )}
                   <TouchableOpacity
@@ -559,7 +559,7 @@ export default function FullCircleSubscription() {
               <View style={styles.featureIcon}>
                 <CustomIcon name="lotus" size={24} />
               </View>
-              <Text style={styles.featureText}>Priority Spiritual Visibility</Text>
+              <Text style={styles.featureText}>Priority Likes with the Lotus Flower</Text>
             </View>
           </View>
           <Text style={styles.cancelAnytimeText}>
@@ -807,6 +807,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
     popularBadge: {
       position: 'absolute',
       left: '50%',
+      marginTop: 4,
       marginLeft: -75, // Smaller width (80px total)
       backgroundColor: '#B8860B',
       paddingHorizontal: Spacing.sm, // Reduced padding

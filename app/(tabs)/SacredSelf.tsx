@@ -13,6 +13,7 @@ import {
   Dimensions,
   StyleSheet,
   Alert,
+  Modal,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from "expo-router";
@@ -21,7 +22,8 @@ import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { CustomIcon } from "@/components/CustomIcon";
 import { useFont } from "@/hooks/useFont";
 import RadianceScreen from "@/components/RadianceScreen";
-import LotusScreen from "@/components/LotusScreen"
+import LotusScreen from "@/components/LotusScreen";
+import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -37,6 +39,7 @@ export default function SacredSelf() {
   const [verified, _] = useState(userData.settings?.isSelfieVerified || false);
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [showLotusModal, setshowLotusModal] = useState(false);
+  const [showOuroborosTooltip, setShowOuroborosTooltip] = useState(false);
   const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
   
@@ -46,6 +49,38 @@ export default function SacredSelf() {
   const isFullCircle = userData.subscription?.isActive;
 
   const scrollY = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  // Initialize animations
+  React.useEffect(() => {
+    // Continuous rotation animation
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Continuous glow animation for Full Circle users
+    if (isFullCircle) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0.3,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+        ])
+      ).start();
+    }
+  }, [isFullCircle]);
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [100, 200],
@@ -61,12 +96,14 @@ export default function SacredSelf() {
     setshowLotusModal(true);
   };
 
-  // New handler for radiance clicks
+  const handleOuroborosInfo = () => {
+    setShowOuroborosTooltip(true);
+  };
+
   const handleRadiancePress = async () => {
     const radianceStatus = getRadianceStatus();
     const radianceTimeRemaining = getRadianceTimeRemaining();
     
-    // If radiance is already active, show info about current radiance
     if (radianceTimeRemaining > 0) {
       Alert.alert(
         "Sacred Radiance Active ✨",
@@ -85,7 +122,6 @@ export default function SacredSelf() {
       return;
     }
 
-    // If user has available radiances, ask if they want to activate
     if ((userData.activeBoosts || 0) > 0) {
       Alert.alert(
         "Activate Sacred Radiance",
@@ -106,7 +142,6 @@ export default function SacredSelf() {
         ]
       );
     } else {
-      // No radiances available, redirect to purchase screen
       setShowRadianceModal(true);
     }
   };
@@ -201,6 +236,7 @@ export default function SacredSelf() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+
         <View style={styles.profileSection}>
           <Link href={"/user/EditUserProfile" as any} asChild>
             <TouchableOpacity style={styles.profileImageContainer} activeOpacity={0.8}>
@@ -262,23 +298,65 @@ export default function SacredSelf() {
         <View style={styles.tabContent}>
           {isFullCircle ? (
             <View style={styles.fullCircleActiveContainer}>
-              {/* Clickable Full Circle Active Badge */}
+              {/* Ouroboros Badge - Replaces Full Circle Active Text */}
               <TouchableOpacity 
-                style={[styles.fullCircleBadge, { backgroundColor: colors.card }]}
+                style={[styles.ouroborosBadge]}
                 onPress={() => router.navigate("/user/FullCircleSubscription")}
                 activeOpacity={0.7}
               >
-                <View style={[styles.fullCircleIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                  <Ionicons name="checkmark-circle" size={20} color="#8B4513" />
+                <View style={styles.ouroborosContainer}>
+                  <Animated.View 
+                    style={[
+                      styles.ouroborosWrapper,
+                      {
+                        transform: [{
+                          rotate: rotateAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        }],
+                      }
+                    ]}
+                  >
+                    <Animated.View 
+                      style={[
+                        styles.ouroborosGlow,
+                        {
+                          shadowOpacity: glowAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 0.8],
+                          }),
+                        }
+                      ]}
+                    >
+                      <OuroborosSVG
+                        size={80}
+                        fillColor='#F5E6D3'
+                        strokeColor='#B8860B'
+                        strokeWidth={2}
+                      />
+                    </Animated.View>
+                  </Animated.View>
+                  
+                  {/* Info Icon */}
+                  <TouchableOpacity 
+                    style={styles.infoIcon}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOuroborosInfo();
+                    }}
+                  >
+                    <Ionicons name="information-circle" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={[styles.fullCircleBadgeText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                
+                <Text style={[styles.ouroborosBadgeText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
                   Full Circle Active
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
               
               <View style={styles.featuresContainer}>
-                {/* Unlimited Likes */}
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
                   onPress={() => router.navigate("/user/FullCircleSubscription")}
@@ -300,7 +378,6 @@ export default function SacredSelf() {
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                {/* Radiances - Now clickable */}
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
                   onPress={handleRadiancePress}
@@ -325,7 +402,6 @@ export default function SacredSelf() {
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                {/* Lotus Flowers */}
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
                   onPress={handleLotusPress}
@@ -350,7 +426,6 @@ export default function SacredSelf() {
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                {/* See Who Likes You */}
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
                   onPress={() => router.navigate("/(tabs)/KindredSpirits")}
@@ -372,7 +447,6 @@ export default function SacredSelf() {
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                {/* Enhanced Filtering */}
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
                   onPress={() => router.navigate("/user/ConnectingPreferences")}
@@ -397,24 +471,60 @@ export default function SacredSelf() {
             </View>
           ) : (
             <View style={styles.upgradeContainer}>
+              {/* Ouroboros Badge for Non-Full Circle Users */}
+              <TouchableOpacity 
+                style={[styles.ouroborosBadge, { backgroundColor: colors.card }]}
+                onPress={() => router.navigate("/user/FullCircleSubscription")}
+                activeOpacity={0.7}
+              >
+                <View style={styles.ouroborosContainer}>
+                  <Animated.View 
+                    style={[
+                      styles.ouroborosWrapper,
+                      {
+                        transform: [{
+                          rotate: rotateAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        }],
+                      }
+                    ]}
+                  >
+                    <View style={styles.ouroborosBasic}>
+                      <OuroborosSVG
+                        size={60}
+                        fillColor={colors.card}
+                        strokeColor={colors.textMuted}
+                        strokeWidth={2}
+                      />
+                    </View>
+                  </Animated.View>
+                  
+                  {/* Info Icon */}
+                  <TouchableOpacity 
+                    style={styles.infoIcon}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOuroborosInfo();
+                    }}
+                  >
+                    <Ionicons name="information-circle" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={[styles.ouroborosBadgeText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                  Embrace Full Circle
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+              
               <Text style={[styles.upgradeSubtitle, fonts.spiritualBodyFont, { color: colors.textLight, textAlign: 'center' }]}>
                 Unlock your full potential and connect with 3x more people
               </Text>
-                <TouchableOpacity 
-                  style={[styles.premiumUpgradeButton, { backgroundColor: '#8B4513' }]}
-                  onPress={() => router.navigate("/user/FullCircleSubscription")}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="arrow-up-circle" size={18} color="#FFFFFF" style={styles.upgradeIcon} />
-                  <Text style={[styles.upgradeButtonText, fonts.spiritualBodyFont]}>
-                    Embrace Full Circle
-                  </Text>
-                </TouchableOpacity>
 
-              {/* Current user resources */}
               <View style={styles.currentResourcesContainer}>
                 <View style={styles.resourcesGrid}>
-                  {/* Radiances - Now clickable */}
                   <TouchableOpacity 
                     style={[styles.resourceItem, { backgroundColor: colors.card }]}
                     onPress={handleRadiancePress}
@@ -439,7 +549,6 @@ export default function SacredSelf() {
                     <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   </TouchableOpacity>
 
-                  {/* Lotus Flowers */}
                   <TouchableOpacity 
                     style={[styles.resourceItem, { backgroundColor: colors.card }]}
                     onPress={handleLotusPress}
@@ -472,7 +581,37 @@ export default function SacredSelf() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Add the RadianceScreen Modal */}
+      {/* Ouroboros Tooltip Modal */}
+      <Modal
+        visible={showOuroborosTooltip}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowOuroborosTooltip(false)}
+      >
+        <TouchableOpacity 
+          style={styles.tooltipOverlay}
+          activeOpacity={1}
+          onPress={() => setShowOuroborosTooltip(false)}
+        >
+          <View style={[styles.tooltipContainer, { backgroundColor: colors.card }]}>
+            <View style={styles.tooltipHeader}>
+              <Text style={[styles.tooltipTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                The Sacred Ouroboros
+              </Text>
+              <TouchableOpacity onPress={() => setShowOuroborosTooltip(false)}>
+                <Ionicons name="close" size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.tooltipText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              The Ouroboros, an ancient symbol of a serpent eating its own tail, represents the eternal cycle of life, death, and rebirth. In FullCircle, it embodies our core belief that every ending leads to a new beginning, and every connection - whether it flourishes or fades - teaches us something valuable about ourselves and our journey toward finding our spiritual counterpart.
+            </Text>
+            <Text style={[styles.tooltipText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Just as the Ouroboros has no beginning or end, your path to meaningful connection is continuous, sacred, and ever-evolving. ✨
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <RadianceScreen
         visible={showRadianceModal}
         onClose={() => setShowRadianceModal(false)}
@@ -607,13 +746,6 @@ const styles = StyleSheet.create({
   fullCircleActiveContainer: {
     marginBottom: Spacing.xl,
   },
-  fullCircleActiveTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.xl,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
   featuresContainer: {
     gap: Spacing.md,
   },
@@ -670,8 +802,16 @@ const styles = StyleSheet.create({
     lineHeight: Typography.sizes.sm * 1.3,
     letterSpacing: 0.1,
   },
-  upgradeSection: {
+  upgradeContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  upgradeSubtitle: {
+    fontSize: Typography.sizes.base,
     marginBottom: Spacing.xl,
+    lineHeight: Typography.sizes.base * 1.4,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
   premiumUpgradeButton: {
     flexDirection: 'row',
@@ -684,50 +824,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFD700',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  goldenGlow: {
-    // Remove complex glow that might not be visible
-  },
-  premiumUpgradeText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.bold,
-    letterSpacing: 0.5,
-    color: 'white',
-  },
-  premiumUpgradeIcon: {
-    marginLeft: Spacing.sm,
-  },
-  currentResourcesSection: {
-    marginBottom: Spacing.xl,
-  },
-  upgradeContainer: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  upgradeTitle: {
-    fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
-    marginBottom: Spacing.sm,
-    letterSpacing: 0.5,
-  },
-  upgradeSubtitle: {
-    fontSize: Typography.sizes.base,
-    marginBottom: Spacing.xl,
-    lineHeight: Typography.sizes.base * 1.4,
-    letterSpacing: 0.2,
-    fontStyle: 'italic',
-  },
-  upgradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: 16,
-    shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -789,6 +885,60 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: Spacing['3xl'],
   },
+  
+  // Ouroboros Badge Styles
+  ouroborosBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: 12,
+    marginBottom: Spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    alignSelf: 'center',
+    maxWidth: '90%',
+  },
+  ouroborosContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.sm,
+  },
+  ouroborosWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ouroborosGlow: {
+    shadowColor: '#B8860B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  ouroborosBasic: {
+    // No special effects for non-Full Circle users
+  },
+  infoIcon: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ouroborosBadgeText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
+    flex: 1,
+  },
+  
   fullCircleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -817,5 +967,40 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.2,
     flex: 1,
+  },
+  // Tooltip Styles
+  tooltipOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  tooltipContainer: {
+    borderRadius: 16,
+    padding: Spacing.xl,
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  tooltipHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  tooltipTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
+  },
+  tooltipText: {
+    fontSize: Typography.sizes.base,
+    lineHeight: Typography.sizes.base * 1.5,
+    marginBottom: Spacing.md,
+    textAlign: 'left',
   },
 });
