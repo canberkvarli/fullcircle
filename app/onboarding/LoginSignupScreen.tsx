@@ -167,8 +167,8 @@ function LoginSignupScreen(): JSX.Element {
                 <OuroborosSVG
                   size={120}
                   fillColor="#F5E6D3"
-                  // strokeColor="#B8860B"
-                  strokeColor="#7B6B5C"
+                  strokeColor="#B8860B"
+                  // strokeColor="#7B6B5C"
                   strokeWidth={2}
                 />
               </View>
