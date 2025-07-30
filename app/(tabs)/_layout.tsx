@@ -89,9 +89,9 @@ const SpiritualAvatar = ({
       justifyContent: 'center',
     }}>
       <View style={{
-        width: size + 8,
-        height: size + 8,
-        borderRadius: (size + 8) / 2,
+        width: size + 4,
+        height: size + 4,
+        borderRadius: (size + 4) / 2,
         overflow: "hidden",
         borderWidth: focused ? 2 : 1,
         borderColor: focused ? '#8B4513' : '#8B4513' + '40',
@@ -100,9 +100,9 @@ const SpiritualAvatar = ({
         <Image
           source={{ uri: photoUri }}
           style={{ 
-            width: 25, 
-            height: 25,
-            margin: focused ? 1 : 0.5,
+            width: size, 
+            height: size,
+            margin: focused ? 0 : 0.5,
             borderRadius: size / 2,
           }}
         />
