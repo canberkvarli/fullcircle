@@ -8,7 +8,6 @@ import {
   useColorScheme,
   Platform,
   Alert,
-  ActivityIndicator,
   Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import * as ImagePicker from 'expo-image-picker';
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 export default function SelfieVerification() {
   const router = useRouter();
@@ -192,7 +192,14 @@ export default function SelfieVerification() {
     <View style={styles.contentContainer}>
       <View style={styles.iconContainer}>
         <View style={[styles.iconBackground, { backgroundColor: '#8B4513' + '20' }]}>
-          <ActivityIndicator size="large" color="#8B4513" />
+          <OuroborosLoader 
+              size={50}
+              duration={3000}
+              fillColor="#F5E6D3"
+              strokeColor="#7B6B5C"
+              strokeWidth={1.5}
+              loop={true}
+            />
         </View>
       </View>
       

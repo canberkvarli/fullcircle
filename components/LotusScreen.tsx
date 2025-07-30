@@ -10,7 +10,6 @@ import {
   Alert,
   useColorScheme,
   Animated,
-  ActivityIndicator,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +17,7 @@ import { useStripe } from '@stripe/stripe-react-native';
 import { useUserContext } from '@/context/UserContext';
 import { Colors, Typography, Spacing } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
+import OuroborosLoader from './ouroboros/OuroborosLoader';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -357,7 +357,14 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
               activeOpacity={0.8}
             >
               {isProcessing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <OuroborosLoader 
+                  size={50}
+                  duration={3000}
+                  fillColor="#F5E6D3"
+                  strokeColor="#7B6B5C"
+                  strokeWidth={1.5}
+                  loop={true}
+                />
               ) : (
                 <Ionicons name="sparkles" size={18} color="#FFFFFF" />
               )}

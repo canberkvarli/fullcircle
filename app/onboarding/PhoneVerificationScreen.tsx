@@ -6,7 +6,6 @@ import {
   View,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   useColorScheme,
   Platform,
   StyleSheet
@@ -16,6 +15,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const PhoneVerificationScreen = () => {
   const [verificationCode, setVerificationCode] = useState<string[]>(
@@ -172,7 +172,14 @@ const PhoneVerificationScreen = () => {
       {/* Loading or Resend */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <OuroborosLoader 
+            size={50}
+            duration={3000}
+            fillColor="#F5E6D3"
+            strokeColor="#7B6B5C"
+            strokeWidth={1.5}
+            loop={true}
+          />          
           <Text style={styles.loadingText}>Verifying your code...</Text>
         </View>
       ) : (

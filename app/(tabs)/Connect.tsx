@@ -1129,18 +1129,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   
-  lottieContainer: {
-    width: 120,
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  lottieAnimation: {
-    width: 100,
-    height: 100,
-  },
-  
   divineModalOverlay: {
     position: 'absolute',
     top: 0,

@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  ActivityIndicator,
   Platform,
   Alert,
   useColorScheme,
@@ -21,6 +20,7 @@ import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const DEFAULT_REGION = {
   latitude: 37.8715,
@@ -754,7 +754,14 @@ function EditFieldScreen() {
             {regionName}
           </Text>
           {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} />
+            <OuroborosLoader 
+                size={50}
+                duration={3000}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1.5}
+                loop={true}
+              />
           ) : (
             <MapView
               style={styles.map}

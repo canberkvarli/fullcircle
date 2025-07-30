@@ -22,6 +22,9 @@ import { useFont } from "@/hooks/useFont";
 import ProfilePreview from "@/components/ProfilePreview";
 import { STORAGE } from "@/services/FirebaseConfig";
 
+// Import spiritual mappings
+import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
+
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
   const [photos, setPhotos] = useState<string[]>(userData.photos || []);
@@ -141,6 +144,15 @@ export default function EditUserProfile() {
         
         if (validValues.length === 0) {
           return "Not set";
+        }
+
+        // Special handling for spiritual draws - convert values to labels
+        if (fieldName === "spiritualDraws") {
+          const labelValues = getSpiritualDrawLabels(validValues);
+          if (labelValues.length > 3) {
+            return `${labelValues.slice(0, 3).join(", ")} +${labelValues.length - 3} more`;
+          }
+          return labelValues.join(", ");
         }
         
         if (validValues.length > 3) {
@@ -290,32 +302,41 @@ export default function EditUserProfile() {
               {/* Colorful tags for spiritual and connection fields */}
               {(isSpiritualField || isConnectionField) && hasValidValue && Array.isArray(field.value) ? (
                 <View style={styles.spiritualPreview}>
-                  {field.value
-                    .filter(item => typeof item === 'string' && item.trim().length > 0)
-                    .slice(0, 3)
-                    .map((item: string, index: number) => (
-                      <View 
-                        key={`${field.fieldName}-${index}`}
-                        style={[
-                          styles.spiritualTag,
-                          { 
-                            backgroundColor: gradientColors[1] + '20',
-                            borderColor: gradientColors[1] + '40'
-                          }
-                        ]}
-                      >
-                        <Text style={[styles.spiritualTagText, { color: gradientColors[1] }]}>
-                          {item}
+                  {(() => {
+                    // For spiritual draws, convert values to labels for display
+                    const displayValues = field.fieldName === "spiritualDraws" 
+                      ? getSpiritualDrawLabels(field.value.filter(item => typeof item === 'string' && item.trim().length > 0))
+                      : field.value.filter(item => typeof item === 'string' && item.trim().length > 0);
+
+                    return displayValues
+                      .slice(0, 3)
+                      .map((item: string, index: number) => (
+                        <View 
+                          key={`${field.fieldName}-${index}`}
+                          style={[
+                            styles.spiritualTag,
+                            { 
+                              backgroundColor: gradientColors[1] + '20',
+                              borderColor: gradientColors[1] + '40'
+                            }
+                          ]}
+                        >
+                          <Text style={[styles.spiritualTagText, { color: gradientColors[1] }]}>
+                            {item}
+                          </Text>
+                        </View>
+                      ));
+                  })()}
+                  {(() => {
+                    const originalValues = field.value.filter(item => typeof item === 'string' && item.trim().length > 0);
+                    return originalValues.length > 3 && (
+                      <View style={[styles.moreTag, { backgroundColor: colors.textMuted + '20' }]}>
+                        <Text style={[styles.moreTagText, { color: colors.textMuted }]}>
+                          +{originalValues.length - 3}
                         </Text>
                       </View>
-                    ))}
-                  {field.value.filter(item => typeof item === 'string' && item.trim().length > 0).length > 3 && (
-                    <View style={[styles.moreTag, { backgroundColor: colors.textMuted + '20' }]}>
-                      <Text style={[styles.moreTagText, { color: colors.textMuted }]}>
-                        +{field.value.filter(item => typeof item === 'string' && item.trim().length > 0).length - 3}
-                      </Text>
-                    </View>
-                  )}
+                    );
+                  })()}
                 </View>
               ) : (
                 <Text style={[styles.fieldValue, fonts.captionFont, { color: colors.textMuted }]}>

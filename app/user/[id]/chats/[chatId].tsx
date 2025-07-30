@@ -5,7 +5,6 @@ import {
   View,
   TouchableOpacity,
   Text,
-  ActivityIndicator,
   StyleSheet,
   Platform,
   Dimensions,
@@ -22,7 +21,6 @@ import {
   Send,
 } from "react-native-gifted-chat";
 import { Ionicons } from '@expo/vector-icons';
-import LottieView from "lottie-react-native";
 import ChatOptionsModal from "@/components/modals/ChatOptionsModal";
 import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -31,6 +29,7 @@ import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import PotentialMatch from "@/components/PotentialMatch";
 import ReportModal from "@/components/modals/ReportModal";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -451,43 +450,15 @@ const Chat: React.FC = () => {
   if (showLoadingScreen) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <Animated.View 
-          style={[
-            styles.loader,
-            { 
-              opacity: Animated.multiply(loadingFadeIn, loadingFadeOut)
-            }
-          ]}
-        >
-          {/* Animated Lottie Container - Only the mandala */}
-          <Animated.View
-            style={[
-              styles.lottieContainer,
-              {
-                opacity: loadingPulse.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.8, 1],
-                }),
-                transform: [
-                  {
-                    scale: loadingPulse.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [0.95, 1.05, 0.95],
-                    }),
-                  },
-                ],
-              }
-            ]}
-          >
-            <LottieView
-              source={require('../../../../assets/animations/loading_mandala.json')}
-              autoPlay
-              loop
-              style={styles.lottieAnimation}
-              speed={0.8}
+          <OuroborosLoader 
+              variant="pulse"              
+              size={120}                   
+              duration={800} 
+              fillColor="#F5E6D3"
+              strokeColor="#7B6B5C"
+              strokeWidth={1}
+              loop={true}
             />
-          </Animated.View>
-        </Animated.View>
       </SafeAreaView>
     );
   }
@@ -692,36 +663,18 @@ const Chat: React.FC = () => {
                   </ScrollView>
                 ) : (
                   <View style={styles.profileLoader}>
-                    <Animated.View
-                      style={[
-                        styles.lottieContainer,
-                        {
-                          opacity: loadingPulse.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.8, 1],
-                          }),
-                          transform: [
-                            {
-                              scale: loadingPulse.interpolate({
-                                inputRange: [0, 0.5, 1],
-                                outputRange: [0.95, 1.05, 0.95],
-                              }),
-                            },
-                          ],
-                        }
-                      ]}
-                    >
-                      <LottieView
-                        source={require('../../../../assets/animations/loading_mandala.json')}
-                        autoPlay
-                        loop
-                        style={styles.lottieAnimation}
-                        speed={0.8}
+                    <OuroborosLoader 
+                        variant="pulse"              
+                        size={120}                   
+                        duration={800} 
+                        fillColor="#F5E6D3"
+                        strokeColor="#7B6B5C"
+                        strokeWidth={1}
+                        loop={true}
                       />
-                    </Animated.View>
-                    <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-                      Loading profile...
-                    </Text>
+                      <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
+                        Loading profile...
+                      </Text>
                   </View>
                 )}
               </View>
@@ -851,17 +804,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
-  },
-  lottieContainer: {
-    width: 150,
-    height: 150,
-    marginBottom: Spacing.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  lottieAnimation: {
-    width: '100%',
-    height: '100%',
   },
   loadingText: {
     fontSize: Typography.sizes.xl,

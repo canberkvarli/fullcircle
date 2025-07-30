@@ -12,11 +12,11 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import LottieView from 'lottie-react-native';
 import { useUserContext } from "@/context/UserContext";
-import { Link, useRouter } from "expo-router";
-import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { useRouter } from "expo-router";
+import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const SoulChats: React.FC = () => {
   const {
@@ -120,33 +120,15 @@ const SoulChats: React.FC = () => {
         </View>
         
         <View style={styles.loadingContainer}>
-          <Animated.View
-            style={[
-              styles.lottieContainer,
-              {
-                opacity: loadingPulse.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.8, 1],
-                }),
-                transform: [
-                  {
-                    scale: loadingPulse.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [0.95, 1.05, 0.95],
-                    }),
-                  },
-                ],
-              }
-            ]}
-          >
-            <LottieView
-              source={require('../../assets/animations/loading_mandala.json')}
-              autoPlay
-              loop
-              style={styles.lottieAnimation}
-              speed={0.8}
+          <OuroborosLoader 
+              variant="pulse"              
+              size={120}                   
+              duration={800} 
+              fillColor="#F5E6D3"
+              strokeColor="#7B6B5C"
+              strokeWidth={1}
+              loop={true}
             />
-          </Animated.View>
         </View>
       </View>
     );
@@ -454,19 +436,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  
-  lottieContainer: {
-    width: 120,
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  lottieAnimation: {
-    width: 100,
-    height: 100,
+    marginBottom: Spacing["4xl"],
   },
   
   noMatchesContainer: {

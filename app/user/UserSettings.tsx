@@ -10,7 +10,6 @@ import {
   Modal,
   TextInput,
   Animated,
-  ActivityIndicator,
   StyleSheet,
   useColorScheme,
   Platform,
@@ -23,6 +22,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
 import { FIREBASE_AUTH, FUNCTIONS } from "@/services/FirebaseConfig";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 export default function UserSettings() {
   const router = useRouter();
@@ -543,7 +543,14 @@ export default function UserSettings() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <OuroborosLoader 
+                  size={50}
+                  duration={3000}
+                  fillColor="#F5E6D3"
+                  strokeColor="#7B6B5C"
+                  strokeWidth={1.5}
+                  loop={true}
+                />
               ) : (
                 <Text style={[styles.updateButtonText, fonts.buttonFont]}>Update Email</Text>
               )}
@@ -628,7 +635,14 @@ export default function UserSettings() {
             </View>
             
             {isConnectingGoogle ? (
-              <ActivityIndicator size="small" color="#8B4513" />
+              <OuroborosLoader 
+                size={50}
+                duration={3000}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1.5}
+                loop={true}
+              />
             ) : (
               <Switch
                 value={userData.settings?.connectedAccounts?.google || false}
@@ -759,7 +773,14 @@ export default function UserSettings() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <OuroborosLoader 
+                  size={50}
+                  duration={3000}
+                  fillColor="#F5E6D3"
+                  strokeColor="#7B6B5C"
+                  strokeWidth={1.5}
+                  loop={true}
+                />
               ) : (
                 <Text style={[styles.modalButtonText, fonts.buttonFont]}>Verify Code</Text>
               )}
@@ -808,8 +829,14 @@ export default function UserSettings() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
+                <OuroborosLoader 
+                    size={50}
+                    duration={3000}
+                    fillColor="#F5E6D3"
+                    strokeColor="#7B6B5C"
+                    strokeWidth={1.5}
+                    loop={true}
+                  />              ) : (
                 <Text style={[styles.modalButtonText, fonts.buttonFont]}>Delete Account</Text>
               )}
             </TouchableOpacity>

@@ -5,7 +5,6 @@ import {
   View,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   PermissionsAndroid,
   Platform,
   useColorScheme,
