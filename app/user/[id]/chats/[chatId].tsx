@@ -69,27 +69,23 @@ const Chat: React.FC = () => {
   // Animation for smooth sliding between tabs
   const slideAnim = useRef(new Animated.Value(0)).current;
   
-  // Loading animation refs
-  const loadingPulse = useRef(new Animated.Value(0)).current;
-  const loadingFadeIn = useRef(new Animated.Value(0)).current;
-  const loadingFadeOut = useRef(new Animated.Value(1)).current;
+  // 🔄 SIMPLIFIED: Only keep content fade-in, remove loading animations
   const contentFadeIn = useRef(new Animated.Value(0)).current;
 
-  // Enhanced loading state management with immediate mandala display
+  // 🔄 SIMPLIFIED: Enhanced loading state management without manual animations
   useEffect(() => {
-    // Show mandala immediately when component mounts
     setShowLoadingScreen(true);
     
     let minimumTimeElapsed = false;
     let dataReady = false;
 
-    // Minimum display time timer (1 second to see the animation)
+    // Minimum display time timer (1.5 seconds to see the ouroboros)
     const minimumTimer = setTimeout(() => {
       minimumTimeElapsed = true;
       if (dataReady) {
         handleTransitionToContent();
       }
-    }, 1000);
+    }, 1500);
 
     // Check if data is ready
     const checkDataReady = () => {
@@ -102,21 +98,15 @@ const Chat: React.FC = () => {
     };
 
     const handleTransitionToContent = () => {
-      // Smooth fade out loading screen
-      Animated.timing(loadingFadeOut, {
-        toValue: 0,
-        duration: 50,
+      // Simple transition to content
+      setShowLoadingScreen(false);
+      setShowContent(true);
+      // Fade in main content
+      Animated.timing(contentFadeIn, {
+        toValue: 1,
+        duration: 600,
         useNativeDriver: true,
-      }).start(() => {
-        setShowLoadingScreen(false);
-        setShowContent(true);
-        // Fade in main content
-        Animated.timing(contentFadeIn, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }).start();
-      });
+      }).start();
     };
 
     // Initial check
@@ -127,37 +117,6 @@ const Chat: React.FC = () => {
       clearTimeout(minimumTimer);
     };
   }, [isLoading, chatId]);
-
-  // Start loading animations immediately
-  useEffect(() => {
-    // Start animations immediately when component mounts
-    Animated.timing(loadingFadeIn, {
-      toValue: 1,
-      duration: 300, // Faster initial fade-in
-      useNativeDriver: true,
-    }).start();
-
-    // Pulse animation
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(loadingPulse, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(loadingPulse, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
-
-    return () => {
-      pulseAnimation.stop();
-    };
-  }, []); // Remove dependencies to start immediately
 
   // Parse matchUser and detect connection method
   useEffect(() => {
@@ -191,14 +150,12 @@ const Chat: React.FC = () => {
     }
   }, [matchUser, otherUserId]);
 
-  // Create/fetch chatId and get match date - with immediate response
+  // Create/fetch chatId and get match date
   useEffect(() => {
     let mounted = true;
 
-    // Don't try to create chat if unmatching
     if (isUnmatching) return;
 
-    // Start the async operation immediately but don't block
     const initializeChat = async () => {
       try {
         const id = await createOrFetchChat(userData.userId, otherUserId);
@@ -446,19 +403,22 @@ const Chat: React.FC = () => {
     </Send>
   );
 
-  // Show loading screen immediately, then check for content readiness
+  // 🔄 SIMPLIFIED: Clean loading screen with only OuroborosLoader
   if (showLoadingScreen) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-          <OuroborosLoader 
-              variant="pulse"              
-              size={120}                   
-              duration={800} 
-              fillColor="#F5E6D3"
-              strokeColor="#7B6B5C"
-              strokeWidth={1}
-              loop={true}
-            />
+      <SafeAreaView style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <OuroborosLoader 
+          variant="breathe"              // Spiritual feel for chat loading
+          size={120}                     
+          duration={2500}                // Slower, more meditative
+          fillColor="#F5E6D3"
+          strokeColor="#7B6B5C"
+          strokeWidth={1.5}
+          loop={true}
+        />
+        <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#7B6B5C' }]}>
+          Connecting souls...
+        </Text>
       </SafeAreaView>
     );
   }
@@ -664,17 +624,17 @@ const Chat: React.FC = () => {
                 ) : (
                   <View style={styles.profileLoader}>
                     <OuroborosLoader 
-                        variant="pulse"              
-                        size={120}                   
-                        duration={800} 
-                        fillColor="#F5E6D3"
-                        strokeColor="#7B6B5C"
-                        strokeWidth={1}
-                        loop={true}
-                      />
-                      <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#8B4513' }]}>
-                        Loading profile...
-                      </Text>
+                      variant="spinner"            // Simple spinner for profile loading
+                      size={80}                   
+                      duration={1500}             
+                      fillColor="#F5E6D3"
+                      strokeColor="#7B6B5C"
+                      strokeWidth={1.5}
+                      loop={true}
+                    />
+                    <Text style={[styles.profileLoadingText, fonts.spiritualBodyFont, { color: '#7B6B5C' }]}>
+                      Loading essence...
+                    </Text>
                   </View>
                 )}
               </View>
@@ -689,6 +649,12 @@ const Chat: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  // 🆕 NEW: Loading container style
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
   },
   header: {
     paddingHorizontal: Spacing.lg,
@@ -799,24 +765,21 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: "100%",
   },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-  },
   loadingText: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.sm,
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.medium,
+    marginTop: Spacing.lg,
     letterSpacing: 0.5,
     textAlign: 'center',
-  },
-  loadingSubtext: {
-    fontSize: Typography.sizes.sm,
     fontStyle: 'italic',
-    textAlign: 'center',
+  },
+  profileLoadingText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    marginTop: Spacing.md,
     letterSpacing: 0.3,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   inputToolbar: {
     borderTopWidth: 1,

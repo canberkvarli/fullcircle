@@ -7,6 +7,33 @@ import {LikedByIconWithBadge} from "@/components/LikedByIconWithBadge";
 import { MatchesIconWithBadge } from "@/components/MatchesIconWithBadge";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosSVG from "@/components/ouroboros/OuroborosSVG"; // Import your Ouroboros SVG
+
+// Spiritual Ouroboros icon component
+const SpiritualOuroboros = ({ 
+  color, 
+  size, 
+  focused
+}: { 
+  color: string; 
+  size: number; 
+  focused: boolean;
+}) => (
+  <View style={{
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    width: size + 4,
+    height: size + 4,
+  }}>
+    <OuroborosSVG
+      size={focused ? 55 : 50}
+      fillColor={focused ? '#8B4513' : color}
+      strokeColor={focused ? '#8B4513' : color}
+      strokeWidth={focused ? 1 : 0.8}
+    />
+  </View>
+);
 
 // Simple spiritual icon component
 const SpiritualIcon = ({ 
@@ -62,9 +89,9 @@ const SpiritualAvatar = ({
       justifyContent: 'center',
     }}>
       <View style={{
-        width: size + 4,
-        height: size + 4,
-        borderRadius: (size + 4) / 2,
+        width: size + 8,
+        height: size + 8,
+        borderRadius: (size + 8) / 2,
         overflow: "hidden",
         borderWidth: focused ? 2 : 1,
         borderColor: focused ? '#8B4513' : '#8B4513' + '40',
@@ -73,8 +100,8 @@ const SpiritualAvatar = ({
         <Image
           source={{ uri: photoUri }}
           style={{ 
-            width: size, 
-            height: size,
+            width: 25, 
+            height: 25,
             margin: focused ? 1 : 0.5,
             borderRadius: size / 2,
           }}
@@ -112,6 +139,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#8B4513', // Sacred brown
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
+          ...fonts.spiritualBodyFont,
           fontSize: Typography.sizes.xs,
           fontWeight: Typography.weights.medium,
           marginTop: 3,
@@ -127,8 +155,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Connect",
           tabBarIcon: ({ color, size, focused }) => (
-            <SpiritualIcon 
-              iconName="sparkles" 
+            <SpiritualOuroboros 
               color={color} 
               size={size} 
               focused={focused}

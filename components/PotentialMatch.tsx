@@ -406,9 +406,6 @@ const PotentialMatch: React.FC<Props> = ({
             onPress={() => setIsExpanded(false)}
             activeOpacity={0.7}
           >
-            <Text style={{ color: colors.textMuted }}>
-              Tap to show less
-            </Text>
           </TouchableOpacity>
         )}
       </TouchableOpacity>

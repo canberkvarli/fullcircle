@@ -127,9 +127,6 @@ const InfoCard: React.FC<InfoCardProps> = ({
           onPress={() => setIsExpanded(false)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.collapseHintText, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-            Tap to show less
-          </Text>
         </TouchableOpacity>
       )}
 

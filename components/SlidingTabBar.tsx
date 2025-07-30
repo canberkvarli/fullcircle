@@ -7,6 +7,7 @@ import { useFont } from "@/hooks/useFont";
 import { LikedByIconWithBadge } from "@/components/LikedByIconWithBadge";
 import { MatchesIconWithBadge } from "@/components/MatchesIconWithBadge";
 import { useUserContext } from "@/context/UserContext";
+import OuroborosSVG from "@/components/ouroboros/OuroborosSVG"; // Import your Ouroboros SVG
 
 interface TabItemProps {
   icon?: string;
@@ -57,14 +58,14 @@ const TabItem: React.FC<TabItemProps> = ({ icon, label, isActive, onPress, rende
         {renderIcon ? renderIcon() : (
           <Ionicons 
             name={icon as any} 
-            size={20} 
+            size={25} 
             color={isActive ? '#8B4513' : colors.textMuted} 
           />
         )}
         <Text 
           style={[
-            styles.tabLabel, 
             fonts.spiritualBodyFont,
+            styles.tabLabel,
             { color: isActive ? '#8B4513' : colors.textMuted }
           ]}
         >
@@ -102,10 +103,19 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
     >
       <View style={styles.tabBar}>
         <TabItem
-          icon="sparkles"
           label="Connect"
           isActive={false}
           onPress={() => handleTabPress('/Connect')}
+          renderIcon={() => (
+            <View style={styles.ouroborosContainer}>
+              <OuroborosSVG
+                size={18}
+                fillColor={colors.textMuted}
+                strokeColor={colors.textMuted}
+                strokeWidth={0.8}
+              />
+            </View>
+          )}
         />
         
         <TabItem
@@ -115,7 +125,7 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
           renderIcon={() => (
             <LikedByIconWithBadge 
               color={colors.textMuted} 
-              size={20} 
+              size={25} 
             />
           )}
         />
@@ -127,7 +137,7 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
           renderIcon={() => (
             <MatchesIconWithBadge 
               color={colors.textMuted} 
-              size={20} 
+              size={25} 
             />
           )}
         />
@@ -142,7 +152,7 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
                 />
               </View>
             ) : (
-              <Ionicons name="person" size={20} color={colors.textMuted} />
+              <Ionicons name="person" size={25} color={colors.textMuted} />
             )
           )}
           label="Self"
@@ -196,18 +206,24 @@ const styles = StyleSheet.create({
   },
   
   avatarContainer: {
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
     borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
   },
   
   avatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    margin: 1,
+    width: 32,
+    height: 32,
+    borderRadius: 25,
+  },
+  
+  ouroborosContainer: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2, // Small adjustment to center better with text
   },
 });
 

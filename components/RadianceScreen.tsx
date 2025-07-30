@@ -18,6 +18,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
+import OuroborosLoader from "./ouroboros/OuroborosLoader";
 
 const { width } = Dimensions.get('window');
 
@@ -505,7 +506,14 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
             >
               {isProcessingPurchase ? (
                 <>
-                  <Ionicons name="card-outline" size={18} color="#FFFFFF" />
+                  <OuroborosLoader 
+                    size={50}
+                    duration={3000}
+                    fillColor="#F5E6D3"
+                    strokeColor="#7B6B5C"
+                    strokeWidth={1.5}
+                    loop={true}
+                  />
                   <Text style={[styles.purchaseButtonText, fonts.buttonFont]}>
                     Processing Payment...
                   </Text>
@@ -746,7 +754,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderRadius: 12,
     marginBottom: Spacing.sm,
     gap: Spacing.sm,
