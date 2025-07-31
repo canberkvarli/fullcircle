@@ -1,7 +1,6 @@
-// components/MatchesIconWithBadge.tsx
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import Icon from "react-native-vector-icons/Ionicons";
 import { useUserContext } from "@/context/UserContext";
 
 export const MatchesIconWithBadge: React.FC<{
@@ -13,7 +12,7 @@ export const MatchesIconWithBadge: React.FC<{
 
   return (
     <View style={{ width: size, height: size }}>
-      <Icon name="comments" size={size} color={color} />
+      <Icon name="chatbox" size={size} color={color} />
       {unreadMatchesCount > 0 && (
         <View style={styles.badgeContainer}>
           <Text style={styles.badgeText}>{display}</Text>
