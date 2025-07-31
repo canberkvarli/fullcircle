@@ -478,7 +478,6 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       {organizedContent.map((item, index) => (
         <View key={`content-${index}`}>
           {item.type === 'photo' && item.uri && renderPhotoWithDetail(item.uri, item.index)}
-          {item.type === 'standalone-info' && renderInfoCard(item)}
         </View>
       ))}
 
