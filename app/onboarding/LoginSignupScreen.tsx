@@ -21,7 +21,7 @@ const videoSource = require("../../assets/videos/danielle.mp4");
 
 function LoginSignupScreen(): JSX.Element {
   const router = useRouter();
-  const video = useRef(null);
+  const video = useRef(null) as any;
   const colorScheme = useColorScheme() ?? 'light';
   const styles = createStyles(colorScheme);
   const colors = Colors[colorScheme];
@@ -36,6 +36,7 @@ function LoginSignupScreen(): JSX.Element {
   const initialButtonsFade = useRef(new Animated.Value(1)).current;
   const ssoButtonsFade = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [videoDuration, setVideoDuration] = useState(10000);
 
   useEffect(() => {
     if (video.current) {
@@ -51,6 +52,16 @@ function LoginSignupScreen(): JSX.Element {
       })
     ).start();
   }, []);
+
+  useEffect(() => {
+  if (video.current) {
+    const interval = setInterval(() => {
+      video.current?.setPositionAsync(0);
+    }, videoDuration);
+    
+    return () => clearInterval(interval);
+  }
+}, [videoDuration]);
 
   const handleVideoLoad = () => {
     setVideoLoaded(true);

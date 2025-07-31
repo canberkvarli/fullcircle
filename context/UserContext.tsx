@@ -536,7 +536,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log('🚫 Building comprehensive exclusion set for user:', userId);
     
     try {
-      // 🔄 ENHANCED: Parallel fetch of ALL exclusion data including reports and unmatches
+      // 🔄 ENHANCED: Parallel fetch of ALL exclusion data
       const [
         likesSnap, 
         dislikesSnap, 
@@ -553,28 +553,49 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         FIRESTORE.collection("users").doc(userId).collection("unmatchedUsers").get(),
       ]);
       
-      const exclusions = new Set<string>([
+      // 🆕 NEW: Build exclusions with STRICT priority - ALWAYS exclude critical ones
+      const criticalExclusions = new Set<string>([
         userId, // Always exclude self
-        ...likesSnap.docs.map(doc => doc.id),
-        ...dislikesSnap.docs.map(doc => doc.id),
-        ...matchesSnap.docs.map(doc => doc.id),
-        ...receivedLikesSnap.docs.map(doc => doc.id),
-        ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id),
-        ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id),
+        ...matchesSnap.docs.map(doc => doc.id), // Current matches
+        ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id), // Reported users
+        ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id), // Unmatched users
+        ...dislikesSnap.docs.map(doc => doc.id), // Dislikes - ALWAYS exclude
+        ...likesSnap.docs.map(doc => doc.id), // Likes given - ALWAYS exclude to prevent duplicates
       ]);
-
-      console.log('🚫 Comprehensive exclusion breakdown:', {
+      
+      // 🆕 NEW: Only include received likes if we have room and it makes sense
+      const finalExclusions = new Set([...criticalExclusions]);
+      
+      // Add received likes only if under a reasonable limit
+      const maxExclusionSize = __DEV__ ? 25 : 50; // Higher limits
+      if (finalExclusions.size < maxExclusionSize) {
+        receivedLikesSnap.docs.forEach(doc => {
+          if (finalExclusions.size < maxExclusionSize) {
+            finalExclusions.add(doc.id);
+          }
+        });
+      }
+      
+      console.log('🚫 Smart exclusion breakdown:', {
         self: 1,
-        likesGiven: likesSnap.docs.length,
-        dislikesGiven: dislikesSnap.docs.length,
         matches: matchesSnap.docs.length,
-        receivedLikes: receivedLikesSnap.docs.length, // ✅ People who liked you
-        reportedUsers: reportsSnap.docs.length,
-        unmatchedUsers: unmatchesSnap.docs.length,
-        totalExcluded: exclusions.size
+        reports: reportsSnap.docs.length,
+        unmatches: unmatchesSnap.docs.length,
+        dislikes: dislikesSnap.docs.length,
+        likesGiven: likesSnap.docs.length, // This should ALWAYS be included
+        receivedLikes: Math.min(receivedLikesSnap.docs.length, maxExclusionSize - criticalExclusions.size),
+        totalExcluded: finalExclusions.size,
+        maxAllowed: maxExclusionSize
       });
       
-      return exclusions;
+      // 🆕 NEW: Log specific user if they appear in exclusions
+      if (finalExclusions.has("g1WzJzgrTISlIiQybrFYW5wPmAm1")) {
+        console.log('🚫 CONFIRMED: Asgsadgsdgsdagsadgsdagsda is in exclusion set');
+      } else {
+        console.log('⚠️ WARNING: Asgsadgsdgsdagsadgsdagsda NOT in exclusion set');
+      }
+      
+      return finalExclusions;
       
     } catch (error) {
       console.error('❌ Error building exclusion set:', error);
@@ -1305,13 +1326,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const filteredUsers = users.filter(user => {
       // 1. 🚫 EXCLUSION CHECK - Use the exclusion set from matching state
       if (matchingState.exclusionSet.has(user.userId)) {
-        console.log(`❌ ${user.firstName} (${user.userId}) - Already excluded from exclusion set`);
+        console.log(`❌ ${user.firstName} (${user.userId.slice(-4)}) - Already excluded from exclusion set`);
         return false;
       }
       
       // 2. 🔥 CRITICAL: Explicit self-check as backup
       if (user.userId === userData.userId) {
-        console.log(`❌ ${user.firstName} (${user.userId}) - Cannot show user themselves!`);
+        console.log(`❌ ${user.firstName} (${user.userId.slice(-4)}) - Cannot show user themselves!`);
         return false;
       }
 
@@ -1452,12 +1473,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
-      // ✅ FIXED: Only exclude users from the current exclusion set, not from existing potentialMatches
-      // The exclusion set should already contain all users we've interacted with
       console.log('🔍 Using exclusions for query:', Array.from(exclusionsToUse));
       
       // Build and execute query
-      const query = buildMatchQuery(exclusionsToUse, lastDoc, 8); // Using your 8 batch size
+      const query = buildMatchQuery(exclusionsToUse, lastDoc, 8);
       const snapshot = await query.get();
       
       if (snapshot.empty) {
@@ -1713,143 +1732,143 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const optimizedLikeMatch = useCallback(async (matchId: string) => {
-      console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
+    console.log(`❤️ OPTIMIZED LIKING USER: ${matchId}`);
+    
+    try {
+      // Check daily limit for non-FullCircle users in production
+      if (!userDataRef.current.subscription?.isActive && !__DEV__) {
+        const remaining = getRemainingDailyLikes();
+        
+        if (remaining <= 0) {
+          throw new Error("DAILY_LIMIT_REACHED");
+        }
+      }
+
+      // Check if the TARGET USER (person being liked) has radiance
+      console.log(`🔍 Checking if target user ${matchId} has radiance...`);
+      
+      let targetHasRadiance = false;
       
       try {
-        // Check daily limit for non-FullCircle users in production
-        if (!userDataRef.current.subscription?.isActive && !__DEV__) {
-          const remaining = getRemainingDailyLikes();
-          
-          if (remaining <= 0) {
-            throw new Error("DAILY_LIMIT_REACHED");
-          }
-        }
-
-        // Check if the TARGET USER (person being liked) has radiance
-        console.log(`🔍 Checking if target user ${matchId} has radiance...`);
+        const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
         
-        let targetHasRadiance = false;
-        
-        try {
-          const targetUserDoc = await FIRESTORE.collection("users").doc(matchId).get();
+        if (targetUserDoc.exists) {
+          const targetUserData = targetUserDoc.data() as UserDataType;
           
-          if (targetUserDoc.exists) {
-            const targetUserData = targetUserDoc.data() as UserDataType;
+          console.log('🎯 Target user data:', {
+            userId: matchId,
+            boostExpiresAt: targetUserData.boostExpiresAt,
+            hasBoostField: !!targetUserData.boostExpiresAt
+          });
+          
+          if (targetUserData.boostExpiresAt) {
+            const expiresAt = targetUserData.boostExpiresAt.toDate 
+              ? targetUserData.boostExpiresAt.toDate()
+              : new Date(targetUserData.boostExpiresAt);
             
-            console.log('🎯 Target user data:', {
-              userId: matchId,
-              boostExpiresAt: targetUserData.boostExpiresAt,
-              hasBoostField: !!targetUserData.boostExpiresAt
+            targetHasRadiance = new Date() < expiresAt;
+            
+            console.log('🔍 Target user radiance check:', {
+              expiresAt: expiresAt.toISOString(),
+              currentTime: new Date().toISOString(),
+              targetHasRadiance
             });
-            
-            if (targetUserData.boostExpiresAt) {
-              const expiresAt = targetUserData.boostExpiresAt.toDate 
-                ? targetUserData.boostExpiresAt.toDate()
-                : new Date(targetUserData.boostExpiresAt);
-              
-              targetHasRadiance = new Date() < expiresAt;
-              
-              console.log('🔍 Target user radiance check:', {
-                expiresAt: expiresAt.toISOString(),
-                currentTime: new Date().toISOString(),
-                targetHasRadiance
-              });
-            } else {
-              console.log('🔍 Target user has no boostExpiresAt field');
-            }
           } else {
-            console.log('❌ Target user document not found');
+            console.log('🔍 Target user has no boostExpiresAt field');
           }
-        } catch (error) {
-          console.error('❌ Error checking target user radiance:', error);
+        } else {
+          console.log('❌ Target user document not found');
+        }
+      } catch (error) {
+        console.error('❌ Error checking target user radiance:', error);
+      }
+      
+      console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
+        targetUserId: matchId,
+        targetHasRadiance,
+        meaning: targetHasRadiance 
+          ? 'This like will be marked as viaRadiance because recipient has active boost' 
+          : 'Normal like - recipient has no active boost'
+      });
+      
+      // 🔧 CRITICAL FIX: Update exclusion set AND remove from UI immediately
+      setMatchingState(prev => {
+        const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+        
+        // Remove liked user from potentialMatches array entirely
+        const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+        
+        // Find next valid user that's not excluded
+        let nextIndex = prev.currentIndex;
+        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+          nextIndex++;
         }
         
-        console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
-          targetUserId: matchId,
-          targetHasRadiance,
-          meaning: targetHasRadiance 
-            ? 'This like will be marked as viaRadiance because recipient has active boost' 
-            : 'Normal like - recipient has no active boost'
-        });
-        
-        // ✅ CRITICAL FIX: Update exclusion set BEFORE removing from UI
-        setMatchingState(prev => {
-          const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
-          
-          // Remove liked user from potentialMatches array entirely
-          const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
-          
-          // Find next valid user that's not excluded
-          let nextIndex = prev.currentIndex;
+        // If no valid user at current or next positions, look from beginning
+        if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+          nextIndex = 0;
           while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
             nextIndex++;
           }
+        }
+        
+        console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+        
+        return {
+          ...prev,
+          exclusionSet: newExclusionSet,
+          potentialMatches: filteredMatches,
+          currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+          noMoreMatches: filteredMatches.length === 0
+        };
+      });
+      
+      // ✅ IMPROVED: Record like with proper error handling for already matched users
+      try {
+        await recordLikeWithBatch(
+          userDataRef.current.userId, 
+          matchId, 
+          false, // viaLotus = false for regular likes
+          targetHasRadiance
+        );
+        
+        console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
+      } catch (likeError: any) {
+        // ✅ NEW: Handle case where users are already matched
+        if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
+          console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping like recording`);
+          // Don't rollback the exclusion since we still want them removed from the list
+        } else {
+          throw likeError; // Re-throw other errors for normal error handling
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error in optimized like:', error);
+      
+      // Only rollback exclusion for certain errors
+      if (error.message !== "DAILY_LIMIT_REACHED" && !error.message?.includes('already matched')) {
+        console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
+        setMatchingState(prev => {
+          const newSet = new Set(prev.exclusionSet);
+          newSet.delete(matchId);
           
-          // If no valid user at current or next positions, look from beginning
-          if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-            nextIndex = 0;
-            while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-              nextIndex++;
-            }
-          }
+          // Add user back to potentialMatches if rollback
+          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
+          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
           
-          console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-          console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
-          
-          return {
-            ...prev,
-            exclusionSet: newExclusionSet,
-            potentialMatches: filteredMatches,
-            currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-            noMoreMatches: filteredMatches.length === 0
+          return { 
+            ...prev, 
+            exclusionSet: newSet,
+            potentialMatches: newMatches
           };
         });
-        
-        // ✅ IMPROVED: Record like with proper error handling for already matched users
-        try {
-          await recordLikeWithBatch(
-            userDataRef.current.userId, 
-            matchId, 
-            false, // viaLotus = false for regular likes
-            targetHasRadiance
-          );
-          
-          console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
-        } catch (likeError: any) {
-          // ✅ NEW: Handle case where users are already matched
-          if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
-            console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping like recording`);
-            // Don't rollback the exclusion since we still want them removed from the list
-          } else {
-            throw likeError; // Re-throw other errors for normal error handling
-          }
-        }
-        
-      } catch (error: any) {
-        console.error('❌ Error in optimized like:', error);
-        
-        // Only rollback exclusion for certain errors
-        if (error.message !== "DAILY_LIMIT_REACHED" && !error.message?.includes('already matched')) {
-          console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
-          setMatchingState(prev => {
-            const newSet = new Set(prev.exclusionSet);
-            newSet.delete(matchId);
-            
-            // Add user back to potentialMatches if rollback
-            const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-            const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
-            
-            return { 
-              ...prev, 
-              exclusionSet: newSet,
-              potentialMatches: newMatches
-            };
-          });
-        }
-        
-        throw error;
       }
-    }, [getRemainingDailyLikes]);
+      
+      throw error;
+    }
+  }, [getRemainingDailyLikes]);
 
   // 🔧 ALSO UPDATE: optimizedlotusLike with the same logic
   const optimizedlotusLike = useCallback(async (matchId: string) => {
@@ -1900,42 +1919,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       // Update user data to reflect lotus usage immediately
       setUserData(prev => ({
-        ...prev,
-        numOfLotus: (prev.numOfLotus || 0) - 1
-      }));
-      
-      // ✅ CRITICAL FIX: Same pattern - remove immediately and move to next
-      setMatchingState(prev => {
-        const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
-        
-        // Remove lotus-liked user from potentialMatches array entirely
-        const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
-        
-        // Find next valid user that's not excluded
-        let nextIndex = prev.currentIndex;
-        while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-          nextIndex++;
-        }
-        
-        // If no valid user at current or next positions, look from beginning
-        if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
-          nextIndex = 0;
-          while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
-            nextIndex++;
-          }
-        }
-        
-        console.log(`🔧 After lotus like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
-        
-        return {
-          ...prev,
-          exclusionSet: newExclusionSet,
-          potentialMatches: filteredMatches,
-          currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
-          noMoreMatches: filteredMatches.length === 0
-        };
-      });
+            ...prev,
+            numOfLotus: (prev.numOfLotus || 0) - 1
+          }));
+          
+          // ✅ CRITICAL FIX: Same pattern - update exclusion set
+          setMatchingState(prev => {
+            const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
+            
+            // Remove lotus-liked user from potentialMatches array entirely
+            const filteredMatches = prev.potentialMatches.filter(match => match.userId !== matchId);
+            
+            // Find next valid user that's not excluded
+            let nextIndex = prev.currentIndex;
+            while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+              nextIndex++;
+            }
+            
+            if (nextIndex >= filteredMatches.length || !filteredMatches[nextIndex]) {
+              nextIndex = 0;
+              while (nextIndex < filteredMatches.length && newExclusionSet.has(filteredMatches[nextIndex]?.userId)) {
+                nextIndex++;
+              }
+            }
+            
+            console.log(`🔧 After lotus like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
+            console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+            
+            return {
+              ...prev,
+              exclusionSet: newExclusionSet,
+              potentialMatches: filteredMatches,
+              currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
+              noMoreMatches: filteredMatches.length === 0
+            };
+          });
       
       // ✅ IMPROVED: Record lotus like with proper error handling
       try {
@@ -1993,7 +2011,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log(`👎 OPTIMIZED DISLIKING USER: ${matchId}`);
     
     try {
-      // ✅ CRITICAL FIX: Same pattern as like - remove immediately and move to next
       setMatchingState(prev => {
         const newExclusionSet = new Set([...prev.exclusionSet, matchId]);
         
@@ -2019,7 +2036,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         
         return {
           ...prev,
-          exclusionSet: newExclusionSet,
+          exclusionSet: newExclusionSet, // ✅ KEY FIX HERE TOO
           potentialMatches: filteredMatches,
           currentIndex: nextIndex < filteredMatches.length ? nextIndex : 0,
           noMoreMatches: filteredMatches.length === 0
