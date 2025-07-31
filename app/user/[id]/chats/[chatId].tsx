@@ -27,6 +27,7 @@ import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import { CustomIcon } from "@/components/CustomIcon";
 import PotentialMatch from "@/components/PotentialMatch";
 import ReportModal from "@/components/modals/ReportModal";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
@@ -136,6 +137,7 @@ const Chat: React.FC = () => {
                        parsedUser.viaRadiance ||
                        false
         };
+
         setConnectionMethod(method);
 
         // Fetch full user data for profile tab
@@ -187,7 +189,7 @@ const Chat: React.FC = () => {
       // Create the match message
       const matchMessage: IMessage = {
         _id: "match-indicator",
-        text: `You matched with ${otherUserData?.firstName || "them"}! ✨`,
+        text: `You matched with ${otherUserData?.firstName || "them"}!`,
         createdAt: matchDate,
         system: true,
         user: {
@@ -272,37 +274,67 @@ const Chat: React.FC = () => {
     
     if (connectionMethod.viaLotus && connectionMethod.viaRadiance) {
       return {
-        icon: "planet" as const,
+        icon: "lotus" as const,
         text: "Lotus & Radiance Match",
-        color: "#8B4513"
       };
     } else if (connectionMethod.viaLotus) {
       return {
-        icon: "planet" as const,
+        icon: "lotus" as const,
         text: "Lotus Match",
-        color: "#8B4513"
       };
     } else if (connectionMethod.viaRadiance) {
       return {
-        icon: "radio" as const,
+        icon: "halo" as const,
         text: "Radiance Match",
-        color: "#D4AF37"
+        color: "#F1C40F"
       };
     }
     return null;
   };
 
+  // Get system message icon based on connection method
+  const getSystemMessageIcon = () => {
+    if (!connectionMethod) return "heart";
+    
+    if (connectionMethod.viaLotus) {
+      return "lotus";
+    } else if (connectionMethod.viaRadiance) {
+      return "halo";
+    }
+    return "heart";
+  };
+
+  // Get system message icon color
+  const getSystemMessageIconColor = () => {
+    if (!connectionMethod) return "#8B4513";
+    
+    if (connectionMethod.viaLotus) {
+      return "";
+    } else if (connectionMethod.viaRadiance) {
+      return "#F1C40F";
+    }
+    return "#8B4513";
+  };
+
   // System message renderer
   const renderSystemMessage = (props: any) => {
+    const systemIcon = getSystemMessageIcon();
+    const systemIconColor = getSystemMessageIconColor();
+    const isCustomIcon = systemIcon === "lotus" || systemIcon === "halo";
+    
     return (
       <View style={[styles.systemMessageContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.systemMessage, { 
           backgroundColor: colors.card,
           borderColor: colors.border,
-          shadowColor: '#8B4513'
+          shadowColor: systemIconColor
         }]}>
-          <View style={[styles.systemIconContainer, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="heart" size={20} color="#8B4513" />
+          <View style={styles.systemIconContainer}>
+            {isCustomIcon ? (
+              <CustomIcon name={systemIcon} size={38} color={systemIconColor} />
+            ) : (
+              <Ionicons name={systemIcon as any} size={38} color={systemIconColor} />
+            )}
           </View>
           <Text style={[styles.systemMessageText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
             {props.currentMessage.text}
@@ -467,19 +499,6 @@ const Chat: React.FC = () => {
             backgroundColor: colors.background,
             borderBottomColor: colors.border
           }]}>
-            {/* Connection Method Indicator */}
-            {connectionInfo && (
-              <View style={[styles.connectionBanner, { 
-                backgroundColor: connectionInfo.color + '08',
-                borderColor: connectionInfo.color + '20'
-              }]}>
-                <Ionicons name={connectionInfo.icon} size={16} color={connectionInfo.color} />
-                <Text style={[styles.connectionText, fonts.spiritualBodyFont, { color: connectionInfo.color }]}>
-                  {connectionInfo.text}
-                </Text>
-              </View>
-            )}
-
             <View style={styles.headerTop}>
               <View style={styles.backAndTitle}>
                 <TouchableOpacity
@@ -489,12 +508,18 @@ const Chat: React.FC = () => {
                   <Ionicons name="chevron-back" size={24} color="#8B4513" />
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
-                  <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                    {otherUserData?.firstName || "Soul"}
-                  </Text>
-                  <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                    Connected ✨
-                  </Text>
+                  <View style={styles.nameWithIcon}>
+                    <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                      {otherUserData?.firstName || "Soul"}
+                    </Text>
+                    {/* Connection icon next to name */}
+                    {connectionMethod?.viaLotus && (
+                      <CustomIcon name="lotus" size={28} style={styles.nameIcon} />
+                    )}
+                    {connectionMethod?.viaRadiance && !connectionMethod?.viaLotus && (
+                      <CustomIcon name="halo" size={28} color="#F1C40F" style={styles.nameIcon} />
+                    )}
+                  </View>
                 </View>
               </View>
               <TouchableOpacity
@@ -511,12 +536,6 @@ const Chat: React.FC = () => {
                 style={[styles.tab, activeTab === "chat" && styles.activeTab]}
                 onPress={() => handleTabChange("chat")}
               >
-                <Ionicons 
-                  name="chatbubble-ellipses" 
-                  size={16} 
-                  color={activeTab === "chat" ? "#8B4513" : colors.textLight}
-                  style={styles.tabIcon}
-                />
                 <Text style={[
                   styles.tabText, 
                   fonts.spiritualBodyFont,
@@ -530,12 +549,6 @@ const Chat: React.FC = () => {
                 style={[styles.tab, activeTab === "profile" && styles.activeTab]}
                 onPress={() => handleTabChange("profile")}
               >
-                <Ionicons 
-                  name="person-circle" 
-                  size={16} 
-                  color={activeTab === "profile" ? "#8B4513" : colors.textLight}
-                  style={styles.tabIcon}
-                />
                 <Text style={[
                   styles.tabText, 
                   fonts.spiritualBodyFont,
@@ -682,12 +695,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  connectionText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-    marginLeft: Spacing.xs,
-    letterSpacing: 0.3,
-  },
   headerTop: {
     flexDirection: "row",
     alignItems: "center",
@@ -704,6 +711,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   titleContainer: {
+    marginLeft: Spacing.sm,
+  },
+
+  nameWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  nameIcon: {
     marginLeft: Spacing.sm,
   },
   headerTitle: {
@@ -845,12 +861,9 @@ const styles = StyleSheet.create({
     maxWidth: "90%",
   },
   systemIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
     marginBottom: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
   systemMessageText: {
     fontSize: Typography.sizes.base,
