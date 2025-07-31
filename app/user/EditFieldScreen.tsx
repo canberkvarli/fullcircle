@@ -689,7 +689,7 @@ function EditFieldScreen() {
   };
 
   const renderContent = () => {
-    if (fieldName === "f  Name") {
+    if (fieldName === "fullName") {
       return (
         <View style={styles.nameContainer}>
           <TextInput
