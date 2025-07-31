@@ -18,6 +18,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 
 export default function ConnectingPreferences() {
   const router = useRouter();
@@ -39,6 +40,40 @@ export default function ConnectingPreferences() {
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
   const [modalAnimation] = useState(new Animated.Value(0));
+
+  // Ouroboros rotation animation
+  const [rotateAnim] = useState(new Animated.Value(0));
+  const [glowAnim] = useState(new Animated.Value(0));
+
+  // Initialize animations
+  React.useEffect(() => {
+    // Continuous rotation animation
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Continuous glow animation for Full Circle users
+    if (fullCircleSubscription) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0.3,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+        ])
+      ).start();
+    }
+  }, [fullCircleSubscription]);
 
   const formatValue = (value: any, defaultValue = "Open to All") => {
     if (Array.isArray(value)) {
@@ -109,7 +144,7 @@ export default function ConnectingPreferences() {
       value: userData?.matchPreferences?.connectionStyles,
       isSubscriberField: false,
       fieldName: "connectionStyles",
-      icon: "sparkles-outline",
+      icon: "infinite",
       description: isRomantic ? "Your romantic connection style" : isFriendship ? "How you like to connect with friends" : "Your connection style preferences"
     },
     {
@@ -300,6 +335,10 @@ export default function ConnectingPreferences() {
     const displayValue = isEmptyArray && isSubscriberField 
       ? "Open to All" 
       : formatValue(value);
+
+    // Divine golden border for spiritual filters when Full Circle is active
+    const isPremiumField = isSubscriberField;
+    const shouldShowGoldenBorder = isPremiumField && fullCircleSubscription;
     
     return (
       <TouchableOpacity
@@ -307,9 +346,17 @@ export default function ConnectingPreferences() {
           styles.fieldContainer, 
           { 
             backgroundColor: colors.card,
-            borderColor: isConnectionType ? intentColors.primary + '30' : colors.border,
-            borderWidth: isConnectionType ? 2 : 1,
-            opacity: shouldShowLocked ? 0.6 : 1
+            borderColor: shouldShowGoldenBorder 
+              ? '#D4AF37' // Softer golden color for Full Circle spiritual filters
+              : isConnectionType 
+                ? intentColors.primary + '30' 
+                : colors.border,
+            borderWidth: shouldShowGoldenBorder ? 2 : isConnectionType ? 2 : 1,
+            opacity: shouldShowLocked ? 0.6 : 1,
+            shadowColor: shouldShowGoldenBorder ? '#D4AF37' : '#000',
+            shadowOpacity: shouldShowGoldenBorder ? 0.2 : 0.05,
+            shadowRadius: shouldShowGoldenBorder ? 8 : 4,
+            elevation: shouldShowGoldenBorder ? 6 : 2,
           }
         ]}
         onPress={() =>
@@ -339,7 +386,7 @@ export default function ConnectingPreferences() {
               {description}
             </Text>
             <Text style={[styles.fieldValue, fonts.modalBodyFont, { 
-              color: isConnectionType ? intentColors.primary : colors.textLight,
+              color: isConnectionType ? intentColors.primary : shouldShowGoldenBorder ? '#B8860B' : colors.textLight,
               fontWeight: isConnectionType ? Typography.weights.semibold : Typography.weights.medium
             }]}>
               {displayValue}
@@ -412,7 +459,53 @@ export default function ConnectingPreferences() {
           {/* FullCircle Header Section */}
           <View style={styles.premiumHeaderSection}>
             <View style={styles.premiumHeader}>
-              <Ionicons name="sparkles" size={24} color={colors.primary} />
+              {/* Ouroboros Icon instead of sparkles */}
+              <View style={styles.ouroborosContainer}>
+                <Animated.View 
+                  style={[
+                    styles.ouroborosWrapper,
+                    {
+                      transform: [{
+                        rotate: rotateAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '360deg'],
+                        }),
+                      }],
+                    }
+                  ]}
+                >
+                  {fullCircleSubscription ? (
+                    <Animated.View 
+                      style={[
+                        styles.ouroborosGlow,
+                        {
+                          shadowOpacity: glowAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.3, 0.8],
+                          }),
+                        }
+                      ]}
+                    >
+                      <OuroborosSVG
+                        size={64}
+                        fillColor='#F5E6D3'
+                        strokeColor='#B8860B'
+                        strokeWidth={2}
+                      />
+                    </Animated.View>
+                  ) : (
+                    <View style={styles.ouroborosBasic}>
+                      <OuroborosSVG
+                        size={64}
+                        fillColor={colors.card}
+                        strokeColor={colors.textMuted}
+                        strokeWidth={2}
+                      />
+                    </View>
+                  )}
+                </Animated.View>
+              </View>
+              
               <Text style={[styles.premiumTitle, fonts.modalTitleFont, { color: colors.primary }]}>
                 FullCircle
               </Text>
@@ -625,10 +718,32 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     marginBottom: Spacing.md,
   },
 
+  // New Ouroboros styles
+  ouroborosContainer: {
+    marginRight: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  ouroborosWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  ouroborosGlow: {
+    shadowColor: '#B8860B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  ouroborosBasic: {
+    // No special effects for non-Full Circle users
+  },
+
   premiumTitle: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
-    marginLeft: Spacing.md,
   },
 
   premiumDescription: {
@@ -741,6 +856,16 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  premiumBadge: {
+    position: 'absolute',
+    right: 0,
+    top: -5,
+  },
+
+  premiumBadgeText: {
+    fontSize: 16,
   },
 
   connectionEmoji: {
