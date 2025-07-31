@@ -698,7 +698,7 @@ function EditFieldScreen() {
             placeholderTextColor={colors.textMuted}
             value={firstName}
             onChangeText={setFirstName}
-            maxLength={25}
+            maxLength={18}
           />
           
           <TextInput
@@ -707,7 +707,7 @@ function EditFieldScreen() {
             placeholderTextColor={colors.textMuted}
             value={lastName}
             onChangeText={setLastName}
-            maxLength={25}
+            maxLength={18}
           />
           <Text style={[styles.helpText, { color: colors.textMuted }]}>
             Last name is optional and only shared with matches.
