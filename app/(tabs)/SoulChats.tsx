@@ -16,6 +16,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import { CustomIcon } from "@/components/CustomIcon";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const SoulChats: React.FC = () => {
@@ -99,6 +100,34 @@ const SoulChats: React.FC = () => {
                      false
       }
     };
+  };
+
+  // Helper function to get connection colors and borders
+  const getConnectionStyle = (connectionMethods: any) => {
+    const { theirMethod } = connectionMethods;
+    
+    if (theirMethod.viaLotus) {
+      return {
+        borderColor: '#8E44AD', // Purple/Pink for Lotus
+        shadowColor: '#8E44AD',
+        iconBgColor: '#8E44AD',
+        textColor: '#8E44AD'
+      };
+    } else if (theirMethod.viaRadiance) {
+      return {
+        borderColor: '#F1C40F', // Golden yellow for Radiance
+        shadowColor: '#F1C40F',
+        iconBgColor: '#F1C40F',
+        textColor: '#F1C40F'
+      };
+    } else {
+      return {
+        borderColor: '#8B4513', // Classic rusty brown
+        shadowColor: '#8B4513',
+        iconBgColor: '#8B4513',
+        textColor: '#8B4513'
+      };
+    }
   };
 
   if (isLoading) {
@@ -190,9 +219,10 @@ const SoulChats: React.FC = () => {
             Soul Chats
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-            {matches.length}{' '}
-            <Text style={styles.highlightedWord}>conversation</Text>
-            {matches.length !== 1 ? 's' : ''}
+            {matches.length}{' '} meaningful{' '}
+            <Text style={styles.highlightedWord}>
+              conversation{matches.length !== 1 ? 's' : ''}
+            </Text>
           </Text>
         </View>
       </View>
@@ -207,6 +237,7 @@ const SoulChats: React.FC = () => {
             : true;
 
           const connectionMethods = getConnectionMethods(match);
+          const connectionStyle = getConnectionStyle(connectionMethods);
 
           return (
             <View key={match.userId}>
@@ -221,12 +252,12 @@ const SoulChats: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.avatarWrapper}>
-                  {/* Enhanced unread glow with divine golden-brown */}
+                  {/* Enhanced unread glow with connection-specific colors */}
                   {isUnread && (
                     <>
-                      <View style={styles.unreadOuterGlow} />
-                      <View style={styles.unreadInnerGlow} />
-                      <View style={styles.unreadDivineRing} />
+                      <View style={[styles.unreadOuterGlow, { backgroundColor: connectionStyle.shadowColor + '15' }]} />
+                      <View style={[styles.unreadInnerGlow, { backgroundColor: connectionStyle.shadowColor + '08' }]} />
+                      <View style={[styles.unreadDivineRing, { borderColor: connectionStyle.shadowColor + '60' }]} />
                     </>
                   )}
                   
@@ -234,9 +265,9 @@ const SoulChats: React.FC = () => {
                     styles.avatarContainer, 
                     { 
                       backgroundColor: colors.border,
-                      borderColor: isUnread ? '#B8860B' : colors.border,
+                      borderColor: isUnread ? connectionStyle.borderColor : colors.border,
                       borderWidth: isUnread ? 3 : 2,
-                      shadowColor: isUnread ? '#D4AF37' : '#000',
+                      shadowColor: isUnread ? connectionStyle.shadowColor : '#000',
                       shadowOffset: { width: 0, height: isUnread ? 4 : 2 },
                       shadowOpacity: isUnread ? 0.3 : 0.1,
                       shadowRadius: isUnread ? 8 : 4,
@@ -253,27 +284,27 @@ const SoulChats: React.FC = () => {
                     )}
                   </View>
                   
-                  {/* Connection Method Indicators - Top Right of Avatar */}
+                  {/* Connection Method Icon - Top Right of Avatar */}
                   {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                     <View style={styles.connectionIndicators}>
                       {connectionMethods.theirMethod.viaLotus && (
-                        <View style={[styles.connectionBadge, styles.lotusIndicator]}>
-                          <Ionicons name="planet" size={11} color="#FFFFFF" />
+                        <View style={[styles.connectionBadge, { backgroundColor: '#8E44AD' }]}>
+                          <CustomIcon name="lotus" size={11} color="#FFFFFF" />
                         </View>
                       )}
                       {connectionMethods.theirMethod.viaRadiance && (
-                        <View style={[styles.connectionBadge, styles.radianceIndicator]}>
-                          <Ionicons name="radio" size={11} color="#FFFFFF" />
+                        <View style={[styles.connectionBadge, { backgroundColor: '#F1C40F' }]}>
+                          <CustomIcon name="halo" size={11} color="#FFFFFF" />
                         </View>
                       )}
                     </View>
                   )}
                   
-                  {/* Enhanced unread indicator with divine golden center */}
+                  {/* Enhanced unread indicator with connection-specific center */}
                   {isUnread && (
                     <View style={styles.unreadDot}>
-                      <View style={styles.unreadDotInner} />
-                      <View style={styles.unreadDotCenter} />
+                      <View style={[styles.unreadDotInner, { backgroundColor: connectionStyle.borderColor }]} />
+                      <View style={[styles.unreadDotCenter, { backgroundColor: connectionStyle.borderColor }]} />
                     </View>
                   )}
                 </View>
@@ -294,13 +325,13 @@ const SoulChats: React.FC = () => {
                       {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                         <View style={styles.nameConnectionIcons}>
                           {connectionMethods.theirMethod.viaLotus && (
-                            <View style={styles.nameConnectionIcon}>
-                              <Ionicons name="planet" size={13} color="#8B4513" />
+                            <View style={[styles.nameConnectionIcon, { backgroundColor: '#8E44AD' + '20' }]}>
+                              <CustomIcon name="lotus" size={13} />
                             </View>
                           )}
                           {connectionMethods.theirMethod.viaRadiance && (
-                            <View style={styles.nameConnectionIcon}>
-                              <Ionicons name="radio" size={13} color="#D4AF37" />
+                            <View style={[styles.nameConnectionIcon, { backgroundColor: '#F1C40F' + '20' }]}>
+                              <CustomIcon name="halo" size={13} color="#F1C40F" />
                             </View>
                           )}
                         </View>
@@ -311,7 +342,7 @@ const SoulChats: React.FC = () => {
                       <Text style={[
                         styles.timeText, 
                         fonts.spiritualBodyFont, 
-                        { color: isUnread ? '#8B4513' : colors.textMuted },
+                        { color: isUnread ? connectionStyle.textColor : colors.textMuted },
                         isUnread && styles.unreadTimeText
                       ]}>
                         {formatTime(match.lastMessageTimestamp)}
@@ -341,7 +372,7 @@ const SoulChats: React.FC = () => {
                   <Ionicons 
                     name="chevron-forward" 
                     size={20} 
-                    color={isUnread ? '#8B4513' : colors.textMuted}
+                    color={isUnread ? connectionStyle.textColor : colors.textMuted}
                   />
                 </View>
               </TouchableOpacity>
@@ -518,14 +549,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   
-  // Divine golden-brown glow effects for unread
+  // Connection-specific glow effects for unread
   unreadOuterGlow: {
     position: 'absolute',
     top: -10,
     left: -10,
     right: -10,
     bottom: -10,
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
     borderRadius: 48,
     zIndex: 0,
   },
@@ -536,7 +566,6 @@ const styles = StyleSheet.create({
     left: -6,
     right: -6,
     bottom: -6,
-    backgroundColor: 'rgba(139, 69, 19, 0.08)',
     borderRadius: 44,
     zIndex: 1,
   },
@@ -548,7 +577,6 @@ const styles = StyleSheet.create({
     right: -3,
     bottom: -3,
     borderWidth: 2,
-    borderColor: 'rgba(184, 134, 11, 0.6)',
     borderRadius: 41,
     zIndex: 2,
   },
@@ -583,15 +611,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
-  lotusIndicator: {
-    backgroundColor: '#8B4513',
-  },
-  
-  radianceIndicator: {
-    backgroundColor: '#D4AF37',
-  },
-  
-  // Enhanced unread dot with divine center
+  // Enhanced unread dot with connection-specific center
   unreadDot: {
     position: 'absolute',
     top: 4,
@@ -602,7 +622,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -614,7 +633,6 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#D4AF37',
   },
   
   unreadDotCenter: {
@@ -622,7 +640,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#8B4513',
   },
   
   matchInfo: {
@@ -660,7 +677,6 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

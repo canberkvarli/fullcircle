@@ -3119,7 +3119,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           "likesReceived", 
           "reports",
           "unmatchedUsers",
-          "dislikesGiven"
+          "dislikesGiven",
+          "reportedUsers",
+          "dislikesReceived",
         ];
         
         for (const subcollectionName of subcollections) {
