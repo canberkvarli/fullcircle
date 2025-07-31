@@ -44,7 +44,7 @@ function NameScreen() {
   }, []);
 
   const handleInputChange = (text: string, type: string) => {
-    if (/^[a-zA-Z\s]*$/.test(text)) {
+    if (/^[a-zA-Z\s]*$/.test(text) && text.length <= 25) {
       type === "firstName" ? setFirstName(text) : setLastName(text);
     }
   };

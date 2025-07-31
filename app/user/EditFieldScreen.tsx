@@ -689,7 +689,7 @@ function EditFieldScreen() {
   };
 
   const renderContent = () => {
-    if (fieldName === "fullName") {
+    if (fieldName === "f  Name") {
       return (
         <View style={styles.nameContainer}>
           <TextInput
@@ -698,13 +698,16 @@ function EditFieldScreen() {
             placeholderTextColor={colors.textMuted}
             value={firstName}
             onChangeText={setFirstName}
+            maxLength={25}
           />
+          
           <TextInput
             style={[styles.nameInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.textDark }]}
             placeholder="Last name (optional)"
             placeholderTextColor={colors.textMuted}
             value={lastName}
             onChangeText={setLastName}
+            maxLength={25}
           />
           <Text style={[styles.helpText, { color: colors.textMuted }]}>
             Last name is optional and only shared with matches.
