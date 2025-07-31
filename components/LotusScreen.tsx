@@ -284,9 +284,9 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
             {/* Enhanced Hero Section */}
             <View style={styles.heroSection}>
               <View style={[styles.currentLotusFlowersDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <CustomIcon name="lotus" size={18} color="#680439ff" />
+                <CustomIcon name="lotus" size={22} />
                 <Text style={[styles.currentLotusFlowersText, fonts.bodyFont, { color: colors.textDark }]}>
-                  {userData.numOfLotus || 0} lotus flowers
+                  {userData.numOfLotus || 0} otus flowers
                 </Text>
               </View>
               
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    marginTop: Spacing.md,
+    marginTop: Spacing.md, // Add top margin to prevent badge cutoff
   },
   popularBadge: {
     position: 'absolute',

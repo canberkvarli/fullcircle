@@ -10,12 +10,12 @@ import {
   StatusBar,
   useColorScheme,
   Animated,
-  RefreshControl
 } from "react-native";
-import { CustomIcon } from "@/components/CustomIcon"; // Import CustomIcon
+import { CustomIcon } from "@/components/CustomIcon";
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
+import LotusScreen from "@/components/LotusScreen";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
@@ -25,16 +25,12 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
   
-  // 🔄 UPDATED: Use new consolidated state from UserContext
   const {
-    // New consolidated functions
     likeMatch,
     dislikeMatch,
     lotusLike,
     loadNextMatch,
     resetMatching,
-    
-    // New consolidated state
     currentPotentialMatch,
     matchingState,
     DAILY_LIKE_LIMIT,
@@ -45,52 +41,56 @@ const ConnectScreen: React.FC = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
-  // 🆕 NEW: Enhanced loading state management
+  // Enhanced loading and transition states
   const [isLoading, setIsLoading] = useState(true);
-  const [hasMinimumLoadingTime, setHasMinimumLoadingTime] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [showContent, setShowContent] = useState(false);
-  
-  // Local component state (unchanged)
   const [photosLoaded, setPhotosLoaded] = useState(false);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [lastAction, setLastAction] = useState<'like' | 'pass' | 'lotus' | null>(null);
   const [showLotusModal, setShowLotusModal] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
+  const [showLotusScreen, setShowLotusScreen] = useState(false);
   const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
-  const dailyLimitModalOpacity = useRef(new Animated.Value(0)).current;
-  const dailyLimitModalScale = useRef(new Animated.Value(0.8)).current;
-  const dailyLimitGlow = useRef(new Animated.Value(0)).current
-  
-  // 🆕 NEW: Loading animation refs
-  const loadingPulse = useRef(new Animated.Value(0)).current;
-  const loadingRotation = useRef(new Animated.Value(0)).current;
-  const loadingFadeIn = useRef(new Animated.Value(0)).current;
-  const contentFadeIn = useRef(new Animated.Value(0)).current;
-  
-  // Animation refs (unchanged)
-  const contentOpacity = useRef(new Animated.Value(1)).current;
-  const buttonsOpacity = useRef(new Animated.Value(0)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const overlayScale = useRef(new Animated.Value(0.8)).current;
-  
-  const lotusModalOpacity = useRef(new Animated.Value(0)).current;
-  const lotusModalScale = useRef(new Animated.Value(0.8)).current;
-  const divineGlow = useRef(new Animated.Value(0)).current;
-  
-  const lotusButtonGlow = useRef(new Animated.Value(0)).current;
-
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Check if user has FullCircle subscription
-  const hasFullCircleSubscription = userData?.subscription?.isActive || false;
+  const scrollViewRef = useRef<ScrollView>(null);
 
+  // Enhanced animation references
+  const contentOpacity = useRef(new Animated.Value(1)).current;
+  const contentScale = useRef(new Animated.Value(1)).current;
+  const buttonsOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Action-specific animations
+  const likeOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const passOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const lotusOverlayOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Enhanced lotus animations
+  const lotusParticles = useRef(new Animated.Value(0)).current;
+  const lotusGlow = useRef(new Animated.Value(0)).current;
+  const lotusRotation = useRef(new Animated.Value(0)).current;
+  
+  // Card transition animations
+  const nextCardOpacity = useRef(new Animated.Value(0)).current;
+  const nextCardTranslateY = useRef(new Animated.Value(50)).current;
+  
+  // Smooth loading transition
+  const loadingOpacity = useRef(new Animated.Value(1)).current;
+  const contentFadeIn = useRef(new Animated.Value(0)).current;
+  
+  // Modal animations
+  const dailyLimitModalOpacity = useRef(new Animated.Value(0)).current;
+  const dailyLimitModalScale = useRef(new Animated.Value(0.8)).current;
+  const lotusModalOpacity = useRef(new Animated.Value(0)).current;
+  const lotusModalScale = useRef(new Animated.Value(0.8)).current;
+
+  const hasFullCircleSubscription = userData?.subscription?.isActive || false;
   const userDataRef = useRef(userData);
   const matchingStateRef = useRef(matchingState);
   const currentPotentialMatchRef = useRef(currentPotentialMatch);
 
   useEffect(() => {
-  userDataRef.current = userData;
+    userDataRef.current = userData;
   }, [userData]);
 
   useEffect(() => {
@@ -101,7 +101,7 @@ const ConnectScreen: React.FC = () => {
     currentPotentialMatchRef.current = currentPotentialMatch;
   }, [currentPotentialMatch]);
 
-  // 🆕 NEW: Enhanced loading state logic with minimum display time
+  // Enhanced loading state management
   useEffect(() => {
     const actuallyLoading = matchingStateRef.current.loadingBatch || 
                           !currentPotentialMatchRef.current || 
@@ -111,106 +111,64 @@ const ConnectScreen: React.FC = () => {
       loadingBatch: matchingStateRef.current.loadingBatch,
       hasCurrentMatch: !!currentPotentialMatchRef.current,
       initialized: matchingStateRef.current.initialized,
-      actuallyLoading,
-      hasMinimumLoadingTime,
-      isLoading,
-      showContent
+      actuallyLoading
     });
     
-    // Set minimum loading time (2 seconds)
-    const timer = setTimeout(() => {
-      setHasMinimumLoadingTime(true);
-    }, 2000);
-
     if (actuallyLoading) {
       setIsLoading(true);
       setShowContent(false);
       
-      // Start loading animations
-      Animated.parallel([
-        Animated.timing(loadingFadeIn, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.loop(
-          Animated.timing(loadingPulse, {
-            toValue: 1,
-            duration: 1500,
+      // Smooth loading entrance
+      Animated.timing(loadingOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Smooth transition to content with proper timing
+      setTimeout(() => {
+        Animated.sequence([
+          Animated.timing(loadingOpacity, {
+            toValue: 0,
+            duration: 400,
             useNativeDriver: true,
           }),
-          { resetBeforeIteration: true }
-        ),
-        Animated.loop(
-          Animated.timing(loadingRotation, {
+          Animated.timing(contentFadeIn, {
             toValue: 1,
-            duration: 3000,
+            duration: 500,
             useNativeDriver: true,
-          })
-        ),
-      ]).start();
-    } else if (hasMinimumLoadingTime) {
-      // Only stop loading if minimum time has passed AND data is ready
-      console.log('🎯 Transitioning to content...');
-      
-      // Smooth transition to content
-      Animated.sequence([
-        Animated.timing(loadingFadeIn, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(contentFadeIn, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsLoading(false);
-        setShowContent(true);
-        console.log('✅ Content transition complete');
-      });
+          }),
+        ]).start(() => {
+          setIsLoading(false);
+          setShowContent(true);
+        });
+      }, 300); // Brief delay to ensure content is ready
     }
+  }, [matchingState.loadingBatch, currentPotentialMatch, matchingState.initialized]);
 
-    return () => clearTimeout(timer);
-  }, [matchingState.loadingBatch, currentPotentialMatch, matchingState.initialized, hasMinimumLoadingTime]);
-
-  // 🆕 NEW: Reset loading states when component mounts or remounts
+  // Reset animations when match changes
   useEffect(() => {
-    if (currentPotentialMatchRef.current && !actionInProgress && showContent) {
-      console.log('🔄 Resetting animations for new match:', currentPotentialMatchRef.current.userId);
+    if (currentPotentialMatch && !actionInProgress && showContent) {
+      console.log('🔄 Preparing new match:', currentPotentialMatch.userId);
+      
+      // Reset all animation values
       contentOpacity.setValue(1);
+      contentScale.setValue(1);
       buttonsOpacity.setValue(0);
-      overlayOpacity.setValue(0);
-      overlayScale.setValue(0.8);
-      lotusButtonGlow.setValue(0);
+      likeOverlayOpacity.setValue(0);
+      passOverlayOpacity.setValue(0);
+      lotusOverlayOpacity.setValue(0);
+      lotusParticles.setValue(0);
+      lotusGlow.setValue(0);
+      lotusRotation.setValue(0);
+      nextCardOpacity.setValue(0);
+      nextCardTranslateY.setValue(50);
+      
       setPhotosLoaded(false);
     }
   }, [currentPotentialMatch?.userId, showContent, actionInProgress]);
 
-
-  // 🔄 UPDATED: Monitor the new consolidated state
-  useEffect(() => {
-    console.log('🖥️ ConnectScreen: Detailed state debug', {
-      // Basic state
-      currentMatch: currentPotentialMatchRef.current?.userId,
-      firstName: currentPotentialMatchRef.current?.firstName,
-      
-      // Loading states
-      isLoading,
-      hasMinimumLoadingTime,
-      showContent,
-      
-      // Matching state details
-      matchingStateExists: !!matchingStateRef.current,
-      totalMatches: matchingStateRef.current?.potentialMatches?.length || 0,
-      currentIndex: matchingStateRef.current?.currentIndex || 0,
-      initialized: matchingStateRef.current?.initialized || false,
-      loading: matchingStateRef.current?.loadingBatch || false,
-      noMore: matchingStateRef.current?.noMoreMatches || false,
-    });
-  }, [currentPotentialMatch, matchingState, isLoading, hasMinimumLoadingTime, showContent]);
-
+  // Enhanced action handler with modern visual feedback
   const handleAction = async (action: 'like' | 'pass' | 'lotus') => {
     if (actionInProgress || !currentPotentialMatchRef.current) {
       console.log('🚫 Action blocked: already in progress or no current match');
@@ -226,36 +184,132 @@ const ConnectScreen: React.FC = () => {
     
     setActionInProgress(true);
     setLastAction(action);
+    setIsTransitioning(true);
     
-    // Start animation
-    Animated.parallel([
-      Animated.timing(overlayOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(overlayScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.timing(contentOpacity, {
-        toValue: 0.3,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Phase 1: Enhanced visual feedback animations
+    if (action === 'like') {
+      // Heart burst animation with particles
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(likeOverlayOpacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(likeOverlayOpacity, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Subtle content scale animation
+        Animated.sequence([
+          Animated.timing(contentScale, {
+            toValue: 0.95,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentScale, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    } else if (action === 'pass') {
+      // Fade out animation with subtle scale
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(passOverlayOpacity, {
+            toValue: 0.8,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(passOverlayOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(contentScale, {
+            toValue: 0.9,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentScale, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    } else if (action === 'lotus') {
+      // Enhanced lotus energy animation sequence
+      Animated.parallel([
+        // Main overlay fade in
+        Animated.timing(lotusOverlayOpacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        // Energy rings expansion with staggered timing
+        Animated.stagger(200, [
+          Animated.timing(lotusGlow, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(lotusParticles, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Smooth rotation
+        Animated.timing(lotusRotation, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        // Content breathing effect
+        Animated.sequence([
+          Animated.timing(contentScale, {
+            toValue: 0.85,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentScale, {
+            toValue: 1.02,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentScale, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    }
+
+    // Phase 2: Subtle content dimming during action
+    Animated.timing(contentOpacity, {
+      toValue: action === 'lotus' ? 0.6 : 0.8,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
 
     const userId = currentPotentialMatchRef.current.userId;
     
     try {
+      // Phase 3: Execute backend operation
       switch (action) {
         case 'pass':
           await dislikeMatch(userId);
           break;
         case 'lotus':
-          await lotusLike(userId); // Backend function name stays the same
+          await lotusLike(userId);
           break;
         case 'like':
           await likeMatch(userId);
@@ -264,92 +318,114 @@ const ConnectScreen: React.FC = () => {
       
       console.log(`✅ ${action} action completed successfully for user: ${userId}`);
       
-      console.log('🔄 Checking if need to prefetch more matches...');
+      // Phase 4: Load next match
       await loadNextMatch();
       
     } catch (error: any) {
       console.error(`❌ ${action} action failed:`, error);
       
-      // Handle daily limit error specifically
       if (error.message === "DAILY_LIMIT_REACHED") {
         console.log('📊 Daily limit reached, showing modal');
-        setActionInProgress(false);
-        setLastAction(null);
-        contentOpacity.setValue(1);
-        overlayOpacity.setValue(0);
-        overlayScale.setValue(0.8);
+        resetActionState();
         showDailyLimitModalFunc();
         return;
       }
       
-      // Handle other errors - reset action state
-      console.log('🔄 Resetting action state due to error');
-      setActionInProgress(false);
-      setLastAction(null);
-      contentOpacity.setValue(1);
-      overlayOpacity.setValue(0);
-      overlayScale.setValue(0.8);
+      resetActionState();
       return;
     }
 
-    // Reset scroll position
-    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-
-    // Complete animation
+    // Phase 5: Smooth transition to next match
     setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(overlayOpacity, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(contentOpacity, {
-          toValue: 1,
-          duration: 500,
-          delay: 200,
-          useNativeDriver: true,
-        }),
+      // Reset scroll position
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      
+      // Enhanced transition sequence
+      Animated.sequence([
+        // Fade out current content with scale
+        Animated.parallel([
+          Animated.timing(contentOpacity, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentScale, {
+            toValue: 0.9,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(buttonsOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          // Clear all overlays
+          Animated.timing(lotusOverlayOpacity, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Brief pause with subtle loading indicator
+        Animated.delay(200),
+        // Smooth fade in of new content
+        Animated.parallel([
+          Animated.timing(contentOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(contentScale, {
+            toValue: 1,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+        ]),
       ]).start(() => {
-        setActionInProgress(false);
-        setLastAction(null);
+        // Complete transition
+        resetActionState();
+        setIsTransitioning(false);
         setPhotosLoaded(false);
-        overlayScale.setValue(0.8);
-        buttonsOpacity.setValue(0);
-        console.log('🎬 Action animation completed');
+        console.log('🎬 Enhanced transition completed');
       });
-    }, 800);
+    }, action === 'lotus' ? 1000 : 500); // Longer for lotus to show the animation
   };
 
-  // Divine lotus modal functions
+  const resetActionState = () => {
+    setActionInProgress(false);
+    setLastAction(null);
+    
+    // Reset all animation values
+    contentOpacity.setValue(1);
+    contentScale.setValue(1);
+    buttonsOpacity.setValue(0);
+    likeOverlayOpacity.setValue(0);
+    passOverlayOpacity.setValue(0);
+    lotusOverlayOpacity.setValue(0);
+    lotusParticles.setValue(0);
+    lotusGlow.setValue(0);
+    lotusRotation.setValue(0);
+    nextCardOpacity.setValue(0);
+    nextCardTranslateY.setValue(50);
+  };
+
+  // Enhanced modal functions (keeping existing logic but with smoother animations)
   const showDivineLotusModal = () => {
     setShowLotusModal(true);
     
     Animated.parallel([
       Animated.timing(lotusModalOpacity, {
         toValue: 1,
-        duration: 500,
+        duration: 400,
         useNativeDriver: true,
       }),
       Animated.spring(lotusModalScale, {
         toValue: 1,
-        tension: 80,
+        tension: 100,
         friction: 8,
         useNativeDriver: true,
       }),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(divineGlow, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: false,
-          }),
-          Animated.timing(divineGlow, {
-            toValue: 0.3,
-            duration: 2000,
-            useNativeDriver: false,
-          }),
-        ])
-      ),
     ]).start();
   };
 
@@ -357,67 +433,18 @@ const ConnectScreen: React.FC = () => {
     Animated.parallel([
       Animated.timing(lotusModalOpacity, {
         toValue: 0,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       }),
       Animated.timing(lotusModalScale, {
         toValue: 0.8,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start(() => {
       setShowLotusModal(false);
-      divineGlow.setValue(0);
     });
   };
-
-  const navigateToLotusShop = () => {
-    closeDivineLotusModal();
-    setTimeout(() => {
-      router.push('/user/LotusScreen'); // Component name stays same for now
-    }, 500);
-  };
-
-  const navigateToSubscription = () => {
-    closeDivineLotusModal();
-    setTimeout(() => {
-      router.push('/user/FullCircleSubscription');
-    }, 500);
-  };
-
-  // Photos loaded handler
-  const handlePhotosLoaded = () => {
-    setPhotosLoaded(true);
-    Animated.timing(buttonsOpacity, {
-      toValue: 1,
-      duration: 400,
-      delay: 300,
-      useNativeDriver: true,
-    }).start();
-    
-    if (userData?.numOfLotus && userData.numOfLotus > 0) {
-      Animated.loop(
-        Animated.timing(lotusButtonGlow, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        { iterations: -1, resetBeforeIteration: true }
-      ).start();
-    }
-  };
-
-  // Reset animations when match changes
-  useEffect(() => {
-    if (currentPotentialMatch && !actionInProgress && showContent) {
-      contentOpacity.setValue(1);
-      buttonsOpacity.setValue(0);
-      overlayOpacity.setValue(0);
-      overlayScale.setValue(0.8);
-      lotusButtonGlow.setValue(0);
-      setPhotosLoaded(false);
-    }
-  }, [currentPotentialMatch?.userId, showContent]);
 
   const showDailyLimitModalFunc = () => {
     setShowDailyLimitModal(true);
@@ -425,29 +452,15 @@ const ConnectScreen: React.FC = () => {
     Animated.parallel([
       Animated.timing(dailyLimitModalOpacity, {
         toValue: 1,
-        duration: 500,
+        duration: 400,
         useNativeDriver: true,
       }),
       Animated.spring(dailyLimitModalScale, {
         toValue: 1,
-        tension: 80,
+        tension: 100,
         friction: 8,
         useNativeDriver: true,
       }),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(dailyLimitGlow, {
-            toValue: 1,
-            duration: 2000,
-            useNativeDriver: false,
-          }),
-          Animated.timing(dailyLimitGlow, {
-            toValue: 0.3,
-            duration: 2000,
-            useNativeDriver: false,
-          }),
-        ])
-      ),
     ]).start();
   };
 
@@ -455,50 +468,77 @@ const ConnectScreen: React.FC = () => {
     Animated.parallel([
       Animated.timing(dailyLimitModalOpacity, {
         toValue: 0,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       }),
       Animated.timing(dailyLimitModalScale, {
         toValue: 0.8,
-        duration: 400,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start(() => {
       setShowDailyLimitModal(false);
-      dailyLimitGlow.setValue(0);
     });
+  };
+
+  const handlePhotosLoaded = () => {
+    setPhotosLoaded(true);
+    
+    // Smooth button entrance
+    Animated.timing(buttonsOpacity, {
+      toValue: 1,
+      duration: 400,
+      delay: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    if (isRefreshing) return;
+    
+    console.log('🔄 User pulled to refresh - resetting matches...');
+    setIsRefreshing(true);
+    
+    try {
+      await resetMatching();
+      setTimeout(() => {
+        setIsRefreshing(false);
+        console.log('✅ Refresh complete');
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Error during refresh:', error);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Navigate functions - FIXED TO USE MODAL INSTEAD OF NAVIGATION
+  const navigateToLotusShop = () => {
+    closeDivineLotusModal();
+    setTimeout(() => {
+      setShowLotusScreen(true); // Show modal instead of navigating
+    }, 400);
+  };
+
+  const closeLotusScreen = () => {
+    setShowLotusScreen(false);
+  };
+
+  const navigateToSubscription = () => {
+    closeDivineLotusModal();
+    setTimeout(() => {
+      router.push('/user/FullCircleSubscription');
+    }, 400);
   };
 
   const navigateToFullCircle = () => {
     closeDailyLimitModal();
     setTimeout(() => {
       router.push('/user/FullCircleSubscription');
-    }, 500);
+    }, 400);
   };
 
-  // 🆕 Pull-to-refresh handler
-    const onRefresh = async () => {
-      if (isRefreshing) return;
-      
-      console.log('🔄 User pulled to refresh - resetting matches...');
-      setIsRefreshing(true);
-      
-      try {
-        // Reset the matching system to pick up new users
-        await resetMatching();
-        
-        // Give it a moment to initialize with fresh data
-        setTimeout(() => {
-          setIsRefreshing(false);
-          console.log('✅ Refresh complete');
-        }, 2000);
-      } catch (error) {
-        console.error('❌ Error during refresh:', error);
-        setIsRefreshing(false);
-      }
-    };
-
-  // 🔄 UPDATED: Use new state for no more matches condition
+  // No more matches screen
   if (matchingState.noMoreMatches) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -518,97 +558,63 @@ const ConnectScreen: React.FC = () => {
         </View>
 
         <View style={styles.noLikesContainer}>
-          {hasFullCircleSubscription ? (
-            // FullCircle Subscriber Experience
-            <>
-              <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-                <CustomIcon name="infinite" size={32} color="#B8860B" />
-              </View>
-              
-              <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                You've explored your current circle
+          <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
+            <CustomIcon name="infinite" size={32} color="#B8860B" />
+          </View>
+          
+          <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            {hasFullCircleSubscription 
+              ? "You've explored your current circle"
+              : "More connections coming soon"
+            }
+          </Text>
+          
+          <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            {hasFullCircleSubscription
+              ? "As a FullCircle member, you've seen all available connections in your area. New members join daily - check back soon or expand your search radius."
+              : "We're preparing more meaningful matches for you. Expand your circle with FullCircle to discover more connections, or adjust your preferences."
+            }
+          </Text>
+          
+          <View style={styles.actionContainer}>
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+              onPress={() => router.navigate(hasFullCircleSubscription ? '/user/EditUserProfile' : '/user/FullCircleSubscription')}
+              activeOpacity={0.9}
+            >
+              <CustomIcon 
+                name={hasFullCircleSubscription ? "person" : "infinite"} 
+                size={20} 
+                color="#FFFFFF" 
+                style={styles.buttonIcon} 
+              />
+              <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
+                {hasFullCircleSubscription ? "Enhance Your Profile" : "Expand Your Circle"}
               </Text>
-              
-              <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                As a FullCircle member, you've seen all available connections in your area. New members join daily - check back soon or expand your search radius.
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
+              onPress={() => router.navigate('/user/ConnectingPreferences')}
+              activeOpacity={0.9}
+            >
+              <CustomIcon name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
+              <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                Adjust Preferences
               </Text>
-              
-              <View style={styles.actionContainer}>
-                <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
-                  onPress={() => router.navigate('/user/EditUserProfile')}
-                  activeOpacity={0.9}
-                >
-                  <CustomIcon name="person" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                  <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-                    Enhance Your Profile
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
-                  onPress={() => router.navigate('/user/ConnectingPreferences')}
-                  activeOpacity={0.9}
-                >
-                  <CustomIcon name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
-                  <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                    Adjust Preferences
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            // Non-Subscriber Experience
-            <>
-              <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-                <CustomIcon name="infinite" size={32} color="#B8860B" />
-              </View>
-              
-              <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                More connections coming soon
-              </Text>
-              
-              <Text style={[styles.noLikesSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-                We're preparing more meaningful matches for you. Expand your circle with FullCircle to discover more connections, or adjust your preferences.
-              </Text>
-              
-              <View style={styles.actionContainer}>
-                <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
-                  onPress={() => router.navigate('/user/FullCircleSubscription')}
-                  activeOpacity={0.9}
-                >
-                  <CustomIcon name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-                  <Text style={[styles.primaryButtonText, fonts.spiritualBodyFont]}>
-                    Expand Your Circle
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: '#B8860B' }]}
-                  onPress={() => router.navigate('/user/ConnectingPreferences')}
-                  activeOpacity={0.9}
-                >
-                  <CustomIcon name="options" size={18} color="#B8860B" style={styles.buttonIcon} />
-                  <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                    Adjust Preferences
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
   }
 
-  // 🆕 NEW: Enhanced loading screen with smooth animations
+  // Enhanced loading screen
   if (isLoading || (!showContent && !matchingState.noMoreMatches)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
-        {/* Always show header to avoid white screen */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -622,7 +628,6 @@ const ConnectScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Always show settings button */}
         <TouchableOpacity 
           style={[
             styles.settingsFloating, 
@@ -634,28 +639,26 @@ const ConnectScreen: React.FC = () => {
           <CustomIcon name="options" size={22} color="#B8860B" />
         </TouchableOpacity>
 
-        {/* Centered OuroborosLoader */}
-        <View style={styles.centeredLoadingContainer}>
+        <Animated.View style={[styles.centeredLoadingContainer, { opacity: loadingOpacity }]}>
           <OuroborosLoader
             variant="pulse"              
             size={120}                   
-            duration={800}              
+            duration={1000}              
             loop={true}                  
             fillColor="#F5E6D3"          
             strokeColor="#7B6B5C"        
             strokeWidth={1}
           />
-        </View>
+        </Animated.View>
       </View>
     );
   }
 
-  // 🆕 NEW: Content with fade-in animation - Always render the structure to avoid white screen
+  // Main content with enhanced animations
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
 
-      {/* Always show settings button */}
       <TouchableOpacity 
         style={[
           styles.settingsFloating, 
@@ -671,7 +674,8 @@ const ConnectScreen: React.FC = () => {
         style={[
           styles.contentContainer,
           { 
-            opacity: showContent ? contentFadeIn : 0.3 // Show dimmed content while transitioning
+            opacity: contentFadeIn,
+            transform: [{ scale: contentScale }]
           }
         ]}
       >
@@ -681,37 +685,33 @@ const ConnectScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           bounces={true}
-          // refreshControl={
-          //   <RefreshControl
-          //     refreshing={isRefreshing}
-          //     onRefresh={onRefresh}
-          //     tintColor="#B8860B"
-          //     colors={["#B8860B"]}
-          //     progressBackgroundColor={colors.card} 
-          //     titleColor="#B8860B"
-          //   />
-          // }
         >
-          {/* Only render PotentialMatch when we have content AND it's ready to show */}
           {showContent && currentPotentialMatch ? (
-            <PotentialMatch
-              currentPotentialMatch={currentPotentialMatch}
-              isMatched={false}
-              onPhotosLoaded={handlePhotosLoaded}
-            />
+            <Animated.View style={{ opacity: contentOpacity }}>
+              <PotentialMatch
+                currentPotentialMatch={currentPotentialMatch}
+                isMatched={false}
+                onPhotosLoaded={handlePhotosLoaded}
+              />
+            </Animated.View>
           ) : (
-            // Show placeholder to maintain layout during transitions
             <View style={styles.contentPlaceholder}>
-              <Text style={[styles.placeholderText, { color: colors.textLight }]}>
-                {!currentPotentialMatch ? "Loading matches..." : "Preparing profile..."}
-              </Text>
+              <OuroborosLoader
+                variant="pulse"
+                size={60}
+                duration={800}
+                loop={true}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1}
+              />
             </View>
           )}
         </ScrollView>
       </Animated.View>
 
-      {/* Only show buttons when content is ready - Android safe version */}
-      {photosLoaded && !actionInProgress && showContent && currentPotentialMatch ? (
+      {/* Enhanced action buttons with smooth animations */}
+      {photosLoaded && !isTransitioning && showContent && currentPotentialMatch ? (
         <Animated.View style={[styles.buttonsContainer, { opacity: buttonsOpacity }]}>
           <TouchableOpacity 
             style={[
@@ -721,6 +721,7 @@ const ConnectScreen: React.FC = () => {
             ]}
             onPress={() => handleAction('pass')}
             activeOpacity={0.8}
+            disabled={actionInProgress}
           >
             <CustomIcon name="close" size={20} color="#8B7355" />
           </TouchableOpacity>
@@ -733,24 +734,12 @@ const ConnectScreen: React.FC = () => {
             ]}
             onPress={() => handleAction('like')}
             activeOpacity={0.8}
+            disabled={actionInProgress}
           >
             <CustomIcon name="heart" size={20} color="#B8860B" />
           </TouchableOpacity>
 
           <View style={styles.lotusButtonContainer}>
-            {userData?.numOfLotus && userData.numOfLotus > 0 ? (
-              <Animated.View 
-                style={[
-                  styles.lotusGlow,
-                  {
-                    shadowOpacity: lotusButtonGlow.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [0.3, 0.8, 0.3]
-                    }),
-                  }
-                ]}
-              />
-            ) : null}
             <TouchableOpacity 
               style={[
                 styles.actionButton, 
@@ -766,6 +755,7 @@ const ConnectScreen: React.FC = () => {
               ]}
               onPress={() => handleAction('lotus')}
               activeOpacity={0.8}
+              disabled={actionInProgress}
             >
               <CustomIcon name="lotus" size={36}/>
             </TouchableOpacity>
@@ -773,7 +763,311 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       ) : null}
 
-      {/* Divine Lotus Modal - updated with CustomIcon */}
+      {/* Enhanced Action Overlays - Modern and Sophisticated */}
+      
+      {/* Like Heart Burst Overlay */}
+      <Animated.View 
+        style={[
+          styles.actionOverlay,
+          { opacity: likeOverlayOpacity }
+        ]}
+        pointerEvents="none"
+      >
+        {/* Radiating heart particles */}
+        {[...Array(6)].map((_, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              styles.heartParticle,
+              {
+                opacity: likeOverlayOpacity.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0, 1, 0]
+                }),
+                transform: [
+                  { rotate: `${i * 60}deg` },
+                  {
+                    translateY: likeOverlayOpacity.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -80]
+                    })
+                  },
+                  {
+                    scale: likeOverlayOpacity.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.3, 1.2, 0.8]
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
+            <CustomIcon name="heart" size={20} color="#FF6B9D" />
+          </Animated.View>
+        ))}
+        
+        {/* Central heart with glow */}
+        <Animated.View 
+          style={[
+            styles.centralActionIcon,
+            {
+              backgroundColor: '#FF6B9D',
+              shadowColor: '#FF6B9D',
+              shadowOpacity: likeOverlayOpacity.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.8]
+              }),
+              transform: [{
+                scale: likeOverlayOpacity.interpolate({
+                  inputRange: [0, 0.3, 1],
+                  outputRange: [0.5, 1.3, 1]
+                })
+              }]
+            }
+          ]}
+        >
+          <CustomIcon name="heart" size={32} color="#FFFFFF" />
+        </Animated.View>
+      </Animated.View>
+
+      {/* Pass Fade Overlay */}
+      <Animated.View 
+        style={[
+          styles.actionOverlay,
+          { 
+            opacity: passOverlayOpacity,
+            backgroundColor: 'rgba(139, 115, 85, 0.1)'
+          }
+        ]}
+        pointerEvents="none"
+      >
+        {/* Gentle fade circles */}
+        {[...Array(3)].map((_, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              styles.fadeCircle,
+              {
+                opacity: passOverlayOpacity.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.3 - (i * 0.1)]
+                }),
+                transform: [{
+                  scale: passOverlayOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1.5 + (i * 0.5)]
+                  })
+                }]
+              }
+            ]}
+          />
+        ))}
+        
+        {/* Central close icon */}
+        <Animated.View 
+          style={[
+            styles.centralActionIcon,
+            {
+              backgroundColor: '#8B7355',
+              shadowColor: '#8B7355',
+              shadowOpacity: passOverlayOpacity.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.5]
+              }),
+              transform: [{
+                scale: passOverlayOpacity.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1.1]
+                })
+              }]
+            }
+          ]}
+        >
+          <CustomIcon name="close" size={28} color="#FFFFFF" />
+        </Animated.View>
+      </Animated.View>
+
+      {/* Enhanced Lotus Sacred Geometry Overlay */}
+      <Animated.View 
+        style={[
+          styles.actionOverlay,
+          { opacity: lotusOverlayOpacity }
+        ]}
+        pointerEvents="none"
+      >
+        {/* Background cosmic glow */}
+        <Animated.View 
+          style={[
+            styles.cosmicBackground,
+            {
+              opacity: lotusGlow.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.6]
+              }),
+              transform: [{
+                scale: lotusGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.5, 2]
+                })
+              }]
+            }
+          ]}
+        />
+        
+        {/* Multiple expanding sacred rings */}
+        {[...Array(4)].map((_, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              styles.sacredRing,
+              {
+                opacity: lotusGlow.interpolate({
+                  inputRange: [0, 0.3, 0.7, 1],
+                  outputRange: [0, 0.8, 0.5, 0.2]
+                }),
+                transform: [{
+                  scale: lotusGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.2, 3 + (i * 0.5)]
+                  })
+                }, {
+                  rotate: lotusRotation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [`${i * 15}deg`, `${(i * 15) + 180}deg`]
+                  })
+                }]
+              }
+            ]}
+          />
+        ))}
+        
+        {/* Floating lotus petals in sacred pattern */}
+        <Animated.View 
+          style={[
+            styles.lotusMandalaa,
+            {
+              opacity: lotusParticles.interpolate({
+                inputRange: [0, 0.4, 1],
+                outputRange: [0, 1, 0.9]
+              }),
+              transform: [{
+                scale: lotusParticles.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.6, 1.4]
+                })
+              }, {
+                rotate: lotusRotation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '120deg']
+                })
+              }]
+            }
+          ]}
+        >
+          {/* 12 lotus petals in sacred circle */}
+          {[...Array(12)].map((_, i) => (
+            <Animated.View
+              key={i}
+              style={[
+                styles.sacredPetal,
+                {
+                  transform: [
+                    { rotate: `${i * 30}deg` },
+                    { 
+                      translateY: lotusParticles.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-20, -50]
+                      })
+                    },
+                    {
+                      scale: lotusParticles.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [0.5, 1.2, 1]
+                      })
+                    }
+                  ]
+                }
+              ]}
+            />
+          ))}
+        </Animated.View>
+        
+        {/* Central lotus with divine glow */}
+        <Animated.View 
+          style={[
+            styles.centralLotusContainer,
+            {
+              transform: [{
+                scale: lotusGlow.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0.8, 1.3, 1.1]
+                })
+              }]
+            }
+          ]}
+        >
+          <Animated.View 
+            style={[
+              styles.centralActionIcon,
+              styles.lotusGlowIcon,
+              {
+                backgroundColor: '#680439ff',
+                shadowColor: '#680439ff',
+                shadowOpacity: lotusGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1]
+                }),
+                shadowRadius: lotusGlow.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [8, 25]
+                }),
+              }
+            ]}
+          >
+            <CustomIcon name="lotus" size={40} />
+          </Animated.View>
+        </Animated.View>
+      </Animated.View>
+
+      {/* Enhanced Transition Loading Overlay */}
+      <Animated.View 
+        style={[
+          styles.transitionOverlay,
+          { 
+            opacity: isTransitioning ? contentOpacity.interpolate({
+              inputRange: [0, 0.3],
+              outputRange: [0, 1],
+              extrapolate: 'clamp'
+            }) : 0,
+            backgroundColor: colors.background
+          }
+        ]}
+        pointerEvents="none"
+      >
+        <Animated.View
+          style={{
+            transform: [{
+              scale: isTransitioning ? contentScale.interpolate({
+                inputRange: [0.8, 1],
+                outputRange: [0.8, 1],
+                extrapolate: 'clamp'
+              }) : 1
+            }]
+          }}
+        >
+          <OuroborosLoader
+            variant="pulse"
+            size={60}
+            duration={800}
+            loop={true}
+            fillColor="#F5E6D3"
+            strokeColor="#B8860B"
+            strokeWidth={2}
+          />
+        </Animated.View>
+      </Animated.View>
+
+      {/* Divine Lotus Modal */}
       {showLotusModal && (
         <Animated.View 
           style={[
@@ -792,7 +1086,6 @@ const ConnectScreen: React.FC = () => {
               }
             ]}
           >
-            {/* Close button in top left */}
             <TouchableOpacity 
               style={[
                 styles.modalCloseButton,
@@ -865,39 +1158,7 @@ const ConnectScreen: React.FC = () => {
         </Animated.View>
       )}
 
-      {/* Clean Action Feedback Overlay - Android safe */}
-      {lastAction ? (
-        <Animated.View 
-          style={[
-            styles.actionOverlay,
-            {
-              opacity: overlayOpacity,
-              transform: [{ scale: overlayScale }]
-            }
-          ]}
-        >
-          <View
-            style={[
-              styles.actionIconContainer,
-              {
-                backgroundColor: lastAction === 'like' ? '#B8860B' : 
-                                 lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
-                shadowColor: lastAction === 'like' ? '#B8860B' : 
-                            lastAction === 'pass' ? '#8B7355' : '#FF1493', // Deep pink for lotus
-              }
-            ]}
-          >
-            <CustomIcon 
-              name={lastAction === 'like' ? 'heart' : 
-                   lastAction === 'pass' ? 'close' : 'lotus'} 
-              size={36} 
-              color="#FFFFFF" 
-            />
-          </View>
-        </Animated.View>
-      ) : null}
-
-      {/* Daily Limit Modal - updated with CustomIcon */}
+      {/* Daily Limit Modal */}
       {showDailyLimitModal && (
         <Animated.View 
           style={[
@@ -916,19 +1177,6 @@ const ConnectScreen: React.FC = () => {
               }
             ]}
           >
-            <Animated.View 
-              style={[
-                styles.divineGlow,
-                {
-                  opacity: dailyLimitGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.05, 0.15],
-                  }),
-                  backgroundColor: '#B8860B',
-                }
-              ]}
-            />
-            
             <View style={styles.divineContent}>
               <View style={[styles.divineIcon, { backgroundColor: '#B8860B' + '20' }]}>
                 <CustomIcon name="heart" size={36} color="#B8860B" />
@@ -950,7 +1198,6 @@ const ConnectScreen: React.FC = () => {
                 You've shared all {DAILY_LIKE_LIMIT} of your daily hearts. Your energy resets at midnight, or join FullCircle for unlimited connections.
               </Text>
               
-              {/* Show remaining time until reset */}
               <Text style={[
                 styles.resetTimeText,
                 fonts.spiritualBodyFont,
@@ -998,6 +1245,12 @@ const ConnectScreen: React.FC = () => {
           </Animated.View>
         </Animated.View>
       )}
+
+      {/* Lotus Screen Modal - Uses same pattern as SacredSelf */}
+      <LotusScreen
+        visible={showLotusScreen}
+        onClose={closeLotusScreen}
+      />
     </View>
   );
 };
@@ -1122,13 +1375,127 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // Enhanced loading styles
-  loadingContainer: {
-    alignItems: 'center',
+  centeredLoadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    position: 'relative',
+    alignItems: 'center',
+    marginBottom: Spacing["4xl"],
   },
   
+  // Enhanced action overlay styles - Modern and Sophisticated
+  actionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  
+  // Like Heart Animation Styles
+  heartParticle: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Pass Animation Styles
+  fadeCircle: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#8B7355',
+  },
+  
+  // Enhanced Central Action Icons
+  centralActionIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 20,
+    elevation: 12,
+    position: 'absolute',
+  },
+  
+  // Enhanced Lotus Sacred Geometry Styles
+  cosmicBackground: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#680439ff',
+  },
+  
+  sacredRing: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1,
+    borderColor: '#CD853F',
+  },
+  
+  lotusMandalaa: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  sacredPetal: {
+    position: 'absolute',
+    width: 6,
+    height: 25,
+    backgroundColor: '#CD853F',
+    borderRadius: 3,
+    shadowColor: '#CD853F',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  
+  centralLotusContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  lotusGlowIcon: {
+    shadowOffset: { width: 0, height: 0 },
+  },
+  
+  // Transition Loading Overlay
+  transitionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1500,
+  },
+  
+  lotusButtonContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 125 : 105,
+    left: '50%',
+    marginLeft: -28,
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Modal styles
   divineModalOverlay: {
     position: 'absolute',
     top: 0,
@@ -1152,45 +1519,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   
-  divineGlow: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    right: -50,
-    bottom: -50,
-    borderRadius: 50,
-    opacity: 0.3,
-  },
-  
   divineContent: {
     padding: Spacing['2xl'],
     alignItems: 'center',
     zIndex: 1,
-  },
-  
-  lotusButtonContainer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 125 : 105,
-    left: '50%',
-    marginLeft: -28,
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  lotusGlow: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'transparent',
-    top: 0,
-    left: 0,
-    shadowColor: '#CD853F',
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 12,
-    elevation: 0,
   },
   
   divineIcon: {
@@ -1255,28 +1587,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  // Clean Action feedback styles - NO container box
-  actionOverlay: {
+  modalCloseButton: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 16,
+    left: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  
-  actionIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
+    zIndex: 10,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   
   // No more matches styles
@@ -1353,31 +1679,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   
-  debugButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#B8860B' + '20',
-  },
-  
-  debugText: {
-    fontSize: 12,
-    textAlign: 'center',
-    fontFamily: 'monospace',
-  },
-
-  // Content placeholder styles to prevent white screen
   contentPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-  },
-
-  placeholderText: {
-    fontSize: Typography.sizes.base,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    opacity: 0.6,
+    minHeight: screenHeight * 0.6,
   },
   
   resetTimeText: {
@@ -1386,29 +1693,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.3,
     fontWeight: Typography.weights.medium,
-  },
-    modalCloseButton: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-    centeredLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing["4xl"],
   },
 });
 
