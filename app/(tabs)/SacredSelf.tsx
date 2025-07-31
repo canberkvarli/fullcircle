@@ -364,12 +364,12 @@ export default function SacredSelf() {
                 >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#FF6B6B' + '20' }]}>
-                      <Ionicons name="heart-circle" size={24} color="#FF6B6B" />
+                      <Ionicons name="heart-circle" size={32} color="#FF6B6B" />
                     </View>
                   </View>
                   <View style={styles.featureContent}>
                     <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                      Unlimited Likes
+                      Unlimited Hearts
                     </Text>
                     <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
                       Express your interest freely
@@ -378,29 +378,29 @@ export default function SacredSelf() {
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.featureRow, { backgroundColor: colors.card }]}
-                  onPress={handleRadiancePress}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.featureIconContainer}>
-                    <View style={styles.featureIcon}>
-                        <CustomIcon name="halo" size={32} color="#e0be00ff" />
-                        <View style={[styles.countBadge, { backgroundColor: 'rgba(208, 177, 0, 1)' }]}>
-                        <Text style={styles.countText}>{userData.activeBoosts || 0}</Text>
-                      </View>
+              <TouchableOpacity 
+                style={[styles.featureRow, { backgroundColor: colors.card }]}
+                onPress={handleRadiancePress}
+                activeOpacity={0.7}
+              >
+                <View style={styles.featureIconContainer}>
+                  <View style={[styles.featureIcon, { backgroundColor: '#F1C40F' + '20' }]}>
+                    <CustomIcon name="halo" size={24} color="#F1C40F" />
+                    <View style={[styles.countBadge, { backgroundColor: '#F1C40F' }]}>
+                      <Text style={styles.countText}>{userData.activeBoosts || 0}</Text>
                     </View>
                   </View>
-                  <View style={styles.featureContent}>
-                    <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                      Radiances
-                    </Text>
-                    <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
-                      Get seen by 11x more people
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                </TouchableOpacity>
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={[styles.featureTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                    Radiances
+                  </Text>
+                  <Text style={[styles.featureSubtitle, fonts.spiritualBodyFont, { color: colors.textMuted }]}>
+                    Get seen by 11x more people
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
 
                 <TouchableOpacity 
                   style={[styles.featureRow, { backgroundColor: colors.card }]}
@@ -408,9 +408,9 @@ export default function SacredSelf() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.featureIconContainer}>
-                    <View style={[styles.featureIcon, { backgroundColor: '#8B4513' + '20' }]}>
-                        <CustomIcon name="lotus" size={26}  />
-                      <View style={[styles.countBadge, { backgroundColor: '#680439ff' }]}>
+                    <View style={[styles.featureIcon, { backgroundColor: '#8E44AD' + '20' }]}>
+                      <CustomIcon name="lotus" size={32} />
+                      <View style={[styles.countBadge, { backgroundColor: '#8E44AD' }]}>
                         <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                       </View>
                     </View>
@@ -433,7 +433,7 @@ export default function SacredSelf() {
                 >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#9D4EDD' + '20' }]}>
-                      <Ionicons name="eye" size={24} color="#9D4EDD" />
+                      <Ionicons name="eye" size={32} color="#9D4EDD" />
                     </View>
                   </View>
                   <View style={styles.featureContent}>
@@ -454,7 +454,7 @@ export default function SacredSelf() {
                 >
                   <View style={styles.featureIconContainer}>
                     <View style={[styles.featureIcon, { backgroundColor: '#00BCD4' + '20' }]}>
-                      <Ionicons name="filter" size={24} color="#00BCD4" />
+                      <Ionicons name="filter" size={32} color="#00BCD4" />
                     </View>
                   </View>
                   <View style={styles.featureContent}>
@@ -531,9 +531,9 @@ export default function SacredSelf() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.resourceIconContainer}>
-                      <View style={[styles.resourceIcon]}>
-                        <CustomIcon name="halo" size={32} color="#e0be00ff" />
-                        <View style={[styles.countBadge, { backgroundColor: 'rgba(208, 177, 0, 1)' }]}>
+                      <View style={[styles.resourceIcon, { backgroundColor: '#F1C40F' + '20' }]}>
+                        <CustomIcon name="halo" size={32} color="#F1C40F" />
+                        <View style={[styles.countBadge, { backgroundColor: '#F1C40F' }]}>
                           <Text style={styles.countText}>{userData.activeBoosts || 0}</Text>
                         </View>
                       </View>
@@ -548,16 +548,15 @@ export default function SacredSelf() {
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                   </TouchableOpacity>
-
                   <TouchableOpacity 
                     style={[styles.resourceItem, { backgroundColor: colors.card }]}
                     onPress={handleLotusPress}
                     activeOpacity={0.7}
                   >
                     <View style={styles.resourceIconContainer}>
-                      <View style={[styles.resourceIcon]}>
-                        <CustomIcon name="lotus" size={32}  />
-                        <View style={[styles.countBadge, { backgroundColor: '#680439ff' }]}>
+                      <View style={[styles.resourceIcon, { backgroundColor: '#8E44AD' + '20' }]}>
+                        <CustomIcon name="lotus" size={32} />
+                        <View style={[styles.countBadge, { backgroundColor: '#8E44AD' }]}>
                           <Text style={styles.countText}>{userData.numOfLotus || 0}</Text>
                         </View>
                       </View>
@@ -766,7 +765,7 @@ const styles = StyleSheet.create({
   featureIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -861,9 +860,9 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   resourceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',

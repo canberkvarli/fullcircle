@@ -392,8 +392,8 @@ const KindredSpirits: React.FC = () => {
             disabled={radianceConfig.disabled}
           >
             <CustomIcon 
-              name="radiance" 
-              size={16} 
+              name="halo" 
+              size={22} 
               color={radianceConfig.color} 
             />
             <Text style={[styles.radianceButtonText, fonts.spiritualBodyFont, { color: radianceConfig.color }]}>
