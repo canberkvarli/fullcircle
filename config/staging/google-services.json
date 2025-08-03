@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "175539625107",
+    "project_id": "fullcircle-staging-b7ef9",
+    "storage_bucket": "fullcircle-staging-b7ef9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175539625107:android:bca7b2ec03e286b5fc4166",
+        "android_client_info": {
+          "package_name": "com.fullcircle.app.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU8ewvAF3dpldA8t75C2e8rVrTNYKrTTs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

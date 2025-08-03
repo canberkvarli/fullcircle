@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "831545660855",
+    "project_id": "fullcircle-dev-1aafd",
+    "storage_bucket": "fullcircle-dev-1aafd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:831545660855:android:c8b6eb76eea7f45ce14432",
+        "android_client_info": {
+          "package_name": "com.fullcircle.app.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "831545660855-4baokha1btknd2anr2o25bo3u397glbu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fullcircle.app.dev",
+            "certificate_hash": "e27662cc9beba396bb5998a25345dd6064aea4b0"
+          }
+        },
+        {
+          "client_id": "831545660855-lj6256i7qk42sjheajock8l1rj08v6ga.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fullcircle.app.dev",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "831545660855-g9eptivufjl7bc025kl73fnjk9at026o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG7yqzs_mWHcjM_7P25YkL_1lKL911N-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "831545660855-g9eptivufjl7bc025kl73fnjk9at026o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "831545660855-7hpiemj9fee6jqseipijgrn6j1ukrlp7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.fullcircle.app.dev"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -24,9 +24,6 @@ expo-env.d.ts
 .env
 .env.*
 .env.local
-config/**/.env
-google-services.json
-GoogleService-Info.plist
 
 # Firebase & Server Keys
 server/keys/
