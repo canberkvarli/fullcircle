@@ -182,8 +182,12 @@ const SoulChats: React.FC = () => {
         </View>
 
         <View style={styles.noMatchesContainer}>
-          <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="chatbubbles-outline" size={36} color="#8B4513" />
+          <View style={[styles.cosmicSymbol]}>
+            <CustomIcon 
+              name="meditation" 
+              size={54} 
+              color="#8B4513" 
+            />
           </View>
           
           <Text style={[styles.noMatchesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -199,7 +203,12 @@ const SoulChats: React.FC = () => {
             onPress={() => router.push('/Connect')}
             activeOpacity={0.9}
           >
-            <Ionicons name="sparkles" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+            <CustomIcon 
+              name="sparkles" 
+              size={20} 
+              color="#FFFFFF" 
+              style={styles.buttonIcon} 
+            />
             <Text style={[styles.connectButtonText, fonts.spiritualBodyFont]}>
               Discover Connections
             </Text>
@@ -478,10 +487,8 @@ const styles = StyleSheet.create({
   },
   
   cosmicSymbol: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     padding: Spacing.lg,
-    borderRadius: 40,
-    borderWidth: 1,
     borderColor: 'transparent',
   },
   
