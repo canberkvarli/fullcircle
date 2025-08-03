@@ -540,8 +540,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [matchingState]);
 
   useEffect(() => {
+    console.log("Setting up Firebase auth state change listener");
     const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
-    return subscriber;
+    
+    return () => {
+      console.log("Removing Firebase auth state change listener");
+      subscriber();
+    };
   }, []);
 
   const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string>> => {
@@ -705,7 +710,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const assignWeeklyLotus = useCallback(async () => {
     if (!userData.userId) return;
 
-    const userRef = FIRESTORE.collection("users").doc(userData.userId);
+    const userRef = FIRESTORE.collection("users").doc(userDataRef.current.userId);
 
     // If they already have >=1 lotus, or we assigned within the last week, bail out.
     const last = userData.lastLotusAssignedAt?.toMillis?.() ?? 0;
@@ -796,7 +801,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     });
     
     setCurrentUser(user);
-
     if (initializing) setInitializing(false);
 
     if (user) {
@@ -815,14 +819,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         // Let fetchUserData handle ALL navigation logic
         if (isGoogleLogin) {
           AuthDebug.trackFlowStep('AuthStateChange', 'Google Sign-in detected', { userId: user.uid });
+          console.log("Calling fetchUserData from onAuthStateChanged for Google user");
           await fetchUserData(user.uid, isGoogleLogin);
         } else {
           AuthDebug.trackFlowStep('AuthStateChange', 'Phone Sign-in detected', { userId: user.uid });
+          console.log("Calling fetchUserData from onAuthStateChanged for Phone user");
           await fetchUserData(user.uid, false);
         }
 
         updateLastActive();
       } catch (error) {
+        console.error("Error in onAuthStateChanged:", error);
         AuthDebug.error('AuthStateChange', 'Error processing authenticated user', { error, userId: user.uid });
       }
     } else {
@@ -831,91 +838,87 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const handleGoogleSignIn = async (): Promise<void> => {
-    try {
-      AuthDebug.trackFlowStep('GoogleSignIn', 'Started');
-      
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-
-      const { idToken } = await GoogleSignin.signIn();
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      
-      AuthDebug.trackFlowStep('GoogleSignIn', 'Google credential obtained');
-      
-      const { user } = await FIREBASE_AUTH.signInWithCredential(googleCredential);
-
-      if (!user) {
-        throw new Error('Failed to get user from credential');
-      }
-
-      setGoogleCredential(googleCredential);
-      setCurrentUser(user);
-
-      AuthDebug.trackFlowStep('GoogleSignIn', 'Firebase auth successful', { userId: user.uid });
-      
-      if (user) {
-        const userDocRef = FIRESTORE.collection("users").doc(user.uid);
-        const docSnap = await userDocRef.get();
-
-        const userFirstName = user.displayName?.split(" ")[0] || "";
-        const userLastName = user.displayName?.split(" ")[1] || "";
-        const userFullName = user.displayName || "";
-
-        if (docSnap.exists) {
-          // Existing user - update their data
-          const existingUser = docSnap.data() as UserDataType;
-          
-          const userDataToUpdate: Partial<UserDataType> = {
-            ...existingUser,
-            userId: user.uid,
-            email: user.email || "",
-            firstName: userFirstName || existingUser.firstName,
-            lastName: userLastName || existingUser.lastName,
-            fullName: userFullName || existingUser.fullName,
-            GoogleSSOEnabled: true,
-            settings: {
-              ...existingUser?.settings,
-              connectedAccounts: {
-                ...existingUser?.settings?.connectedAccounts,
-                google: true,
-              },
-            },
-          };
-          
-          // Update user data but DON'T navigate - let onAuthStateChanged handle it
-          await updateUserData(userDataToUpdate);
-          
-          AuthDebug.trackFlowStep('GoogleSignIn', 'Updated existing user data');
-        } else {
-          // New user - create document
-          AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
-          
-          const userDataToUpdate: Partial<UserDataType> = {
-            ...initialUserData,
-            userId: user.uid,
-            createdAt: firestore.FieldValue.serverTimestamp(),
-            email: user.email || "",
-            firstName: userFirstName,
-            lastName: userLastName,
-            fullName: userFullName,
-            GoogleSSOEnabled: true,
-            currentOnboardingScreen: "PhoneNumberScreen",
-          };
-          
-          await userDocRef.set(userDataToUpdate);
-          
-          AuthDebug.trackFlowStep('GoogleSignIn', 'New user created');
-        }
-        
-        // IMPORTANT: No navigation here! onAuthStateChanged will call fetchUserData which handles it
-      }
-    } catch (error: any) {
-      AuthDebug.error('GoogleSignIn', 'Google sign-in error', error);
-      console.error("Google sign-in error:", error);
+const handleGoogleSignIn = async (): Promise<void> => {
+  try {
+    AuthDebug.trackFlowStep('GoogleSignIn', 'Started');
+    
+    await GoogleSignin.hasPlayServices({
+      showPlayServicesUpdateDialog: true,
+    });
+    const { idToken } = await GoogleSignin.signIn();
+    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+    
+    AuthDebug.trackFlowStep('GoogleSignIn', 'Google credential obtained');
+    
+    const { user } = await FIREBASE_AUTH.signInWithCredential(googleCredential);
+    if (!user) {
+      throw new Error('Failed to get user from credential');
     }
-  };
+    setGoogleCredential(googleCredential);
+    setCurrentUser(user);
+    AuthDebug.trackFlowStep('GoogleSignIn', 'Firebase auth successful', { userId: user.uid });
+    
+    if (user) {
+      const userDocRef = FIRESTORE.collection("users").doc(user.uid);
+      const docSnap = await userDocRef.get();
+      const userFirstName = user.displayName?.split(" ")[0] || "";
+      const userLastName = user.displayName?.split(" ")[1] || "";
+      const userFullName = user.displayName || "";
+      if (docSnap.exists) {
+        // Existing user - update their data
+        const existingUser = docSnap.data() as UserDataType;
+        
+        const userDataToUpdate: Partial<UserDataType> = {
+          ...existingUser,
+          userId: user.uid,
+          email: user.email || "",
+          firstName: userFirstName || existingUser.firstName,
+          lastName: userLastName || existingUser.lastName,
+          fullName: userFullName || existingUser.fullName,
+          GoogleSSOEnabled: true,
+          settings: {
+            ...existingUser?.settings,
+            connectedAccounts: {
+              ...existingUser?.settings?.connectedAccounts,
+              google: true,
+            },
+          },
+        };
+        
+        // Update user data but DON'T navigate - let onAuthStateChanged handle it
+        await updateUserData(userDataToUpdate);
+        
+        AuthDebug.trackFlowStep('GoogleSignIn', 'Updated existing user data');
+        
+        // Explicit navigation for existing users
+        // console.log("Manually triggering navigation for existing Google user");
+        // await fetchUserData(user.uid, true);
+      } else {
+        // New user - create document
+        AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
+        
+        const userDataToUpdate: Partial<UserDataType> = {
+          ...initialUserData,
+          userId: user.uid,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          email: user.email || "",
+          firstName: userFirstName,
+          lastName: userLastName,
+          fullName: userFullName,
+          GoogleSSOEnabled: true,
+          currentOnboardingScreen: "PhoneNumberScreen",
+        };
+        
+        await userDocRef.set(userDataToUpdate);
+        
+        AuthDebug.trackFlowStep('GoogleSignIn', 'New user created');
+      }
+    }
+  } catch (error: any) {
+    AuthDebug.error('GoogleSignIn', 'Google sign-in error', error);
+    console.error("Google sign-in error:", error);
+  }
+};
 
   const verifyPhoneAndSetUser = async (
     verificationId: string,
@@ -953,6 +956,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Update user data after successful linking
         await updateUserData({
+          ...userDataRef.current,
           userId: FIREBASE_AUTH.currentUser.uid,
           phoneNumber,
           countryCode,
@@ -961,8 +965,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           currentOnboardingScreen: "NameScreen",
         });
         
-        AuthDebug.trackFlowStep('PhoneVerification', 'User data updated, navigating to NameScreen');
+        AuthDebug.trackFlowStep('PhoneVerification', 'User data updated, calling fetchUserData for navigation');
         setIsLinking(false);
+
+        await fetchUserData(FIREBASE_AUTH.currentUser.uid, true);
+        
       } else {
         // Standard phone sign-in (not linking)
         AuthDebug.trackFlowStep('PhoneVerification', 'Signing in with phone credential');
@@ -998,6 +1005,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           // Existing user - fetchUserData will handle navigation through onAuthStateChanged
           AuthDebug.trackFlowStep('PhoneVerification', 'Existing phone user authenticated', { userId: user.uid });
         }
+        
+        // For phone sign-in, onAuthStateChanged will trigger and call fetchUserData
+        // So we don't need to manually call it here
       }
     } catch (error: any) {
       AuthDebug.error('PhoneVerification', 'Error verifying phone number', error);
@@ -1165,14 +1175,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Update the last active timestamp
   const updateLastActive = async () => {
-    if (!userData.onboardingCompleted) {
+    if (!userDataRef.current.onboardingCompleted) {
       return;
     }
     try {
-      const userId = userData.userId;
+      const userId = userDataRef.current.userId;
       if (!userId) return;
       await updateUserData({ lastActive: firestore.FieldValue.serverTimestamp() });
-      console.log("Last active updated successfully");
     } catch (error) {
       console.error("Error updating last active:", error);
     }
