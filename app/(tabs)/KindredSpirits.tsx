@@ -404,8 +404,8 @@ const KindredSpirits: React.FC = () => {
 
         {/* No likes content */}
         <View style={styles.noLikesContainer}>
-          <View style={[styles.cosmicSymbol, { backgroundColor: '#8B4513' + '15' }]}>
-            <Ionicons name="heart-outline" size={32} color="#8B4513" />
+          <View style={styles.cosmicSymbol}>
+            <CustomIcon name="hand-heart" size={54} color="#8B4513" />
           </View>
           
           <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
@@ -724,10 +724,8 @@ const styles = StyleSheet.create({
   },
   
   cosmicSymbol: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     padding: Spacing.lg,
-    borderRadius: 40,
-    borderWidth: 1,
     borderColor: 'transparent',
   },
   
@@ -735,7 +733,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes['2xl'],
     fontWeight: Typography.weights.bold,
     textAlign: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     letterSpacing: 0.5,
   },
   

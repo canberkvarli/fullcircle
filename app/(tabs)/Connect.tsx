@@ -558,11 +558,16 @@ const ConnectScreen: React.FC = () => {
         </View>
 
         <View style={styles.noLikesContainer}>
-          <View style={[styles.cosmicSymbol, { backgroundColor: '#B8860B' + '15' }]}>
-            <CustomIcon name="infinite" size={32} color="#B8860B" />
-          </View>
+            <OuroborosLoader
+              variant="breathe"
+              duration={7000}
+              size={102}
+              loop={true}
+              fillColor="#B8860B"
+              strokeColor="#B8860B"
+            />
           
-          <Text style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text  style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
             {hasFullCircleSubscription 
               ? "You've explored your current circle"
               : "More connections coming soon"
@@ -1605,20 +1610,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   
-  // No more matches styles
-  cosmicSymbol: {
-    marginBottom: Spacing.xl,
-    padding: Spacing.lg,
-    borderRadius: 40,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  
   noLikesContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.xl,
   },
   
   noLikesTitle: {

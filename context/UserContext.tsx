@@ -892,7 +892,7 @@ const handleGoogleSignIn = async (): Promise<void> => {
         
         // Explicit navigation for existing users
         // console.log("Manually triggering navigation for existing Google user");
-        // await fetchUserData(user.uid, true);
+        await fetchUserData(user.uid, true);
       } else {
         // New user - create document
         AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
