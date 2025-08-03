@@ -1,4 +1,4 @@
-package com.fullcircle.app
+package com.fullcircle.app.dev
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

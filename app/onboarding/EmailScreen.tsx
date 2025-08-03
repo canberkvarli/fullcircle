@@ -41,9 +41,23 @@ function EmailScreen() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
+  const getWebClientId = () => {
+    const env = process.env.EXPO_PUBLIC_ENV || 'development';
+
+    switch (env) {
+      case 'production':
+        return process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      case 'staging':
+        return process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      default:
+        return process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    }
+  };
+
+  const webClientId = getWebClientId();
   GoogleSignin.configure({
-    webClientId:
-      "856286042200-nv9vv4js8j3mqhu07acdbnf0hbp8feft.apps.googleusercontent.com",
+    webClientId,
+    offlineAccess: false,
   });
 
   useEffect(() => {

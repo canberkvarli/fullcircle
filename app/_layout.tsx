@@ -1,4 +1,3 @@
-// app/_layout.tsx - Get Stripe key from Constants
 import * as React from "react";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";

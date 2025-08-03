@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>856286042200-kr0ri80js0dvqcf5jvc8c3v6m83bbo97.apps.googleusercontent.com</string>
+	<string>831545660855-7hpiemj9fee6jqseipijgrn6j1ukrlp7.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.856286042200-kr0ri80js0dvqcf5jvc8c3v6m83bbo97</string>
+	<string>com.googleusercontent.apps.831545660855-7hpiemj9fee6jqseipijgrn6j1ukrlp7</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>856286042200-15n47bb49h7l3tchh69ak5incv15n4lo.apps.googleusercontent.com</string>
+	<string>831545660855-4baokha1btknd2anr2o25bo3u397glbu.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyALU_rtBceCYwr5AuNgxOHZtHs5WQw92UA</string>
+	<string>AIzaSyCpFlYYGPzb4V3sAWIefRGZSh5lqLWVmFo</string>
 	<key>GCM_SENDER_ID</key>
-	<string>856286042200</string>
+	<string>831545660855</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.fullcircle.app</string>
+	<string>com.fullcircle.app.dev</string>
 	<key>PROJECT_ID</key>
-	<string>fullcircle-3d01a</string>
+	<string>fullcircle-dev-1aafd</string>
 	<key>STORAGE_BUCKET</key>
-	<string>fullcircle-3d01a.appspot.com</string>
+	<string>fullcircle-dev-1aafd.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,8 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:856286042200:ios:52612b98b4294dc487522d</string>
-	<key>DATABASE_URL</key>
-	<string>https://fullcircle-3d01a-default-rtdb.firebaseio.com</string>
+	<string>1:831545660855:ios:3435b986cad8ea0ee14432</string>
 </dict>
 </plist>

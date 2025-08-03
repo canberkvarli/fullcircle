@@ -497,14 +497,13 @@ export default function FullCircleSubscription() {
               snapToAlignment="center"
             >
               {Object.entries(pricingPlans).map(([planKey, plan]) => (
-                <>
+                <View key={planKey} style={{ position: 'relative' }}>
                   {plan.popular && (
                     <View style={styles.popularBadge}>
                       <Text style={styles.popularText}>POPULAR</Text>
                     </View>
                   )}
                   <TouchableOpacity
-                    key={planKey}
                     style={[
                       styles.planCard,
                       styles.planCardColumn,
@@ -527,7 +526,7 @@ export default function FullCircleSubscription() {
                       </View>
                     )}
                   </TouchableOpacity>
-                </>
+                </View>
               ))}
             </ScrollView>
           </View>

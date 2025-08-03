@@ -4,14 +4,21 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start --dev-client",
+    "env:dev": "cp config/dev/.env . && cp config/dev/google-services.json . && cp config/dev/GoogleService-Info.plist . && firebase use fullcircle-dev-1aafd",
+    "env:staging": "cp config/staging/.env . && cp config/staging/google-services.json . && cp config/staging/GoogleService-Info.plist . && firebase use fullcircle-staging",
+    "env:prod": "cp config/prod/.env . && cp config/prod/google-services.json . && cp config/prod/GoogleService-Info.plist . && firebase use fullcircle-prod",
+    "dev": "npm run env:dev && EXPO_PUBLIC_ENV=development expo start",
+    "dev:clear": "npm run env:dev && EXPO_PUBLIC_ENV=development expo start --clear",
+    "staging": "npm run env:staging && EXPO_PUBLIC_ENV=staging expo start",
+    "prod": "npm run env:prod && EXPO_PUBLIC_ENV=production expo start",
+    "seed:dev": "npm run env:dev && npx ts-node scripts/seedFirestore.ts",
+    "seed:staging": "npm run env:staging && npx ts-node scripts/seedFirestore.ts",
+    "seed:prod": "npm run env:prod && npx ts-node scripts/seedFirestore.ts",
+    "build:dev": "npm run env:dev && EXPO_PUBLIC_ENV=development eas build --profile development",
+    "build:staging": "npm run env:staging && EXPO_PUBLIC_ENV=staging eas build --profile staging",
+    "build:prod": "npm run env:prod && EXPO_PUBLIC_ENV=production eas build --profile production",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "test": "jest --watchAll",
-    "lint": "expo lint",
-    "postinstall": "patch-package",
-    "eas-build-post-install": "patch-package"
+    "ios": "expo run:ios"
   },
   "jest": {
     "preset": "jest-expo"

@@ -5,7 +5,7 @@ const { stripe } = require('./config');
 const db = admin.firestore();
 
 // Webhook endpoint secret - Set this in your Firebase Functions config
-const endpointSecret = functions.config().stripe?.webhook_secret;
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 /**
  * Handle Stripe webhooks

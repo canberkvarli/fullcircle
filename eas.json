@@ -7,21 +7,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": {
-        "simulator": true
-      }
-    },
-    "development-simulator": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "ios": {
-        "simulator": true
+      "env": {
+        "EXPO_PUBLIC_ENV": "development"
       },
-      "environment": "development"
-    },
-    "local": {
-      "developmentClient": true,
-      "distribution": "internal",
       "ios": {
         "simulator": true,
         "resourceClass": "medium"
@@ -30,12 +18,24 @@
         "resourceClass": "medium"
       }
     },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {
+    "staging": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "staging"
+      },
       "android": {
         "resourceClass": "medium"
+      },
+      "ios": {
+        "resourceClass": "medium"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_ENV": "production"
+      },
+      "android": {
+        "resourceClass": "large"
       },
       "ios": {
         "resourceClass": "large"

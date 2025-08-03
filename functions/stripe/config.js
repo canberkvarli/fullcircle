@@ -1,11 +1,14 @@
 const functions = require('firebase-functions');
 const Stripe = require('stripe');
 
-// Get Stripe secret key from Firebase Functions config
-const STRIPE_SECRET_KEY = functions.config().stripe?.secret_key;
+// 🔧 Load environment variables from .env file
+require('dotenv').config();
+
+// 🔧 MODERN WAY: Use environment variables instead of functions.config()
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
 if (!STRIPE_SECRET_KEY) {
-  throw new Error('Stripe secret key not configured. Run: firebase functions:config:set stripe.secret_key="your_key"');
+  throw new Error('Stripe secret key not configured. Add STRIPE_SECRET_KEY to your .env file');
 }
 
 // Initialize Stripe

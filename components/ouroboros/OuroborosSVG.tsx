@@ -10,8 +10,8 @@ interface OuroborosSVGProps {
 
 const OuroborosSVG: React.FC<OuroborosSVGProps> = ({
   size = 200,
-  fillColor = '#F5E6D3',
-  strokeColor = '#7B6B5C',
+  fillColor='#F5E6D3',
+  strokeColor='#B8860B',
   strokeWidth = 1.5,
 }) => {
   return (

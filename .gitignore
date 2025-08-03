@@ -63,3 +63,22 @@ firebase-debug.log
 expo-env.d.ts
 # @end expo-clifunctions/firebase-debug.log
 
+# Environment files
+.env.*
+config/**/.env
+
+# Service account keys  
+server/keys/*-firebase-adminsdk*.json
+
+# Active config files (these are copies/symlinks)
+google-services.json
+GoogleService-Info.plist
+
+# Secrets
+secrets/
+
+server/keys/*.json
+config/*/google-services.json
+config/*/GoogleService-Info.plist
+config/*/.env
+.env

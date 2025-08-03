@@ -32,13 +32,13 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="fullcircle"/>
-        <data android:scheme="com.fullcircle.app"/>
+        <data android:scheme="fullcircle-dev"/>
+        <data android:scheme="com.fullcircle.app.dev"/>
         <data android:scheme="exp+fullcircle"/>
       </intent-filter>
       <intent-filter data-generated="true">
         <action android:name="android.intent.action.VIEW"/>
-        <data android:scheme="fullcircle"/>
+        <data android:scheme="fullcircle-dev"/>
         <data android:scheme="exp+fullcircle"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
