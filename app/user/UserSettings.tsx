@@ -13,6 +13,7 @@ import {
   StyleSheet,
   useColorScheme,
   Platform,
+  Share,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
@@ -21,7 +22,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
-import { FIREBASE_AUTH, FUNCTIONS } from "@/services/FirebaseConfig";
+import { FIREBASE_AUTH } from "@/services/FirebaseConfig";  
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 export default function UserSettings() {
@@ -397,6 +398,17 @@ export default function UserSettings() {
     );
   };
 
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        message: 'Join me on FullCircle, a mindful dating app!',
+        url: 'https://fullcircle.app', // Replace with your app's URL
+      });
+    } catch (error) {
+      console.error('Error sharing app:', error);
+    }
+  };
+
   const deleteReasons = [
     "I found someone special",
     "Taking a break",
@@ -690,6 +702,24 @@ export default function UserSettings() {
             />
           </View> */}
         </View>
+
+        <View style={styles.section}>
+         <Text style={[styles.sectionTitle, fonts.captionFont]}>SHARE</Text>
+        
+          <TouchableOpacity 
+            style={styles.row}
+            onPress={handleShareApp}
+          >
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Share FullCircle</Text>
+              <Text style={[styles.rowDescription, fonts.captionFont]}>
+                Invite friends to join our community
+              </Text>
+            </View>
+            <Ionicons name="share-social-outline" size={20} color={colors.textDark} />
+          </TouchableOpacity>
+        </View>
+
 
         {/* Legal Section */}
         <View style={styles.section}>
@@ -1149,6 +1179,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontSize: Typography.sizes.sm,
       color: '#8B4513',
       fontStyle: 'italic',
+    },
+    marketingSection: {
+      marginTop: 30,
+      paddingBottom: 20,
     },
   });
 };

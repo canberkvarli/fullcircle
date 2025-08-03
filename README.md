@@ -27,7 +27,6 @@ Circle is a spiritual dating and connection app designed for conscious individua
 - **Deployment**: iOS and Android
 
 ## 🏗️ Project Structure
-
 ```
 circle/
 ├── app/                  # Main application screens using Expo Router
