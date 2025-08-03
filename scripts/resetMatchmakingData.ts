@@ -1,14 +1,78 @@
+import * as path from "path";
+import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
 
-// Initialize Firebase Admin SDK - using the EXACT same setup as your working scripts
-admin.initializeApp({
-  credential: admin.credential.cert(
-    require("../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-b1704d7015.json")
-  ),
-  databaseURL: "https://fullcircle-3d01a-default-rtdb.firebaseio.com/",
-});
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
+// Initialize Firebase Admin SDK
+let app: admin.app.App;
+
+try {
+  // Option 1: Try service account key file first (recommended)
+  const getKeyFilePath = () => {
+    const env = process.env.EXPO_PUBLIC_ENV || 'development';
+    switch (env) {
+      case 'production':
+        return path.resolve(__dirname, "../server/keys/fullcircle-prod-firebase-adminsdk.json");
+      case 'staging':
+        return path.resolve(__dirname, "../server/keys/fullcircle-staging-firebase-adminsdk.json");
+      default:
+        return path.resolve(__dirname, "../server/keys/fullcircle-dev-firebase-adminsdk.json");
+    }
+  };
+
+  const keyFilePath = getKeyFilePath();
+  
+  if (require('fs').existsSync(keyFilePath)) {
+    const serviceAccount = require(keyFilePath);
+    app = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: `${serviceAccount.project_id}.appspot.com`,
+    });
+    console.log(`✅ Firebase initialized with service account key file: ${serviceAccount.project_id}`);
+  } else {
+    // Option 2: Fall back to environment variables
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      // Clean up the private key - remove quotes and ensure proper line breaks
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      
+      // Remove surrounding quotes if they exist
+      privateKey = privateKey.replace(/^["']|["']$/g, '');
+      
+      // Replace \\n with actual newlines
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      // Ensure it starts and ends correctly
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error("Invalid private key format");
+      }
+
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      
+      app = admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: projectId,
+          privateKey: privateKey,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        }),
+        storageBucket: `${projectId}.appspot.com`,
+      });
+      
+      console.log(`✅ Firebase initialized with environment variables: ${projectId}`);
+    } else {
+      throw new Error("Missing Firebase credentials");
+    }
+  }
+} catch (error) {
+  console.error("❌ Could not initialize Firebase. Please ensure you have:");
+  console.error("1. Service account key file in server/keys/ folder");
+  console.error("2. OR environment variables: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
+  console.error("\nError details:", error);
+  process.exit(1);
+}
 
 const db = admin.firestore();
+const FieldValue = admin.firestore.FieldValue;
 
 async function resetSpecificUser(userId: string) {
   console.log(`🔄 Resetting user ${userId}...`);
@@ -31,7 +95,7 @@ async function resetSpecificUser(userId: string) {
       dislikesReceivedCount: 0,
       matches: [],
       dailyLikesCount: 0,
-      lastLikeResetDate: admin.firestore.FieldValue.delete()
+      lastLikeResetDate: FieldValue.delete()
     });
     
     // 2. Delete subcollections
@@ -78,7 +142,7 @@ async function resetSpecificUser(userId: string) {
 }
 
 async function resetAllUsers() {
-  console.log("🚀 Starting reset for ALL users...");
+  console.log(`🚀 Starting reset for ALL users in ${process.env.FIREBASE_PROJECT_ID}...`);
   
   try {
     const usersSnapshot = await db.collection("users").get();
@@ -104,23 +168,23 @@ const command = args[0];
 const userId = args[1];
 
 if (command === "user" && userId) {
-  // Reset specific user: npm run reset-matchmaking user USER_ID
+  // Reset specific user: npx ts-node scripts/resetMatchmaking.ts user USER_ID
   resetSpecificUser(userId).catch(err => {
     console.error("Unexpected error:", err);
     process.exit(1);
   });
 } else if (command === "all") {
-  // Reset all users: npm run reset-matchmaking all
+  // Reset all users: npx ts-node scripts/resetMatchmaking.ts all
   resetAllUsers().catch(err => {
     console.error("Unexpected error:", err);
     process.exit(1);
   });
 } else {
   console.log("Usage:");
-  console.log("  Reset specific user: npx ts-node scripts/resetMatchmakingSimple.ts user USER_ID");
-  console.log("  Reset all users: npx ts-node scripts/resetMatchmakingSimple.ts all");
+  console.log("  Reset specific user: npx ts-node scripts/resetMatchmaking.ts user USER_ID");
+  console.log("  Reset all users: npx ts-node scripts/resetMatchmaking.ts all");
   console.log("");
   console.log("Examples:");
-  console.log("  npx ts-node scripts/resetMatchmakingSimple.ts user uveAC1yljUPMlNpoAmHhV5g4BUF2");
-  console.log("  npx ts-node scripts/resetMatchmakingSimple.ts all");
+  console.log("  npx ts-node scripts/resetMatchmaking.ts user uveAC1yljUPMlNpoAmHhV5g4BUF2");
+  console.log("  npx ts-node scripts/resetMatchmaking.ts all");
 }

@@ -5,20 +5,34 @@ import { faker } from "@faker-js/faker";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-// Initialize Firebase Admin SDK - Multiple options for flexibility
+// Initialize Firebase Admin SDK
 let app: admin.app.App;
 
 try {
-  // Option 1: Try service account key file
-  const serviceAccountPath = path.resolve(__dirname, "../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-049b194953.json");
-  app = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccountPath),
-    storageBucket: "fullcircle-3d01a.appspot.com",
-  });
-  console.log("✅ Firebase initialized with service account key file");
-} catch (error) {
-  try {
-    // Option 2: Try with environment variables (with better private key handling)
+  // Option 1: Try service account key file first (recommended)
+  const getKeyFilePath = () => {
+    const env = process.env.EXPO_PUBLIC_ENV || 'development';
+    switch (env) {
+      case 'production':
+        return path.resolve(__dirname, "../server/keys/fullcircle-prod-firebase-adminsdk.json");
+      case 'staging':
+        return path.resolve(__dirname, "../server/keys/fullcircle-staging-firebase-adminsdk.json");
+      default:
+        return path.resolve(__dirname, "../server/keys/fullcircle-dev-firebase-adminsdk.json");
+    }
+  };
+
+  const keyFilePath = getKeyFilePath();
+  
+  if (require('fs').existsSync(keyFilePath)) {
+    const serviceAccount = require(keyFilePath);
+    app = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: `${serviceAccount.project_id}.appspot.com`,
+    });
+    console.log(`✅ Firebase initialized with service account key file: ${serviceAccount.project_id}`);
+  } else {
+    // Option 2: Fall back to environment variables
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
       // Clean up the private key - remove quotes and ensure proper line breaks
       let privateKey = process.env.FIREBASE_PRIVATE_KEY;
@@ -34,39 +48,45 @@ try {
         throw new Error("Invalid private key format");
       }
 
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      
       app = admin.initializeApp({
         credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
+          projectId: projectId,
           privateKey: privateKey,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         }),
-        storageBucket: "fullcircle-3d01a.appspot.com",
+        storageBucket: `${projectId}.appspot.com`,
       });
-      console.log("✅ Firebase initialized with environment variables");
+      
+      console.log(`✅ Firebase initialized with environment variables: ${projectId}`);
     } else {
-      throw new Error("Firebase credentials not found");
+      throw new Error("Missing Firebase credentials");
     }
-  } catch (envError) {
-    console.error("❌ Could not initialize Firebase. Please ensure you have:");
-    console.error("1. Service account key file at: ../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-049b194953.json");
-    console.error("2. OR environment variables: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
-    console.error("\nError details:", envError);
-    process.exit(1);
   }
+} catch (error) {
+  console.error("❌ Could not initialize Firebase. Please ensure you have:");
+  console.error("1. Service account key file in server/keys/ folder");
+  console.error("2. OR environment variables: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
+  console.error("\nError details:", error);
+  process.exit(1);
 }
 
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 
+// Get command line arguments
 const CURRENT_USER_ID = process.argv[2];
+
 if (!CURRENT_USER_ID) {
   console.error("Please provide a current user ID as the first argument.");
-  console.error("Usage: npx ts-node scripts/simulateDummyLikesAndChats.ts <USER_ID>");
+  console.error("Usage: npx ts-node scripts/simulateLikesAndChats.ts <USER_ID>");
   process.exit(1);
 }
 
 async function simulateDummyLikesAndChats(): Promise<void> {
   console.log(`🔥 Starting dummy likes and chats simulation for user: ${CURRENT_USER_ID}`);
+  console.log(`📍 Using Firebase project: ${process.env.FIREBASE_PROJECT_ID}`);
   
   const currentUserRef = db.collection("users").doc(CURRENT_USER_ID);
   const currentUserSnap = await currentUserRef.get();
@@ -74,7 +94,6 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     console.error("❌ Current user document not found!");
     process.exit(1);
   }
-
   console.log("✅ Current user found, fetching other users...");
 
   // Fetch all other users (excluding seed users for more realistic data)
@@ -94,18 +113,18 @@ async function simulateDummyLikesAndChats(): Promise<void> {
   }
   
   faker.helpers.shuffle(others);
-
+  
   // First 5 will just like current user, next 5 will be mutual matches
   const dummyLikes = others.slice(0, Math.min(5, others.length));
   const dummyMatches = others.slice(5, Math.min(10, others.length));
-
+  
   console.log(`📝 Creating ${dummyLikes.length} incoming likes and ${dummyMatches.length} mutual matches...`);
 
-  // --- Seed free likes (others -> current) ---
+  // --- Seed incoming likes (others -> current) ---
   console.log("1️⃣  Seeding incoming likes...");
   for (const { id: fromUserId } of dummyLikes) {
     const toUserId = CURRENT_USER_ID;
-
+    
     // Increment counters
     await db
       .collection("users")
@@ -221,7 +240,6 @@ async function simulateDummyLikesAndChats(): Promise<void> {
         matchId: CURRENT_USER_ID,
         timestamp: FieldValue.serverTimestamp(),
       });
-
     await currentUserRef.collection("matches").doc(otherId).set({
       matchId: otherId,
       timestamp: FieldValue.serverTimestamp(),
@@ -229,13 +247,12 @@ async function simulateDummyLikesAndChats(): Promise<void> {
   }
 
   console.log("3️⃣  Seeding chat conversations...");
-
+  
   // --- Seed chats for each mutual match ---
   for (const { id: otherId, data: otherUserData } of dummyMatches) {
     const chatId = [CURRENT_USER_ID, otherId].sort().join("_");
     const chatRef = db.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
-
     const now = new Date();
     
     // More realistic conversation starters
@@ -318,6 +335,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
   console.log(`   • ${dummyMatches.length} chat conversations`);
 }
 
+// Run the simulation
 simulateDummyLikesAndChats()
   .then(() => {
     console.log("\n✅ Script completed successfully!");

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
+import auth from "@react-native-firebase/auth";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
 import { useUserContext } from "@/context/UserContext";
 import PhoneInput from "react-native-phone-number-input";
@@ -30,6 +31,19 @@ function PhoneNumberScreen(): JSX.Element {
   const colors = Colors[colorScheme];
   const styles = createStyles(colorScheme);
 
+  // This is the key change - configure Firebase Auth settings before verification
+  useEffect(() => {
+    // Disable app verification for testing if in development
+    if (__DEV__) {
+      // This prevents the deep link prompt by disabling the reCAPTCHA verification
+      auth().settings.appVerificationDisabledForTesting = true;
+    }
+    
+    // Enable web reCAPTCHA for better experience (prevents deep links)
+    // This forces the web reCAPTCHA flow instead of the deep link flow
+    auth().settings.forceRecaptchaFlowForTesting = true;
+  }, []);
+
   const handleSubmit = async () => {
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     if (!phoneRegex.test(formattedPhoneNumber)) {
@@ -40,10 +54,17 @@ function PhoneNumberScreen(): JSX.Element {
     setLoading(true);
 
     try {
-      const confirmation = await FIREBASE_AUTH.verifyPhoneNumber(
-        formattedPhoneNumber
+      console.log("Sending verification to:", formattedPhoneNumber);
+      
+      // The true parameter here enables invisible reCAPTCHA handling
+      // This works with the settings we configured above
+      const confirmation = await FIREBASE_AUTH.signInWithPhoneNumber(
+        formattedPhoneNumber,
+        true
       );
-      console.log("Phone number verification initiated:", confirmation);
+      
+      console.log("Phone verification initiated successfully");
+      
       router.replace({
         pathname: "onboarding/PhoneVerificationScreen" as any,
         params: {
@@ -51,9 +72,19 @@ function PhoneNumberScreen(): JSX.Element {
           phoneNumber: formattedPhoneNumber,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to sign in with phone number: ", error);
-      Alert.alert("Connection Issue", "We're having trouble connecting right now. Please try again.");
+      
+      // Better error handling with specific messages
+      if (error.code === 'auth/invalid-phone-number') {
+        Alert.alert("Invalid Phone Number", "Please check the phone number format and try again.");
+      } else if (error.code === 'auth/quota-exceeded') {
+        Alert.alert("Too Many Attempts", "We've detected too many verification attempts. Please try again later.");
+      } else if (error.code === 'auth/captcha-check-failed') {
+        Alert.alert("Verification Failed", "CAPTCHA verification failed. Please try again.");
+      } else {
+        Alert.alert("Connection Issue", "We're having trouble connecting right now. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import {
   Alert,
@@ -16,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+import { AuthDebug } from '@/utils/AuthDebug';
+import auth from "@react-native-firebase/auth";
 
 const PhoneVerificationScreen = () => {
   const [verificationCode, setVerificationCode] = useState<string[]>(
@@ -24,6 +27,7 @@ const PhoneVerificationScreen = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showError, setShowError] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const router = useRouter();
   const params = useLocalSearchParams();
   const { verificationId, phoneNumber } = params;
@@ -34,6 +38,39 @@ const PhoneVerificationScreen = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
+
+  // Configure Firebase Auth settings
+  useEffect(() => {
+    // For development/testing
+    if (__DEV__) {
+      auth().settings.appVerificationDisabledForTesting = true;
+    }
+    
+    // Force web reCAPTCHA flow to prevent deep link issues
+    auth().settings.forceRecaptchaFlowForTesting = true;
+  }, []);
+
+  // Track screen mount for debugging
+  useEffect(() => {
+    AuthDebug.trackFlowStep('PhoneVerificationScreen', 'Screen mounted', { 
+      phoneNumber: phoneNumber as string,
+      hasVerificationId: !!verificationId
+    });
+    
+    return () => {
+      AuthDebug.trackFlowStep('PhoneVerificationScreen', 'Screen unmounted');
+    };
+  }, []);
+
+  // Cooldown timer for resend button
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleVerifyCode = async () => {
     const code = verificationCode.join("");
@@ -48,24 +85,98 @@ const PhoneVerificationScreen = () => {
     setShowError(false);
     setErrorMessage("");
     
+    AuthDebug.trackFlowStep('PhoneVerificationScreen', 'Verifying code', { 
+      phoneNumber: phoneNumber as string
+    });
+    
     try {
       await verifyPhoneAndSetUser(
         verificationId as string,
         code,
         phoneNumber as string
       );
+      
+      AuthDebug.trackFlowStep('PhoneVerificationScreen', 'Verification successful');
     } catch (error: any) {
       console.error("Verification error:", error);
+      AuthDebug.error('PhoneVerificationScreen', 'Verification error', error);
       
-      // Handle specific error types
-      if (error.message === 'PHONE_LINK_FAILED') {
+      // Handle different error types with appropriate messages
+      if (error.message === 'PHONE_ALREADY_IN_USE') {
         setErrorMessage("This phone number is already linked to another account. Please try a different number.");
         setShowError(true);
-      } else {
+        
+        // Navigate back to phone entry after delay
+        setTimeout(() => {
+          router.replace({
+            pathname: "onboarding/PhoneNumberScreen" as any,
+          });
+        }, 2000);
+      } 
+      else if (error.message === 'PHONE_LINK_FAILED') {
+        setErrorMessage("There was a problem linking this phone to your account. Please try again.");
+        setShowError(true);
+      } 
+      else if (error.code === 'auth/invalid-verification-code') {
+        setErrorMessage("The code you entered is incorrect. Please try again.");
+        setShowError(true);
+        setVerificationCode(new Array(6).fill(""));
+      }
+      else if (error.code === 'auth/code-expired') {
+        setErrorMessage("The verification code has expired. Please request a new one.");
+        setShowError(true);
+        setVerificationCode(new Array(6).fill(""));
+      }
+      else {
         setErrorMessage("That code doesn't match. Please try again.");
         setShowError(true);
         setVerificationCode(new Array(6).fill(""));
-        setTimeout(() => setShowError(false), 3000);
+      }
+      
+      setTimeout(() => setShowError(false), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendCode = async () => {
+    if (resendCooldown > 0) return;
+    
+    setLoading(true);
+    try {
+      AuthDebug.trackFlowStep('PhoneVerificationScreen', 'Resending code', { 
+        phoneNumber: phoneNumber as string 
+      });
+      
+      // Request a new verification code
+      const confirmation = await auth().signInWithPhoneNumber(
+        phoneNumber as string,
+        true
+      );
+      
+      // Update the verification ID
+      router.replace({
+        pathname: "onboarding/PhoneVerificationScreen" as any,
+        params: {
+          verificationId: confirmation.verificationId,
+          phoneNumber,
+        },
+      });
+      
+      // Show success message
+      Alert.alert("Code Sent", "A new verification code has been sent to your phone.");
+      
+      // Start cooldown
+      setResendCooldown(60); // 60 seconds cooldown
+      
+    } catch (error: any) {
+      console.error("Error resending code:", error);
+      AuthDebug.error('PhoneVerificationScreen', 'Error resending code', error);
+      
+      if (error.code === 'auth/quota-exceeded') {
+        Alert.alert("Too many attempts", "Please try again later.");
+      } else {
+        Alert.alert("Error", "Failed to send verification code. Please try again later.");
       }
     } finally {
       setLoading(false);
@@ -105,12 +216,16 @@ const PhoneVerificationScreen = () => {
   };
 
   useEffect(() => {
+    // Focus on first empty input
     const emptyIndex = verificationCode.findIndex((code) => code === "");
     if (emptyIndex !== -1 && inputs.current[emptyIndex]) {
       inputs.current[emptyIndex].focus();
     }
 
-    if (verificationCode.every((digit) => digit !== "")) {
+    // Auto-submit when all digits entered
+    const allDigitsEntered = verificationCode.every((digit) => digit !== "");
+    if (allDigitsEntered) {
+      AuthDebug.trackFlowStep('PhoneVerificationScreen', 'Auto-submitting complete code');
       handleVerifyCode();
     }
   }, [verificationCode]);
@@ -185,9 +300,17 @@ const PhoneVerificationScreen = () => {
       ) : (
         <TouchableOpacity
           style={styles.resendContainer}
-          onPress={() => router.replace("onboarding/PhoneNumberScreen" as any)}
+          onPress={resendCode}
+          disabled={resendCooldown > 0}
         >
-          <Text style={styles.changeNumberLink}>Didn't get the code?</Text>
+          <Text style={[
+            styles.changeNumberLink,
+            resendCooldown > 0 && styles.disabledText
+          ]}>
+            {resendCooldown > 0 
+              ? `Resend code in ${resendCooldown}s` 
+              : "Didn't get the code?"}
+          </Text>
         </TouchableOpacity>
       )}
 
@@ -368,6 +491,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
     },
+    disabledText: {
+      color: colors.textMuted,
+      textDecorationLine: "none",
+    }
   });
 };
 

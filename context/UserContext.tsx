@@ -12,6 +12,7 @@ import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { FIREBASE_AUTH, FIRESTORE, STORAGE, FUNCTIONS } from "@/services/FirebaseConfig";
 import auth from "@react-native-firebase/auth";
+import { AuthDebug } from "@/utils/AuthDebug";
 
 import firestore from "@react-native-firebase/firestore";
 
@@ -784,12 +785,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
     // Ignore auth state changes if linking is in progress
     if (isLinking) {
-      console.log("Linking in progress, ignoring onAuthStateChanged update");
+      AuthDebug.info("UserContext", "Linking in progress, ignoring onAuthStateChanged update");
       return;
     }
+    
+    AuthDebug.trackFlowStep('AuthStateChange', 'Started', { 
+      userId: user?.uid,
+      hasProviders: user?.providerData?.length,
+      providers: user?.providerData?.map(p => p.providerId)
+    });
+    
     setCurrentUser(user);
 
-    console.log("onAuthStateChanged() => currentUser:", user);
     if (initializing) setInitializing(false);
 
     if (user) {
@@ -797,37 +804,57 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         (provider) => provider.providerId === "google.com"
       );
 
-      if (isGoogleLogin) {
-        console.log("onAuthStateChanged(): User signed in via Google");
-        console.log("isGoogleLogin from onAuthStateChanged()", isGoogleLogin);
-        await fetchUserData(user.uid, isGoogleLogin);
-      } else {
-        console.log("onAuthStateChanged(): User signed in via phone");
-        // to persist with the signed in user's flow we need to fetch the user data
-        // and redirect to the appropriate onboarding screen or dashboard.
-        await fetchUserData(user.uid, false);
-      }
+      AuthDebug.trackFlowStep('AuthStateChange', 'User Authenticated', { 
+        userId: user.uid, 
+        isGoogleLogin, 
+        email: user.email,
+        phone: user.phoneNumber
+      });
 
-      updateLastActive();
+      try {
+        // Let fetchUserData handle ALL navigation logic
+        if (isGoogleLogin) {
+          AuthDebug.trackFlowStep('AuthStateChange', 'Google Sign-in detected', { userId: user.uid });
+          await fetchUserData(user.uid, isGoogleLogin);
+        } else {
+          AuthDebug.trackFlowStep('AuthStateChange', 'Phone Sign-in detected', { userId: user.uid });
+          await fetchUserData(user.uid, false);
+        }
+
+        updateLastActive();
+      } catch (error) {
+        AuthDebug.error('AuthStateChange', 'Error processing authenticated user', { error, userId: user.uid });
+      }
     } else {
-      setUserData(initialUserData); // Reset if user signs out
+      AuthDebug.trackFlowStep('AuthStateChange', 'User Signed Out');
+      setUserData(initialUserData);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = async (): Promise<void> => {
     try {
+      AuthDebug.trackFlowStep('GoogleSignIn', 'Started');
+      
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
 
       const { idToken } = await GoogleSignin.signIn();
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const { user } =
-        await FIREBASE_AUTH.signInWithCredential(googleCredential);
+      
+      AuthDebug.trackFlowStep('GoogleSignIn', 'Google credential obtained');
+      
+      const { user } = await FIREBASE_AUTH.signInWithCredential(googleCredential);
+
+      if (!user) {
+        throw new Error('Failed to get user from credential');
+      }
 
       setGoogleCredential(googleCredential);
       setCurrentUser(user);
 
+      AuthDebug.trackFlowStep('GoogleSignIn', 'Firebase auth successful', { userId: user.uid });
+      
       if (user) {
         const userDocRef = FIRESTORE.collection("users").doc(user.uid);
         const docSnap = await userDocRef.get();
@@ -836,34 +863,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const userLastName = user.displayName?.split(" ")[1] || "";
         const userFullName = user.displayName || "";
 
-        let userDataToUpdate: Partial<UserDataType> = {
-          ...initialUserData,
-          userId: user.uid,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          email: user.email || "",
-          firstName: userFirstName,
-          lastName: userLastName,
-          fullName: userFullName,
-          GoogleSSOEnabled: true,
-          currentOnboardingScreen: "PhoneNumberScreen",
-        };
-
         if (docSnap.exists) {
+          // Existing user - update their data
           const existingUser = docSnap.data() as UserDataType;
-          console.log("handleGoogleSignIn(): Existing user found");
-
-          userDataToUpdate = {
+          
+          const userDataToUpdate: Partial<UserDataType> = {
             ...existingUser,
-            ...{
-              userId: user.uid,
-              email: user.email || "",
-              firstName: userFirstName,
-              lastName: userLastName,
-              fullName: userFullName,
-              GoogleSSOEnabled: true,
-              currentOnboardingScreen:
-                existingUser.currentOnboardingScreen || "NameScreen",
-            },
+            userId: user.uid,
+            email: user.email || "",
+            firstName: userFirstName || existingUser.firstName,
+            lastName: userLastName || existingUser.lastName,
+            fullName: userFullName || existingUser.fullName,
+            GoogleSSOEnabled: true,
             settings: {
               ...existingUser?.settings,
               connectedAccounts: {
@@ -872,14 +883,36 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
               },
             },
           };
-          userDataToUpdate.currentOnboardingScreen =
-            existingUser.currentOnboardingScreen || "NameScreen";
+          
+          // Update user data but DON'T navigate - let onAuthStateChanged handle it
           await updateUserData(userDataToUpdate);
+          
+          AuthDebug.trackFlowStep('GoogleSignIn', 'Updated existing user data');
         } else {
+          // New user - create document
+          AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
+          
+          const userDataToUpdate: Partial<UserDataType> = {
+            ...initialUserData,
+            userId: user.uid,
+            createdAt: firestore.FieldValue.serverTimestamp(),
+            email: user.email || "",
+            firstName: userFirstName,
+            lastName: userLastName,
+            fullName: userFullName,
+            GoogleSSOEnabled: true,
+            currentOnboardingScreen: "PhoneNumberScreen",
+          };
+          
           await userDocRef.set(userDataToUpdate);
+          
+          AuthDebug.trackFlowStep('GoogleSignIn', 'New user created');
         }
+        
+        // IMPORTANT: No navigation here! onAuthStateChanged will call fetchUserData which handles it
       }
-    } catch (error) {
+    } catch (error: any) {
+      AuthDebug.error('GoogleSignIn', 'Google sign-in error', error);
       console.error("Google sign-in error:", error);
     }
   };
@@ -890,55 +923,65 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     phoneNumber: string
   ) => {
     try {
-      const { countryCode, areaCode, number } =
-        destructurePhoneNumber(phoneNumber);
-      const phoneCredential = auth.PhoneAuthProvider.credential(
-        verificationId,
-        code
-      );
+      AuthDebug.trackFlowStep('PhoneVerification', 'Started', { phoneNumber });
+      
+      const { countryCode, areaCode, number } = destructurePhoneNumber(phoneNumber);
+      const phoneCredential = auth.PhoneAuthProvider.credential(verificationId, code);
 
       if (googleCredential && FIREBASE_AUTH.currentUser) {
+        // Google user linking phone number
+        AuthDebug.trackFlowStep('PhoneVerification', 'Linking phone to Google SSO user', { 
+          userId: FIREBASE_AUTH.currentUser.uid 
+        });
+        
         setIsLinking(true);
+        
         try {
-          console.log(
-            "verifyPhoneAndSetUser(): Linking phone number to Google SSO user"
-          );
           await FIREBASE_AUTH.currentUser.linkWithCredential(phoneCredential);
+          AuthDebug.trackFlowStep('PhoneVerification', 'Phone successfully linked to Google account');
         } catch (error: any) {
-          console.error(
-            "Error linking phone number to Google SSO user:",
-            error
-          );
+          AuthDebug.error('PhoneVerification', 'Error linking phone number to Google SSO user', error);
           setIsLinking(false);
           
-          // Throw a specific error for phone linking failures
-          throw new Error('PHONE_LINK_FAILED');
+          if (error.code === 'auth/credential-already-in-use' || 
+              error.code === 'auth/phone-number-already-exists') {
+            throw new Error('PHONE_ALREADY_IN_USE');
+          } else {
+            throw new Error('PHONE_LINK_FAILED');
+          }
         }
 
+        // Update user data after successful linking
         await updateUserData({
-          ...initialUserData,
           userId: FIREBASE_AUTH.currentUser.uid,
-          GoogleSSOEnabled: true,
           phoneNumber,
           countryCode,
           areaCode,
           number,
           currentOnboardingScreen: "NameScreen",
         });
-        router.replace(`onboarding/NameScreen` as any);
+        
+        AuthDebug.trackFlowStep('PhoneVerification', 'User data updated, navigating to NameScreen');
         setIsLinking(false);
       } else {
-        console.log(
-          "verifyPhoneAndSetUser(): Signing in with phone credential"
-        );
-        const userCredential =
-          await FIREBASE_AUTH.signInWithCredential(phoneCredential);
+        // Standard phone sign-in (not linking)
+        AuthDebug.trackFlowStep('PhoneVerification', 'Signing in with phone credential');
+        
+        const userCredential = await FIREBASE_AUTH.signInWithCredential(phoneCredential);
         const { user } = userCredential;
+        
+        if (!user) {
+          throw new Error('USER_CREATION_FAILED');
+        }
+        
+        AuthDebug.trackFlowStep('PhoneVerification', 'Phone sign-in successful', { userId: user.uid });
+        
         const userDocRef = FIRESTORE.collection("users").doc(user.uid);
         const docSnap = await userDocRef.get();
 
         if (!docSnap.exists) {
-          console.log("New user, creating new user document");
+          AuthDebug.trackFlowStep('PhoneVerification', 'New phone user - creating document', { userId: user.uid });
+          
           const newUser = {
             ...initialUserData,
             userId: user.uid,
@@ -948,14 +991,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             number,
             currentOnboardingScreen: "NameScreen",
           };
+          
           await updateUserData(newUser);
+          AuthDebug.trackFlowStep('PhoneVerification', 'New user created, ready for NameScreen');
+        } else {
+          // Existing user - fetchUserData will handle navigation through onAuthStateChanged
+          AuthDebug.trackFlowStep('PhoneVerification', 'Existing phone user authenticated', { userId: user.uid });
         }
       }
     } catch (error: any) {
+      AuthDebug.error('PhoneVerification', 'Error verifying phone number', error);
       console.error("Error verifying phone number:", error);
       
-      // Throw the error to be handled by the calling component
-      if (error.message === 'PHONE_LINK_FAILED') {
+      // Rethrow specific errors for handling in the component
+      if (error.message === 'PHONE_ALREADY_IN_USE') {
+        throw new Error('PHONE_ALREADY_IN_USE');
+      } else if (error.message === 'PHONE_LINK_FAILED') {
         throw new Error('PHONE_LINK_FAILED');
       } else {
         throw new Error('VERIFICATION_FAILED');
@@ -1021,63 +1072,82 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const fetchUserData = async (userId: string, isSSO: boolean) => {
+  const fetchUserData = async (userId: string, isSSO: boolean): Promise<void> => {
     try {
       if (!userId) {
-        console.log(
-          "fetchUserData(): No user ID provided, returning EARLY landing page"
-        );
-        router.replace({
-          pathname: `onboarding/LandingPageScreen` as any,
-        });
+        AuthDebug.warn('FetchUserData', 'No user ID provided, returning to landing page');
+        router.replace({ pathname: `onboarding/LandingPageScreen` as any });
         return;
       }
-      console.log("fetchUserData(): Fetching user data for:", userId);
+      
+      AuthDebug.trackFlowStep('FetchUserData', 'Started', { userId, isSSO });
 
       const docRef = FIRESTORE.collection("users").doc(userId);
       const docSnap = await docRef.get();
-      const userDataFromFirestore = docSnap.data() as UserDataType;
       
       if (docSnap.exists) {
+        const userDataFromFirestore = docSnap.data() as UserDataType;
+        AuthDebug.trackFlowStep('FetchUserData', 'User document found', { 
+          userId,
+          onboardingCompleted: userDataFromFirestore.onboardingCompleted,
+          currentOnboardingScreen: userDataFromFirestore.currentOnboardingScreen,
+          hasPhone: !!userDataFromFirestore.phoneNumber
+        });
+        
+        // Update local state with user data
         setUserData(userDataFromFirestore);
         userDataRef.current = userDataFromFirestore;
+        
+        // NAVIGATION LOGIC - This is the single source of truth for where to go
+        
+        // Case 1: Onboarding completed - go to Connect tab
         if (userDataFromFirestore.onboardingCompleted) {
-          console.log("fetchUserData(): onboarding completed");
-          updateUserData({
+          AuthDebug.trackFlowStep('FetchUserData', 'Onboarding completed, navigating to Connect');
+          
+          await updateUserData({
             ...userDataFromFirestore,
             currentOnboardingScreen: "Connect",
           });
-          router.replace({
-            pathname: `/(tabs)/Connect` as any,
-          });
-        } else {
-          console.log("fetchUserData(): onboarding not completed yet");
-          const userCurrentOnboardingScreen =
-            userDataFromFirestore.currentOnboardingScreen ||
-            "PhoneNumberScreen";
-          router.replace({
-            pathname: `onboarding/${userCurrentOnboardingScreen}` as any,
-          });
+          
+          router.replace({ pathname: `/(tabs)/Connect` as any });
+          return;
         }
-      }
-      else if (!isSSO && !userDataFromFirestore) {
-        console.log(
-          "fetchUserData(): No user in firestore, navigating to NameScreen"
-        );
-        router.replace({
-          pathname: `onboarding/NameScreen` as any,
+        
+        // Case 2: Google SSO user without phone number - must complete phone verification
+        if (isSSO && !userDataFromFirestore.phoneNumber) {
+          AuthDebug.trackFlowStep('FetchUserData', 'Google user needs phone verification');
+          router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
+          return;
+        }
+        
+        // Case 3: User in the middle of onboarding - continue where they left off
+        const screenToNavigateTo = userDataFromFirestore.currentOnboardingScreen || 
+                                (isSSO ? "PhoneNumberScreen" : "NameScreen");
+        
+        AuthDebug.trackFlowStep('FetchUserData', 'Continuing onboarding', {
+          screen: screenToNavigateTo
         });
-      } else if (isSSO) {
-        console.log("First-time Google SSO ➔ PhoneNumberScreen");
-        router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
-      } else {
-        console.log("First-time phone login ➔ NameScreen");
+        
+        router.replace({ pathname: `onboarding/${screenToNavigateTo}` as any });
+        return;
+      }
+      
+      // User document doesn't exist (brand new user)
+      if (!isSSO) {
+        // New phone user - start at NameScreen
+        AuthDebug.trackFlowStep('FetchUserData', 'New phone user, navigating to NameScreen');
         router.replace({ pathname: `onboarding/NameScreen` as any });
+      } else {
+        // New Google SSO user - need phone verification first
+        AuthDebug.trackFlowStep('FetchUserData', 'New Google user, navigating to PhoneNumberScreen');
+        router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
       }
     } catch (error) {
+      AuthDebug.error('FetchUserData', 'Error fetching user data', error);
       console.error("Error fetching user data:", error);
     }
   };
+
 
   const fetchUserById = async (userId: string) => {
     try {

@@ -1,43 +1,74 @@
-import * as admin from "firebase-admin";
 import * as path from "path";
-import * as fs from "fs";
+import * as dotenv from "dotenv";
+import * as admin from "firebase-admin";
 
-// Function to find the Firebase service account key file
-function findFirebaseKeyFile(): string | null {
-  const filePath = path.resolve(__dirname, "../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-b1704d7015.json");
-
-  console.log("🔍 Searching for Firebase service account key file...");
-  
-    if (fs.existsSync(filePath)) {
-      console.log(`   ✅ Found at: ${filePath}`);
-      return filePath;
-    }
-  
-  console.log("❌ Firebase service account key file not found");
-  return null;
-}
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-  try {
-    // First try to find the service account key file
-    const keyFilePath = findFirebaseKeyFile();
-    
-    if (keyFilePath) {
-      admin.initializeApp({
-        credential: admin.credential.cert(require(keyFilePath)),
-        databaseURL: "https://fullcircle-3d01a-default-rtdb.firebaseio.com/",
-      });
-      console.log("✅ Firebase Admin SDK initialized successfully with service account key");
-    } else {
-      console.error("❌ Could not find Firebase service account key file");
-      console.log("Expected file: ../server/keys/fullcircle-3d01a-firebase-adminsdk-9zqec-b1704d7015.json");
-      process.exit(1);
+let app: admin.app.App;
+
+try {
+  // Option 1: Try service account key file first (recommended)
+  const getKeyFilePath = () => {
+    const env = process.env.EXPO_PUBLIC_ENV || 'development';
+    switch (env) {
+      case 'production':
+        return path.resolve(__dirname, "../server/keys/fullcircle-prod-firebase-adminsdk.json");
+      case 'staging':
+        return path.resolve(__dirname, "../server/keys/fullcircle-staging-firebase-adminsdk.json");
+      default:
+        return path.resolve(__dirname, "../server/keys/fullcircle-dev-firebase-adminsdk.json");
     }
-  } catch (error) {
-    console.error("❌ Failed to initialize Firebase Admin SDK:", error);
-    process.exit(1);
+  };
+
+  const keyFilePath = getKeyFilePath();
+  
+  if (require('fs').existsSync(keyFilePath)) {
+    const serviceAccount = require(keyFilePath);
+    app = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: `${serviceAccount.project_id}.appspot.com`,
+    });
+    console.log(`✅ Firebase initialized with service account key file: ${serviceAccount.project_id}`);
+  } else {
+    // Option 2: Fall back to environment variables
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      // Clean up the private key - remove quotes and ensure proper line breaks
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      
+      // Remove surrounding quotes if they exist
+      privateKey = privateKey.replace(/^["']|["']$/g, '');
+      
+      // Replace \\n with actual newlines
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      // Ensure it starts and ends correctly
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error("Invalid private key format");
+      }
+
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      
+      app = admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: projectId,
+          privateKey: privateKey,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        }),
+        storageBucket: `${projectId}.appspot.com`,
+      });
+      
+      console.log(`✅ Firebase initialized with environment variables: ${projectId}`);
+    } else {
+      throw new Error("Missing Firebase credentials");
+    }
   }
+} catch (error) {
+  console.error("❌ Could not initialize Firebase. Please ensure you have:");
+  console.error("1. Service account key file in server/keys/ folder");
+  console.error("2. OR environment variables: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
+  console.error("\nError details:", error);
+  process.exit(1);
 }
 
 const db = admin.firestore();
@@ -68,7 +99,7 @@ async function deleteDocumentAndSubcollections(
 
 async function cleanSeededUsers() {
   try {
-    console.log("Starting cleanup of seeded users...");
+    console.log(`🧹 Starting cleanup of seeded users from ${process.env.FIREBASE_PROJECT_ID}...`);
     
     const usersCollection = db.collection("users");
     // 1) Find all users where isSeedUser == true
@@ -95,8 +126,41 @@ async function cleanSeededUsers() {
       }
     }
 
+    // Also clean up related data
+    console.log("🧹 Cleaning up related data...");
+    
+    // Delete chats involving seeded users
+    const chatsSnapshot = await db.collection("chats").get();
+    let deletedChats = 0;
+    
+    for (const chatDoc of chatsSnapshot.docs) {
+      const chatData = chatDoc.data();
+      if (chatData.participants && Array.isArray(chatData.participants)) {
+        // Check if any participant was a seeded user
+        const hasSeededUser = await Promise.all(
+          chatData.participants.map(async (userId: string) => {
+            try {
+              const userDoc = await db.collection("users").doc(userId).get();
+              return !userDoc.exists; // If user doesn't exist, it was probably seeded
+            } catch {
+              return true; // If we can't check, assume it was seeded
+            }
+          })
+        );
+        
+        if (hasSeededUser.some(Boolean)) {
+          await chatDoc.ref.delete();
+          deletedChats++;
+        }
+      }
+    }
+    
+    if (deletedChats > 0) {
+      console.log(`✔ Deleted ${deletedChats} chat documents`);
+    }
+
     console.log(
-      "✅ All seeded users and their subcollections have been removed."
+      "✅ All seeded users and their related data have been removed."
     );
   } catch (error: any) {
     console.error("Error cleaning seeded users:", error);
@@ -114,6 +178,7 @@ async function cleanSeededUsers() {
   }
 }
 
+// Run the cleanup function
 cleanSeededUsers().catch((err) => {
   console.error("Unexpected error:", err);
   process.exit(1);
