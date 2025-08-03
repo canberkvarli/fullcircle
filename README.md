@@ -1,6 +1,6 @@
 # Circle - Sacred Connections
 
-![Circle App Logo](https://fullcircle-3d01a.web.app/og-image.jpg)
+![Circle App Logo](https://github.com/canberkvarli/fullcircle/assets/circle.svg)
 
 Where sacred souls unite. Connect with fellow seekers who practice meditation, yoga, energy healing, and embrace conscious living.
 
