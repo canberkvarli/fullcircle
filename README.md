@@ -140,8 +140,8 @@ Payment processing is handled through Stripe integration.
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/yourusername/circle.git
-   cd circle
+   git clone https://github.com/canberkvarli/fullcircle.git
+   cd fullcircle
    ```
 
 2. Install dependencies
