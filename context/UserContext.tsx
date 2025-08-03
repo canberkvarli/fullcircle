@@ -1027,7 +1027,7 @@ const handleGoogleSignIn = async (): Promise<void> => {
   const updateUserData = async (data: Partial<UserDataType>) => {
     console.log("updateUserData(): Updating user data");
     try {
-      const userIdToUpdate = data.userId || userData.userId;
+      const userIdToUpdate = userDataRef.current?.userId || userData.userId;
       if (!userIdToUpdate) {
         throw new Error("User ID is required to update data");
       }
