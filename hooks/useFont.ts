@@ -1,7 +1,49 @@
-// hooks/useFont.ts
 import { Typography } from '@/constants/Colors';
+import { Dimensions, PixelRatio, Platform } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+const screenWidth = Math.min(width, height);
+const screenHeight = Math.max(width, height);
+
+// Base sizes are calibrated for a medium-sized device (iPhone 11 Pro/X - 375pt width)
+const baseWidth = 375;
 
 export const useFont = () => {
+  // Calculate scale factor based on screen width
+  const scale = screenWidth / baseWidth;
+  
+  // Normalize font size with a gentle curve for different screen sizes
+  const normalize = (size: number): number => {
+    const newSize = size * scale;
+    
+    // Different scaling for iOS and Android
+    if (Platform.OS === 'ios') {
+      // Less aggressive scaling for iOS
+      return Math.round(PixelRatio.roundToNearestPixel(newSize));
+    } else {
+      // More capped scaling for Android
+      return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
+    }
+  };
+
+  // Get scaled font size from Typography.sizes
+  const getScaledSize = (size: keyof typeof Typography.sizes): number => {
+    const baseSize = Typography.sizes[size];
+    
+    // Apply gentle scaling only to screens significantly smaller or larger than base
+    if (screenWidth < 320) {
+      // Extra small screens (iPhone SE 1st gen, etc)
+      return normalize(baseSize * 0.85);
+    } else if (screenWidth > 480) {
+      // Tablets or large phones
+      // Cap the maximum size to avoid overly large text on tablets
+      return Math.min(normalize(baseSize * 1.1), baseSize * 1.3);
+    }
+    
+    // For mid-sized screens, keep closer to original size
+    return baseSize;
+  };
+
   const getFont = (weight: keyof typeof Typography.fonts) => ({
     fontFamily: Typography.fonts[weight],
   });
@@ -10,13 +52,19 @@ export const useFont = () => {
     size: keyof typeof Typography.sizes,
     weight: keyof typeof Typography.fonts
   ) => ({
-    fontSize: Typography.sizes[size],
+    fontSize: getScaledSize(size),
     fontFamily: Typography.fonts[weight],
+    // Add a consistent line height relative to font size for better text layout
+    lineHeight: getScaledSize(size) * 1.3,
   });
+
+  // Determine if we're on a small device to potentially adjust certain styles
+  const isSmallDevice = screenHeight < 700;
 
   return {
     getFont,
     getFontStyle,
+    isSmallDevice,
     
     // Regular UI fonts (Nunito)
     titleFont: getFontStyle('4xl', 'bold'),
@@ -50,6 +98,5 @@ export const useFont = () => {
     spiritualitySubtitleFont: getFontStyle('lg', 'main'),
     spiritualityBodyFont: getFontStyle('base', 'main'),
     spiritualityButtonFont: getFontStyle('base', 'main'),
-    
   };
 };

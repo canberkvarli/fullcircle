@@ -412,7 +412,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     backIcon: {
       position: 'absolute',
-      top: Platform.select({ ios: 50, android: 30 }),
+      top: Platform.select({ ios: 70, android: 30 }),
       left: Spacing.lg,
       width: 44,
       height: 44,
