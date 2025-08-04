@@ -196,9 +196,6 @@ const LocationScreen = () => {
       <View style={styles.content}>
         <View style={styles.headerSection}>
           <Text style={styles.title}>Where are you rooted?</Text>
-          <Text style={styles.subtitle}>
-            Share your location to connect with people nearby
-          </Text>
         </View>
 
         <View style={styles.regionDisplay}>
@@ -342,14 +339,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       marginTop: Spacing.sm,
       marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
-    },
-    subtitle: {
-      ...fonts.spiritualSubtitleFont,
-      color: colors.textLight,
-      textAlign: "left",
-      marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.lg,
-      fontStyle: "normal",
     },
     regionDisplay: {
       padding: Spacing.xs,
