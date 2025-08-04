@@ -10,6 +10,7 @@ import {
   Platform,
   StyleSheet,
   Animated,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { CustomIcon } from "@/components/CustomIcon";
@@ -19,40 +20,11 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
+import { healingModalities } from "@/constants/healingModalities"
 
-const spiritualPractices = [
-  { name: "Meditation", category: "mindfulness", icon: "meditation", iconType: "custom" },
-  { name: "Yoga", category: "movement", icon: "yoga", iconType: "custom" },
-  { name: "Prayer", category: "devotion", icon: "prayer", iconType: "custom" },
-  { name: "Journaling", category: "reflection", icon: "journal", iconType: "custom" },
-  { name: "Energy Healing", category: "healing", icon: "energy-healing", iconType: "custom" },
-  { name: "Crystal Work", category: "healing", icon: "crystal", iconType: "custom" },
-  { name: "Tarot & Oracle", category: "divination", icon: "tarot", iconType: "custom" },
-  { name: "Astrology", category: "divination", icon: "aries", iconType: "custom" },
-  { name: "Nature Rituals", category: "earth", icon: "hiking", iconType: "custom" },
-  { name: "Sound Healing", category: "healing", icon: "gong", iconType: "custom" },
-  { name: "Breathwork", category: "mindfulness", icon: "breathwork", iconType: "custom" },
-  { name: "Ecstatic Dance", category: "movement", icon: "dance", iconType: "custom" },
-  { name: "Plant Medicine", category: "healing", icon: "leaf", iconType: "custom" },
-  { name: "Shamanic Journey", category: "mystical", icon: "shaman", iconType: "custom" },
-  { name: "Martial Arts", category: "movement", icon: "martial-arts", iconType: "custom" },
-  { name: "Fasting", category: "purification", icon: "fasting", iconType: "custom" },
-];
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Enhanced color palette with better spiritual vibes
-const categoryColors = {
-  mindfulness: '#8B5CF6', // Purple - for meditation, breathwork
-  movement: '#F59E0B', // Amber - for yoga, dance, martial arts
-  devotion: '#EC4899', // Pink - for prayer
-  reflection: '#8B4513', // Saddle Brown - for journaling (more brownish!)
-  healing: '#10B981', // Emerald - for energy healing, crystals, sound, plant medicine
-  divination: '#6366F1', // Indigo - for tarot, astrology
-  earth: '#22C55E', // Green - for nature rituals
-  mystical: '#7C2D12', // Dark brown - for shamanic journey
-  purification: '#64748B', // Slate - for fasting
-};
-
-function SpiritualPracticesScreen() {
+function WellnessJourneyScreen() {
   const {
     userData,
     updateUserData,
@@ -65,41 +37,118 @@ function SpiritualPracticesScreen() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
-  const [selectedPractices, setSelectedPractices] = useState<string[]>(
-    userData?.spiritualProfile?.practices || []
+  const [selectedModalities, setSelectedModalities] = useState<string[]>(
+    userData?.spiritualProfile?.healingModalities || []
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData?.hiddenFields || {}
   );
 
-  // Animation for staggered card entry
-  const fadeAnimations = useRef(spiritualPractices.map(() => new Animated.Value(0))).current;
-  const scaleAnimations = useRef(spiritualPractices.map(() => new Animated.Value(0.8))).current;
+  // Enhanced responsive dimensions - slightly bigger for better icon visibility
+  const getResponsiveDimensions = () => {
+    const isTablet = screenWidth > 768;
+    const isSmallDevice = screenWidth < 375;
+    const isVerySmall = screenWidth < 350;
+    
+    // More conservative sizing that works on all devices
+    let containerSize;
+    if (isVerySmall) {
+      containerSize = screenWidth * 0.90; // Increased for better visibility
+    } else if (isSmallDevice) {
+      containerSize = screenWidth * 0.93; 
+    } else if (isTablet) {
+      containerSize = Math.min(screenWidth * 0.75, 540); 
+    } else {
+      containerSize = screenWidth * 0.95; 
+    }
+    
+    // Ensure minimum viable size
+    containerSize = Math.max(containerSize, 340);
+    
+    // Radius proportional to container but with safety margins
+    const radius = containerSize * 0.37; 
+    
+    // Orb and center sizes based on available space - bigger for custom icons
+    const orbSize = Math.max(Math.min(containerSize * 0.095, 58), 45); // Increased for better icon visibility
+    const centerSize = Math.max(Math.min(containerSize * 0.17, 100), 70); 
+    
+    // Label container size based on spacing between orbs
+    const circumference = 2 * Math.PI * radius;
+    const spaceBetweenOrbs = circumference / healingModalities.length;
+    const labelContainerSize = Math.max(Math.min(spaceBetweenOrbs * 0.90, 90), 70); 
+    
+    return {
+      containerSize,
+      radius,
+      orbSize,
+      centerSize,
+      labelContainerSize,
+      isTablet,
+      isSmallDevice,
+      isVerySmall,
+    };
+  };
+
+  const dimensions = getResponsiveDimensions();
+
+  // Animations
+  const rotationAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const modalityAnimations = useRef(
+    healingModalities.map(() => ({
+      scale: new Animated.Value(0),
+      opacity: new Animated.Value(0),
+    }))
+  ).current;
 
   useEffect(() => {
-    // Staggered animation for cards
-    const animations = spiritualPractices.map((_, index) => 
-      Animated.parallel([
-        Animated.timing(fadeAnimations[index], {
-          toValue: 1,
-          duration: 600,
-          delay: index * 30,
+    // Start the gentle rotation of the center circle
+    Animated.loop(
+      Animated.timing(rotationAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Gentle pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 2000,
           useNativeDriver: true,
         }),
-        Animated.spring(scaleAnimations[index], {
+        Animated.timing(pulseAnim, {
           toValue: 1,
-          delay: index * 30,
+          duration: 2000,
           useNativeDriver: true,
-          tension: 120,
-          friction: 8,
-        })
+        }),
+      ])
+    ).start();
+
+    // Staggered modality entrance
+    const animations = modalityAnimations.map((anim, index) =>
+      Animated.parallel([
+        Animated.timing(anim.scale, {
+          toValue: 1,
+          duration: 600,
+          delay: index * 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.opacity, {
+          toValue: 1,
+          duration: 600,
+          delay: index * 100,
+          useNativeDriver: true,
+        }),
       ])
     );
 
-    Animated.stagger(15, animations).start();
+    Animated.stagger(80, animations).start();
   }, []);
 
-  const handlePracticesSubmit = async () => {
+  const handleModalitiesSubmit = async () => {
     try {
       const userId = userData.userId;
       if (!userId || typeof userId !== "string") {
@@ -110,13 +159,13 @@ function SpiritualPracticesScreen() {
       await updateUserData({
         spiritualProfile: {
           ...userData.spiritualProfile,
-          practices: selectedPractices,
+          healingModalities: selectedModalities,
         },
         hiddenFields,
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Error", "Unable to save your practices: " + error.message);
+      Alert.alert("Error", "Unable to save your wellness preferences: " + error.message);
     }
   };
 
@@ -127,16 +176,12 @@ function SpiritualPracticesScreen() {
     }));
   };
 
-  const handlePracticeSelect = (practiceName: string) => {
-    setSelectedPractices((prev) =>
-      prev.includes(practiceName)
-        ? prev.filter((item) => item !== practiceName)
-        : [...prev, practiceName]
+  const handleModalitySelect = (modalityName: string) => {
+    setSelectedModalities((prev) =>
+      prev.includes(modalityName)
+        ? prev.filter((item) => item !== modalityName)
+        : [...prev, modalityName]
     );
-  };
-
-  const getPracticeColor = (category: string) => {
-    return categoryColors[category as keyof typeof categoryColors] || '#6B7280';
   };
 
   // Icon renderer function
@@ -148,148 +193,323 @@ function SpiritualPracticesScreen() {
     }
   };
 
-  const renderPracticeCard = (practice: typeof spiritualPractices[0], index: number) => {
-    const isSelected = selectedPractices.includes(practice.name);
-    const practiceColor = getPracticeColor(practice.category);
+  // Helper function to get orb color - gold when all selected
+  const getOrbColor = (modalityColor: string) => {
+    const allSelected = selectedModalities.length === healingModalities.length;
+    return allSelected ? '#FFD700' : modalityColor;
+  };
+
+  // Calculate perfect circle positions with equal distribution
+  const getCirclePosition = (index: number, totalItems: number, radius: number, centerX: number, centerY: number) => {
+    const angle = (index * 2 * Math.PI) / totalItems - Math.PI / 2; // Start from top
+    const { orbSize } = dimensions;
     
+    return {
+      left: centerX + radius * Math.cos(angle) - orbSize / 2,
+      top: centerY + radius * Math.sin(angle) - orbSize / 2,
+    };
+  };
+
+  const handleSelectAll = () => {
+    if (selectedModalities.length === healingModalities.length) {
+      // If all are selected, deselect all
+      setSelectedModalities([]);
+    } else {
+      // Select all modalities
+      setSelectedModalities(healingModalities.map(modality => modality.name));
+    }
+  };
+
+  const renderCenterVisualization = () => {
+    const rotation = rotationAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg'],
+    });
+
+    const allSelected = selectedModalities.length === healingModalities.length;
+    const { centerSize, containerSize, radius } = dimensions;
+
+    const centerX = containerSize / 2;
+    const centerY = containerSize / 2;
+
+    return (
+      <View style={[styles.centerContainer, { 
+        left: centerX - centerSize / 2,
+        top: centerY - centerSize / 2,
+        width: centerSize,
+        height: centerSize,
+      }]}>
+        {/* Clickable Overlay - This ensures the touch works */}
+        <TouchableOpacity
+          onPress={handleSelectAll}
+          activeOpacity={0.7}
+          style={[styles.centerTouchable, {
+            width: centerSize,
+            height: centerSize,
+            borderRadius: centerSize / 2,
+          }]}
+        >
+          {/* Visual Circle with Animation */}
+          <Animated.View 
+            style={[
+              styles.centerCircle,
+              {
+                width: centerSize,
+                height: centerSize,
+                borderRadius: centerSize / 2,
+                transform: [
+                  { rotate: rotation },
+                  { scale: pulseAnim }
+                ]
+              },
+              allSelected && styles.centerCircleAllSelected
+            ]}
+          >
+            <View style={[
+              styles.innerCore, 
+              {
+                width: centerSize * 0.7,
+                height: centerSize * 0.7,
+                borderRadius: centerSize * 0.35,
+              },
+              allSelected && styles.innerCoreAllSelected
+            ]} />
+          </Animated.View>
+        </TouchableOpacity>
+        
+        {/* Energy waves - Behind the touchable area */}
+        <View style={[styles.energyWaves, {
+          width: centerSize * 2,
+          height: centerSize * 2,
+          left: -centerSize / 2,
+          top: -centerSize / 2,
+        }]}>
+          <View style={[styles.wave, styles.wave1, {
+            width: centerSize * 1.4,
+            height: centerSize * 1.4,
+            borderRadius: centerSize * 0.7,
+            left: centerSize * 0.3,
+            top: centerSize * 0.3,
+          }]} />
+          <View style={[styles.wave, styles.wave2, {
+            width: centerSize * 1.7,
+            height: centerSize * 1.7,
+            borderRadius: centerSize * 0.85,
+            left: centerSize * 0.15,
+            top: centerSize * 0.15,
+          }]} />
+          <View style={[styles.wave, styles.wave3, {
+            width: centerSize * 2,
+            height: centerSize * 2,
+            borderRadius: centerSize,
+            left: 0,
+            top: 0,
+          }]} />
+        </View>
+      </View>
+    );
+  };
+
+  const renderModalityOrb = (modality: typeof healingModalities[0], index: number) => {
+    const isSelected = selectedModalities.includes(modality.name);
+    const allSelected = selectedModalities.length === healingModalities.length;
+    const { containerSize, radius, orbSize, labelContainerSize } = dimensions;
+    
+    // Use the exact same center calculation
+    const centerX = containerSize / 2;
+    const centerY = containerSize / 2;
+    
+    // Get orb position (this positions the orb center, not the label container)
+    const orbPosition = getCirclePosition(index, healingModalities.length, radius, centerX, centerY);
+    const animation = modalityAnimations[index];
+
+    // Calculate font size based on container size
+    const fontSize = Math.max(Math.min(labelContainerSize * 0.14, Typography.sizes.xs), 10);
+    
+    // Calculate icon size - bigger for better visibility
+    const iconSize = Math.max(Math.min(orbSize * 65, 28), 18); // Increased from 0.45 to 0.65
+
+    // Better color logic for readability
+    let orbColor, textColor, iconColor, backgroundColor;
+    
+    if (allSelected) {
+      // When all selected - golden theme with better contrast
+      orbColor = '#FFD700';
+      backgroundColor = '#FFD700' + 'DD';
+      iconColor = '#1A1A1A';
+      textColor = '#B8860B';
+    } else if (isSelected) {
+      // Individual selection - original colors
+      orbColor = modality.color;
+      backgroundColor = modality.color + 'FF';
+      iconColor = '#FFFFFF';
+      textColor = modality.color;
+    } else {
+      // Unselected state
+      orbColor = modality.color;
+      backgroundColor = modality.color + '40';
+      iconColor = modality.color;
+      textColor = colors.textDark;
+    }
+
     return (
       <Animated.View
-        key={practice.name}
+        key={modality.name}
         style={[
+          styles.modalityOrb,
           {
-            opacity: fadeAnimations[index],
-            transform: [{ scale: scaleAnimations[index] }],
+            left: orbPosition.left - (labelContainerSize - orbSize) / 2,
+            top: orbPosition.top,
+            width: labelContainerSize,
+            height: labelContainerSize,
+            transform: [{ scale: animation.scale }],
+            opacity: animation.opacity,
           }
         ]}
       >
+        
         <TouchableOpacity
           style={[
-            styles.practiceCard,
-            isSelected && {
-              ...styles.selectedPracticeCard,
-              borderColor: practiceColor,
-              backgroundColor: practiceColor + '08', // More subtle background
-              shadowColor: practiceColor,
+            styles.orbTouchable,
+            {
+              width: orbSize,
+              height: orbSize,
+              borderRadius: orbSize / 2,
+              backgroundColor: backgroundColor,
+              borderColor: orbColor,
+              borderWidth: allSelected ? 3 : 2,
+              alignSelf: 'center',
+            },
+            (isSelected || allSelected) && {
+              ...styles.selectedOrb,
+              shadowColor: orbColor,
             }
           ]}
-          onPress={() => handlePracticeSelect(practice.name)}
-          activeOpacity={0.7}
+          onPress={() => handleModalitySelect(modality.name)}
+          activeOpacity={0.8}
         >
-          {/* Icon Container - Much Bigger! */}
-          <View style={[
-            styles.iconContainer,
-            { 
-              backgroundColor: isSelected ? practiceColor + '20' : practiceColor + '10',
-              borderWidth: isSelected ? 2 : 1,
-              borderColor: isSelected ? practiceColor : practiceColor + '30',
-            }
-          ]}>
-            {renderIcon(
-              practice.icon,
-              practice.iconType,
-              32, // Much bigger icons!
-              practiceColor
-            )}
-          </View>
-          
-          {/* Practice Info - Better Typography */}
-          <View style={styles.practiceInfo}>
-            <Text style={[
-              styles.practiceName,
-              { 
-                color: isSelected ? practiceColor : colors.textDark,
-                fontWeight: isSelected ? Typography.weights.bold : Typography.weights.medium 
-              }
-            ]}>
-              {practice.name}
-            </Text>
-            <Text style={[
-              styles.practiceCategory,
-              { 
-                color: practiceColor,
-                opacity: isSelected ? 0.9 : 0.7,
-                fontWeight: isSelected ? Typography.weights.medium : Typography.weights.medium
-              }
-            ]}>
-              {practice.category}
-            </Text>
-          </View>
-          
-          {/* Enhanced Selection Indicator */}
-          <View style={styles.selectionContainer}>
-            {isSelected ? (
-              <View style={[
-                styles.selectedIndicator,
-                { 
-                  backgroundColor: practiceColor,
-                  shadowColor: practiceColor,
-                }
-              ]}>
-                <Ionicons name="checkmark" size={18} color="white" />
-              </View>
-            ) : (
-              <View style={[
-                styles.unselectedIndicator,
-                { borderColor: practiceColor + '40' }
-              ]} />
-            )}
-          </View>
+          {renderIcon(
+            modality.icon,
+            modality.iconType,
+            iconSize,
+            iconColor
+          )}
         </TouchableOpacity>
+        <Text 
+          style={[
+            styles.modalityLabel,
+            { 
+              color: textColor,
+              fontSize: fontSize,
+              fontWeight: (allSelected || isSelected) ? Typography.weights.semibold : Typography.weights.regular,
+              width: labelContainerSize,
+            }
+          ]}
+          numberOfLines={2}
+          adjustsFontSizeToFit={true}
+          minimumFontScale={0.75}
+        >
+          {modality.name}
+        </Text>
       </Animated.View>
+    );
+  };
+
+  const renderSelectedCount = () => {
+    if (selectedModalities.length === 0) return null;
+
+    const allSelected = selectedModalities.length === healingModalities.length;
+
+    return (
+      <View style={styles.selectedContainer}>
+        <Text style={[
+          styles.selectedText,
+          allSelected && { color: '#B8860B' } // Darker golden text for better readability
+        ]}>
+          {allSelected ? 'All wellness approaches selected!' : `${selectedModalities.length} wellness approach${selectedModalities.length === 1 ? '' : 'es'} selected`}
+        </Text>
+        <View style={styles.selectedDots}>
+          {selectedModalities.slice(0, 6).map((_, index) => (
+            <View key={index} style={[
+              styles.selectedDot,
+              allSelected && { backgroundColor: '#B8860B' } // Darker golden dots
+            ]} />
+          ))}
+          {selectedModalities.length > 6 && (
+            <Text style={[
+              styles.moreText,
+              allSelected && { color: '#B8860B' } // Darker golden text
+            ]}>
+              +{selectedModalities.length - 6}
+            </Text>
+          )}
+        </View>
+      </View>
     );
   };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigateToPreviousScreen()}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+        </TouchableOpacity>
+
+        {/* Progress Bar */}
+        <OnboardingProgressBar currentScreen="WellnessJourneyScreen" />
+        
+        {/* Header */}
+        <Text style={styles.title}>Your Wellness Journey</Text>
+        <Text style={styles.subtitle}>
+          Select approaches that enhance your wellbeing
+        </Text>
+
+        {/* Selected Count - Reserved Space */}
+        <View style={styles.selectedCountSpace}>
+          {renderSelectedCount()}
+        </View>
+
+        {/* Main Wellness Circle */}
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigateToPreviousScreen()}
-          >
-            <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-          </TouchableOpacity>
-
-          {/* Progress Bar */}
-          <OnboardingProgressBar currentScreen="SpiritualPracticesScreen" />
-          
-          {/* Header */}
-          <Text style={styles.title}>Your Spiritual Practices</Text>
-          <Text style={styles.subtitle}>
-            Choose the practices that nourish your soul ✨
-          </Text>
-
-          {/* Practices Grid */}
-          <View style={styles.practicesGrid}>
-            {spiritualPractices.map((practice, index) => renderPracticeCard(practice, index))}
+          <View style={[styles.healingCircleContainer, {
+            width: dimensions.containerSize,
+            height: dimensions.containerSize,
+          }]}>
+            {/* Center Visualization */}
+            {renderCenterVisualization()}
+            
+            {/* Modality Orbs */}
+            {healingModalities.map((modality, index) => renderModalityOrb(modality, index))}
           </View>
 
-          {/* Privacy Toggle */}
+          {/* Hide Option */}
           <View style={styles.privacyContainer}>
-            <Text style={styles.privacyText}>Keep my spiritual practices private</Text>
-              <RoundedCheckbox
-                value={hiddenFields["spiritualProfile"] || false}
-                onValueChange={() => toggleHidden("spiritualProfile")}
-              />
+            <Text style={styles.privacyText}>Keep my wellness approaches private</Text>
+            <RoundedCheckbox
+              value={hiddenFields["spiritualProfile"] || false}
+              onValueChange={() => toggleHidden("spiritualProfile")}
+            />
           </View>
 
+          {/* Affirmation */}
           <Text style={styles.affirmation}>
-            Your{' '}
-            <Text style={styles.highlightedWord}>practices</Text>
-            {' are sacred pathways connecting you to kindred souls'}
+            Your wellness journey connects you to others exploring similar paths of 
+            <Text style={styles.highlightedWord}> personal growth</Text>
           </Text>
         </ScrollView>
 
         {/* Submit Button */}
         <TouchableOpacity
           style={styles.submitButton}
-          onPress={handlePracticesSubmit}
-          activeOpacity={0.8}
+          onPress={handleModalitiesSubmit}
         >
           <Ionicons 
             name="chevron-forward" 
@@ -309,12 +529,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     container: {
       flex: 1,
       backgroundColor: colors.background,
-    },
-    scrollView: {
-      flex: 1,
-    },
-    scrollContainer: {
-      paddingBottom: 120, // Space for fixed submit button
+      marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
     },
     backButton: {
       backgroundColor: colors.card,
@@ -325,14 +540,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      marginLeft: Spacing.lg,
+      marginLeft: Spacing.md,
       marginTop: Platform.select({ ios: Spacing.md, android: Spacing.lg }),
       marginBottom: 0,
       borderWidth: 1,
       borderColor: colors.border,
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
@@ -366,150 +581,199 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontWeight: Typography.weights.medium,
       letterSpacing: 0.5,
     },
-    practicesGrid: {
-      paddingHorizontal: Spacing.lg,
-      gap: Spacing.sm,
+    selectedCountSpace: {
+      height: 45,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.xs,
     },
-    practiceCard: {
+    selectedContainer: {
+      alignItems: 'center',
+    },
+    selectedText: {
+      ...fonts.spiritualBodyFont,
+      color: colors.primary,
+      fontSize: Typography.sizes.base,
+      fontStyle: 'italic',
+      marginBottom: Spacing.xs,
+    },
+    selectedDots: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.card,
-      borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
-      marginBottom: Spacing.md,
-      borderWidth: 2,
-      borderColor: colors.border,
-      minHeight: 88, // Consistent height for better alignment
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
+      gap: Spacing.xs,
     },
-    selectedPracticeCard: {
-      transform: [{ scale: 1.03 }],
-      ...Platform.select({
-        ios: {
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.15,
-          shadowRadius: 16,
-        },
-        android: {
-          elevation: 6,
-        },
-      }),
+    selectedDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.primary,
     },
-    iconContainer: {
-      width: 64, // Much bigger container
-      height: 64,
-      borderRadius: BorderRadius.xl,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: Spacing.lg,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
-    },
-    practiceInfo: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    practiceName: {
+    moreText: {
       ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.lg,
-      fontWeight: Typography.weights.medium,
-      marginBottom: Spacing.xs,
-      lineHeight: Typography.sizes.lg * 1.2,
-    },
-    practiceCategory: {
-      ...fonts.spiritualBodyFont,
+      color: colors.primary,
       fontSize: Typography.sizes.sm,
-      textTransform: 'capitalize',
-      letterSpacing: 0.5,
+      marginLeft: Spacing.xs,
     },
-    selectionContainer: {
-      width: 40,
-      height: 40,
-      justifyContent: 'center',
+    scrollView: {
+      flex: 1,
+    },
+    scrollContainer: {
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: 120,
       alignItems: 'center',
     },
-    selectedIndicator: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+    healingCircleContainer: {
+      position: 'relative',
+      marginBottom: Spacing.xs,
+      alignSelf: 'center',
+    },
+    centerContainer: {
+      position: 'absolute',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerCircle: {
+      backgroundColor: '#FFD700' + '30',
+      borderWidth: 3,
+      borderColor: '#FFD700',
       justifyContent: 'center',
       alignItems: 'center',
       ...Platform.select({
         ios: {
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 6,
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.6,
+          shadowRadius: 15,
         },
         android: {
-          elevation: 6,
+          elevation: 10,
         },
       }),
     },
-    unselectedIndicator: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+    centerCircleAllSelected: {
+      borderWidth: 4,
+      ...Platform.select({
+        ios: {
+          shadowOpacity: 0.9,
+          shadowRadius: 25,
+        },
+        android: {
+          elevation: 15,
+        },
+      }),
+    },
+    centerTouchable: {
+      position: 'absolute',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10,
+    },
+    innerCore: {
+      backgroundColor: '#FFD700',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.8,
+          shadowRadius: 20,
+        },
+        android: {
+          elevation: 12,
+        },
+      }),
+    },
+    innerCoreAllSelected: {
+      ...Platform.select({
+        ios: {
+          shadowOpacity: 1,
+          shadowRadius: 30,
+        },
+        android: {
+          elevation: 18,
+        },
+      }),
+    },
+    energyWaves: {
+      position: 'absolute',
+      zIndex: 1,
+    },
+    wave: {
+      position: 'absolute',
+      borderWidth: 1,
+      borderColor: '#FFD700' + '20',
+    },
+    wave1: {},
+    wave2: {},
+    wave3: {},
+    modalityOrb: {
+      position: 'absolute',
+      alignItems: 'center',
+    },
+    orbTouchable: {
+      justifyContent: 'center',
+      alignItems: 'center',
       borderWidth: 2,
-      backgroundColor: 'transparent',
+      marginBottom: Spacing.xs,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+    selectedOrb: {
+      borderWidth: 3,
+      ...Platform.select({
+        ios: {
+          shadowOpacity: 0.6,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 0 },
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+    modalityLabel: {
+      ...fonts.spiritualBodyFont,
+      textAlign: 'center',
+      fontWeight: Typography.weights.medium,
+      lineHeight: Typography.sizes.xs * 1.2,
+      marginTop: Spacing.xs / 2,
     },
     privacyContainer: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginHorizontal: Spacing.lg,
-      marginTop: Spacing.xl,
+      marginTop: Spacing["3xl"],
       marginBottom: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
-      borderRadius: BorderRadius.xl,
+      borderRadius: BorderRadius.md,
       borderWidth: 1,
       borderColor: colors.border,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
     },
     privacyText: {
       ...fonts.spiritualBodyFont,
       color: colors.textDark,
       fontSize: Typography.sizes.base,
-      fontStyle: "italic",
+      fontStyle: 'italic',
     },
     affirmation: {
       ...fonts.elegantItalicFont,
       textAlign: "center",
       fontStyle: "italic",
-      color: colors.textLight,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
+      color: colors.textDark,
+      opacity: 0.8,
     },
     submitButton: {
       position: "absolute",
@@ -536,4 +800,4 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
   });
 };
 
-export default SpiritualPracticesScreen;
+export default WellnessJourneyScreen;
