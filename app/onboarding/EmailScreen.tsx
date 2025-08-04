@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   SafeAreaView,
   Text,
@@ -11,6 +11,8 @@ import {
   useColorScheme,
   Platform,
   StyleSheet,
+  Keyboard,
+  Animated,
 } from "react-native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
@@ -35,11 +37,15 @@ function EmailScreen() {
     userData?.marketingRequested ?? true
   );
   const [modalVisible, setModalVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
+  
+  // Animation for keyboard adjustment
+  const bottomElementsPosition = useRef(new Animated.Value(0)).current;
 
   const getWebClientId = () => {
     const env = process.env.EXPO_PUBLIC_ENV || 'development';
@@ -67,6 +73,45 @@ function EmailScreen() {
       }
     });
     return unsubscribe;
+  }, []);
+  
+  // Add keyboard listeners
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        setKeyboardVisible(true);
+        
+        // Get keyboard height
+        const keyboardHeight = event.endCoordinates.height;
+        
+        // Animate the bottom elements up by keyboard height plus some padding
+        Animated.timing(bottomElementsPosition, {
+          toValue: keyboardHeight + (Platform.OS === 'ios' ? 10 : 20),
+          duration: Platform.OS === 'ios' ? 300 : 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    );
+    
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        
+        // Animate the bottom elements back to original position
+        Animated.timing(bottomElementsPosition, {
+          toValue: 0,
+          duration: Platform.OS === 'ios' ? 300 : 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    );
+    
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
   }, []);
 
   const isGoogleConnected = () => {
@@ -196,66 +241,83 @@ function EmailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={navigateToPreviousScreen}
-      >
-        <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-      </TouchableOpacity>
-
-      <OnboardingProgressBar currentScreen="EmailScreen" />
-
-      <Text style={styles.title}>Stay in touch</Text>
-      
-      <Text style={styles.subtitle}>Share your email address with us</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="your.email@example.com"
-        placeholderTextColor={colors.textMuted}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoFocus={true}
-      />
-      
-      <View style={styles.toggleContainer}>
+      <View style={styles.mainContent}>
         <TouchableOpacity
-          style={styles.toggle}
-          onPress={() => setMarketingRequested((prev) => !prev)}
+          style={styles.backButton}
+          onPress={navigateToPreviousScreen}
         >
-          <MaterialCommunityIcons
-            name={marketingRequested ? "checkbox-blank-outline" : "checkbox-marked"}
-            size={24}
-            color={colors.primary}
-          />
-          <Text style={styles.toggleText}>
-            I prefer to receive only essential updates about my Circle journey
-          </Text>
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
+
+        <OnboardingProgressBar currentScreen="EmailScreen" />
+
+        <Text style={styles.title}>Stay in touch</Text>
+        
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            placeholder="your.email@example.com"
+            placeholderTextColor={colors.textMuted}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoFocus={true}
+          />
+          <View style={styles.inputUnderline} />
+        </View>
+        
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={styles.toggle}
+            onPress={() => setMarketingRequested((prev) => !prev)}
+          >
+            <MaterialCommunityIcons
+              name={marketingRequested ? "checkbox-blank-outline" : "checkbox-marked"}
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.toggleText}>
+              I prefer to receive only essential updates about my Circle journey
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
       
-      <Text style={styles.affirmation}>
-        The best{' '}
-        <Text style={styles.highlightedWord}>conversations</Text>
-        {' happen when people feel truly heard'}
-      </Text>
-      
-      <TouchableOpacity 
+      {/* Animated Bottom Elements Container */}
+      <Animated.View 
         style={[
-          styles.submitButton,
-          !email.trim() && styles.submitButtonDisabled
-        ]} 
-        onPress={handleEmailSubmit}
-        disabled={!email.trim()}
+          styles.bottomElementsContainer,
+          { 
+            transform: [{ translateY: bottomElementsPosition.interpolate({
+              inputRange: [0, 1000],
+              outputRange: [0, -1000],
+              extrapolate: 'clamp'
+            }) }] 
+          }
+        ]}
       >
-        <Ionicons 
-          name="chevron-forward" 
-          size={24} 
-          color={email.trim() ? colors.background : colors.background} 
-        />
-      </TouchableOpacity>
+        <Text style={styles.affirmation}>
+          The best{' '}
+          <Text style={styles.highlightedWord}>conversations</Text>
+          {' happen when people feel truly heard'}
+        </Text>
+        
+        <TouchableOpacity 
+          style={[
+            styles.submitButton,
+            !email.trim() && styles.submitButtonDisabled
+          ]} 
+          onPress={handleEmailSubmit}
+          disabled={!email.trim()}
+        >
+          <Ionicons 
+            name="chevron-forward" 
+            size={24} 
+            color={email.trim() ? colors.background : colors.background} 
+          />
+        </TouchableOpacity>
+      </Animated.View>
 
       <Modal
         animationType="fade"
@@ -321,6 +383,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      padding: Spacing.lg,
+    },
+    mainContent: {
+      flex: 1,
     },
     backButton: {
       backgroundColor: colors.card,
@@ -356,36 +422,27 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
     },
-    subtitle: {
-      ...fonts.spiritualSubtitleFont,
-      color: colors.textLight,
-      textAlign: "left",
-      paddingHorizontal: Spacing.lg,
+    inputWrapper: {
+      marginHorizontal: Spacing.lg,
       marginBottom: Spacing.xl,
-      fontStyle: "normal",
+      position: 'relative',
     },
     input: {
       ...fonts.inputFont,
-      height: 56,
-      backgroundColor: colors.card,
-      borderWidth: 2,
-      borderColor: colors.primary + '20',
-      borderRadius: BorderRadius.md,
-      paddingHorizontal: Spacing.lg,
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.xl,
+      height: 48,
+      paddingVertical: Spacing.xs,
+      paddingHorizontal: 0,
       color: colors.textDark,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      marginBottom: 2,
+    },
+    inputUnderline: {
+      height: 2,
+      backgroundColor: colors.primary,
+      width: '100%',
+      borderRadius: 1,
+      opacity: 0.8,
     },
     toggleContainer: {
       marginHorizontal: Spacing.lg,
@@ -419,17 +476,26 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       flex: 1,
       lineHeight: Typography.sizes.base * 1.5,
     },
+    bottomElementsContainer: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: Platform.select({ ios: 30, android: 20 }),
+      paddingHorizontal: Spacing.lg,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 5,
+    },
     affirmation: {
       ...fonts.elegantItalicFont,
-      position: 'absolute',
-      bottom: 120,
-      left: Spacing.lg,
-      right: Spacing.lg,
+      flex: 1,
       textAlign: "center",
       color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       opacity: 0.8,
+      paddingRight: Spacing.md,
     },
     highlightedWord: {
       color: colors.textDark,
@@ -440,9 +506,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       letterSpacing: 0.5,
     },
     submitButton: {
-      position: "absolute",
-      bottom: 50,
-      right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       width: 56,

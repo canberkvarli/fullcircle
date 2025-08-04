@@ -10,6 +10,8 @@ import {
   useColorScheme,
   Platform,
   StyleSheet,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import auth from "@react-native-firebase/auth";
@@ -43,8 +45,10 @@ function NameScreen() {
     return unsubscribe;
   }, []);
 
+  // Updated input validation to prevent spaces and special characters
   const handleInputChange = (text: string, type: string) => {
-    if (/^[a-zA-Z\s]*$/.test(text) && text.length <= 18) {
+    // Only allow letters (no spaces, numbers, or special characters)
+    if (/^[a-zA-Z]*$/.test(text) && text.length <= 18) {
       type === "firstName" ? setFirstName(text) : setLastName(text);
     }
   };
@@ -81,80 +85,106 @@ function NameScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button at top left */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => {
-          router.replace("onboarding/LoginSignupScreen" as any);
-          signOut();
-        }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
-        <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-      </TouchableOpacity>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer} 
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Back Button at top left */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              router.replace("onboarding/LoginSignupScreen" as any);
+              signOut();
+            }}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+          </TouchableOpacity>
 
-      {/* Progress Bar below back button */}
-      <OnboardingProgressBar currentScreen="NameScreen" />
+          {/* Progress Bar below back button */}
+          <OnboardingProgressBar currentScreen="NameScreen" />
 
-      {/* Title */}
-      <Text style={styles.title}>What should we call you?</Text>
+          {/* Title */}
+          <Text style={styles.title}>What should we call you?</Text>
 
-      {/* Subtitle */}
-      <Text style={styles.subtitle}>
-        Share the sounds that call to your soul
-      </Text>
+          {/* Subtitle */}
+          <Text style={styles.subtitle}>
+            Share the sounds that call to your soul
+          </Text>
 
-      {/* Input Fields */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="The name that feels like you"
-          placeholderTextColor={colors.textMuted}
-          value={firstName}
-          onChangeText={(text) => handleInputChange(text, "firstName")}
-          autoFocus
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Your family name (if you wish)"
-          placeholderTextColor={colors.textMuted}
-          value={lastName}
-          onChangeText={(text) => handleInputChange(text, "lastName")}
-        />
-      </View>
+          {/* Input Fields - with underline style */}
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="The name that feels like you"
+                placeholderTextColor={colors.textMuted}
+                value={firstName}
+                onChangeText={(text) => handleInputChange(text, "firstName")}
+                autoFocus
+              />
+              <View style={styles.inputUnderline} />
+            </View>
+            
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Your family name (if you wish)"
+                placeholderTextColor={colors.textMuted}
+                value={lastName}
+                onChangeText={(text) => handleInputChange(text, "lastName")}
+              />
+              <View style={styles.inputUnderline} />
+            </View>
+          </View>
 
-      {/* Optional Text with Link */}
-      <TouchableOpacity 
-        style={styles.optionalTextContainer}
-        onPress={() => setIsModalVisible(true)}
-      >
-        <Text style={styles.optionalText}>
-          Your last name stays private until you decide to share it with someone special.
-          <Text style={styles.linkText}> Learn more</Text>
-        </Text>
-      </TouchableOpacity>
+          {/* Optional Text with Link */}
+          <TouchableOpacity 
+            style={styles.optionalTextContainer}
+            onPress={() => setIsModalVisible(true)}
+          >
+            <Text style={styles.optionalText}>
+              Your last name stays private until you decide to share it with someone special.
+              <Text style={styles.linkText}> Learn more</Text>
+            </Text>
+          </TouchableOpacity>
+          
+          {/* Flexible spacer to push content to bottom */}
+          <View style={{ flex: 1, minHeight: 20 }} />
 
-      {/* Affirmation */}
-      <Text style={styles.affirmation}>
-        Every name carries its own{' '}
-        <Text style={styles.highlightedWord}>music</Text>
-        {', drawing the right people closer'}
-      </Text>
+          {/* Affirmation - moved to scroll view flow instead of absolute positioning */}
+          <View style={styles.affirmationContainer}>
+            <Text style={styles.affirmation}>
+              Every name carries its own{' '}
+              <Text style={styles.highlightedWord}>music</Text>
+              {', drawing the right people closer'}
+            </Text>
+          </View>
 
-      {/* Submit Button */}
-      <TouchableOpacity 
-        style={[
-          styles.submitButton,
-          !firstName.trim() && styles.submitButtonDisabled
-        ]} 
-        onPress={handleNameSubmit}
-        disabled={!firstName.trim()}
-      >
-        <Ionicons 
-          name="chevron-forward" 
-          size={24} 
-          color={firstName.trim() ? colors.background : colors.background} 
-        />
-      </TouchableOpacity>
+          {/* Submit Button - now part of scroll view flow */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.submitButton,
+                !firstName.trim() && styles.submitButtonDisabled
+              ]} 
+              onPress={handleNameSubmit}
+              disabled={!firstName.trim()}
+            >
+              <Ionicons 
+                name="chevron-forward" 
+                size={24} 
+                color={firstName.trim() ? colors.background : colors.background} 
+              />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Modal */}
       <Modal
@@ -197,6 +227,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       padding: Spacing.lg,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
     },
+    scrollContainer: {
+      flexGrow: 1,
+      paddingBottom: Spacing.xl,
+    },
     backButton: {
       backgroundColor: colors.card,
       padding: Spacing.xs,
@@ -235,7 +269,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       ...fonts.spiritualSubtitleFont, // Keeping the font but removing italics
       color: colors.textLight,
       textAlign: "left",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.md, // Reduced from xl to md
       paddingHorizontal: Spacing.lg,
       fontStyle: "normal", // Changed from italic
     },
@@ -243,37 +277,37 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing.md,
     },
+    inputWrapper: {
+      marginBottom: Spacing.md, // Space between inputs
+      position: 'relative', // For positioning the underline
+    },
     input: {
       ...fonts.inputFont,
-      height: 56,
-      backgroundColor: colors.card,
-      borderWidth: 2,
-      borderColor: colors.border,
-      borderRadius: BorderRadius.md,
-      paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.sm,
+      height: 48, // Slightly shorter than before
+      paddingVertical: Spacing.xs,
+      paddingHorizontal: 0, // No horizontal padding for underline style
       color: colors.textDark,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 2,
-        },
-      }),
+      backgroundColor: 'transparent', // No background
+      borderWidth: 0, // No border
+      marginBottom: 2, // Small gap before underline
+    },
+    inputUnderline: {
+      height: 2, // Thickness of underline
+      backgroundColor: colors.primary, // Primary color for underline
+      width: '100%',
+      borderRadius: 1, // Slightly rounded underline
+      opacity: 0.8, // Slightly transparent
     },
     optionalTextContainer: {
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.md, // Reduced from xl to md
     },
     optionalText: {
       ...fonts.spiritualBodyFont, // Keeping font but removing italics
       fontStyle: "normal", // Changed from italic
       color: colors.textMuted,
-      lineHeight: Typography.sizes.base * 1.5,
+      lineHeight: Typography.sizes.base * 1.3, // Reduced line height slightly
+      fontSize: Typography.sizes.sm, // Made text slightly smaller
     },
     linkText: {
       ...fonts.buttonFont,
@@ -282,12 +316,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.primary,
       fontWeight: Typography.weights.semibold,
     },
+    affirmationContainer: {
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
     affirmation: {
       ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
-      position: 'absolute',
-      bottom: Platform.select({ ios: 130, android: 110 }),
-      left: Spacing.lg,
-      right: Spacing.lg,
       textAlign: "center",
       color: colors.textDark, // Darker color for better visibility
       lineHeight: Typography.sizes.lg * 1.5,
@@ -302,10 +336,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontWeight: Typography.weights.medium, // Slightly bolder
       letterSpacing: 0.5, // More letter spacing for emphasis
     },
+    buttonContainer: {
+      alignItems: 'flex-end',
+      marginRight: Spacing.lg,
+      marginBottom: Platform.select({ ios: Spacing.lg, android: Spacing.md }),
+      paddingBottom: Platform.select({ ios: 10, android: 0 }),
+    },
     submitButton: {
-      position: "absolute",
-      bottom: Platform.select({ ios: 50, android: 30 }),
-      right: Spacing.xl,
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.full,
       width: 56,
