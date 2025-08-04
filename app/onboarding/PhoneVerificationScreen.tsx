@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import {
   Alert,
@@ -9,7 +8,9 @@ import {
   TextInput,
   useColorScheme,
   Platform,
-  StyleSheet
+  StyleSheet,
+  KeyboardAvoidingView,
+  ScrollView
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
@@ -232,94 +233,111 @@ const PhoneVerificationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() =>
-          router.replace({
-            pathname: "onboarding/PhoneNumberScreen" as any,
-            params: { phoneNumber },
-          })
-        }
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 20}
       >
-        <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-      </TouchableOpacity>
-
-      {/* Title */}
-      <Text style={styles.title}>Almost there</Text>
-      
-      {/* Subtitle */}
-      <View style={styles.subtitleContainer}>
-        <Text style={styles.subtitle}>We sent a code to {phoneNumber}</Text>
-      </View>
-
-      {/* Error Message */}
-      {showError && (
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={20} color={colors.error || '#FF6B6B'} />
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      )}
-
-      {/* Verification Code Input */}
-      <View style={styles.codeContainer}>
-        {verificationCode.map((_, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => (inputs.current[index] = ref as TextInput)}
-            style={[
-              styles.codeInput,
-              verificationCode[index] ? styles.codeInputFilled : null,
-              showError ? styles.codeInputError : null
-            ]}
-            maxLength={1}
-            keyboardType="numeric"
-            onChangeText={(text) => handleCodeChange(text, index)}
-            onKeyPress={(e) => handleKeyPress(e, index)}
-            value={verificationCode[index]}
-            inputMode="numeric"
-            placeholderTextColor={colors.textMuted}
-            editable={!loading}
-          />
-        ))}
-      </View>
-
-      {/* Loading or Resend */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <OuroborosLoader 
-            size={50}
-            duration={3000}
-            fillColor="#F5E6D3"
-            strokeColor="#7B6B5C"
-            strokeWidth={1.5}
-            loop={true}
-          />          
-          <Text style={styles.loadingText}>Verifying your code...</Text>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={styles.resendContainer}
-          onPress={resendCode}
-          disabled={resendCooldown > 0}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={[
-            styles.changeNumberLink,
-            resendCooldown > 0 && styles.disabledText
-          ]}>
-            {resendCooldown > 0 
-              ? `Resend code in ${resendCooldown}s` 
-              : "Didn't get the code?"}
-          </Text>
-        </TouchableOpacity>
-      )}
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() =>
+              router.replace({
+                pathname: "onboarding/PhoneNumberScreen" as any,
+                params: { phoneNumber },
+              })
+            }
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+          </TouchableOpacity>
 
-      {/* Affirmation */}
-      <Text style={styles.affirmation}>
-        Great{' '}
-        <Text style={styles.highlightedWord}>connections</Text>
-        {' are worth the extra moment it takes to get them right'}
-      </Text>
+          {/* Title */}
+          <Text style={styles.title}>Almost there</Text>
+          
+          {/* Subtitle */}
+          <View style={styles.subtitleContainer}>
+            <Text style={styles.subtitle}>We sent a code to {phoneNumber}</Text>
+          </View>
+
+          {/* Error Message */}
+          {showError && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={20} color={colors.error || '#FF6B6B'} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
+
+          {/* Verification Code Input */}
+          <View style={styles.codeContainer}>
+            {verificationCode.map((_, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => (inputs.current[index] = ref as TextInput)}
+                style={[
+                  styles.codeInput,
+                  verificationCode[index] ? styles.codeInputFilled : null,
+                  showError ? styles.codeInputError : null
+                ]}
+                maxLength={1}
+                keyboardType="numeric"
+                onChangeText={(text) => handleCodeChange(text, index)}
+                onKeyPress={(e) => handleKeyPress(e, index)}
+                value={verificationCode[index]}
+                inputMode="numeric"
+                placeholderTextColor={colors.textMuted}
+                editable={!loading}
+              />
+            ))}
+          </View>
+
+          {/* Loading or Resend */}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <OuroborosLoader 
+                size={50}
+                duration={3000}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1.5}
+                loop={true}
+              />          
+              <Text style={styles.loadingText}>Verifying your code...</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.resendContainer}
+              onPress={resendCode}
+              disabled={resendCooldown > 0}
+            >
+              <Text style={[
+                styles.changeNumberLink,
+                resendCooldown > 0 && styles.disabledText
+              ]}>
+                {resendCooldown > 0 
+                  ? `Resend code in ${resendCooldown}s` 
+                  : "Didn't get the code?"}
+              </Text>
+            </TouchableOpacity>
+          )}
+          
+          {/* Flexible spacer to push affirmation to bottom */}
+          <View style={{ flex: 1, minHeight: 30 }} />
+          
+          {/* Affirmation */}
+          <View style={styles.affirmationWrapper}>
+            <Text style={styles.affirmation}>
+              Great{' '}
+              <Text style={styles.highlightedWord}>connections</Text>
+              {' are worth the extra moment it takes to get them right'}
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -333,6 +351,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       backgroundColor: colors.background,
       padding: Spacing.lg,
       marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      paddingBottom: Spacing.xl,
     },
     backButton: {
       backgroundColor: colors.card,
@@ -471,17 +493,18 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       textAlign: "center",
       fontStyle: "normal",
     },
+    affirmationWrapper: {
+      marginTop: Spacing.xl,
+      paddingBottom: Platform.OS === 'ios' ? Spacing.xl : Spacing.lg,
+    },
     affirmation: {
       ...fonts.elegantItalicFont,
-      position: "absolute",
-      bottom: Platform.select({ ios: 100, android: 80 }),
-      left: Spacing.lg,
-      right: Spacing.lg,
       textAlign: "center",
       color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
       opacity: 0.8,
+      paddingHorizontal: Spacing.lg,
     },
     highlightedWord: {
       color: colors.textDark,

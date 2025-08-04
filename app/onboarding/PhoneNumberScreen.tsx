@@ -92,10 +92,11 @@ function PhoneNumberScreen(): JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Just use KeyboardAvoidingView with the right settings */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 20}
       >
         <TouchableOpacity style={styles.backButton} onPress={signOut}>
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
@@ -128,12 +129,10 @@ function PhoneNumberScreen(): JSX.Element {
               disabled={loading}
             />
           </View>
-          
-          <Text style={styles.notificationText}>
-            We'll text you a verification code to confirm your number. 
-            Message and data rates may apply.
-          </Text>
         </View>
+        
+        {/* This is the only part that moved - flexible spacer */}
+        <View style={{ flex: 1, minHeight: 10 }} />
         
         <View style={styles.affirmationContainer}>
           <Text style={styles.affirmation}>
@@ -200,9 +199,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       justifyContent: "flex-end",
       alignItems: "center",
       padding: Spacing.lg,
-      position: "absolute",
-      bottom: 0,
-      right: 0,
     },
     phoneContainer: {
       width: "100%",
@@ -258,19 +254,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginBottom: Spacing.xl,
       fontStyle: "normal", // Changed from italic
     },
-    notificationText: {
-      ...fonts.captionFont,
-      color: colors.textLight === '#F5F5F5' ? '#8B8580' : colors.textMuted,
-      textAlign: "center",
-      marginTop: Spacing.lg,
-      lineHeight: Typography.sizes.sm * 1.5,
-      paddingHorizontal: Spacing.md,
-    },
     affirmationContainer: {
-      position: "absolute",
-      bottom: 120,
-      left: 0,
-      right: 0,
       paddingHorizontal: Spacing.lg,
     },
     affirmation: {
