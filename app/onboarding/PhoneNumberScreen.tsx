@@ -144,17 +144,14 @@ function PhoneNumberScreen(): JSX.Element {
         
         <View style={styles.bottomBar}>
           {loading ? (
-            <View style={styles.loadingContainer}>
-              <OuroborosLoader 
-                size={50}
-                duration={3000}
-                fillColor="#F5E6D3"
-                strokeColor="#7B6B5C"
-                strokeWidth={1.5}
-                loop={true}
-              />
-              <Text style={styles.loadingText}>Making the connection...</Text>
-            </View>
+            <OuroborosLoader 
+              size={80}
+              duration={3000}
+              fillColor="#F5E6D3"
+              strokeColor="#7B6B5C"
+              strokeWidth={1.5}
+              loop={true}
+            />
           ) : (
             <TouchableOpacity 
               style={[
@@ -272,18 +269,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 8,
       fontWeight: Typography.weights.medium, // Slightly bolder
       letterSpacing: 0.5, // More letter spacing for emphasis
-    },
-    loadingContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row',
-      marginRight: Spacing.lg,
-    },
-    loadingText: {
-      ...fonts.spiritualBodyFont,
-      color: colors.primary,
-      marginLeft: Spacing.sm,
-      fontStyle: "normal", // Changed from italic
     },
     nextButton: {
       backgroundColor: colors.primary,
