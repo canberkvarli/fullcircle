@@ -246,7 +246,7 @@ function EditFieldScreen() {
       const places = await Location.reverseGeocodeAsync(region);
       if (places.length > 0) {
         setRegionName(
-          places[0].city ||
+          places[0].district ||
           places[0].region ||
           places[0].country ||
           "Unknown Location"
@@ -719,18 +719,11 @@ function EditFieldScreen() {
     if (fieldName === "age") {
       return (
         <View style={styles.ageContainer}>
-          <TextInput
-            style={[styles.ageInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.textDark }]}
-            placeholder="25"
-            placeholderTextColor={colors.textMuted}
-            value={age}
-            onChangeText={setAge}
-            keyboardType="numeric"
-            maxLength={2}
-          />
-          <Text style={[styles.helpText, { color: colors.textMuted }]}>
-            Your age helps us find compatible matches.
-          </Text>
+            <Text style={[styles.ageInput, {color: colors.textDark }]}>{age}</Text>
+            <Text style={[styles.helpText, { color: colors.textMuted }]}>
+              Please contact the Circle team to change your age. This requires you
+              to upload your ID.
+            </Text>
         </View>
       );
     }
@@ -837,12 +830,19 @@ function EditFieldScreen() {
         <Text style={[styles.headerTitle, { color: colors.textDark }]}>
           {fieldTitleMap[fieldName as string] || fieldName}
         </Text>
-        
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+        {fieldName !== "age" ? (
+          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+            <Text style={[styles.saveButtonText, { color: colors.primary }]}>
+              Save
+            </Text>
+          </TouchableOpacity>
+        ): (
+          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
           <Text style={[styles.saveButtonText, { color: colors.primary }]}>
-            Save
+            Done
           </Text>
         </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.scrollContainer}>
