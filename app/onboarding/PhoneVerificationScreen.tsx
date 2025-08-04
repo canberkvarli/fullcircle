@@ -310,7 +310,6 @@ const PhoneVerificationScreen = () => {
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.resendContainer}
               onPress={resendCode}
               disabled={resendCooldown > 0}
             >
@@ -329,13 +328,11 @@ const PhoneVerificationScreen = () => {
           <View style={{ flex: 1, minHeight: 30 }} />
           
           {/* Affirmation */}
-          <View style={styles.affirmationWrapper}>
-            <Text style={styles.affirmation}>
-              Great{' '}
-              <Text style={styles.highlightedWord}>connections</Text>
-              {' are worth the extra moment it takes to get them right'}
-            </Text>
-          </View>
+          <Text style={styles.affirmation}>
+            Great{' '}
+            <Text style={styles.highlightedWord}>connections</Text>
+            {' are worth the extra moment it takes to get them right'}
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -482,20 +479,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       textAlign: "center",
       paddingHorizontal: Spacing.md,
     },
-    resendContainer: {
-      alignItems: 'center',
-      marginTop: Spacing.lg,
-    },
     changeNumberLink: {
       ...fonts.buttonFont,
       color: colors.primary,
       textDecorationLine: "underline",
       textAlign: "center",
       fontStyle: "normal",
-    },
-    affirmationWrapper: {
-      marginTop: Spacing.xl,
-      paddingBottom: Platform.OS === 'ios' ? Spacing.xl : Spacing.lg,
     },
     affirmation: {
       ...fonts.elegantItalicFont,

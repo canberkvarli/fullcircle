@@ -100,8 +100,6 @@ function HeightScreen() {
 
         <View style={styles.content}>
           <Text style={styles.title}>Stand tall</Text>
-          <Text style={styles.subtitle}>Help us show you compatible matches</Text>
-
           <View style={styles.heightDisplay}>
             <Text style={styles.heightValue}>{formatHeight(selectedHeight)}</Text>
             <Text style={styles.heightLabel}>Your height</Text>
@@ -203,24 +201,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
     },
-    subtitle: {
-      ...fonts.spiritualSubtitleFont,
-      color: colors.textLight,
-      textAlign: "left",
-      alignSelf: 'flex-start',
-      marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.lg,
-      fontStyle: "normal",
-    },
     heightDisplay: {
-      backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
+      padding: Spacing.md,
       alignItems: 'center',
-      borderWidth: 2,
-      borderColor: colors.border,
       minWidth: 160,
-      marginBottom: Spacing.lg,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,

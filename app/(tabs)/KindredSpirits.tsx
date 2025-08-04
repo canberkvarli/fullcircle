@@ -306,7 +306,7 @@ const KindredSpirits: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[fonts.spiritualTitleFont, { color: colors.textDark }]}>
               Kindred Spirits
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -368,7 +368,7 @@ const KindredSpirits: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[fonts.spiritualTitleFont, { color: colors.textDark }]}>
               Kindred Spirits
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -460,7 +460,7 @@ const KindredSpirits: React.FC = () => {
       
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text style={[fonts.spiritualTitleFont, { color: colors.textDark }]}>
             Kindred Spirits
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   },
   
   headerLeft: {
-    flex: 1,
+    flex: 1
   },
 
   radianceButton: {
@@ -650,13 +650,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
     marginLeft: Spacing.xs,
-  },
-  
-  headerTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    marginBottom: 2,
-    letterSpacing: 0.5,
   },
   
   headerSubtitle: {
@@ -721,6 +714,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
+    marginBottom: 50
   },
   
   cosmicSymbol: {

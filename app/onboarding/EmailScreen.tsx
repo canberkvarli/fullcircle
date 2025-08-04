@@ -285,17 +285,8 @@ function EmailScreen() {
       </View>
       
       {/* Animated Bottom Elements Container */}
-      <Animated.View 
-        style={[
-          styles.bottomElementsContainer,
-          { 
-            transform: [{ translateY: bottomElementsPosition.interpolate({
-              inputRange: [0, 1000],
-              outputRange: [0, -1000],
-              extrapolate: 'clamp'
-            }) }] 
-          }
-        ]}
+      <View 
+        style={styles.bottomElementsContainer}
       >
         <Text style={styles.affirmation}>
           The best{' '}
@@ -317,7 +308,7 @@ function EmailScreen() {
             color={email.trim() ? colors.background : colors.background} 
           />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       <Modal
         animationType="fade"

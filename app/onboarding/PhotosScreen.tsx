@@ -316,7 +316,7 @@ const handleSubmit = async () => {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Capture Your Essence</Text>
+            <Text style={styles.title}>Capture Your Self</Text>
             <Text style={styles.subtitle}>
               Share your authentic self through photos that reflect your inner light
             </Text>
@@ -391,7 +391,7 @@ const handleSubmit = async () => {
                   styles.buttonText,
                   photoCount < 3 && styles.buttonTextDisabled
                 ]}>
-                  Complete Your Essence
+                  Complete Your Self
                 </Text>
               </TouchableOpacity>
             </Animated.View>

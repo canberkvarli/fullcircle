@@ -105,9 +105,6 @@ function PhoneNumberScreen(): JSX.Element {
         <Text style={styles.title}>Let's get you connected</Text>
         
         <View style={styles.mainContent}>
-          <Text style={styles.subtitle}>
-            Share your number to join the circle of kindred souls
-          </Text>
           
           <View style={styles.phoneContainer}>
             <PhoneInput
@@ -242,14 +239,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       marginTop: Spacing.lg,
       marginLeft: Spacing.xl,
       textAlign: "left",
-    },
-    subtitle: {
-      ...fonts.spiritualSubtitleFont, // Keeping font but removing italics
-      color: colors.textLight === '#F5F5F5' ? '#6B6560' : colors.textLight,
-      textAlign: "center",
-      marginTop: Spacing.xl,
-      marginBottom: Spacing.xl,
-      fontStyle: "normal", // Changed from italic
     },
     affirmationContainer: {
       paddingHorizontal: Spacing.lg,

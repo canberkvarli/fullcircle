@@ -130,7 +130,7 @@ const LocationScreen = () => {
       const place = await Location.reverseGeocodeAsync(region);
       if (place.length > 0) {
         setRegionName(
-          place[0].city ||
+          place[0].district ||
             place[0].region ||
             place[0].country ||
             "Unknown Location"
@@ -336,15 +336,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
-      marginTop: Spacing.sm,
-      marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
     },
     regionDisplay: {
       padding: Spacing.xs,
       alignItems: 'center',
       minWidth: 200,
-      marginBottom: Spacing.xs,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -466,7 +463,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderRadius: BorderRadius.xl,
       borderWidth: 1,
       borderColor: colors.border,
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.sm,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
