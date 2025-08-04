@@ -2,50 +2,83 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import { faker } from "@faker-js/faker";
+import * as fs from "fs";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-// Initialize Firebase Admin SDK
+// Initialize Firebase Admin SDK with better error handling
 let app: admin.app.App;
 
-try {
-  // Option 1: Try service account key file first (recommended)
-  const getKeyFilePath = () => {
-    const env = process.env.EXPO_PUBLIC_ENV || 'development';
-    switch (env) {
-      case 'production':
-        return path.resolve(__dirname, "../server/keys/fullcircle-prod-firebase-adminsdk.json");
-      case 'staging':
-        return path.resolve(__dirname, "../server/keys/fullcircle-staging-firebase-adminsdk.json");
-      default:
-        return path.resolve(__dirname, "../server/keys/fullcircle-dev-firebase-adminsdk.json");
-    }
-  };
+async function initializeFirebase() {
+  try {
+    // Option 1: Try service account key file first (recommended)
+    const getKeyFilePath = () => {
+      const env = process.env.EXPO_PUBLIC_ENV || 'development';
+      switch (env) {
+        case 'production':
+          return path.resolve(__dirname, "../server/keys/fullcircle-prod-firebase-adminsdk.json");
+        case 'staging':
+          return path.resolve(__dirname, "../server/keys/fullcircle-staging-firebase-adminsdk.json");
+        default:
+          // Try the specific filename first, then fall back to generic name
+          const specificPath = path.resolve(__dirname, "../server/keys");
+          if (fs.existsSync(specificPath)) {
+            const files = fs.readdirSync(specificPath).filter(f => f.includes('fullcircle-dev') && f.endsWith('.json'));
+            if (files.length > 0) {
+              return path.resolve(specificPath, files[0]);
+            }
+          }
+          return path.resolve(__dirname, "../server/keys/fullcircle-dev-firebase-adminsdk.json");
+      }
+    };
 
-  const keyFilePath = getKeyFilePath();
-  
-  if (require('fs').existsSync(keyFilePath)) {
-    const serviceAccount = require(keyFilePath);
-    app = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      storageBucket: `${serviceAccount.project_id}.appspot.com`,
-    });
-    console.log(`✅ Firebase initialized with service account key file: ${serviceAccount.project_id}`);
-  } else {
+    const keyFilePath = getKeyFilePath();
+    
+    // Check if file exists and is readable
+    if (fs.existsSync(keyFilePath)) {
+      console.log(`📁 Found key file at: ${keyFilePath}`);
+      
+      try {
+        // Read and validate the service account file
+        const fileContent = fs.readFileSync(keyFilePath, 'utf8');
+        const serviceAccount = JSON.parse(fileContent);
+        
+        // Validate required fields
+        if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+          throw new Error("Service account file is missing required fields");
+        }
+        
+        console.log(`🔑 Service account validation passed for project: ${serviceAccount.project_id}`);
+        
+        app = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          storageBucket: `${serviceAccount.project_id}.appspot.com`,
+        });
+        
+        console.log(`✅ Firebase initialized with service account key file: ${serviceAccount.project_id}`);
+        return;
+      } catch (fileError) {
+        if (fileError instanceof Error) {
+          console.error(`❌ Error reading/parsing service account file: ${fileError.message}`);
+        } else {
+          console.error(`❌ Error reading/parsing service account file:`, fileError);
+        }
+        throw fileError;
+      }
+    }
     // Option 2: Fall back to environment variables
+    console.log("🔄 Service account file not found, trying environment variables...");
+    
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-      // Clean up the private key - remove quotes and ensure proper line breaks
       let privateKey = process.env.FIREBASE_PRIVATE_KEY;
       
-      // Remove surrounding quotes if they exist
-      privateKey = privateKey.replace(/^["']|["']$/g, '');
+      // Clean up the private key
+      privateKey = privateKey.replace(/^["']|["']$/g, ''); // Remove quotes
+      privateKey = privateKey.replace(/\\n/g, '\n'); // Replace escaped newlines
       
-      // Replace \\n with actual newlines
-      privateKey = privateKey.replace(/\\n/g, '\n');
-      
-      // Ensure it starts and ends correctly
-      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error("Invalid private key format");
+      // Validate private key format
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----') || !privateKey.includes('-----END PRIVATE KEY-----')) {
+        throw new Error("Environment variable FIREBASE_PRIVATE_KEY has invalid format");
       }
 
       const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -60,20 +93,30 @@ try {
       });
       
       console.log(`✅ Firebase initialized with environment variables: ${projectId}`);
-    } else {
-      throw new Error("Missing Firebase credentials");
+      return;
     }
+    
+    throw new Error("No valid Firebase credentials found");
+    
+  } catch (error) {
+    console.error("\n❌ Firebase initialization failed!");
+    console.error("🔧 Troubleshooting steps:");
+    console.error("1. Download a fresh service account key from Firebase Console");
+    console.error("2. Ensure the key file is in the correct location:");
+    console.error(`   ${path.resolve(__dirname, "../server/keys/")}`);
+    console.error("3. OR set these environment variables:");
+    console.error("   - FIREBASE_PROJECT_ID");
+    console.error("   - FIREBASE_PRIVATE_KEY (with proper \\n escaping)");
+    console.error("   - FIREBASE_CLIENT_EMAIL");
+    console.error(`\n💡 Current environment: ${process.env.EXPO_PUBLIC_ENV || 'development'}`);
+    if (error instanceof Error) {
+      console.error("\nError details:", error.message);
+    } else {
+      console.error("\nError details:", error);
+    }
+    process.exit(1);
   }
-} catch (error) {
-  console.error("❌ Could not initialize Firebase. Please ensure you have:");
-  console.error("1. Service account key file in server/keys/ folder");
-  console.error("2. OR environment variables: FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL");
-  console.error("\nError details:", error);
-  process.exit(1);
 }
-
-const db = admin.firestore();
-const FieldValue = admin.firestore.FieldValue;
 
 // Get command line arguments
 const CURRENT_USER_ID = process.argv[2];
@@ -85,8 +128,13 @@ if (!CURRENT_USER_ID) {
 }
 
 async function simulateDummyLikesAndChats(): Promise<void> {
+  // Initialize Firebase first
+  await initializeFirebase();
+  
+  const db = admin.firestore();
+  const FieldValue = admin.firestore.FieldValue;
+  
   console.log(`🔥 Starting dummy likes and chats simulation for user: ${CURRENT_USER_ID}`);
-  console.log(`📍 Using Firebase project: ${process.env.FIREBASE_PROJECT_ID}`);
   
   const currentUserRef = db.collection("users").doc(CURRENT_USER_ID);
   const currentUserSnap = await currentUserRef.get();
@@ -143,8 +191,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(toUserId)
       .set({
         matchId: toUserId,
-        viaLotus: faker.datatype.boolean(0.2), // 20% chance via lotus
-        viaRadiant: faker.datatype.boolean(0.2), // 20% chance via radiant
+        viaOrb: faker.datatype.boolean(0.2), // 20% chance via orb
         timestamp: FieldValue.serverTimestamp(),
       });
     await db
@@ -154,8 +201,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(fromUserId)
       .set({
         matchId: fromUserId,
-        viaLotus: faker.datatype.boolean(0.2), // 20% chance via lotus
-        viaRadiant: faker.datatype.boolean(0.2), // 20% chance via radiant
+        viaOrb: faker.datatype.boolean(0.2), // 20% chance via orb
         timestamp: FieldValue.serverTimestamp(),
       });
       
@@ -182,14 +228,12 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(CURRENT_USER_ID)
       .set({
         matchId: CURRENT_USER_ID,
-        viaLotus: faker.datatype.boolean(0.1),
-        viaRadiant: faker.datatype.boolean(0.1),
+        viaOrb: faker.datatype.boolean(0.1),
         timestamp: FieldValue.serverTimestamp(),
       });
     await currentUserRef.collection("likesReceived").doc(otherId).set({
       matchId: otherId,
-      viaLotus: faker.datatype.boolean(0.1),
-      viaRadiant: faker.datatype.boolean(0.1),
+      viaOrb: faker.datatype.boolean(0.1),
       timestamp: FieldValue.serverTimestamp(),
     });
 
@@ -201,8 +245,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .update({ likesReceivedCount: FieldValue.increment(1) });
     await currentUserRef.collection("likesGiven").doc(otherId).set({
       matchId: otherId,
-      viaLotus: faker.datatype.boolean(0.1),
-      viaRadiant: faker.datatype.boolean(0.1),
+      viaOrb: faker.datatype.boolean(0.1),
       timestamp: FieldValue.serverTimestamp(),
     });
     await db
@@ -212,8 +255,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .doc(CURRENT_USER_ID)
       .set({
         matchId: CURRENT_USER_ID,
-        viaLotus: faker.datatype.boolean(0.1),
-        viaRadiant: faker.datatype.boolean(0.1),
+        viaOrb: faker.datatype.boolean(0.1),
         timestamp: FieldValue.serverTimestamp(),
       });
 
