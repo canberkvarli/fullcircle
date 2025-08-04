@@ -714,11 +714,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    marginBottom: 50
+    marginBottom: Spacing["2xl"]
   },
   
   cosmicSymbol: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     padding: Spacing.lg,
     borderColor: 'transparent',
   },

@@ -437,7 +437,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
   },
   
@@ -487,7 +486,7 @@ const styles = StyleSheet.create({
   },
   
   cosmicSymbol: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     padding: Spacing.lg,
     borderColor: 'transparent',
   },
@@ -496,7 +495,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes['2xl'],
     fontWeight: Typography.weights.bold,
     textAlign: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     letterSpacing: 0.5,
   },
   
@@ -504,7 +503,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.base,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: Spacing['2xl'],
+    marginBottom: Spacing.lg,
     letterSpacing: 0.3,
     fontStyle: 'italic',
   },
