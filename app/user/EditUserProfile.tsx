@@ -21,8 +21,6 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import ProfilePreview from "@/components/ProfilePreview";
 import { STORAGE } from "@/services/FirebaseConfig";
-
-// Import spiritual mappings
 import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
 
 export default function EditUserProfile() {
@@ -582,12 +580,12 @@ export default function EditUserProfile() {
   const AllSpiritualFields = [
     {
       fieldName: "spiritualDraws",
-      title: "Spiritual Draws", 
+      title: "Your Path", 
       value: userData.spiritualProfile?.draws,
     },
     {
       fieldName: "spiritualPractices",
-      title: "Spiritual Practices",
+      title: "Your Practices",
       value: userData.spiritualProfile?.practices,
     },
     {
@@ -714,7 +712,7 @@ export default function EditUserProfile() {
             <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                  Spiritual Profile
+                  Your Journey
                 </Text>
                 <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
                   Share your spiritual journey and practices

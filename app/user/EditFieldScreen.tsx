@@ -21,6 +21,7 @@ import * as Location from "expo-location";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+import { spiritualDraws } from "@/constants/spiritualMappings";
 
 const DEFAULT_REGION = {
   latitude: 37.8715,
@@ -83,33 +84,6 @@ const FIELD_OPTIONS = {
       "Consciousness Explorer", "Community Builders", "Creative Collaborators", "Wisdom Sharers",
     ],
   },
-  
-  spiritualDraws: [
-    { 
-      label: "Healing & Restoration", 
-      value: "healing", 
-      description: "Energy work, trauma healing, emotional restoration",
-      color: "#10B981" 
-    },
-    { 
-      label: "Personal Growth", 
-      value: "growth", 
-      description: "Self-discovery, consciousness expansion, evolution",
-      color: "#F59E0B" 
-    },
-    { 
-      label: "Sacred Connection", 
-      value: "connection", 
-      description: "Community, relationships, divine communion",
-      color: "#6366F1" 
-    },
-    { 
-      label: "Spiritual Awakening", 
-      value: "awakening", 
-      description: "Enlightenment, transcendence, higher consciousness",
-      color: "#8B5CF6" 
-    },
-  ],
 
   spiritualPractices: [
     "Meditation", "Yoga", "Prayer", "Journaling", "Energy Healing", 
@@ -204,8 +178,8 @@ function EditFieldScreen() {
     age: "Age",
     height: "Height",
     location: "Location",
-    spiritualDraws: "Spiritual Draws",
-    spiritualPractices: "Spiritual Practices", 
+    spiritualDraws: "Your Path",
+    spiritualPractices: "Your Practices", 
     healingModalities: "Healing Modalities",
   };
 
@@ -621,7 +595,7 @@ function EditFieldScreen() {
   const renderSpiritualDraws = () => {
     return (
       <View style={styles.spiritualDrawsContainer}>
-        {FIELD_OPTIONS.spiritualDraws.map((draw) => {
+        {spiritualDraws.map((draw) => {
           const isSelected = selectedItems.includes(draw.value);
           
           return (
