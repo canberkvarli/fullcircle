@@ -18,33 +18,7 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
-
-const spiritualDraws = [
-  { 
-    label: "Healing & Restoration", 
-    value: "healing", 
-    description: "Energy work, trauma healing, emotional restoration",
-    color: "#228B22" 
-  },
-  { 
-    label: "Personal Growth", 
-    value: "growth", 
-    description: "Self-discovery, consciousness expansion, evolution",
-    color: "#FF6B35" 
-  },
-  { 
-    label: "Sacred Connection", 
-    value: "connection", 
-    description: "Community, relationships, divine communion",
-    color: "#4169E1" 
-  },
-  { 
-    label: "Spiritual Awakening", 
-    value: "awakening", 
-    description: "Enlightenment, transcendence, higher consciousness",
-    color: "#8A2BE2" 
-  },
-];
+import { spiritualDraws } from "@/constants/spiritualMappings";
 
 function SpiritualDrawsScreen() {
   const {
@@ -109,7 +83,7 @@ function SpiritualDrawsScreen() {
       });
       navigateToNextScreen();
     } catch (error: any) {
-      Alert.alert("Error", "Unable to save your spiritual draws: " + error.message);
+      Alert.alert("Error", "Unable to save your preferences: " + error.message);
     }
   };
 
@@ -177,27 +151,30 @@ function SpiritualDrawsScreen() {
   };
 
   const renderSelectedPreview = () => {
-    if (selectedDraws.length === 0) return null;
-
+    // Always return a View with fixed height regardless of content
     return (
       <View style={styles.selectedPreview}>
-        <Text style={styles.selectedTitle}>Your spiritual focus</Text>
-        <View style={styles.selectedIndicators}>
-          {selectedDraws.map((drawValue) => {
-            const draw = spiritualDraws.find(d => d.value === drawValue);
-            if (!draw) return null;
-            
-            return (
-              <View 
-                key={drawValue} 
-                style={[
-                  styles.selectedIndicator, 
-                  { backgroundColor: draw.color }
-                ]} 
-              />
-            );
-          })}
-        </View>
+        {selectedDraws.length > 0 ? (
+          <>
+            <Text style={styles.selectedTitle}>Your current path</Text>
+            <View style={styles.selectedIndicators}>
+              {selectedDraws.map((drawValue) => {
+                const draw = spiritualDraws.find(d => d.value === drawValue);
+                if (!draw) return null;
+                
+                return (
+                  <View 
+                    key={drawValue} 
+                    style={[
+                      styles.selectedIndicator, 
+                      { backgroundColor: draw.color }
+                    ]} 
+                  />
+                );
+              })}
+            </View>
+          </>
+        ) : null}
       </View>
     );
   };
@@ -217,8 +194,9 @@ function SpiritualDrawsScreen() {
         <OnboardingProgressBar currentScreen="SpiritualDrawsScreen" />
         
         {/* Header */}
-        <Text style={styles.title}>What draws you to spirituality?</Text>
-        <Text style={styles.subtitle}>Select all the callings that resonate with your soul </Text>
+        <Text style={styles.title}>What aspects of life are you exploring?</Text>
+        <Text style={styles.subtitle}>Select the paths that call to you</Text>
+        
         {/* Selected Preview */}
         {renderSelectedPreview()}
 
@@ -228,14 +206,14 @@ function SpiritualDrawsScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Spiritual Draws Cards */}
+          {/* Personal Draws Cards */}
           <View style={styles.drawsContainer}>
             {spiritualDraws.map((draw, index) => renderDrawCard(draw, index))}
           </View>
 
           {/* Hide Option */}
           <View style={styles.privacyContainer}>
-            <Text style={styles.privacyText}>Keep my spiritual draws private</Text>
+            <Text style={styles.privacyText}>Keep my preferences private</Text>
             <RoundedCheckbox
               value={hiddenFields["spiritualProfile"] || false}
               onValueChange={() => toggleHidden("spiritualProfile")}
@@ -244,9 +222,9 @@ function SpiritualDrawsScreen() {
 
           {/* Affirmation */}
           <Text style={styles.affirmation}>
-            Your spiritual{' '}
-            <Text style={styles.highlightedWord}>callings</Text>
-            {' are the sacred threads that weave you to kindred souls'}
+            The paths you{' '}
+            <Text style={styles.highlightedWord}>choose</Text>
+            {' reveal the journey your soul is ready to embrace'}
           </Text>
         </ScrollView>
 
@@ -313,7 +291,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.md, // Reduced from Spacing.xl
       paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
     },
@@ -329,6 +307,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       alignItems: 'center',
       marginBottom: Spacing.lg,
       paddingHorizontal: Spacing.lg,
+      height: 60, // Fixed height to prevent layout shift
+      justifyContent: 'center',
     },
     selectedTitle: {
       ...fonts.spiritualBodyFont,

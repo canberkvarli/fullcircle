@@ -1,26 +1,26 @@
 const spiritualDraws = [
   { 
-    label: "Healing & Restoration", 
+    label: "Wellness & Balance", 
     value: "healing", 
-    description: "Energy work, trauma healing, emotional restoration",
+    description: "Personal restoration, emotional wellbeing, finding harmony",
     color: "#228B22" 
   },
   { 
-    label: "Personal Growth", 
+    label: "Self-Discovery", 
     value: "growth", 
-    description: "Self-discovery, consciousness expansion, evolution",
+    description: "Personal evolution, expanding awareness, meaningful growth",
     color: "#FF6B35" 
   },
   { 
-    label: "Sacred Connection", 
+    label: "Authentic Connection", 
     value: "connection", 
-    description: "Community, relationships, divine communion",
+    description: "Community, meaningful relationships, deeper bonds",
     color: "#4169E1" 
   },
   { 
-    label: "Spiritual Awakening", 
+    label: "Inner Wisdom", 
     value: "awakening", 
-    description: "Enlightenment, transcendence, higher consciousness",
+    description: "Finding clarity, deeper insights, expanded perspective",
     color: "#8A2BE2" 
   },
 ];
