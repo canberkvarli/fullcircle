@@ -58,12 +58,12 @@ module.exports = {
     slug: "fullcircle",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/images/store_badges/fullcircle_appstore.png",
     scheme: getScheme(),
     userInterfaceStyle: "automatic",
     newArchEnabled: false,
     splash: {
-      image: "./assets/images/splash.png",
+      image: "./assets/images/store_badges/fullcircle_appstore.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },

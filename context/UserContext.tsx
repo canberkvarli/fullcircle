@@ -1027,7 +1027,7 @@ const handleGoogleSignIn = async (): Promise<void> => {
   const updateUserData = async (data: Partial<UserDataType>) => {
     console.log("updateUserData(): Updating user data");
     try {
-      const userIdToUpdate = userDataRef.current?.userId || userData.userId;
+      const userIdToUpdate = userData?.userId || FIREBASE_AUTH.currentUser?.uid;
       if (!userIdToUpdate) {
         throw new Error("User ID is required to update data");
       }
