@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -9,57 +9,134 @@ import {
   Platform,
   useColorScheme,
   StyleSheet,
+  TextInput,
+  Animated,
+  Dimensions,
+  ScrollView,
+  Modal,
+  FlatList,
+  Keyboard,
 } from "react-native";
 import { useRouter } from "expo-router";
 import auth from "@react-native-firebase/auth";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
 import { useUserContext } from "@/context/UserContext";
-import PhoneInput from "react-native-phone-number-input";
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { 
+  getActiveCountries, 
+  DEFAULT_COUNTRY, 
+  formatPhoneNumberForCountry,
+  validatePhoneNumberForCountry,
+  CountryCode 
+} from "@/constants/CountryCodes";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
+const { width: screenWidth } = Dimensions.get('window');
+
 function PhoneNumberScreen(): JSX.Element {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const { signOut } = useUserContext();
   const router = useRouter();
+  const phoneInputRef = useRef<TextInput>(null);
+  
+  // Get active countries from constants
+  const countryCodes = getActiveCountries();
+  
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const borderOpacity = useRef(new Animated.Value(0.3)).current;
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const styles = createStyles(colorScheme);
+  const styles = createStyles(colorScheme, isFocused);
 
-  // This is the key change - configure Firebase Auth settings before verification
   useEffect(() => {
-    // Disable app verification for testing if in development
+    // Entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Continuous pulse animation for the continue button when enabled
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  useEffect(() => {
+    // Firebase Auth configuration
     if (__DEV__) {
-      // This prevents the deep link prompt by disabling the reCAPTCHA verification
       auth().settings.appVerificationDisabledForTesting = true;
     }
-    
-    // Enable web reCAPTCHA for better experience (prevents deep links)
-    // This forces the web reCAPTCHA flow instead of the deep link flow
     auth().settings.forceRecaptchaFlowForTesting = true;
   }, []);
 
+  useEffect(() => {
+    // Animate border opacity when focused
+    Animated.timing(borderOpacity, {
+      toValue: isFocused ? 1 : 0.3,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isFocused]);
+
+  const handlePhoneChange = (text: string) => {
+    const formatted = formatPhoneNumberForCountry(text, selectedCountry);
+    const maxLength = selectedCountry.maxLength || 10;
+    const cleaned = text.replace(/\D/g, '');
+    
+    if (cleaned.length <= maxLength) {
+      setPhoneNumber(formatted);
+    }
+  };
+
   const handleSubmit = async () => {
-    const phoneRegex = /^\+[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(formattedPhoneNumber)) {
-      Alert.alert("Almost there!", "Please share a valid number so we can connect you.");
+    const isValid = validatePhoneNumberForCountry(phoneNumber, selectedCountry);
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    const fullNumber = selectedCountry.code + cleaned;
+    
+    if (!isValid) {
+      const maxLength = selectedCountry.maxLength || 10;
+      Alert.alert("Almost there!", `Please enter a complete ${maxLength}-digit phone number.`);
       return;
     }
 
+    // Don't dismiss keyboard here - keep it open
     setLoading(true);
 
     try {
-      console.log("Sending verification to:", formattedPhoneNumber);
+      console.log("Sending verification to:", fullNumber);
       
-      // The true parameter here enables invisible reCAPTCHA handling
-      // This works with the settings we configured above
       const confirmation = await FIREBASE_AUTH.signInWithPhoneNumber(
-        formattedPhoneNumber,
+        fullNumber,
         true
       );
       
@@ -69,30 +146,104 @@ function PhoneNumberScreen(): JSX.Element {
         pathname: "onboarding/PhoneVerificationScreen" as any,
         params: {
           verificationId: confirmation.verificationId,
-          phoneNumber: formattedPhoneNumber,
+          phoneNumber: fullNumber,
         },
       });
     } catch (error: any) {
       console.error("Failed to sign in with phone number: ", error);
       
-      // Better error handling with specific messages
+      // Handle specific error codes
       if (error.code === 'auth/invalid-phone-number') {
-        Alert.alert("Invalid Phone Number", "Please check the phone number format and try again.");
+        Alert.alert(
+          "Invalid Phone Number", 
+          "Please check the phone number format and try again.",
+          [{ text: "OK", onPress: () => setPhoneNumber("") }]
+        );
+      } else if (error.code === 'auth/missing-client-identifier' || error.code === 'auth/unknown') {
+        // This typically happens in development with non-test numbers
+        Alert.alert(
+          "Verification Unavailable", 
+          __DEV__ 
+            ? "This number is not configured for testing. Please use a test number or try in production."
+            : "We couldn't verify this number. Please ensure it's a valid mobile number.",
+          [{ text: "OK", onPress: () => setPhoneNumber("") }]
+        );
       } else if (error.code === 'auth/quota-exceeded') {
-        Alert.alert("Too Many Attempts", "We've detected too many verification attempts. Please try again later.");
+        Alert.alert(
+          "Too Many Attempts", 
+          "We've detected too many verification attempts. Please try again later.",
+          [{ text: "OK" }]
+        );
       } else if (error.code === 'auth/captcha-check-failed') {
-        Alert.alert("Verification Failed", "CAPTCHA verification failed. Please try again.");
+        Alert.alert(
+          "Verification Failed", 
+          "CAPTCHA verification failed. Please try again.",
+          [{ text: "OK", onPress: () => setPhoneNumber("") }]
+        );
+      } else if (error.code === 'auth/network-request-failed') {
+        Alert.alert(
+          "Network Error", 
+          "Please check your internet connection and try again.",
+          [{ text: "OK" }]
+        );
+      } else if (error.code === 'auth/too-many-requests') {
+        Alert.alert(
+          "Too Many Requests", 
+          "You've made too many attempts. Please wait a few minutes and try again.",
+          [{ text: "OK" }]
+        );
       } else {
-        Alert.alert("Connection Issue", "We're having trouble connecting right now. Please try again.");
+        Alert.alert(
+          "Connection Issue", 
+          "We're having trouble connecting right now. Please try again.",
+          [{ text: "OK", onPress: () => setPhoneNumber("") }]
+        );
       }
-    } finally {
       setLoading(false);
     }
   };
 
+  const isPhoneValid = validatePhoneNumberForCountry(phoneNumber, selectedCountry);
+
+  const CountryPickerModal = () => (
+    <Modal
+      visible={showCountryPicker}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowCountryPicker(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Country</Text>
+            <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
+              <Ionicons name="close" size={24} color={colors.textDark} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={countryCodes}
+            keyExtractor={(item, index) => `${item.code}-${index}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.countryItem}
+                onPress={() => {
+                  setSelectedCountry(item);
+                  setShowCountryPicker(false);
+                }}
+              >
+                <Text style={styles.countryItemFlag}>{item.flag}</Text>
+                <Text style={styles.countryItemName}>{item.name}</Text>
+                <Text style={styles.countryItemCode}>{item.code}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Just use KeyboardAvoidingView with the right settings */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -102,43 +253,89 @@ function PhoneNumberScreen(): JSX.Element {
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         
-        <Text style={styles.title}>Let's get you connected</Text>
+        <Animated.View 
+          style={[
+            styles.headerContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          <Text style={styles.title}>Let's connect you</Text>
+          <Text style={styles.subtitle}>Enter your phone number to begin your journey</Text>
+        </Animated.View>
         
         <View style={styles.mainContent}>
-          
-          <View style={styles.phoneContainer}>
-            <PhoneInput
-              defaultValue={phoneNumber}
-              defaultCode="US"
-              layout="first"
-              onChangeText={(text) => {
-                setPhoneNumber(text);
-              }}
-              onChangeFormattedText={(text) => {
-                setFormattedPhoneNumber(text);
-              }}
-              containerStyle={styles.phoneInput}
-              textContainerStyle={styles.textContainer}
-              textInputStyle={styles.phoneInputText}
-              codeTextStyle={styles.codeText}
-              countryPickerButtonStyle={styles.countryPicker}
-              autoFocus={true}
-              disabled={loading}
+          <Animated.View 
+            style={[
+              styles.inputWrapper,
+              {
+                opacity: fadeAnim,
+              }
+            ]}
+          >
+            {/* Border overlay for animation */}
+            <Animated.View 
+              style={[
+                styles.inputBorder,
+                {
+                  opacity: borderOpacity,
+                  borderColor: isFocused ? colors.primary : colors.border,
+                }
+              ]} 
             />
-          </View>
+            
+            {/* Country Code Selector */}
+            <TouchableOpacity 
+              style={styles.countrySelector}
+              onPress={() => setShowCountryPicker(true)}
+            >
+              <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
+              <Text style={styles.countryCode}>{selectedCountry.code}</Text>
+              <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+            
+            {/* Divider */}
+            <View style={styles.divider} />
+            
+            {/* Phone Input */}
+            <TextInput
+              ref={phoneInputRef}
+              style={styles.phoneInput}
+              value={phoneNumber}
+              onChangeText={handlePhoneChange}
+              placeholder={selectedCountry.format?.replace(/X/g, '5') || "(555) 123-4567"}
+              placeholderTextColor={colors.textMuted + '80'}
+              keyboardType="number-pad"
+              maxLength={selectedCountry.format?.length || 14} // Dynamic based on country
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              autoFocus={true}
+              editable={!loading}
+            />
+          </Animated.View>
+
+
         </View>
         
-        {/* This is the only part that moved - flexible spacer */}
         <View style={{ flex: 1, minHeight: 10 }} />
         
-        <View style={styles.affirmationContainer}>
+        {/* Affirmation */}
+        <Animated.View 
+          style={[
+            styles.affirmationContainer,
+            { opacity: fadeAnim }
+          ]}
+        >
           <Text style={styles.affirmation}>
-            The right{' '}
-            <Text style={styles.highlightedWord}>connections</Text>
-            {" find their way to you when you're ready"}
+            Every meaningful{' '}
+            <Text style={styles.highlightedWord}>connection</Text>
+            {' '}starts with a single step
           </Text>
-        </View>
+        </Animated.View>
         
+        {/* Bottom Action Bar */}
         <View style={styles.bottomBar}>
           {loading ? (
             <OuroborosLoader 
@@ -150,28 +347,43 @@ function PhoneNumberScreen(): JSX.Element {
               loop={true}
             />
           ) : (
-            <TouchableOpacity 
+            <Animated.View
               style={[
-                styles.nextButton,
-                !formattedPhoneNumber && styles.nextButtonDisabled
-              ]} 
-              onPress={handleSubmit}
-              disabled={!formattedPhoneNumber}
+                { transform: [{ scale: isPhoneValid ? pulseAnim : 1 }] }
+              ]}
             >
-              <Ionicons 
-                name="chevron-forward" 
-                size={24} 
-                color={formattedPhoneNumber ? colors.background : colors.background} 
-              />
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.continueButton,
+                  !isPhoneValid && styles.continueButtonDisabled
+                ]} 
+                onPress={handleSubmit}
+                disabled={!isPhoneValid}
+              >
+                <Text style={[
+                  styles.continueButtonText,
+                  !isPhoneValid && styles.continueButtonTextDisabled
+                ]}>
+                  Continue
+                </Text>
+                <Ionicons 
+                  name="arrow-forward" 
+                  size={20} 
+                  color={isPhoneValid ? colors.background : colors.textMuted} 
+                  style={{ marginLeft: 8 }}
+                />
+              </TouchableOpacity>
+            </Animated.View>
           )}
         </View>
       </KeyboardAvoidingView>
+      
+      <CountryPickerModal />
     </SafeAreaView>
   );
 }
 
-const createStyles = (colorScheme: 'light' | 'dark') => {
+const createStyles = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
   
@@ -179,144 +391,253 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: Spacing.lg,
-      marginTop: Platform.select({ ios: 0, android: Spacing.lg }),
+      paddingTop: Platform.select({ ios: 0, android: Spacing.lg }),
+    },
+    headerContainer: {
+      paddingHorizontal: Spacing.xl,
+      marginTop: Spacing.lg,
+      marginBottom: Spacing.xl,
     },
     mainContent: {
-      justifyContent: "center",
-      alignItems: "center",
-      paddingHorizontal: Spacing.lg,
-      marginTop: Spacing.lg,
+      paddingHorizontal: Spacing.xl,
+      alignItems: 'center',
     },
     bottomBar: {
-      flexDirection: "row",
-      justifyContent: "flex-end",
-      alignItems: "center",
-      padding: Spacing.lg,
+      paddingHorizontal: Spacing.xl,
+      paddingBottom: Spacing.xl,
+      alignItems: 'center',
     },
-    phoneContainer: {
-      width: "100%",
-      marginBottom: Spacing.xl,
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: colors.card,
-      borderRadius: BorderRadius.lg,
-      borderWidth: 2,
-      borderColor: colors.primary + '20', // Subtle primary color border
+      borderRadius: BorderRadius.xl,
+      paddingVertical: Platform.OS === 'ios' ? 18 : 16,
+      paddingHorizontal: Spacing.lg,
+      width: '100%',
+      position: 'relative',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
+          shadowOpacity: isFocused ? 0.15 : 0.08,
+          shadowRadius: 12,
         },
         android: {
-          elevation: 4,
+          elevation: isFocused ? 8 : 4,
         },
       }),
     },
+    inputBorder: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 2,
+      pointerEvents: 'none',
+    },
+    countrySelector: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingRight: Spacing.sm,
+    },
+    countryFlag: {
+      fontSize: 24,
+      marginRight: Spacing.xs,
+    },
+    countryCode: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+      marginRight: Spacing.xs,
+    },
+    divider: {
+      width: 1,
+      height: 24,
+      backgroundColor: colors.border,
+      marginHorizontal: Spacing.md,
+      opacity: 0.3,
+    },
     phoneInput: {
-      backgroundColor: 'transparent',
-      borderRadius: BorderRadius.lg,
-      paddingVertical: Spacing.xs,
-    },
-    textContainer: {
-      backgroundColor: "transparent",
-      paddingVertical: Spacing.sm,
-    },
-    phoneInputText: {
+      flex: 1,
       ...fonts.inputFont,
+      fontSize: Typography.sizes.lg,
       color: colors.textDark,
-    },
-    codeText: {
-      ...fonts.inputFont,
-      color: colors.textDark,
-    },
-    countryPicker: {
-      backgroundColor: 'transparent',
+      letterSpacing: 0.5,
     },
     title: {
-      ...fonts.spiritualTitleFont, // Keeping the font for consistency
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
+      marginBottom: Spacing.xs,
+    },
+    subtitle: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textMuted,
+      lineHeight: Typography.sizes.base * 1.5,
+    },
+    previewContainer: {
       marginTop: Spacing.lg,
-      marginLeft: Spacing.xl,
-      textAlign: "left",
+      padding: Spacing.md,
+      backgroundColor: colors.primary + '10',
+      borderRadius: BorderRadius.md,
+      alignItems: 'center',
+    },
+    previewLabel: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.xs,
+      color: colors.textMuted,
+      marginBottom: Spacing.xs,
+    },
+    previewNumber: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.primary,
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 1,
     },
     affirmationContainer: {
-      paddingHorizontal: Spacing.lg,
+      paddingHorizontal: Spacing.xl,
+      marginBottom: Spacing.lg,
     },
     affirmation: {
-      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
-      color: colors.textDark, // Darker color for better visibility
-      textAlign: "center",
-      lineHeight: Typography.sizes.lg * 1.5,
-      letterSpacing: 0.5,
-      opacity: 0.8, // Slightly transparent for elegance
+      ...fonts.elegantItalicFont,
+      color: colors.textDark,
+      textAlign: 'center',
+      lineHeight: Typography.sizes.lg * 1.6,
+      letterSpacing: 0.3,
+      opacity: 0.85,
     },
     highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
-    nextButton: {
+    continueButton: {
+      flexDirection: 'row',
       backgroundColor: colors.primary,
-      padding: Spacing.md,
+      paddingVertical: 16,
+      paddingHorizontal: 32,
       borderRadius: BorderRadius.full,
-      width: 56,
-      height: 56,
-      justifyContent: 'center',
       alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: screenWidth * 0.5,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.4,
-          shadowRadius: 8,
+          shadowOpacity: 0.3,
+          shadowRadius: 10,
         },
         android: {
           elevation: 8,
         },
       }),
     },
-    nextButtonDisabled: {
-      backgroundColor: colors.textMuted,
-      opacity: 0.6,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.textMuted,
-          shadowOpacity: 0.15,
-          shadowRadius: 3,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
-    },
-    backButton: {
+    continueButtonDisabled: {
       backgroundColor: colors.card,
-      padding: Spacing.sm,
-      left: Spacing.lg,
-      borderRadius: BorderRadius.full,
-      width: 44,
-      height: 44,
-      justifyContent: 'center',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      marginBottom: Spacing.lg,
       borderWidth: 1,
       borderColor: colors.border,
       ...Platform.select({
         ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.05,
           shadowRadius: 4,
         },
         android: {
           elevation: 2,
         },
       }),
+    },
+    continueButtonText: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.base,
+      fontWeight: Typography.weights.semibold,
+      color: colors.background,
+      letterSpacing: 0.5,
+    },
+    continueButtonTextDisabled: {
+      color: colors.textMuted,
+    },
+    backButton: {
+      backgroundColor: colors.card,
+      padding: Spacing.sm,
+      marginLeft: Spacing.lg,
+      marginTop: Spacing.md,
+      borderRadius: BorderRadius.full,
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.background,
+      borderTopLeftRadius: BorderRadius.xl,
+      borderTopRightRadius: BorderRadius.xl,
+      maxHeight: '70%',
+      paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.semibold,
+      color: colors.textDark,
+    },
+    countryItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border + '30',
+    },
+    countryItemFlag: {
+      fontSize: 28,
+      marginRight: Spacing.md,
+    },
+    countryItemName: {
+      ...fonts.bodyFont,
+      flex: 1,
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+    },
+    countryItemCode: {
+      ...fonts.bodyFont,
+      fontSize: Typography.sizes.base,
+      color: colors.textMuted,
+      marginLeft: Spacing.sm,
     },
   });
 };

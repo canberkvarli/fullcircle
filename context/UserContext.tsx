@@ -15,6 +15,7 @@ import auth from "@react-native-firebase/auth";
 import { AuthDebug } from "@/utils/AuthDebug";
 
 import firestore from "@react-native-firebase/firestore";
+import { AppState } from "react-native";
 
 export type UserDataType = {
   userId: string;
@@ -540,12 +541,47 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [matchingState]);
 
   useEffect(() => {
-    console.log("Setting up Firebase auth state change listener");
-    const subscriber = FIREBASE_AUTH.onAuthStateChanged(onAuthStateChanged);
+    console.log("Setting up Firebase auth state change listener and app state monitor");
     
+    // Set up the auth state listener
+    const subscriber = FIREBASE_AUTH.onAuthStateChanged((user) => {
+      console.log("🔑 Auth state change detected:", user ? `User ${user.uid}` : "No user");
+      onAuthStateChanged(user);
+    });
+    
+    // Add AppState listener to detect when app goes to background/foreground
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
+      console.log(`App state changed to: ${nextAppState}`);
+      
+      // When app comes back to foreground, check auth state and update if needed
+      if (nextAppState === 'active') {
+        console.log('App is now active, checking authentication state');
+        const currentUser = FIREBASE_AUTH.currentUser;
+        
+        if (currentUser && !initializing) {
+          console.log(`Current user detected on app resume: ${currentUser.uid}`);
+          // Update last active timestamp
+          updateLastActive();
+          
+          // If we have a user but no userData, refetch
+          if (currentUser.uid && (!userData.userId || userData.userId !== currentUser.uid)) {
+            console.log('User data mismatch on resume, refetching user data');
+            fetchUserData(currentUser.uid, 
+              currentUser.providerData.some(provider => provider.providerId === "google.com")
+            ).catch(err => console.error('Error refetching user data:', err));
+          }
+        } else if (!currentUser && userData.userId) {
+          console.log('No current user but userData exists, clearing userData');
+          setUserData(initialUserData);
+        }
+      }
+    });
+    
+    // Return cleanup function
     return () => {
-      console.log("Removing Firebase auth state change listener");
+      console.log("Cleaning up Firebase auth state change listener and app state monitor");
       subscriber();
+      appStateSubscription.remove();
     };
   }, []);
 
@@ -800,33 +836,74 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       providers: user?.providerData?.map(p => p.providerId)
     });
     
+    // Check if this is actually a new auth state or just a duplicate event
+    const hasUserChanged = 
+      (!currentUser && user) || 
+      (currentUser && !user) || 
+      (currentUser?.uid !== user?.uid);
+        
+    console.log("🔑 Auth state changed:", 
+      user ? `User ${user.uid} signed in` : "No user", 
+      hasUserChanged ? "(NEW)" : "(DUPLICATE)");
+    
+    // Always update currentUser state
     setCurrentUser(user);
     if (initializing) setInitializing(false);
-
+  
     if (user) {
       const isGoogleLogin = user.providerData.some(
         (provider) => provider.providerId === "google.com"
       );
-
+  
       AuthDebug.trackFlowStep('AuthStateChange', 'User Authenticated', { 
         userId: user.uid, 
         isGoogleLogin, 
         email: user.email,
         phone: user.phoneNumber
       });
-
+  
       try {
-        // Let fetchUserData handle ALL navigation logic
-        if (isGoogleLogin) {
-          AuthDebug.trackFlowStep('AuthStateChange', 'Google Sign-in detected', { userId: user.uid });
-          console.log("Calling fetchUserData from onAuthStateChanged for Google user");
-          await fetchUserData(user.uid, isGoogleLogin);
+        // MODIFIED: Instead of checking the route, use a more reliable method
+        // Check if we're coming from a verification flow - we can detect this in multiple ways
+        
+        // 1. If the user has phone auth provider but we don't have phone data yet
+        const hasPhoneProvider = user.providerData.some(
+          (provider) => provider.providerId === "phone"
+        );
+        
+        const needsPhoneNavigation = hasPhoneProvider && 
+          (!userData.phoneNumber || userData.currentOnboardingScreen === "PhoneVerificationScreen");
+        
+        console.log("Auth navigation check:", { 
+          hasPhoneProvider, 
+          userPhoneNumber: userData.phoneNumber,
+          currentScreen: userData.currentOnboardingScreen,
+          needsPhoneNavigation
+        });
+        
+        // Call fetchUserData if:
+        // 1. This is a new auth state change OR
+        // 2. We don't have user data loaded yet OR
+        // 3. User data doesn't match current user OR
+        // 4. We have a phone provider but navigation hasn't completed
+        if (hasUserChanged || 
+            !userData.userId || 
+            userData.userId !== user.uid || 
+            needsPhoneNavigation) {
+              
+          if (isGoogleLogin) {
+            AuthDebug.trackFlowStep('AuthStateChange', 'Google Sign-in detected', { userId: user.uid });
+            console.log("Calling fetchUserData from onAuthStateChanged for Google user");
+            await fetchUserData(user.uid, isGoogleLogin);
+          } else {
+            AuthDebug.trackFlowStep('AuthStateChange', 'Phone Sign-in detected', { userId: user.uid });
+            console.log("Calling fetchUserData from onAuthStateChanged for Phone user");
+            await fetchUserData(user.uid, false);
+          }
         } else {
-          AuthDebug.trackFlowStep('AuthStateChange', 'Phone Sign-in detected', { userId: user.uid });
-          console.log("Calling fetchUserData from onAuthStateChanged for Phone user");
-          await fetchUserData(user.uid, false);
+          console.log("User data already loaded, skipping fetchUserData");
         }
-
+  
         updateLastActive();
       } catch (error) {
         console.error("Error in onAuthStateChanged:", error);
@@ -834,91 +911,97 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } else {
       AuthDebug.trackFlowStep('AuthStateChange', 'User Signed Out');
-      setUserData(initialUserData);
-    }
-  };
-
-const handleGoogleSignIn = async (): Promise<void> => {
-  try {
-    AuthDebug.trackFlowStep('GoogleSignIn', 'Started');
-    
-    await GoogleSignin.hasPlayServices({
-      showPlayServicesUpdateDialog: true,
-    });
-    const { idToken } = await GoogleSignin.signIn();
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    
-    AuthDebug.trackFlowStep('GoogleSignIn', 'Google credential obtained');
-    
-    const { user } = await FIREBASE_AUTH.signInWithCredential(googleCredential);
-    if (!user) {
-      throw new Error('Failed to get user from credential');
-    }
-    setGoogleCredential(googleCredential);
-    setCurrentUser(user);
-    AuthDebug.trackFlowStep('GoogleSignIn', 'Firebase auth successful', { userId: user.uid });
-    
-    if (user) {
-      const userDocRef = FIRESTORE.collection("users").doc(user.uid);
-      const docSnap = await userDocRef.get();
-      const userFirstName = user.displayName?.split(" ")[0] || "";
-      const userLastName = user.displayName?.split(" ")[1] || "";
-      const userFullName = user.displayName || "";
-      if (docSnap.exists) {
-        // Existing user - update their data
-        const existingUser = docSnap.data() as UserDataType;
+      // Only reset user data if we actually had a user before
+      if (hasUserChanged && userData.userId) {
+        console.log("User signed out, resetting user data");
+        setUserData(initialUserData);
         
-        const userDataToUpdate: Partial<UserDataType> = {
-          ...existingUser,
-          userId: user.uid,
-          email: user.email || "",
-          firstName: userFirstName || existingUser.firstName,
-          lastName: userLastName || existingUser.lastName,
-          fullName: userFullName || existingUser.fullName,
-          GoogleSSOEnabled: true,
-          settings: {
-            ...existingUser?.settings,
-            connectedAccounts: {
-              ...existingUser?.settings?.connectedAccounts,
-              google: true,
-            },
-          },
-        };
-        
-        // Update user data but DON'T navigate - let onAuthStateChanged handle it
-        await updateUserData(userDataToUpdate);
-        
-        AuthDebug.trackFlowStep('GoogleSignIn', 'Updated existing user data');
-        
-        // Explicit navigation for existing users
-        // console.log("Manually triggering navigation for existing Google user");
-        await fetchUserData(user.uid, true);
-      } else {
-        // New user - create document
-        AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
-        
-        const userDataToUpdate: Partial<UserDataType> = {
-          ...initialUserData,
-          userId: user.uid,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          email: user.email || "",
-          firstName: userFirstName,
-          lastName: userLastName,
-          fullName: userFullName,
-          GoogleSSOEnabled: true,
-          currentOnboardingScreen: "PhoneNumberScreen",
-        };
-        
-        await userDocRef.set(userDataToUpdate);
-        
-        AuthDebug.trackFlowStep('GoogleSignIn', 'New user created');
+        // Navigate to login screen on sign out
+        router.replace({ pathname: `onboarding/LoginSignupScreen` as any });
       }
     }
-  } catch (error: any) {
-    AuthDebug.error('GoogleSignIn', 'Google sign-in error', error);
-    console.error("Google sign-in error:", error);
-  }
-};
+  };
+  const handleGoogleSignIn = async (): Promise<void> => {
+    try {
+      AuthDebug.trackFlowStep('GoogleSignIn', 'Started');
+      
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      const { idToken } = await GoogleSignin.signIn();
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      
+      AuthDebug.trackFlowStep('GoogleSignIn', 'Google credential obtained');
+      
+      const { user } = await FIREBASE_AUTH.signInWithCredential(googleCredential);
+      if (!user) {
+        throw new Error('Failed to get user from credential');
+      }
+      setGoogleCredential(googleCredential);
+      setCurrentUser(user);
+      AuthDebug.trackFlowStep('GoogleSignIn', 'Firebase auth successful', { userId: user.uid });
+      
+      if (user) {
+        const userDocRef = FIRESTORE.collection("users").doc(user.uid);
+        const docSnap = await userDocRef.get();
+        const userFirstName = user.displayName?.split(" ")[0] || "";
+        const userLastName = user.displayName?.split(" ")[1] || "";
+        const userFullName = user.displayName || "";
+        if (docSnap.exists) {
+          // Existing user - update their data
+          const existingUser = docSnap.data() as UserDataType;
+          
+          const userDataToUpdate: Partial<UserDataType> = {
+            ...existingUser,
+            userId: user.uid,
+            email: user.email || "",
+            firstName: userFirstName || existingUser.firstName,
+            lastName: userLastName || existingUser.lastName,
+            fullName: userFullName || existingUser.fullName,
+            GoogleSSOEnabled: true,
+            settings: {
+              ...existingUser?.settings,
+              connectedAccounts: {
+                ...existingUser?.settings?.connectedAccounts,
+                google: true,
+              },
+            },
+          };
+          
+          // Update user data but DON'T navigate - let onAuthStateChanged handle it
+          await updateUserData(userDataToUpdate);
+          
+          AuthDebug.trackFlowStep('GoogleSignIn', 'Updated existing user data');
+          
+          // Explicit navigation for existing users
+          // console.log("Manually triggering navigation for existing Google user");
+          await fetchUserData(user.uid, true);
+        } else {
+          // New user - create document
+          AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
+          
+          const userDataToUpdate: Partial<UserDataType> = {
+            ...initialUserData,
+            userId: user.uid,
+            createdAt: firestore.FieldValue.serverTimestamp(),
+            email: user.email || "",
+            firstName: userFirstName,
+            lastName: userLastName,
+            fullName: userFullName,
+            GoogleSSOEnabled: true,
+            currentOnboardingScreen: "PhoneNumberScreen",
+          };
+          
+          await userDocRef.set(userDataToUpdate);
+          
+          AuthDebug.trackFlowStep('GoogleSignIn', 'New user created');
+        }
+      }
+    } catch (error: any) {
+      AuthDebug.error('GoogleSignIn', 'Google sign-in error', error);
+      console.error("Google sign-in error:", error);
+    }
+  };
 
   const verifyPhoneAndSetUser = async (
     verificationId: string,
@@ -1004,6 +1087,9 @@ const handleGoogleSignIn = async (): Promise<void> => {
         } else {
           // Existing user - fetchUserData will handle navigation through onAuthStateChanged
           AuthDebug.trackFlowStep('PhoneVerification', 'Existing phone user authenticated', { userId: user.uid });
+
+          console.log("Explicitly calling fetchUserData for existing user");
+          // await fetchUserData(user.uid, false);
         }
         
         // For phone sign-in, onAuthStateChanged will trigger and call fetchUserData
@@ -1027,7 +1113,22 @@ const handleGoogleSignIn = async (): Promise<void> => {
   const updateUserData = async (data: Partial<UserDataType>) => {
     console.log("updateUserData(): Updating user data");
     try {
-      const userIdToUpdate = userData?.userId || FIREBASE_AUTH.currentUser?.uid;
+      // Safely determine the user ID to update, prioritizing the most up-to-date source
+      let userIdToUpdate: string | undefined = undefined;
+
+      // 1. Check if data.userId is provided (e.g., for new user creation)
+      if (data.userId) {
+        userIdToUpdate = data.userId;
+      }
+      // 2. Otherwise, try the currentUser ref (most up-to-date from Firebase Auth)
+      else if (FIREBASE_AUTH.currentUser && FIREBASE_AUTH.currentUser.uid) {
+        userIdToUpdate = FIREBASE_AUTH.currentUser.uid;
+      }
+      // 3. Fallback to userData (may be stale, but better than nothing)
+      else if (userData && userData.userId) {
+        userIdToUpdate = userData.userId;
+      }
+
       if (!userIdToUpdate) {
         throw new Error("User ID is required to update data");
       }
@@ -2566,25 +2667,26 @@ const handleGoogleSignIn = async (): Promise<void> => {
   };
 
   const signOut = async () => {
+    console.log("SIGN OUT CALLED!")
     try {
-      // Check if there's a signed-in user
+      // Sign out from Google if signed in
       const currentUser = await GoogleSignin.getCurrentUser();
       if (currentUser) {
-        // await GoogleSignin.revokeAccess(); // Revoke Google OAuth token
-        await GoogleSignin.signOut(); // Sign out from Google
+        await GoogleSignin.signOut();
         console.log("Google account signed out!");
         setGoogleCredential(null);
       }
 
-      // Sign out from Firebase Authentication
-      await FIREBASE_AUTH.signOut();
-      console.log("Firebase user signed out!");
+      // Sign out from Firebase Authentication (covers all providers)
+      if (FIREBASE_AUTH.currentUser) {
+        await FIREBASE_AUTH.signOut();
+        console.log("Firebase user signed out!");
+      }
 
       // Clear any app-level user data
       setCurrentUser(null);
       setUserData(initialUserData);
 
-      // Navigate to Login/Signup screen
     } catch (error) {
       console.error("Error during sign-out:", error);
     }
@@ -2623,11 +2725,7 @@ const handleGoogleSignIn = async (): Promise<void> => {
       setUserData(updatedUserData);
       await saveProgress(previousScreen);
       
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace(`onboarding/${previousScreen}` as any);
-      }
+      router.replace(`onboarding/${previousScreen}` as any);
     }
   };
 

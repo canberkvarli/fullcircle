@@ -7,10 +7,6 @@ import storage from "@react-native-firebase/storage";
 import functions from "@react-native-firebase/functions";
 import { getApp } from "@react-native-firebase/app";
 
-// For React Native Firebase, configuration comes from:
-// - Android: google-services.json 
-// - iOS: GoogleService-Info.plist
-// These files are automatically loaded based on the environment setup in app.config.js
 const FIREBASE_APP = getApp();
 
 export const FIREBASE_AUTH = auth();
