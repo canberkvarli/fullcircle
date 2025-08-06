@@ -563,7 +563,7 @@ const ConnectScreen: React.FC = () => {
               duration={7000}
               size={102}
               loop={true}
-              fillColor="#B8860B"
+              fillColor="#F5E6D3"
               strokeColor="#B8860B"
             />
           

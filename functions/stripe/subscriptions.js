@@ -41,10 +41,10 @@ const createSubscription = functions.https.onCall(async (data, context) => {
       console.log('👤 Creating new Stripe customer...');
       const customer = await stripe.customers.create({
         email: userData.email,
-        name: userData.fullName || `${userData.firstName} ${userData.lastName}`,
+        name: userData.fullName || `${userData.firstName} ${userData.familyName}`,
         metadata: {
           firebaseUID: userId,
-          fullName: userData.fullName || `${userData.firstName} ${userData.lastName}`
+          fullName: userData.fullName || `${userData.firstName} ${userData.familyName}`
         }
       });
       customerId = customer.id;

@@ -108,7 +108,7 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
       ? currentFieldValue.split(" ")[0]
       : currentFieldValue || ""
   );
-  const [lastName, setLastName] = useState<string>(
+  const [familyName, setFamilyName] = useState<string>(
     fieldName === "fullName" && currentFieldValue
       ? currentFieldValue.split(" ")[1] || ""
       : ""
@@ -189,8 +189,8 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
       setJobTitle(currentFieldValue || "");
     } else if (fieldName === "firstName") {
       setFirstName(currentFieldValue || "");
-    } else if (fieldName === "lastName") {
-      setLastName(currentFieldValue || "");
+    } else if (fieldName === "familyName") {
+      setFamilyName(currentFieldValue || "");
     } else if (fieldName === "location") {
       setLocation(currentFieldValue || "");
     } else if (fieldName === "spiritualPractices") {
@@ -246,11 +246,11 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
       selectedValue: firstName,
       onSelect: setFirstName,
     },
-    lastName: {
+    familyName: {
       title: "<NAME>",
       options: [],
-      selectedValue: lastName,
-      onSelect: setLastName,
+      selectedValue: familyName,
+      onSelect: setFamilyName,
     },
     height: {
       title: "Height",
@@ -309,8 +309,8 @@ function useFieldState(fieldName: string, currentFieldValue: any) {
     setCustomInput,
     firstName,
     setFirstName,
-    lastName,
-    setLastName,
+    familyName,
+    setFamilyName,
     fullName,
     setFullName,
     fieldConfig,

@@ -38,8 +38,8 @@ const db = admin.firestore();
       // Create new Stripe customer
       const customerEmail = userData.email || `user_${userId}@fullcircle.app`;
       const customerName = userData.fullName || 
-                          (userData.firstName && userData.lastName) ? 
-                          `${userData.firstName} ${userData.lastName}` :
+                          (userData.firstName && userData.familyName) ? 
+                          `${userData.firstName} ${userData.familyName}` :
                           `User ${userId}`;
 
       const customer = await stripe.customers.create({

@@ -69,7 +69,7 @@ export type UserDataType = {
   phoneNumber: string;
   email?: string;
   firstName?: string;
-  lastName?: string;
+  familyName?: string;
   fullName?: string;
   birthdate?: string;
   height?: number;
