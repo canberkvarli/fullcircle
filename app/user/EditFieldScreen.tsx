@@ -113,7 +113,7 @@ function EditFieldScreen() {
   // Get current field value
   const getCurrentFieldValue = () => {
     if (fieldName === "fullName") {
-      return userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+      return userData.fullName || `${userData.firstName || ''} ${userData.familyName || ''}`.trim();
     } else if (fieldName === "age") {
       return userData.age;
     } else if (fieldName === "connectionIntent") {
@@ -152,13 +152,13 @@ function EditFieldScreen() {
     return userData.firstName || '';
   });
   
-  const [lastName, setLastName] = useState(() => {
+  const [familyName, setFamilyName] = useState(() => {
     if (fieldName === "fullName") {
       const fullName = userData.fullName || '';
       const nameParts = fullName.split(' ');
-      return userData.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+      return userData.familyName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
     }
-    return userData.lastName || '';
+    return userData.familyName || '';
   });
   
   const [age, setAge] = useState(userData.age?.toString() || '');
@@ -247,10 +247,10 @@ function EditFieldScreen() {
         Alert.alert("Error", "First name is required.");
         return;
       }
-      const fullName = lastName.trim() ? `${firstName.trim()} ${lastName.trim()}` : firstName.trim();
+      const fullName = familyName.trim() ? `${firstName.trim()} ${familyName.trim()}` : firstName.trim();
       updateData = {
         firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        familyName: familyName.trim(),
         fullName,
       };
     } else if (fieldName === "age") {
@@ -679,8 +679,8 @@ function EditFieldScreen() {
             style={[styles.nameInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.textDark }]}
             placeholder="Last name (optional)"
             placeholderTextColor={colors.textMuted}
-            value={lastName}
-            onChangeText={setLastName}
+            value={familyName}
+            onChangeText={setFamilyName}
             maxLength={18}
           />
           <Text style={[styles.helpText, { color: colors.textMuted }]}>

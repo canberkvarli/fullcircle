@@ -143,7 +143,7 @@ export type UserDataType = {
   GoogleSSOEnabled?: boolean;
   marketingRequested?: boolean;
   firstName?: string;
-  lastName?: string;
+  familyName?: string;
   fullName?: string;
   birthdate?: string;
   birthmonth?: string;
@@ -372,7 +372,7 @@ const getGenderSpecificPhotos = async (
 // Generate dummy user data matching your UserDataType
 async function generateDummyUser(): Promise<UserDataType> {
   const firstName = faker.person.firstName();
-  const lastName = faker.person.lastName();
+  const familyName = faker.person.lastName();
   const age = faker.number.int({ min: 18, max: 65 });
   const birthYear = new Date().getFullYear() - age;
   
@@ -420,8 +420,8 @@ async function generateDummyUser(): Promise<UserDataType> {
     GoogleSSOEnabled: faker.datatype.boolean(),
     marketingRequested: faker.datatype.boolean(),
     firstName,
-    lastName,
-    fullName: `${firstName} ${lastName}`,
+    familyName,
+    fullName: `${firstName} ${familyName}`,
     birthdate,
     birthday,
     birthmonth,

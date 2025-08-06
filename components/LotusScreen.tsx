@@ -186,7 +186,7 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
         merchantDisplayName: 'FullCircle',
         paymentIntentClientSecret: paymentData.clientSecret,
         defaultBillingDetails: {
-          name: userData.fullName || `${userData.firstName} ${userData.lastName}`,
+          name: userData.fullName || `${userData.firstName} ${userData.familyName}`,
           email: userData.email,
         },
         allowsDelayedPaymentMethods: false,

@@ -289,7 +289,7 @@ const KindredSpirits: React.FC = () => {
     
     return {
       text: "Radiance",
-      color: '#8B4513', // Changed from #D4AF37 to brown for better visibility
+      color: colorScheme === 'dark' ? '#D4AF37' : '#8B4513',
       backgroundColor: colors.background,
       borderColor: colors.border,
       disabled: false
@@ -659,8 +659,8 @@ const styles = StyleSheet.create({
   },
   
   highlightedWord: {
-    color: '#8B4513',
-    textShadowColor: '#D2691E',
+    color: '#B8860B',
+    textShadowColor: '#CD853F',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,
     fontWeight: Typography.weights.medium,

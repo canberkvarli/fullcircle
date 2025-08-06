@@ -273,7 +273,7 @@ function LoginSignupScreen(): JSX.Element {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  const { affirmationFont, buttonFont, captionFont, logoFont, spiritualSubtitleFont } = useFont();
+  const { buttonFont, captionFont, logoTextFont, logoTitleFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -316,8 +316,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       elevation: 10,
     },
     title: {
-      ...logoFont,
-      color: colors.background,
+      ...logoTitleFont,
+      color: colors.text,
       letterSpacing: 1,
       marginBottom: Spacing.xs,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
@@ -325,9 +325,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 1,
     },
     subTitle: {
-      ...spiritualSubtitleFont,
+      ...logoTextFont,
       color: colors.text,
-      fontStyle: "italic",
       textShadowColor: 'rgba(0, 0, 0, 0.6)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,

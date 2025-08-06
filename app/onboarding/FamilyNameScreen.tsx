@@ -21,11 +21,11 @@ import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 
-function NameScreen() {
-  const { userData, navigateToNextScreen, updateUserData, signOut } =
+function FamilyNameScreen() {
+  const { userData, navigateToNextScreen, navigateToPreviousScreen, updateUserData, signOut } =
     useUserContext();
   const router = useRouter();
-  const [firstName, setFirstName] = useState(userData.firstName || "");
+  const [familyName, setFamilyName] = useState(userData.familyName || "");
   const [isModalVisible, setIsModalVisible] = useState(false);
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -36,8 +36,10 @@ function NameScreen() {
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
       if (user?.displayName) {
-        const [first] = user.displayName.split(" ");
-        setFirstName(first);
+        const nameParts = user.displayName.split(" ");
+        if (nameParts.length > 1) {
+          setFamilyName(nameParts.slice(1).join(" "));
+        }
       }
     });
     return unsubscribe;
@@ -47,35 +49,34 @@ function NameScreen() {
   const handleInputChange = (text: string) => {
     // Only allow letters (no spaces, numbers, or special characters)
     if (/^[a-zA-Z]*$/.test(text) && text.length <= 18) {
-      setFirstName(text);
+      setFamilyName(text);
     }
   };
 
-  const handleNameSubmit = async () => {
-    if (firstName.trim() === "") {
-      Alert.alert("Almost there!", "We'd love to know what to call you");
-      return;
-    }
-
+  const handleFamilyNameSubmit = async () => {
     if (!userData.userId || typeof userData.userId !== "string") {
       Alert.alert("Connection Issue", "Something went wrong. Please try again.");
       return;
     }
 
-    const trimmedFirstName = firstName.trim();
-    const fullName = trimmedFirstName;
+    const trimmedFamilyName = familyName.trim();
+    const fullName = trimmedFamilyName
+      ? `${userData.firstName || ""} ${trimmedFamilyName}`
+      : userData.firstName || "";
 
     try {
       await updateUserData({
-        firstName: trimmedFirstName,
+        familyName: trimmedFamilyName,
         fullName,
       });
       navigateToNextScreen();
     } catch (error) {
-      console.error("Error submitting name:", error);
+      console.error("Error submitting last name:", error);
       Alert.alert("Oops!", "Something went wrong. Please try again.");
     }
   };
+
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,32 +93,36 @@ function NameScreen() {
           {/* Back Button at top left */}
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => {
-              router.replace("onboarding/LoginSignupScreen" as any);
-              signOut();
-            }}
+            onPress={navigateToPreviousScreen}
           >
             <Ionicons name="chevron-back" size={24} color={colors.textDark} />
           </TouchableOpacity>
 
           {/* Progress Bar below back button */}
-          <OnboardingProgressBar currentScreen="NameScreen" />
+          <OnboardingProgressBar currentScreen="FamilyNameScreen" />
 
           {/* Title */}
-          <Text style={styles.title}>What should we call you?</Text>
+          <Text style={styles.title}>What's your family name?</Text>
 
           {/* Input Fields - with underline style */}
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
-                placeholder="Share the sound that call to your soul"
+                placeholder="Your family name (optional)"
                 placeholderTextColor={colors.textMuted}
-                value={firstName}
+                value={familyName}
                 onChangeText={handleInputChange}
                 autoFocus
               />
               <View style={styles.inputUnderline} />
+            </View>
+            
+            {/* Compact privacy note */}
+            <View style={styles.privacyNoteContainer}>
+              <Text style={styles.privacyNote}>
+                Private • <Text style={styles.linkText} onPress={() => setIsModalVisible(true)}>Learn more</Text>
+              </Text>
             </View>
           </View>
           
@@ -128,22 +133,18 @@ function NameScreen() {
           <View style={styles.bottomElementsContainer}>
             <Text style={styles.affirmation}>
               Every name carries its own{' '}
-              <Text style={styles.highlightedWord}>music</Text>
-              {', drawing the right people closer'}
+              <Text style={styles.highlightedWord}>story</Text>
+              {', waiting to be shared'}
             </Text>
             
             <TouchableOpacity 
-              style={[
-                styles.submitButton,
-                !firstName.trim() && styles.submitButtonDisabled
-              ]} 
-              onPress={handleNameSubmit}
-              disabled={!firstName.trim()}
+              style={styles.submitButton}
+              onPress={handleFamilyNameSubmit}
             >
               <Ionicons 
                 name="chevron-forward" 
                 size={24} 
-                color={firstName.trim() ? colors.background : colors.background} 
+                color={colors.background} 
               />
             </TouchableOpacity>
           </View>
@@ -222,7 +223,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont, // Keeping the font for consistency
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -230,84 +231,75 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Keeping the font but removing italics
+      ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
-      marginBottom: Spacing.md, // Reduced from xl to md
+      marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
-      fontStyle: "normal", // Changed from italic
+      fontStyle: "normal",
     },
     inputContainer: {
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.xs,
     },
     inputWrapper: {
-      marginBottom: Spacing.md, // Space between inputs
-      position: 'relative', // For positioning the underline
+      position: 'relative',
     },
     input: {
       ...fonts.inputFont,
-      height: 48, // Slightly shorter than before
+      height: 48,
       paddingVertical: Spacing.xs,
-      paddingHorizontal: 0, // No horizontal padding for underline style
+      paddingHorizontal: 0,
       color: colors.textDark,
-      backgroundColor: 'transparent', // No background
-      borderWidth: 0, // No border
-      marginBottom: 2, // Small gap before underline
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      marginBottom: 2,
     },
     inputUnderline: {
-      height: 2, // Thickness of underline
-      backgroundColor: colors.primary, // Primary color for underline
+      height: 2,
+      backgroundColor: colors.primary,
       width: '100%',
-      borderRadius: 1, // Slightly rounded underline
-      opacity: 0.8, // Slightly transparent
+      borderRadius: 1,
+      opacity: 0.8,
     },
-    optionalTextContainer: {
-      paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.md, // Reduced from xl to md
+    privacyNoteContainer: {
+      marginTop: Spacing.xs,
+      alignItems: 'flex-start',
     },
-    optionalText: {
-      ...fonts.spiritualBodyFont, // Keeping font but removing italics
-      fontStyle: "normal", // Changed from italic
+    privacyNote: {
+      ...fonts.captionFont,
       color: colors.textMuted,
-      lineHeight: Typography.sizes.base * 1.3, // Reduced line height slightly
-      fontSize: Typography.sizes.sm, // Made text slightly smaller
+      fontSize: Typography.sizes.xs,
     },
+
     linkText: {
-      ...fonts.buttonFont,
+      ...fonts.captionFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
-      fontWeight: Typography.weights.semibold,
+      fontWeight: Typography.weights.medium,
+      fontSize: Typography.sizes.xs,
     },
-    affirmationContainer: {
-      paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing.lg,
-    },
+
     affirmation: {
-      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
+      ...fonts.elegantItalicFont,
       textAlign: "left",
-      color: colors.textDark, // Darker color for better visibility
+      color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
       letterSpacing: 0.3,
-      opacity: 0.8, // Slightly transparent for elegance
-      flex: 1, // Take available space but not push button off screen
-      marginRight: Spacing.lg, // Add space between text and button
+      opacity: 0.8,
+      flex: 1,
+      marginRight: Spacing.lg,
     },
     highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
+      color: colors.textDark,
+      textShadowColor: '#FFD700',
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
+      fontWeight: Typography.weights.medium,
+      letterSpacing: 0.5,
     },
-    buttonContainer: {
-      alignItems: 'flex-end',
-      marginRight: Spacing.lg,
-      marginBottom: Platform.select({ ios: Spacing.lg, android: Spacing.md }),
-      paddingBottom: Platform.select({ ios: 10, android: 0 }),
-    },
+
     bottomElementsContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -335,20 +327,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
-    submitButtonDisabled: {
-      backgroundColor: colors.textMuted,
-      opacity: 0.6,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.textMuted,
-          shadowOpacity: 0.15,
-          shadowRadius: 3,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
-    },
+
     modalOverlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, 0.6)",
@@ -377,26 +356,26 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualTitleFont, // Keeping the font
+      ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.spiritualBodyFont, // Keeping font but removing italics
+      ...fonts.spiritualBodyFont,
       textAlign: "center",
       color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
       marginBottom: Spacing.md,
-      fontStyle: "normal", // Changed from italic
+      fontStyle: "normal",
     },
     modalSubText: {
       ...fonts.captionFont,
       textAlign: "center",
       color: colors.primary,
       marginBottom: Spacing.xl,
-      fontStyle: "normal", // Changed from italic
+      fontStyle: "normal",
       fontWeight: Typography.weights.medium,
     },
     modalCloseButton: {
@@ -425,4 +404,4 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
   });
 };
 
-export default NameScreen;
+export default FamilyNameScreen; 

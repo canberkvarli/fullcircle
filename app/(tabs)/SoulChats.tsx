@@ -458,8 +458,8 @@ const styles = StyleSheet.create({
   },
   
   highlightedWord: {
-    color: '#8B4513',
-    textShadowColor: '#D2691E',
+    color: '#B8860B',
+    textShadowColor: '#CD853F',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,
     fontWeight: Typography.weights.medium,

@@ -38,6 +38,10 @@ function EmailScreen() {
   );
   const [modalVisible, setModalVisible] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [isEmailValid, setIsEmailValid] = useState(false);
+  const [hasUserStartedTyping, setHasUserStartedTyping] = useState(false);
+  const [showErrorFeedback, setShowErrorFeedback] = useState(false);
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -70,6 +74,7 @@ function EmailScreen() {
     const unsubscribe = auth().onAuthStateChanged((user) => {
       if (user?.email) {
         setEmail(user.email);
+        validateEmail(user.email);
       }
     });
     return unsubscribe;
@@ -114,6 +119,71 @@ function EmailScreen() {
     };
   }, []);
 
+  const validateEmail = (emailToValidate: string) => {
+    // Only show errors if user has started typing
+    if (!hasUserStartedTyping) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    setEmailError("");
+    
+    if (!emailToValidate.trim()) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    // Check for basic email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!emailRegex.test(emailToValidate)) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    // Check for common issues
+    if (emailToValidate.includes('..')) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    if (emailToValidate.startsWith('.') || emailToValidate.endsWith('.')) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    if (emailToValidate.includes('@.') || emailToValidate.includes('.@')) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    // Check domain length
+    const domain = emailToValidate.split('@')[1];
+    if (domain && domain.length > 253) {
+      setIsEmailValid(false);
+      return;
+    }
+    
+    setIsEmailValid(true);
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (!hasUserStartedTyping) {
+      setHasUserStartedTyping(true);
+    }
+    validateEmail(text);
+    
+    // Delay showing error feedback to avoid immediate red border
+    if (text.trim() && !isEmailValid) {
+      setTimeout(() => {
+        setShowErrorFeedback(true);
+      }, 1000); // 1 second delay
+    } else {
+      setShowErrorFeedback(false);
+    }
+  };
+
   const isGoogleConnected = () => {
     return userData?.settings?.connectedAccounts?.google === true || 
            FIREBASE_AUTH.currentUser?.providerData?.some(provider => provider.providerId === 'google.com') ||
@@ -122,12 +192,12 @@ function EmailScreen() {
 
   const handleEmailSubmit = async () => {
     if (email.trim() === "") {
-      Alert.alert("Almost there!", "Please share your email to stay connected");
+      setEmailError("Please share your email to stay connected");
       return;
     }
 
-    if (!isValidEmail(email)) {
-      Alert.alert("Check your email", "That email address doesn't look quite right. Please check and try again");
+    if (!isEmailValid) {
+      setEmailError("Please enter a valid email address");
       return;
     }
 
@@ -165,7 +235,7 @@ function EmailScreen() {
         email: googleUser?.user.email || email,
         GoogleSSOEnabled: true,
         firstName: googleUser?.user.givenName || userData.firstName,
-        lastName: googleUser?.user.familyName || userData.lastName,
+        familyName: googleUser?.user.familyName || userData.familyName,
         fullName: googleUser?.user.name || userData.fullName,
         settings: {
           ...userData.settings,
@@ -259,12 +329,15 @@ function EmailScreen() {
             placeholder="your.email@example.com"
             placeholderTextColor={colors.textMuted}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={handleEmailChange}
             keyboardType="email-address"
             autoCapitalize="none"
             autoFocus={true}
           />
-          <View style={styles.inputUnderline} />
+          <View style={[
+            styles.inputUnderline,
+            showErrorFeedback && styles.inputUnderlineError
+          ]} />
         </View>
         
         <View style={styles.toggleContainer}>
@@ -272,43 +345,82 @@ function EmailScreen() {
             style={styles.toggle}
             onPress={() => setMarketingRequested((prev) => !prev)}
           >
-            <MaterialCommunityIcons
-              name={marketingRequested ? "checkbox-blank-outline" : "checkbox-marked"}
-              size={24}
-              color={colors.primary}
-            />
+            <View style={[
+              styles.checkbox,
+              marketingRequested && styles.checkboxChecked
+            ]}>
+              {marketingRequested && (
+                <MaterialCommunityIcons
+                  name="check"
+                  size={16}
+                  color={colors.background}
+                />
+              )}
+            </View>
             <Text style={styles.toggleText}>
               I prefer to receive only essential updates about my Circle journey
             </Text>
           </TouchableOpacity>
         </View>
+        
+        {/* Bottom elements positioned under checkbox when keyboard is visible */}
+        {keyboardVisible && (
+          <View style={styles.keyboardBottomElements}>
+            {/* <Text style={styles.affirmation}>
+              The best{' '}
+              <Text style={styles.highlightedWord}>conversations</Text>
+              {' happen when people feel truly heard'}
+            </Text> */}
+            
+            <View style={styles.keyboardButtonContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.submitButton,
+                  (!email.trim() || !isEmailValid) && styles.submitButtonDisabled
+                ]} 
+                onPress={handleEmailSubmit}
+                disabled={!email.trim() || !isEmailValid}
+              >
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={24} 
+                  color={email.trim() ? colors.background : colors.background} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
       
-      {/* Animated Bottom Elements Container */}
-      <View 
-        style={styles.bottomElementsContainer}
-      >
-        <Text style={styles.affirmation}>
-          The best{' '}
-          <Text style={styles.highlightedWord}>conversations</Text>
-          {' happen when people feel truly heard'}
-        </Text>
-        
-        <TouchableOpacity 
-          style={[
-            styles.submitButton,
-            !email.trim() && styles.submitButtonDisabled
-          ]} 
-          onPress={handleEmailSubmit}
-          disabled={!email.trim()}
+      {/* Animated Bottom Elements Container - only visible when keyboard is hidden */}
+      {!keyboardVisible && (
+        <View 
+          style={styles.bottomElementsContainer}
         >
-          <Ionicons 
-            name="chevron-forward" 
-            size={24} 
-            color={email.trim() ? colors.background : colors.background} 
-          />
-        </TouchableOpacity>
-      </View>
+          {/* <Text style={styles.affirmation}>
+            The best{' '}
+            <Text style={styles.highlightedWord}>conversations</Text>
+            {' happen when people feel truly heard'}
+          </Text> */}
+          
+          <View style={styles.bottomButtonContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.submitButton,
+                (!email.trim() || !isEmailValid) && styles.submitButtonDisabled
+              ]} 
+              onPress={handleEmailSubmit}
+              disabled={!email.trim() || !isEmailValid}
+            >
+              <Ionicons 
+                name="chevron-forward" 
+                size={24} 
+                color={email.trim() ? colors.background : colors.background} 
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <Modal
         animationType="fade"
@@ -415,7 +527,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     inputWrapper: {
       marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.md,
       position: 'relative',
     },
     input: {
@@ -435,14 +547,26 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderRadius: 1,
       opacity: 0.8,
     },
+    inputUnderlineError: {
+      backgroundColor: colors.error,
+      opacity: 1,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: Spacing.sm,
+    },
+    checkboxChecked: {
+      backgroundColor: colors.primary,
+    },
     toggleContainer: {
       marginHorizontal: Spacing.lg,
-      marginBottom: Spacing.xl,
-      backgroundColor: colors.card,
-      borderRadius: BorderRadius.md,
-      padding: Spacing.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
+      padding: Spacing.sm,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -457,10 +581,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     toggle: {
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
     },
     toggleText: {
-      ...fonts.spiritualBodyFont,
+      ...fonts.modalBodyFont,
       fontStyle: "normal",
       color: colors.textMuted,
       marginLeft: Spacing.sm,
@@ -477,6 +601,22 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingVertical: 5,
+    },
+    keyboardBottomElements: {
+      marginTop: Spacing.sm,
+      paddingHorizontal: Spacing.lg,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 5,
+    },
+    keyboardButtonContainer: {
+      flex: 1,
+      alignItems: 'flex-end',
+    },
+    bottomButtonContainer: {
+      flex: 1,
+      alignItems: 'flex-end',
     },
     affirmation: {
       ...fonts.elegantItalicFont,
@@ -596,6 +736,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     connectedText: {
       color: colors.success,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: Typography.sizes.sm,
+      marginTop: Spacing.xs,
+      marginLeft: Spacing.sm,
     },
   });
 };

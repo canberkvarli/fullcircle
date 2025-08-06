@@ -92,11 +92,12 @@ export const useFont = () => {
     modalBodyFont: getFontStyle('base', 'regular'),
     
     // Special logo font (for "Circle" title)
-    logoFont: getFontStyle('5xl', 'spiritualRegular'),
+    logoTitleFont: getFontStyle('6xl', 'main'),
 
-    spiritualityTitleFont: getFontStyle('4xl', 'main'),
-    spiritualitySubtitleFont: getFontStyle('lg', 'main'),
-    spiritualityBodyFont: getFontStyle('base', 'main'),
-    spiritualityButtonFont: getFontStyle('base', 'main'),
+
+    logoSubtitleFont: getFontStyle('xl', 'main'),
+    logoTextFont: getFontStyle('3xl', 'main'),
+    logoBodyFont: getFontStyle('base', 'main'),
+    logoButtonFont: getFontStyle('base', 'main'),
   };
 };

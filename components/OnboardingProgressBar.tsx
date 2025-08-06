@@ -31,6 +31,11 @@ const spiritualProgressBarIcons: Record<string, IconConfig> = {
     name: "account-heart",
     iconType: 'vector'
   },
+  "FamilyNameScreen": { 
+    type: "MaterialCommunityIcons", 
+    name: "account-group",
+    iconType: 'vector'
+  },
   "EmailScreen": { 
     type: "MaterialCommunityIcons", 
     name: "email",
@@ -90,6 +95,7 @@ const OnboardingProgressBar = ({
   
   const onboardingScreens = [
     "NameScreen",
+    "FamilyNameScreen",
     "EmailScreen",
     "BirthdateScreen",
     "HeightScreen",

@@ -216,12 +216,20 @@ export default function SacredSelf() {
         <View style={styles.headerIcons}>
           <Link href={{ pathname: "/user/ConnectingPreferences" as any }} asChild>
             <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="options" size={22} color="#8B4513" />
+              <Ionicons
+                name="options"
+                size={22}
+                color={colorScheme === 'dark' ? '#F5E6D3' : '#8B4513'}
+              />
             </TouchableOpacity>
           </Link>
           <Link href="/user/UserSettings" asChild>
             <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="settings" size={22} color="#8B4513" />
+              <Ionicons
+                name="settings"
+                size={22}
+                color={colorScheme === 'dark' ? '#F5E6D3' : '#8B4513'}
+              />
             </TouchableOpacity>
           </Link>
         </View>
@@ -274,12 +282,12 @@ export default function SacredSelf() {
                 <Ionicons 
                   name={verified ? "checkmark-circle" : "shield-checkmark-outline"} 
                   size={16} 
-                  color={verified ? '#FFD700' : '#8B4513'} 
+                  color={verified ? '#FFD700' : colors.text} 
                 />
                 <Text style={[
                   styles.verifyText, 
                   fonts.spiritualBodyFont,
-                  { color: verified ? '#FFD700' : '#8B4513' }
+                  { color: verified ? '#FFD700' : colors.text }
                 ]}>
                   {verified ? 'Verified' : 'Verify'}
                 </Text>

@@ -105,7 +105,8 @@ export const Typography = {
     '2xl': 24,
     '3xl': 30,
     '4xl': 36,
-    '5xl': 48,
+    '5xl': 64,
+    '6xl': 84,
   },
   // Use proper TypeScript types for font weights
   weights: {
@@ -154,6 +155,8 @@ export const Spacing = {
   '2xl': 48,
   '3xl': 64,
   '4xl': 96,
+  '5xl': 150,
+  '6xl': 278,
 };
 
 // Border radius scale

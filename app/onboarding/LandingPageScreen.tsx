@@ -1,8 +1,9 @@
 import React from "react";
 import { View, useColorScheme } from "react-native";
-import createStyles from "@/styles/LandingPageStyles";
 import { useRouter } from "expo-router";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+import { StyleSheet } from "react-native";
+import { Colors } from '@/constants/Colors';
 
 function LandingPageScreen(): JSX.Element {
   const router = useRouter();
@@ -27,5 +28,23 @@ function LandingPageScreen(): JSX.Element {
     </View>
   );
 }
+
+const createStyles = (colorScheme: 'light' | 'dark') => {
+  const colors = Colors[colorScheme];
+  
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+    },
+    animation: {
+      width: "80%",
+      height: "80%",
+      opacity: 0.9,
+    },
+  });
+};
 
 export default LandingPageScreen;

@@ -45,7 +45,7 @@ export default function EditUserProfile() {
       // Always visible fields (no toggle needed)
       fullName: true,
       firstName: true,
-      lastName: true,
+      familyName: true,
       
       // Basic info with visibility controls
       age: !userData.hiddenFields?.age,

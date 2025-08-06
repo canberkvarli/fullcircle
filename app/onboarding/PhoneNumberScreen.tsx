@@ -401,6 +401,7 @@ const createStyles = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
     mainContent: {
       paddingHorizontal: Spacing.xl,
       alignItems: 'center',
+      marginBottom: Spacing.sm
     },
     bottomBar: {
       paddingHorizontal: Spacing.xl,

@@ -40,6 +40,7 @@ export default function OnboardingStackLayout() {
         }}
       />
       <Stack.Screen name="NameScreen" options={{ headerShown: false }} />
+      <Stack.Screen name="FamilyNameScreen" options={{ headerShown: false }} />
       <Stack.Screen name="EmailScreen" options={{ headerShown: false }} />
       <Stack.Screen name="BirthdateScreen" options={{ headerShown: false }} />
       <Stack.Screen name="HeightScreen" options={{ headerShown: false }} />

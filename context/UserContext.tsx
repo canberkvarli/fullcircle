@@ -35,7 +35,7 @@ export type UserDataType = {
   GoogleSSOEnabled?: boolean;
   marketingRequested?: boolean;
   firstName?: string;
-  lastName?: string;
+  familyName?: string;
   fullName?: string;
   birthdate?: string;
   birthmonth?: string;
@@ -370,6 +370,7 @@ const initialScreens = [
   "PhoneNumberScreen",
   "PhoneVerificationScreen",
   "NameScreen",
+  "FamilyNameScreen",
   "EmailScreen",
   "BirthdateScreen",
   "HeightScreen",
@@ -392,7 +393,7 @@ const initialUserData: UserDataType = {
   phoneNumber: "",
   email: "",
   firstName: "",
-  lastName: "",
+  familyName: "",
   fullName: "",
   GoogleSSOEnabled: false,
   marketingRequested: true,
@@ -945,7 +946,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const userDocRef = FIRESTORE.collection("users").doc(user.uid);
         const docSnap = await userDocRef.get();
         const userFirstName = user.displayName?.split(" ")[0] || "";
-        const userLastName = user.displayName?.split(" ")[1] || "";
+        const userFamilyName = user.displayName?.split(" ")[1] || "";
         const userFullName = user.displayName || "";
         if (docSnap.exists) {
           // Existing user - update their data
@@ -956,7 +957,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             userId: user.uid,
             email: user.email || "",
             firstName: userFirstName || existingUser.firstName,
-            lastName: userLastName || existingUser.lastName,
+            familyName: userFamilyName || existingUser.familyName,
             fullName: userFullName || existingUser.fullName,
             GoogleSSOEnabled: true,
             settings: {
@@ -986,7 +987,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
             createdAt: firestore.FieldValue.serverTimestamp(),
             email: user.email || "",
             firstName: userFirstName,
-            lastName: userLastName,
+            familyName: userFamilyName,
             fullName: userFullName,
             GoogleSSOEnabled: true,
             currentOnboardingScreen: "PhoneNumberScreen",
@@ -2725,7 +2726,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       setUserData(updatedUserData);
       await saveProgress(previousScreen);
       
-      router.replace(`onboarding/${previousScreen}` as any);
+      router.back()
     }
   };
 

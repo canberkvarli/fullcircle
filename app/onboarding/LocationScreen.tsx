@@ -50,6 +50,7 @@ const LocationScreen = () => {
   );
   const [place, setPlace] = useState<Location.LocationGeocodedAddress[] | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData.hiddenFields || {}
   );
@@ -98,9 +99,11 @@ const LocationScreen = () => {
   };
 
   const handleGetCurrentLocation = async () => {
+    setLocationLoading(true);
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Location Needed", "We need your location to connect you with nearby people");
+      setLocationLoading(false);
       return;
     }
     
@@ -120,6 +123,8 @@ const LocationScreen = () => {
       await updateRegionName(newRegion);
     } catch (error) {
       Alert.alert("Location Error", "Could not get your precise location. Using default area.");
+    } finally {
+      setLocationLoading(false);
     }
   };
 
@@ -210,7 +215,7 @@ const LocationScreen = () => {
                 duration={3000}
                 loop={true}
                 fillColor="#F5E6D3"
-                strokeColor="#7B6B5C"
+                strokeColor="#B8860B"
                 strokeWidth={1.5}
               />
               <Text style={styles.loadingText}>Finding your location...</Text>
@@ -244,13 +249,26 @@ const LocationScreen = () => {
                 </Marker>
               </MapView>
 
-              <TouchableOpacity
-                style={styles.currentLocationButton}
-                onPress={handleGetCurrentLocation}
-              >
-                <Ionicons name="locate" size={16} color={colors.background} />
-                <Text style={styles.buttonText}>Find My Location</Text>
-              </TouchableOpacity>
+              {locationLoading ? (
+                <View style={styles.locationLoadingContainer}>
+                  <OuroborosLoader
+                    size={60}
+                    duration={2000}
+                    loop={true}
+                    fillColor="#F5E6D3"
+                    strokeColor="#B8860B"
+                    strokeWidth={2}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.currentLocationButton}
+                  onPress={handleGetCurrentLocation}
+                >
+                  <Ionicons name="locate" size={16} color={colors.background} />
+                  <Text style={styles.buttonText}>Find My Location</Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -395,22 +413,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       height: "100%",
     },
     customMarker: {
-      backgroundColor: colors.background,
-      borderRadius: BorderRadius.full,
+      backgroundColor: 'transparent',
       padding: Spacing.xs,
-      borderWidth: 2,
-      borderColor: colors.primary,
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.3,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
     },
     currentLocationButton: {
       position: "absolute",
@@ -453,6 +457,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       ...fonts.spiritualBodyFont,
       color: colors.textMuted,
       fontStyle: "normal",
+    },
+    locationLoadingContainer: {
+      position: "absolute",
+      bottom: Spacing.md,
+      alignSelf: "center",
+      justifyContent: "center",
+      alignItems: "center",
     },
     privacyContainer: {
       flexDirection: "row",
