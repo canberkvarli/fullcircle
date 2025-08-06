@@ -8,6 +8,8 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import Constants from 'expo-constants';
 import { useEffect } from 'react';
+import { useColorScheme } from 'react-native';
+import { Colors } from '@/constants/Colors';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -65,6 +67,8 @@ export default function RootLayout() {
   };
 
   const publishableKey = getPublishableKey();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
 
   if (!fontsLoaded) {
     return null;
@@ -84,7 +88,14 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <NativeBaseProvider>
           <UserProvider>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack 
+              screenOptions={{ 
+                headerShown: false,
+                contentStyle: {
+                  backgroundColor: colors.background,
+                },
+              }}
+            >
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="user" />

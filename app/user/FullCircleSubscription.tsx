@@ -9,6 +9,8 @@ import {
   Animated,
   Alert,
   ScrollView,
+  Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +21,7 @@ import { useStripe } from "@stripe/stripe-react-native";
 import { FUNCTIONS, FIRESTORE } from "@/services/FirebaseConfig"
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import { CustomIcon } from "@/components/CustomIcon";
+import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
 
 interface PricingPlan {
   title: string;
@@ -43,6 +46,7 @@ export default function FullCircleSubscription() {
   
   const [selectedPlan, setSelectedPlan] = useState<'1month' | '3months' | '6months'>('3months');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -394,6 +398,13 @@ export default function FullCircleSubscription() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.infoButton}
+          onPress={() => setShowInfoModal(true)}
+        >
+          <Ionicons name="information-circle" size={24} color={colors.textDark} />
+        </TouchableOpacity>
       </View>
 
       {/* Scrollable Content */}
@@ -516,6 +527,9 @@ export default function FullCircleSubscription() {
                       {plan.savings && (
                         <Text style={styles.savingsText}>Save {plan.savings}</Text>
                       )}
+                      {!plan.savings && (
+                        <View style={styles.savingsPlaceholder} />
+                      )}
                       <Text style={styles.planTitle}>{plan.title}</Text>
                       <Text style={styles.weeklyPrice}>${plan.weeklyPrice.toFixed(2)}/wk</Text>
                     </View>
@@ -609,6 +623,12 @@ export default function FullCircleSubscription() {
           )}
         </TouchableOpacity>
       )}
+
+      {/* Info Modal */}
+      <OuroborosInfoModal
+        visible={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+      />
     </View>
   );
 }
@@ -620,15 +640,17 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      position: 'relative', // Required for z-index to work
     },
     header: {
       flexDirection: 'row',
-      justifyContent: 'flex-start',
+      justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: Spacing.lg,
       paddingTop: Platform.select({ ios: 50, android: 30 }),
       paddingBottom: Spacing.md,
       backgroundColor: colors.background,
+      zIndex: 1, // Lower z-index so glow can extend over it
     },
     backButton: {
       width: 40,
@@ -656,9 +678,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
     heroSection: {
       alignItems: 'center',
       marginBottom: Spacing.lg,
+      zIndex: 10, // Ensure it's above the header
     },
     iconContainer: {
-      marginTop: -20,
+      marginTop: 20, // Changed from -20 to 20 to move logo down
+      zIndex: 10, // Ensure glow extends over header
     },
     glowContainer: {
       position: 'relative',
@@ -666,6 +690,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       shadowOffset: { width: 0, height: 0 },
       shadowRadius: 20,
       elevation: 10,
+      zIndex: 10, // Ensure glow extends over header
     },
     sparklesOverlay: {
       position: 'absolute',
@@ -788,6 +813,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       borderWidth: 2,
       borderColor: colors.border,
       position: 'relative',
+      height: 180, // Fixed height for all cards
     },
     planCardSelected: {
       borderColor: '#B8860B',
@@ -973,5 +999,23 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       marginBottom: Spacing.sm
       // lineHeight: 22,
     },
+    savingsPlaceholder: {
+      height: 20, // Same height as savings text
+      marginBottom: Spacing.sm, // Same margin as savings text
+    },
+    
+    // Info Button
+    infoButton: {
+      width: 40,
+      height: 40,
+      borderRadius: BorderRadius.full,
+      backgroundColor: colors.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    
+
   });
 };

@@ -24,6 +24,7 @@ import { useFont } from "@/hooks/useFont";
 import RadianceScreen from "@/components/RadianceScreen";
 import LotusScreen from "@/components/LotusScreen";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
+import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -588,36 +589,11 @@ export default function SacredSelf() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Ouroboros Tooltip Modal */}
-      <Modal
+      {/* Ouroboros Info Modal */}
+      <OuroborosInfoModal
         visible={showOuroborosTooltip}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowOuroborosTooltip(false)}
-      >
-        <TouchableOpacity 
-          style={styles.tooltipOverlay}
-          activeOpacity={1}
-          onPress={() => setShowOuroborosTooltip(false)}
-        >
-          <View style={[styles.tooltipContainer, { backgroundColor: colors.card }]}>
-            <View style={styles.tooltipHeader}>
-              <Text style={[styles.tooltipTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-                The Sacred Ouroboros
-              </Text>
-              <TouchableOpacity onPress={() => setShowOuroborosTooltip(false)}>
-                <Ionicons name="close" size={24} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.tooltipText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              The Ouroboros, an ancient symbol of a serpent eating its own tail, represents the eternal cycle of life, death, and rebirth. In FullCircle, it embodies our core belief that every ending leads to a new beginning, and every connection - whether it flourishes or fades - teaches us something valuable about ourselves and our journey toward finding our spiritual counterpart.
-            </Text>
-            <Text style={[styles.tooltipText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Just as the Ouroboros has no beginning or end, your path to meaningful connection is continuous, sacred, and ever-evolving. ✨
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        onClose={() => setShowOuroborosTooltip(false)}
+      />
 
       <RadianceScreen
         visible={showRadianceModal}

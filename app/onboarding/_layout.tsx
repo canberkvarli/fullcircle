@@ -2,9 +2,13 @@
 
 import React from "react";
 import { Stack } from "expo-router";
-import { Platform } from "react-native";
+import { Platform, useColorScheme } from "react-native";
+import { Colors } from '@/constants/Colors';
 
 export default function OnboardingStackLayout() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  
   return (
     <Stack
       screenOptions={{
@@ -13,9 +17,11 @@ export default function OnboardingStackLayout() {
         animation: Platform.OS === 'ios' ? 'slide_from_right' : 'fade_from_bottom',
         gestureEnabled: true,
         gestureDirection: 'horizontal',
-        // Customize transition timing
         animationDuration: 300,
         animationTypeForReplace: 'push',
+        contentStyle: {
+          backgroundColor: colors.background,
+        },
       }}
     >
       <Stack.Screen 

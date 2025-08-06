@@ -79,6 +79,13 @@ function EmailScreen() {
     });
     return unsubscribe;
   }, []);
+
+  // Validate email on mount if it exists
+  useEffect(() => {
+    if (email && email.trim()) {
+      validateEmail(email);
+    }
+  }, []);
   
   // Add keyboard listeners
   useEffect(() => {
@@ -120,12 +127,6 @@ function EmailScreen() {
   }, []);
 
   const validateEmail = (emailToValidate: string) => {
-    // Only show errors if user has started typing
-    if (!hasUserStartedTyping) {
-      setIsEmailValid(false);
-      return;
-    }
-    
     setEmailError("");
     
     if (!emailToValidate.trim()) {

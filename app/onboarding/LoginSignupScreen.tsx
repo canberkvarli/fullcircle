@@ -16,6 +16,7 @@ import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
+import TermsModal from "@/components/modals/TermsModal";
 
 const videoSource = require("../../assets/videos/danielle.mp4");
 
@@ -29,6 +30,8 @@ function LoginSignupScreen(): JSX.Element {
   const [status, setStatus] = useState({});
   const [showSSOButtons, setShowSSOButtons] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [modalType, setModalType] = useState<'terms' | 'privacy'>('terms');
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -111,6 +114,15 @@ function LoginSignupScreen(): JSX.Element {
     ]).start(() => {
       setShowSSOButtons(false);
     });
+  };
+
+  const handleOpenModal = (type: 'terms' | 'privacy') => {
+    setModalType(type);
+    setShowTermsModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowTermsModal(false);
   };
 
   return (
@@ -247,26 +259,37 @@ function LoginSignupScreen(): JSX.Element {
             )}
           </View>
           
-          {/* Terms and Conditions - Enhanced visibility */}
-          <View style={[styles.termsContainer, styles.enhancedTermsContainer]}>
-            <Text style={[styles.infoText, styles.enhancedInfoText]}>
-              By signing up for Circle, you agree to our{" "}
-              <Text style={[styles.link, styles.enhancedLink]} onPress={() => console.log("pressed")}>
-                Terms of Service
+          {/* Terms and Conditions - Redesigned with better visibility and functionality */}
+          <View style={styles.termsContainer}>
+            <View style={styles.termsContent}>
+              <Text style={styles.termsText}>
+                By signing up for Circle, you agree to our{" "}
+                <Text 
+                  style={styles.termsLink} 
+                  onPress={() => handleOpenModal('terms')}
+                >
+                  Terms of Service
+                </Text>
+                . Learn how we process your data in our{" "}
+                <Text 
+                  style={styles.termsLink} 
+                  onPress={() => handleOpenModal('privacy')}
+                >
+                  Privacy Policy
+                </Text>
+                .
               </Text>
-              . Learn how we process your data in our{" "}
-              <Text style={[styles.link, styles.enhancedLink]} onPress={() => console.log("pressed")}>
-                Privacy Policy
-              </Text>
-              {" "}and{" "}
-              <Text style={[styles.link, styles.enhancedLink]} onPress={() => console.log("pressed")}>
-                Cookies Policy
-              </Text>
-              .
-            </Text>
+            </View>
           </View>
         </View>
       )}
+      
+      {/* Terms Modal */}
+      <TermsModal
+        visible={showTermsModal}
+        onClose={handleCloseModal}
+        type={modalType}
+      />
     </View>
   );
 }
@@ -387,25 +410,43 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 2,
     },
     termsContainer: {
-      paddingHorizontal: Spacing.md,
-      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-      borderRadius: BorderRadius.md,
-      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
     },
-    infoText: {
+    termsContent: {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+    termsText: {
       ...captionFont,
-      color: colors.textLight,
+      color: colors.text,
       textAlign: "center",
-      lineHeight: Typography.sizes.xs * 1.6,
-      textShadowColor: 'rgba(0, 0, 0, 0.6)',
+      lineHeight: 18,
+      fontSize: 13,
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
-    link: {
+    termsLink: {
       ...buttonFont,
-      color: '#87CEEB',
+      color: '#F5E6D3',
       textDecorationLine: "underline",
-      textShadowColor: 'rgba(0, 0, 0, 0.5)',
+      fontWeight: '600',
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
     },
@@ -431,43 +472,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
       }),
     },
-    // Enhanced styles for better terms visibility
-    enhancedTermsContainer: {
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      borderRadius: BorderRadius.lg,
-      padding: Spacing.md,
-      marginHorizontal: Spacing.md,
-      borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.2)',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 6,
-        },
-        android: {
-          elevation: 6,
-        },
-      }),
-    },
-    enhancedInfoText: {
-      color: '#FFFFFF',
-      fontSize: 13,
-      lineHeight: 18,
-      textAlign: 'center',
-      textShadowColor: 'rgba(0, 0, 0, 0.8)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 2,
-    },
-    enhancedLink: {
-      color: '#87CEEB',
-      textDecorationLine: 'underline',
-      fontWeight: '600',
-      textShadowColor: 'rgba(0, 0, 0, 0.8)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 2,
-    },
+
   });
 };
 

@@ -14,12 +14,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useUserContext } from "@/context/UserContext";
 import { useFont } from "@/hooks/useFont";
+import OuroborosLoader from "./ouroboros/OuroborosLoader";
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
   const { handleGoogleSignIn, signOut } = useUserContext();
   const [isInProgress, setIsInProgress] = useState(false);
-  const [loadingStep, setLoadingStep] = useState("");
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -27,106 +27,35 @@ function SSOButtons(): JSX.Element {
 
   // Animation refs
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const loadingOpacity = useRef(new Animated.Value(0)).current;
 
   const onGoogleSignIn = async () => {
     setIsInProgress(true);
-    setLoadingStep("Connecting to Google...");
     
-    // Start animations
-    Animated.parallel([
-      Animated.timing(loadingOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ),
-      Animated.timing(progressAnim, {
-        toValue: 0.3,
-        duration: 1000,
-        useNativeDriver: false,
-      }),
-    ]).start();
+    // Start button animation
+    Animated.timing(scaleAnim, {
+      toValue: 0.95,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
 
     try {
-      // Simulate different loading steps
-      setTimeout(() => setLoadingStep("Authenticating..."), 1000);
-      setTimeout(() => {
-        Animated.timing(progressAnim, {
-          toValue: 0.7,
-          duration: 800,
-          useNativeDriver: false,
-        }).start();
-        setLoadingStep("Setting up your account...");
-      }, 2000);
-
-      setTimeout(() => {
-        Animated.timing(progressAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: false,
-        }).start();
-        setLoadingStep("Almost done...");
-      }, 2800);
-
       await handleGoogleSignIn();
     } catch (error) {
       console.error("Error during Google Sign-In:", error);
-      setLoadingStep("Error occurred. Please try again.");
-      
-      // Reset animations on error
-      setTimeout(() => {
-        resetAnimations();
-      }, 2000);
     } finally {
       setTimeout(() => {
         setIsInProgress(false);
-        setLoadingStep("");
         resetAnimations();
-      }, 3200);
+      }, 1000);
     }
   };
 
   const resetAnimations = () => {
-    Animated.parallel([
-      Animated.timing(loadingOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(progressAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }),
-    ]).start();
-    pulseAnim.stopAnimation();
-    pulseAnim.setValue(1);
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handleSignInWithApple = () => console.log("Sign in with Apple");
@@ -135,55 +64,22 @@ function SSOButtons(): JSX.Element {
 
   return (
     <View style={styles.container}>
-      {/* Enhanced Loading Overlay */}
+      {/* Ouroboros Loading Overlay */}
       {isInProgress && (
-        <Animated.View 
-          style={[
-            styles.loadingOverlay,
-            { opacity: loadingOpacity }
-          ]}
-        >
+        <View style={styles.loadingOverlay}>
           <View style={styles.loadingContainer}>
-            {/* Animated Progress Ring */}
-            <View style={styles.progressRingContainer}>
-              <Animated.View 
-                style={[
-                  styles.progressRing,
-                  { transform: [{ scale: pulseAnim }] }
-                ]}
-              >
-                <ActivityIndicator 
-                  size="large" 
-                  color={colors.primary}
-                  style={styles.spinner}
-                />
-              </Animated.View>
-              
-              {/* Progress Bar */}
-              <View style={styles.progressBarContainer}>
-                <Animated.View 
-                  style={[
-                    styles.progressBar,
-                    {
-                      width: progressAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0%', '100%'],
-                      }),
-                    }
-                  ]}
-                />
-              </View>
-            </View>
-            
-            {/* Loading Text */}
-            <Text style={styles.loadingText}>{loadingStep}</Text>
-            
-            {/* Google Logo with Animation */}
-            <Animated.View style={[styles.googleLogoContainer, { transform: [{ scale: pulseAnim }] }]}>
-              <Ionicons name="logo-google" size={32} color={colors.primary} />
-            </Animated.View>
+            <OuroborosLoader
+              size={120}
+              variant="spinner"
+              loop={true}
+              duration={2000}
+              fillColor="#F5E6D3"
+              strokeColor="#B8860B"
+              strokeWidth={2}
+            />
+            <Text style={styles.loadingText}>Connecting to Google...</Text>
           </View>
-        </Animated.View>
+        </View>
       )}
       
       <View style={styles.buttonContainer}>
@@ -259,7 +155,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: 'center',
     },
     
-    // Enhanced Loading Styles
+    // Simplified Loading Styles
     loadingOverlay: {
       position: 'absolute',
       top: 0,
@@ -292,49 +188,13 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
         },
       }),
     },
-    progressRingContainer: {
-      alignItems: 'center',
-      marginBottom: Spacing.lg,
-    },
-    progressRing: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 2,
-      borderColor: colors.primary,
-      marginBottom: Spacing.md,
-    },
-    spinner: {
-      transform: [{ scale: 1.2 }],
-    },
-    progressBarContainer: {
-      width: 200,
-      height: 4,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      borderRadius: 2,
-      overflow: 'hidden',
-    },
-    progressBar: {
-      height: '100%',
-      backgroundColor: colors.primary,
-      borderRadius: 2,
-    },
     loadingText: {
       ...buttonFont,
       color: '#FFFFFF',
       fontSize: 16,
-      marginTop: Spacing.md,
+      marginTop: Spacing.lg,
       textAlign: 'center',
       fontWeight: '500',
-    },
-    googleLogoContainer: {
-      marginTop: Spacing.sm,
-      padding: Spacing.sm,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: BorderRadius.full,
     },
     
     // Button Styles
