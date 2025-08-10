@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   Animated,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
@@ -17,6 +18,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import * as ImagePicker from 'expo-image-picker';
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+import { CustomIcon } from "@/components/CustomIcon";
 
 export default function SelfieVerification() {
   const router = useRouter();
@@ -146,17 +148,17 @@ export default function SelfieVerification() {
   const renderIntroStep = () => (
     <View style={styles.contentContainer}>
       <View style={styles.iconContainer}>
-        <View style={[styles.iconBackground, { backgroundColor: '#8B4513' + '20' }]}>
-          <Ionicons name="camera" size={48} color="#8B4513" />
+        <View style={[styles.iconBackground, { backgroundColor: '#9D4EDD' + '20' }]}>
+          <Ionicons name="aperture" size={48} color="#9D4EDD" />
         </View>
       </View>
       
       <Text style={[styles.title, fonts.spiritualTitleFont]}>
-        Verify Your Essence
+        Verify Your Identity
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        Help us ensure you are the divine soul behind this beautiful profile. This verification builds trust within our community.
+        Help us ensure you are the person behind this beautiful profile. This verification builds trust within our community.
       </Text>
       
       <View style={styles.instructionsContainer}>
@@ -167,11 +169,11 @@ export default function SelfieVerification() {
         {[
           'Look directly into the camera with your authentic self',
           'Ensure your full face is clearly visible and well-lit',
-          'Remove any masks, sunglasses, or spiritual veils',
-          'Be in a quiet space where your energy can shine through'
+          'Remove any masks, sunglasses, or accessories',
+          'Be in a quiet space where you can focus'
         ].map((instruction, index) => (
           <View key={index} style={styles.instructionRow}>
-            <Ionicons name="checkmark-circle" size={16} color="#8B4513" />
+            <Ionicons name="checkmark-circle" size={16} color="#9D4EDD" />
             <Text style={[styles.instructionText, fonts.captionFont]}>
               {instruction}
             </Text>
@@ -180,9 +182,9 @@ export default function SelfieVerification() {
       </View>
       
       <TouchableOpacity style={styles.primaryButton} onPress={takeSelfie}>
-        <Ionicons name="camera" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+        <Ionicons name="aperture" size={20} color="#FFFFFF" style={styles.buttonIcon} />
         <Text style={[styles.primaryButtonText, fonts.buttonFont]}>
-          Capture Essence
+          Take Selfie
         </Text>
       </TouchableOpacity>
     </View>
@@ -191,12 +193,12 @@ export default function SelfieVerification() {
   const renderProcessingStep = () => (
     <View style={styles.contentContainer}>
       <View style={styles.iconContainer}>
-        <View style={[styles.iconBackground, { backgroundColor: '#8B4513' + '20' }]}>
+        <View style={[styles.iconBackground, { backgroundColor: '#00BCD4' + '20' }]}>
           <OuroborosLoader 
               size={50}
               duration={3000}
-              fillColor="#F5E6D3"
-              strokeColor="#7B6B5C"
+              fillColor="#E0F7FA"
+              strokeColor="#00BCD4"
               strokeWidth={1.5}
               loop={true}
             />
@@ -204,11 +206,11 @@ export default function SelfieVerification() {
       </View>
       
       <Text style={[styles.title, fonts.spiritualTitleFont]}>
-        Analyzing Your Divine Energy
+        Analyzing Your Photo
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        The universe is verifying your essence against your profile. This cosmic process ensures the authenticity of your spiritual presence.
+        We're verifying your photo against your profile. This process ensures the authenticity of your identity.
       </Text>
       
       <View style={styles.progressContainer}>
@@ -226,7 +228,7 @@ export default function SelfieVerification() {
           />
         </View>
         <Text style={[styles.progressText, fonts.captionFont]}>
-          Connecting with cosmic verification spirits...
+          Processing your verification...
         </Text>
       </View>
     </View>
@@ -241,11 +243,11 @@ export default function SelfieVerification() {
       </View>
       
       <Text style={[styles.title, fonts.spiritualTitleFont]}>
-        Divine Verification Complete! ✨
+        Verification Complete!
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        Your essence has been verified! You now carry the cosmic seal of authenticity, building greater trust with kindred spirits seeking genuine connections.
+        Your identity has been verified! You now carry a verification badge, building greater trust with others seeking genuine connections.
       </Text>
       
       <View style={styles.benefitsContainer}>
@@ -254,10 +256,10 @@ export default function SelfieVerification() {
         </Text>
         
         {[
-          'Enhanced visibility to seeking souls',
+          'Enhanced visibility to other users',
           'Verification badge on your profile',
           'Increased trust from potential connections',
-          'Priority in cosmic matching algorithms'
+          'Priority in our matching system'
         ].map((benefit, index) => (
           <View key={index} style={styles.benefitRow}>
             <Ionicons name="star" size={16} color="#FFD700" />
@@ -286,11 +288,11 @@ export default function SelfieVerification() {
       </View>
       
       <Text style={[styles.title, fonts.spiritualTitleFont]}>
-        Cosmic Alignment Needed
+        Verification Failed
       </Text>
       
       <Text style={[styles.description, fonts.spiritualBodyFont]}>
-        The verification spirits couldn't align your essence with your profile energy. This sometimes happens when lighting or angles disrupt the cosmic flow.
+        We couldn't verify your photo against your profile. This sometimes happens when lighting or angles make it difficult to match.
       </Text>
       
       <View style={styles.tipsContainer}>
@@ -302,7 +304,7 @@ export default function SelfieVerification() {
           'Find better natural lighting',
           'Ensure your face matches your profile photos',
           'Remove any accessories',
-          'Center yourself and try again with pure intention'
+          'Take a clear photo and try again'
         ].map((tip, index) => (
           <View key={index} style={styles.tipRow}>
             <Ionicons name="bulb" size={16} color="#FFD700" />
@@ -347,15 +349,18 @@ export default function SelfieVerification() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-        </TouchableOpacity>
-        <View style={styles.headerRight} />
-      </View>
+      {/* Floating Back Button */}
+      <TouchableOpacity onPress={() => router.back()} style={styles.floatingBackButton}>
+        <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+      </TouchableOpacity>
 
-      {renderContent()}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderContent()}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -367,6 +372,30 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingTop: Platform.OS === 'ios' ? 20 : 10,
+      paddingBottom: Spacing['3xl'],
+    },
+    floatingBackButton: {
+      position: 'absolute',
+      top: Platform.OS === 'ios' ? 60 : 40,
+      left: Spacing.lg,
+      zIndex: 1000,
+      padding: Spacing.sm,
+      borderRadius: BorderRadius.full,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
     header: {
       flexDirection: "row",
@@ -412,7 +441,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: '#8B4513' + '40',
+      borderColor: '#9D4EDD' + '40',
     },
     title: {
       fontSize: Typography.sizes['2xl'],
@@ -530,7 +559,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     progressBar: {
       height: '100%',
-      backgroundColor: '#8B4513',
+      backgroundColor: '#00BCD4',
       borderRadius: 4,
     },
     progressText: {
@@ -546,14 +575,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#8B4513',
+      backgroundColor: '#9D4EDD',
       borderRadius: BorderRadius.lg,
       paddingVertical: Spacing.lg,
       paddingHorizontal: Spacing.xl,
       width: '100%',
       ...Platform.select({
         ios: {
-          shadowColor: '#8B4513',
+          shadowColor: '#9D4EDD',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,

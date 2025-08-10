@@ -283,12 +283,12 @@ export default function SacredSelf() {
                 <Ionicons 
                   name={verified ? "checkmark-circle" : "shield-checkmark-outline"} 
                   size={16} 
-                  color={verified ? '#FFD700' : colors.text} 
+                  color={verified ? '#FFD700' : '#000000'} 
                 />
                 <Text style={[
                   styles.verifyText, 
                   fonts.spiritualBodyFont,
-                  { color: verified ? '#FFD700' : colors.text }
+                  { color: verified ? '#FFD700' : '#000000' }
                 ]}>
                   {verified ? 'Verified' : 'Verify'}
                 </Text>
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
   },
   nameVerificationRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     marginBottom: Spacing.sm,
     gap: Spacing.md,
   },
@@ -706,6 +706,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     gap: Spacing.xs,
+    backgroundColor: 'transparent',
   },
   verifyText: {
     fontSize: Typography.sizes.sm,
