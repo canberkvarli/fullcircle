@@ -77,7 +77,6 @@ function SSOButtons(): JSX.Element {
               strokeColor="#B8860B"
               strokeWidth={2}
             />
-            <Text style={styles.loadingText}>Connecting to Google...</Text>
           </View>
         </View>
       )}
@@ -162,7 +161,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 1000,
@@ -172,10 +170,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     loadingContainer: {
       alignItems: 'center',
       padding: Spacing.xl,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
       borderRadius: BorderRadius.xl,
-      borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.2)',
       ...Platform.select({
         ios: {
           shadowColor: '#000',

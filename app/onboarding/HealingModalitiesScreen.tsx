@@ -20,22 +20,9 @@ import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
+import { healingModalities, normalizeModalityName } from "@/constants/healingModalities";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-const healingModalities = [
-  { name: "Reiki", icon: "energy-healing", iconType: "custom", color: "#E74C3C" },
-  { name: "Acupuncture", icon: "acupuncture", iconType: "custom", color: "#F39C12" },
-  { name: "Sound Therapy", icon: "sound", iconType: "custom", color: "#F1C40F" },
-  { name: "Crystal Healing", icon: "crystal", iconType: "custom", color: "#2ECC71" },
-  { name: "Aromatherapy", icon: "aroma", iconType: "custom", color: "#3498DB" },
-  { name: "Light Therapy", icon: "light", iconType: "custom", color: "#E91E63" },
-  { name: "Massage Therapy", icon: "massage", iconType: "custom", color: "#FF5722" },
-  { name: "Hypnotherapy", icon: "therapy", iconType: "custom", color: "#607D8B" },
-  { name: "Homeopathy", icon: "homeopathy", iconType: "custom", color: "#009688" },
-  { name: "Herbalism", icon: "plant", iconType: "custom", color: "#4CAF50" },
-  { name: "Plant Medicine", icon: "mushroom", iconType: "custom", color: "#8E24AA" },
-];
 
 function HealingModalitiesScreen() {
   const {
@@ -50,8 +37,9 @@ function HealingModalitiesScreen() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
 
+  // Normalize any legacy names in user data to new names
   const [selectedModalities, setSelectedModalities] = useState<string[]>(
-    userData?.spiritualProfile?.healingModalities || []
+    (userData?.spiritualProfile?.healingModalities || []).map(normalizeModalityName)
   );
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData?.hiddenFields || {}
@@ -169,10 +157,13 @@ function HealingModalitiesScreen() {
         return;
       }
 
+      // Ensure we're saving normalized names
+      const normalizedModalities = selectedModalities.map(normalizeModalityName);
+
       await updateUserData({
         spiritualProfile: {
           ...userData.spiritualProfile,
-          healingModalities: selectedModalities,
+          healingModalities: normalizedModalities,
         },
         hiddenFields,
       });
@@ -441,13 +432,27 @@ function HealingModalitiesScreen() {
         ]}>
           {allSelected ? 'All healing modalities selected!' : `${selectedModalities.length} healing modalit${selectedModalities.length === 1 ? 'y' : 'ies'} selected`}
         </Text>
-        <View style={styles.selectedDots}>
-          {selectedModalities.slice(0, 6).map((_, index) => (
-            <View key={index} style={[
-              styles.selectedDot,
-              allSelected && { backgroundColor: '#B8860B' } // Darker golden dots
-            ]} />
-          ))}
+        {/* Dots container with fixed width to maintain consistent spacing */}
+        <View style={styles.selectedDotsContainer}>
+          <View style={styles.selectedDots}>
+            {/* Each dot has a fixed position: index * 12px (8px dot + 4px gap) */}
+            {Array.from({ length: 6 }, (_, index) => {
+              const isSelected = index < selectedModalities.length;
+              const dotPosition = index * 12; // 8px dot + 4px gap
+              return (
+                <View key={index} style={[
+                  styles.selectedDot,
+                  {
+                    position: 'absolute',
+                    left: dotPosition,
+                    backgroundColor: isSelected ? (allSelected ? '#B8860B' : colors.primary) : 'transparent',
+                    borderWidth: isSelected ? 0 : 1,
+                    borderColor: colors.border
+                  }
+                ]} />
+              );
+            })}
+          </View>
           {selectedModalities.length > 6 && (
             <Text style={[
               styles.moreText,
@@ -464,34 +469,33 @@ function HealingModalitiesScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigateToPreviousScreen()}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-        </TouchableOpacity>
-
-        {/* Progress Bar */}
-        <OnboardingProgressBar currentScreen="HealingModalitiesScreen" />
-        
-        {/* Header */}
-        <Text style={styles.title}>Your Healing Journey</Text>
-        <Text style={styles.subtitle}>
-          Select the modalities that resonate with your healing essence
-        </Text>
-
-        {/* Selected Count - Reserved Space */}
-        <View style={styles.selectedCountSpace}>
-          {renderSelectedCount()}
-        </View>
-
-        {/* Main Healing Circle */}
         <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigateToPreviousScreen()}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+          </TouchableOpacity>
+
+          {/* Progress Bar */}
+          <OnboardingProgressBar currentScreen="HealingModalitiesScreen" />
+          
+          {/* Header */}
+          <Text style={styles.title}>Your Healing Journey</Text>
+          <Text style={styles.subtitle}>
+            Select the modalities that resonate with your healing essence
+          </Text>
+
+          {/* Selected Count - Reserved Space */}
+          <View style={styles.selectedCountSpace}>
+            {renderSelectedCount()}
+          </View>
+
+          {/* Main Healing Circle */}
           <View style={[styles.healingCircleContainer, {
             width: dimensions.containerSize,
             height: dimensions.containerSize,
@@ -542,6 +546,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    scrollViewContent: {
+      paddingBottom: 120,
       marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
     },
     backButton: {
@@ -610,10 +617,17 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: 'italic',
       marginBottom: Spacing.xs,
     },
-    selectedDots: {
+    selectedDotsContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.xs,
+      justifyContent: 'center',
+    },
+    // Fixed width container with absolute positioned dots for consistent spacing
+    selectedDots: {
+      position: 'relative',
+      width: 68, // Fixed width: 6 dots (6 * 8) + 5 gaps (5 * 4) = 48 + 20 = 68
+      height: 8, // Height of a single dot
     },
     selectedDot: {
       width: 8,
@@ -626,14 +640,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       color: colors.primary,
       fontSize: Typography.sizes.sm,
       marginLeft: Spacing.xs,
-    },
-    scrollView: {
-      flex: 1,
-    },
-    scrollContainer: {
-      paddingHorizontal: Spacing.lg,
-      paddingBottom: 120,
-      alignItems: 'center',
     },
     healingCircleContainer: {
       position: 'relative',
@@ -765,6 +771,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       justifyContent: "space-between",
       marginTop: Spacing["3xl"],
       marginBottom: Spacing.lg,
+      marginHorizontal: Spacing.lg,
       backgroundColor: colors.card,
       padding: Spacing.lg,
       borderRadius: BorderRadius.md,

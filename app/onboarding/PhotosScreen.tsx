@@ -76,10 +76,10 @@ function PhotosScreen() {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permission",
-          "To complete your spiritual profile, please allow access to your photo library."
-        );
+            Alert.alert(
+      "Permission",
+      "To complete your profile, please allow access to your photo library."
+    );
       }
     })();
 
@@ -182,7 +182,7 @@ const handleSubmit = async () => {
   );
 
   if (filteredPhotos.length < 3) {
-    Alert.alert("Gallery", "Please share at least 3 photos to complete your spiritual profile.");
+    Alert.alert("Gallery", "Please share at least 3 photos to complete your profile.");
     return;
   }
 
@@ -213,7 +213,7 @@ const handleSubmit = async () => {
     console.log("Photos uploaded successfully!");
     completeOnboarding();
   } catch (error: any) {
-    Alert.alert("Cosmic Interference", "The universe had trouble saving your photos: " + error.message);
+    Alert.alert("Oops!", "We had trouble saving your photos: " + error.message);
   } finally {
     setLoading(false);
   }
@@ -239,55 +239,46 @@ const handleSubmit = async () => {
   };
 
   const renderPhotoSlot = (index: number) => {
-    const hasPhoto = selectedPhotos[index] && selectedPhotos[index] !== "";
+    const photo = selectedPhotos[index];
     const isMainPhoto = index === 0;
 
     return (
-      <Animated.View
-        key={index}
-        style={[
-          isMainPhoto ? styles.mainPhotoContainer : styles.photoContainer,
-          {
-            opacity: fadeAnims[index],
-            transform: [{ scale: scaleAnims[index] }],
-          }
-        ]}
-      >
+      <View key={index} style={styles.photoContainer}>
         <TouchableOpacity
           style={[
-            isMainPhoto ? styles.mainPhoto : styles.photo,
-            hasPhoto ? styles.photoWithImage : null
+            styles.photo,
+            photo && styles.photoWithImage
           ]}
           onPress={() => handleSelectPhoto(index)}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          {hasPhoto ? (
-            <Image
-              source={{ uri: selectedPhotos[index] }}
-              style={isMainPhoto ? styles.mainPhotoImage : styles.photoImage}
-            />
+          {photo ? (
+            <>
+              <Image
+                source={{ uri: photo }}
+                style={styles.photoImage}
+                resizeMode="cover"
+              />
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeletePhoto(index)}
+              >
+                <Ionicons name="close-circle" size={24} color={colors.background} />
+              </TouchableOpacity>
+            </>
           ) : (
             <View style={styles.placeholderContent}>
-              <View style={[styles.iconContainer, isMainPhoto && styles.mainIconContainer]}>
+              <View style={styles.iconContainer}>
                 <Ionicons 
                   name="camera" 
-                  size={isMainPhoto ? 28 : 20} 
-                  color={colors.primary} 
+                  size={24} 
+                  color={colors.textMuted}
                 />
               </View>
             </View>
           )}
         </TouchableOpacity>
-
-        {hasPhoto && (
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeletePhoto(index)}
-          >
-            <Ionicons name="close" size={12} color={colors.background} />
-          </TouchableOpacity>
-        )}
-      </Animated.View>
+      </View>
     );
   };
   const photoCount = selectedPhotos.filter(photo => photo && photo !== "").length;
@@ -299,111 +290,99 @@ const handleSubmit = async () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigateToPreviousScreen()}
         >
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigateToPreviousScreen()}
-          >
-            <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-          </TouchableOpacity>
+          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+        </TouchableOpacity>
 
-          {/* Progress Bar */}
-          <OnboardingProgressBar currentScreen="PhotosScreen" />
+        {/* Progress Bar */}
+        <OnboardingProgressBar currentScreen="PhotosScreen" />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Capture Your Self</Text>
-            <Text style={styles.subtitle}>
-              Share your authentic self through photos that reflect your inner light
-            </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Share Your Story</Text>
+          <Text style={styles.subtitle}>
+            Let your photos tell the story of who you truly are
+          </Text>
+        </View>
+
+        {/* Progress Indicator */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressTrack}>
+            <Animated.View 
+              style={[
+                styles.progressFill,
+                { width: progressWidth }
+              ]} 
+            />
           </View>
+          <Text style={styles.progressText}>
+            {photoCount}/3 photos • {photoCount >= 3 ? "Complete!" : "At least 3 required"}
+          </Text>
+        </View>
 
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressTrack}>
-              <Animated.View 
-                style={[
-                  styles.progressFill,
-                  { width: progressWidth }
-                ]} 
+        {/* Photo Grid */}
+        <View style={styles.photoGrid}>
+          {Array.from({ length: 6 }).map((_, index) => renderPhotoSlot(index))}
+        </View>
+
+        {/* Submit Button */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <OuroborosLoader 
+              size={100}
+              fillColor="#F5E6D3"
+              strokeColor="#7B6B5C"
+              strokeWidth={1.5}
+              loop={true}
+            />
+            <Text style={styles.loadingText}>Uploading your gallery...</Text>
+          </View>
+        ) : (
+          <Animated.View style={[
+            styles.submitButtonContainer,
+            {
+              shadowOpacity: glowAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.3, 0.8],
+              }),
+            }
+          ]}>
+            <TouchableOpacity 
+              style={[
+                styles.submitButton,
+                photoCount < 3 && styles.submitButtonDisabled
+              ]} 
+              onPress={handleSubmit}
+              disabled={photoCount < 3}
+            >
+              <Ionicons 
+                name="heart" 
+                size={20} 
+                color={photoCount >= 3 ? colors.background : colors.textMuted}
+                style={styles.buttonIcon}
               />
-            </View>
-            <Text style={styles.progressText}>
-              {photoCount}/3 photos • {photoCount >= 3 ? "Complete!" : "At least 3 required"}
-            </Text>
-          </View>
+              <Text style={[
+                styles.buttonText,
+                photoCount < 3 && styles.buttonTextDisabled
+              ]}>
+                Complete Your Profile
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
-          {/* Main Photo */}
-          <View style={styles.mainPhotoSection}>
-            <Text style={styles.sectionTitle}>Profile Photo</Text>
-            {renderPhotoSlot(0)}
-          </View>
-
-          {/* Secondary Photos */}
-          <View style={styles.secondarySection}>
-            <Text style={styles.sectionTitle}>Additional Photos</Text>
-            <View style={styles.secondaryGrid}>
-              {Array.from({ length: 5 }).map((_, index) => renderPhotoSlot(index + 1))}
-            </View>
-          </View>
-
-          {/* Submit Button */}
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <OuroborosLoader 
-                size={100}
-                fillColor="#F5E6D3"
-                strokeColor="#7B6B5C"
-                strokeWidth={1.5}
-                loop={true}
-              />
-              <Text style={styles.loadingText}>Uploading your gallery...</Text>
-            </View>
-          ) : (
-            <Animated.View style={[
-              styles.submitButtonContainer,
-              {
-                shadowOpacity: glowAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.3, 0.8],
-                }),
-              }
-            ]}>
-              <TouchableOpacity 
-                style={[
-                  styles.submitButton,
-                  photoCount < 3 && styles.submitButtonDisabled
-                ]} 
-                onPress={handleSubmit}
-                disabled={photoCount < 3}
-              >
-                <Ionicons 
-                  name="heart" 
-                  size={20} 
-                  color={photoCount >= 3 ? colors.background : colors.textMuted}
-                  style={styles.buttonIcon}
-                />
-                <Text style={[
-                  styles.buttonText,
-                  photoCount < 3 && styles.buttonTextDisabled
-                ]}>
-                  Complete Your Self
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-
-          {/* Affirmation */}
+        {/* Affirmation - only show when not loading */}
+        {!loading && (
           <Text style={styles.affirmation}>
             Your authentic{' '}
-            <Text style={styles.highlightedWord}>beauty</Text>
-            {' shines through every image you share'}
+            <Text style={styles.highlightedWord}>essence</Text>
+            {' comes through in every image you share'}
           </Text>
-        </ScrollView>
+        )}
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -416,6 +395,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      justifyContent: 'space-between',
+      paddingBottom: Spacing.lg,
     },
     scrollContent: {
       paddingBottom: Spacing.xl,
@@ -448,15 +429,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       }),
     },
     header: {
-      marginTop: Spacing.lg,
-      marginBottom: Spacing.xl,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.lg,
       paddingHorizontal: Spacing.xl,
     },
     title: {
       ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
-      marginBottom: Spacing.md,
+      marginBottom: Spacing.sm,
     },
     subtitle: {
       ...fonts.spiritualSubtitleFont,
@@ -466,7 +447,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       lineHeight: Typography.sizes.base * 1.4,
     },
     progressContainer: {
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.lg,
       paddingHorizontal: Spacing.xl,
     },
     progressTrack: {
@@ -487,6 +468,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       textAlign: 'center',
       fontStyle: 'italic',
     },
+    mainPhotoSection: {
+      alignItems: 'center',
+      marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.xl,
+    },
     sectionTitle: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.base,
@@ -496,53 +482,44 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       fontStyle: 'italic',
       fontWeight: Typography.weights.medium,
     },
-    mainPhotoSection: {
-      alignItems: 'center',
+    instructions: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textLight,
+      textAlign: 'center',
+      fontStyle: 'italic',
       marginBottom: Spacing.xl,
       paddingHorizontal: Spacing.xl,
+      lineHeight: Typography.sizes.base * 1.4,
     },
-    mainPhotoContainer: {
-      alignItems: 'center',
-    },
-    mainPhoto: {
-      width: 180,
-      height: 220,
-      borderRadius: BorderRadius.xl,
-      backgroundColor: colors.card,
-      borderWidth: 2,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
-      justifyContent: 'center',
-      alignItems: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
-    },
-    mainPhotoImage: {
-      width: '100%',
-      height: '100%',
-      borderRadius: BorderRadius.xl,
-    },
-    secondarySection: {
-      marginBottom: Spacing.xl,
+    affirmation: {
+      ...fonts.elegantItalicFont,
+      textAlign: "center",
+      fontStyle: "italic",
+      color: colors.textLight,
+      lineHeight: Typography.sizes.lg * 1.5,
+      letterSpacing: 0.3,
       paddingHorizontal: Spacing.xl,
+      marginBottom: Spacing.xl,
     },
-    secondaryGrid: {
+    highlightedWord: {
+      color: colors.textDark, // Keep text dark
+      textShadowColor: '#FFD700', // Divine yellow glow
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: 8,
+      fontWeight: Typography.weights.medium, // Slightly bolder
+      letterSpacing: 0.5, // More letter spacing for emphasis
+    },
+    photoGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'center',
+      alignItems: 'center',
       gap: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      marginBottom: Spacing.lg,
     },
     photoContainer: {
-      width: (screenWidth - (Spacing.xl * 2) - (Spacing.md * 4)) / 3,
+      width: (screenWidth - (Spacing.xl * 2) - (Spacing.md * 2)) / 3,
       aspectRatio: 1,
     },
     photo: {
@@ -555,15 +532,16 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderStyle: 'dashed',
       justifyContent: 'center',
       alignItems: 'center',
+      overflow: 'hidden',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: 0.1,
           shadowRadius: 4,
         },
         android: {
-          elevation: 1,
+          elevation: 2,
         },
       }),
     },
@@ -595,16 +573,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderRadius: 18,
       marginBottom: Spacing.sm,
     },
-    placeholderText: {
-      ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.xs,
-      color: colors.textMuted,
-      textAlign: 'center',
-    },
-    mainPlaceholderText: {
-      fontSize: Typography.sizes.sm,
-      color: colors.primary,
-    },
     deleteButton: {
       position: 'absolute',
       top: -6,
@@ -627,18 +595,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
-    instructions: {
-      ...fonts.spiritualBodyFont,
-      color: colors.textLight,
-      textAlign: 'center',
-      fontStyle: 'italic',
-      marginBottom: Spacing.xl,
-      paddingHorizontal: Spacing.xl,
-      lineHeight: Typography.sizes.base * 1.4,
-    },
     loadingContainer: {
       alignItems: 'center',
-      marginBottom: Spacing.xl,
+      justifyContent: 'center',
+      gap: Spacing.lg,
+      marginBottom: Spacing.lg,
     },
     loadingText: {
       ...fonts.spiritualBodyFont,
@@ -707,24 +668,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     buttonTextDisabled: {
       color: colors.textMuted,
-    },
-    affirmation: {
-      ...fonts.elegantItalicFont,
-      textAlign: "center",
-      fontStyle: "italic",
-      color: colors.textLight,
-      lineHeight: Typography.sizes.lg * 1.5,
-      letterSpacing: 0.3,
-      paddingHorizontal: Spacing.xl,
-      marginBottom: Spacing.xl,
-    },
-    highlightedWord: {
-      color: colors.textDark, // Keep text dark
-      textShadowColor: '#FFD700', // Divine yellow glow
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 8,
-      fontWeight: Typography.weights.medium, // Slightly bolder
-      letterSpacing: 0.5, // More letter spacing for emphasis
     },
   });
 };

@@ -17,38 +17,9 @@ import OnboardingProgressBar from "../../components/OnboardingProgressBar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useUserContext } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { personalPractices, categoryColors } from "@/constants/personalPractices";
 import { useFont } from "@/hooks/useFont";
 import RoundedCheckbox from "@/components/RoundedCheckbox";
-
-// Renamed to personalPractices to be more subtle
-const personalPractices = [
-  { name: "Meditation", category: "mindfulness", icon: "meditation", iconType: "custom" },
-  { name: "Yoga", category: "movement", icon: "yoga", iconType: "custom" },
-  { name: "Reflection", category: "mindfulness", icon: "prayer", iconType: "custom" }, // Changed from Prayer
-  { name: "Journaling", category: "reflection", icon: "journal", iconType: "custom" },
-  { name: "Holistic Wellness", category: "wellness", icon: "energy-healing", iconType: "custom" }, // Changed from Energy Healing
-  { name: "Crystal Work", category: "wellness", icon: "crystal", iconType: "custom" },
-  { name: "Card Reading", category: "insight", icon: "tarot", iconType: "custom" }, // Changed from Tarot & Oracle
-  { name: "Astrology", category: "insight", icon: "aries", iconType: "custom" },
-  { name: "Nature Connection", category: "earth", icon: "hiking", iconType: "custom" }, // Changed from Nature Rituals
-  { name: "Sound Therapy", category: "wellness", icon: "gong", iconType: "custom" }, // Changed from Sound Healing
-  { name: "Breathwork", category: "mindfulness", icon: "breathwork", iconType: "custom" },
-  { name: "Movement", category: "movement", icon: "dance", iconType: "custom" }, // Changed from Ecstatic Dance
-  { name: "Plant Wisdom", category: "wellness", icon: "leaf", iconType: "custom" }, // Changed from Plant Medicine
-  { name: "Inner Journeying", category: "reflection", icon: "shaman", iconType: "custom" }, // Changed from Shamanic Journey
-  { name: "Martial Arts", category: "movement", icon: "martial-arts", iconType: "custom" },
-  { name: "Fasting", category: "wellness", icon: "fasting", iconType: "custom" },
-];
-
-// Enhanced color palette with better wellness vibes
-const categoryColors = {
-  mindfulness: '#8B5CF6', // Purple - for meditation, breathwork, reflection
-  movement: '#F59E0B', // Amber - for yoga, movement, martial arts
-  reflection: '#8B4513', // Saddle Brown - for journaling, inner journeying
-  wellness: '#10B981', // Emerald - for holistic wellness, sound therapy, crystals, plant wisdom
-  insight: '#6366F1', // Indigo - for card reading, astrology
-  earth: '#22C55E', // Green - for nature connection
-};
 
 function SpiritualPracticesScreen() {
   const {
@@ -69,6 +40,8 @@ function SpiritualPracticesScreen() {
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData?.hiddenFields || {}
   );
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Animation for staggered card entry
   const fadeAnimations = useRef(personalPractices.map(() => new Animated.Value(0))).current;
@@ -137,6 +110,15 @@ function SpiritualPracticesScreen() {
     return categoryColors[category as keyof typeof categoryColors] || '#6B7280';
   };
 
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setShowFloatingBar(offsetY > 200); // Show floating bar after scrolling 200px
+  };
+
+  const scrollToTop = () => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   // Icon renderer function
   const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
     if (iconType === "custom") {
@@ -144,6 +126,71 @@ function SpiritualPracticesScreen() {
     } else {
       return <Ionicons name={iconName as any} size={size} color={color} />;
     }
+  };
+
+  const renderSelectedPreview = () => {
+    // Always return a View with fixed height regardless of content
+    return (
+      <View style={styles.selectedPreview}>
+        {selectedPractices.length > 0 ? (
+          <>
+            <Text style={styles.selectedTitle}>Your practices</Text>
+            <View style={styles.selectedIndicators}>
+              {selectedPractices.slice(0, 8).map((practiceName) => {
+                const practice = personalPractices.find(p => p.name === practiceName);
+                if (!practice) return null;
+                
+                const practiceColor = getPracticeColor(practice.category);
+                return (
+                  <View
+                    key={practiceName}
+                    style={[
+                      styles.selectedIndicator,
+                      { backgroundColor: practiceColor }
+                    ]}
+                  />
+                );
+              })}
+              {selectedPractices.length > 8 && (
+                <Text style={styles.moreIndicator}>+{selectedPractices.length - 8}</Text>
+              )}
+            </View>
+          </>
+        ) : null}
+      </View>
+    );
+  };
+
+  const renderFloatingBar = () => {
+    if (!showFloatingBar || selectedPractices.length === 0) return null;
+    
+    return (
+      <Animated.View style={styles.floatingBar}>
+        <TouchableOpacity onPress={scrollToTop} style={styles.floatingBarContent}>
+          <Text style={styles.floatingBarTitle}>Your practices</Text>
+          <View style={styles.floatingBarIndicators}>
+            {selectedPractices.slice(0, 6).map((practiceName) => {
+              const practice = personalPractices.find(p => p.name === practiceName);
+              if (!practice) return null;
+              
+              const practiceColor = getPracticeColor(practice.category);
+              return (
+                <View
+                  key={practiceName}
+                  style={[
+                    styles.floatingBarIndicator,
+                    { backgroundColor: practiceColor }
+                  ]}
+                />
+              );
+            })}
+            {selectedPractices.length > 6 && (
+              <Text style={styles.floatingBarMore}>+{selectedPractices.length - 6}</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
   };
 
   const renderPracticeCard = (practice: typeof personalPractices[0], index: number) => {
@@ -217,7 +264,7 @@ function SpiritualPracticesScreen() {
           <View style={styles.selectionContainer}>
             {isSelected ? (
               <View style={[
-                styles.selectedIndicator,
+                styles.practiceSelectedIndicator,
                 { 
                   backgroundColor: practiceColor,
                   shadowColor: practiceColor,
@@ -240,11 +287,14 @@ function SpiritualPracticesScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
+                     <ScrollView 
+               ref={scrollViewRef}
+               style={styles.scrollView}
+               contentContainerStyle={styles.scrollContainer}
+               showsVerticalScrollIndicator={false}
+               onScroll={handleScroll}
+               scrollEventThrottle={16}
+             >
           {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
@@ -261,6 +311,9 @@ function SpiritualPracticesScreen() {
           <Text style={styles.subtitle}>
             Choose activities that bring balance to your life
           </Text>
+
+          {/* Selected Preview */}
+          {renderSelectedPreview()}
 
           {/* Practices Grid */}
           <View style={styles.practicesGrid}>
@@ -296,6 +349,9 @@ function SpiritualPracticesScreen() {
           />
         </TouchableOpacity>
       </SafeAreaView>
+      
+      {/* Floating Bar */}
+      {renderFloatingBar()}
     </GestureHandlerRootView>
   );
 }
@@ -352,7 +408,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
-      marginBottom: Spacing.xl,
+      marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
       fontStyle: "italic",
     },
@@ -366,7 +422,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     practicesGrid: {
       paddingHorizontal: Spacing.lg,
-      gap: Spacing.sm,
+      marginTop: Spacing.xs,
+      marginBottom: Spacing.xl,
+      flexDirection: 'column',
+      gap: Spacing.md,
     },
     practiceCard: {
       flexDirection: 'row',
@@ -378,6 +437,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderWidth: 2,
       borderColor: colors.border,
       minHeight: 88, // Consistent height for better alignment
+      width: '100%', // Full width for better text readability
       ...Platform.select({
         ios: {
           shadowColor: '#000',
@@ -445,7 +505,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       justifyContent: 'center',
       alignItems: 'center',
     },
-    selectedIndicator: {
+    practiceSelectedIndicator: {
       width: 32,
       height: 32,
       borderRadius: 16,
@@ -468,6 +528,109 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderRadius: 12,
       borderWidth: 2,
       backgroundColor: 'transparent',
+    },
+    selectedPreview: {
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      height: 60, // Fixed height to prevent layout shift
+      justifyContent: 'center',
+    },
+    selectedTitle: {
+      ...fonts.spiritualBodyFont,
+      color: colors.primary,
+      fontSize: Typography.sizes.base,
+      fontStyle: 'italic',
+      marginBottom: Spacing.sm,
+    },
+    selectedIndicators: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    selectedIndicator: {
+      width: 32,
+      height: 4,
+      borderRadius: 2,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.2,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    moreIndicator: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textLight,
+      fontSize: Typography.sizes.sm,
+      fontStyle: 'italic',
+      marginLeft: Spacing.xs,
+    },
+    floatingBar: {
+      position: 'absolute',
+      top: Platform.select({ ios: 60, android: 40 }),
+      left: Spacing.lg,
+      right: Spacing.lg,
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
+    },
+    floatingBarContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: Spacing.md,
+    },
+    floatingBarTitle: {
+      ...fonts.spiritualBodyFont,
+      color: colors.primary,
+      fontSize: Typography.sizes.base,
+      fontStyle: 'italic',
+      fontWeight: Typography.weights.medium,
+    },
+    floatingBarIndicators: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    floatingBarIndicator: {
+      width: 24,
+      height: 4,
+      borderRadius: 2,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.2,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    floatingBarMore: {
+      ...fonts.spiritualBodyFont,
+      color: colors.textLight,
+      fontSize: Typography.sizes.sm,
+      fontStyle: 'italic',
+      marginLeft: Spacing.xs,
     },
     privacyContainer: {
       flexDirection: "row",

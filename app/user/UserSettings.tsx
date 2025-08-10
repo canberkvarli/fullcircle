@@ -867,23 +867,25 @@ export default function UserSettings() {
               </TouchableOpacity>
             ))}
             
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.deleteModalButton]}
-              onPress={handleDeleteAccount}
-              disabled={isLoading}
-            >
-              {isLoading ? (
+            {isLoading ? (
+              <View style={styles.loaderContainer}>
                 <OuroborosLoader 
-                    size={50}
-                    duration={3000}
-                    fillColor="#F5E6D3"
-                    strokeColor="#7B6B5C"
-                    strokeWidth={1.5}
-                    loop={true}
-                  />              ) : (
+                  size={50}
+                  duration={3000}
+                  fillColor="#F5E6D3"
+                  strokeColor="#7B6B5C"
+                  strokeWidth={1.5}
+                  loop={true}
+                />
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.deleteModalButton]}
+                onPress={handleDeleteAccount}
+              >
                 <Text style={[styles.modalButtonText, fonts.buttonFont]}>Delete Account</Text>
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity onPress={() => setDeleteAccountModal(false)}>
               <Text style={[styles.modalCancelText, fonts.captionFont]}>Keep Account</Text>
@@ -1132,6 +1134,11 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     deleteModalButton: {
       backgroundColor: '#CD5C5C',
+    },
+    loaderContainer: {
+      alignItems: "center",
+      marginBottom: Spacing.md,
+      paddingVertical: Spacing.sm,
     },
     modalButtonText: {
       color: "#FFFFFF",

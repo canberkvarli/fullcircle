@@ -182,30 +182,28 @@ function SpiritualDrawsScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigateToPreviousScreen()}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.textDark} />
-        </TouchableOpacity>
-
-        {/* Progress Bar */}
-        <OnboardingProgressBar currentScreen="SpiritualDrawsScreen" />
-        
-        {/* Header */}
-        <Text style={styles.title}>What aspects of life are you exploring?</Text>
-        <Text style={styles.subtitle}>Select the paths that call to you</Text>
-        
-        {/* Selected Preview */}
-        {renderSelectedPreview()}
-
-        {/* Content */}
         <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigateToPreviousScreen()}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.textDark} />
+          </TouchableOpacity>
+
+          {/* Progress Bar */}
+          <OnboardingProgressBar currentScreen="SpiritualDrawsScreen" />
+          
+          {/* Header */}
+          <Text style={styles.title}>What aspects of life are you exploring?</Text>
+          <Text style={styles.subtitle}>Select the paths that call to you</Text>
+          
+          {/* Selected Preview */}
+          {renderSelectedPreview()}
+
           {/* Personal Draws Cards */}
           <View style={styles.drawsContainer}>
             {spiritualDraws.map((draw, index) => renderDrawCard(draw, index))}
@@ -251,6 +249,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    scrollViewContent: {
+      paddingBottom: 120,
       marginTop: Platform.select({ ios: 0, android: Spacing.sm }),
     },
     backButton: {
@@ -337,16 +338,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
         },
       }),
     },
-    scrollView: {
-      flex: 1,
-    },
-    scrollContainer: {
-      paddingHorizontal: Spacing.lg,
-      paddingBottom: 120, // Space for fixed submit button
-    },
     drawsContainer: {
       gap: Spacing.lg,
       marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.lg,
     },
     drawCard: {
       backgroundColor: colors.card,
@@ -424,6 +419,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       borderRadius: BorderRadius.md,
       borderWidth: 1,
       borderColor: colors.border,
+      marginHorizontal: Spacing.lg,
     },
     privacyText: {
       ...fonts.spiritualBodyFont,
