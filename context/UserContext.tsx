@@ -385,6 +385,8 @@ type UserContextType = {
     issues: string[];
     score: number;
   };
+  // 🔑 Add initializing state to track auth initialization
+  initializing: boolean;
 };
 
 // Initial screens and initial user data
@@ -587,6 +589,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [authStateVersion, setAuthStateVersion] = useState(0); // Track auth state changes
   const userDataRef = useRef<UserDataType>(userData);
   const router = useRouter();
+  
+  // 🔒 Track last auth state change to prevent rapid successive calls
+  const lastAuthStateChangeRef = useRef<{ userId: string | null; timestamp: number } | null>(null);
 
   // 🔒 SINGLE SOURCE OF TRUTH: Get the authoritative user ID
   const getAuthoritativeUserId = useCallback((): string | null => {
@@ -681,6 +686,39 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       onAuthStateChanged(user);
     });
     
+    // 🔑 CRITICAL FIX: Add timeout fallback to ensure initializing is set to false
+    // This prevents the app from being stuck in loading state if auth listener is slow
+    const initializationTimeout = setTimeout(() => {
+      setInitializing((prevInitializing) => {
+        if (prevInitializing) {
+          console.log("⚠️ Auth initialization timeout reached, forcing initializing to false");
+          return false;
+        }
+        return prevInitializing;
+      });
+    }, 3000); // 3 second timeout
+    
+    // 🔑 ADDITIONAL FIX: Check if user is already authenticated immediately
+    // This handles the case where the user is already signed in when the app starts
+    const checkExistingAuth = async () => {
+      const existingUser = FIREBASE_AUTH.currentUser;
+      setInitializing((prevInitializing) => {
+        if (existingUser && prevInitializing) {
+          console.log("🔑 User already authenticated on app start, processing immediately");
+          // Process the existing auth state asynchronously
+          onAuthStateChanged(existingUser).catch(error => {
+            console.error("Error processing existing auth state:", error);
+            setInitializing(false);
+          });
+          return prevInitializing; // Keep initializing true until onAuthStateChanged completes
+        }
+        return prevInitializing;
+      });
+    };
+    
+    // Check existing auth state after a short delay to allow Firebase to initialize
+    const existingAuthCheck = setTimeout(checkExistingAuth, 500);
+    
     // Add AppState listener to detect when app goes to background/foreground
     const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
       console.log(`App state changed to: ${nextAppState}`);
@@ -690,7 +728,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log('App is now active, checking authentication state');
         const currentUser = FIREBASE_AUTH.currentUser;
         
-        if (currentUser && !initializing) {
+        if (currentUser) {
           console.log(`Current user detected on app resume: ${currentUser.uid}`);
           // Update last active timestamp
           updateLastActive();
@@ -704,12 +742,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           }
           
           // 🔑 CRITICAL: Force sync of currentUser state with Firebase Auth
-          if (currentUser.uid !== currentUser?.uid || 
-              currentUser.metadata?.lastSignInTime !== currentUser?.metadata?.lastSignInTime) {
-            console.log('🔄 Forcing currentUser state sync on app resume');
-            setCurrentUser(currentUser);
-          }
-        } else if (!currentUser && userData.userId) {
+          setCurrentUser((prevCurrentUser) => {
+            if (!prevCurrentUser || 
+                prevCurrentUser.uid !== currentUser.uid || 
+                prevCurrentUser.metadata?.lastSignInTime !== currentUser.metadata?.lastSignInTime) {
+              console.log('🔄 Forcing currentUser state sync on app resume');
+              return currentUser;
+            }
+            return prevCurrentUser;
+          });
+        } else if (userData.userId) {
           console.log('No current user but userData exists, clearing userData');
           setUserData(initialUserData);
         }
@@ -733,8 +775,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       subscriber();
       appStateSubscription.remove();
       clearInterval(authSyncInterval);
+      clearTimeout(initializationTimeout);
+      clearTimeout(existingAuthCheck);
     };
-  }, []);
+  }, [userData.userId, currentUser?.uid, currentUser?.metadata?.lastSignInTime]);
 
   const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string>> => {
     if (!userId) return new Set();
@@ -982,6 +1026,48 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     
+    // 🔒 Prevent rapid successive auth state changes from the same user
+    const now = Date.now();
+    if (user && lastAuthStateChangeRef.current && 
+        lastAuthStateChangeRef.current.userId === user.uid && 
+        (now - lastAuthStateChangeRef.current.timestamp) < 1000) { // Increased to 1 second
+      console.log("🧭 Ignoring rapid auth state change for same user", {
+        userId: user.uid,
+        timeSinceLastChange: now - lastAuthStateChangeRef.current.timestamp
+      });
+      return;
+    }
+    
+    // 🔒 ADDITIONAL: Prevent multiple rapid calls to handleUserNavigation for the same user
+    if (user && lastAuthStateChangeRef.current && 
+        lastAuthStateChangeRef.current.userId === user.uid && 
+        (now - lastAuthStateChangeRef.current.timestamp) < 2000) { // 2 second window
+      console.log("🧭 Skipping handleUserNavigation call - too recent for same user", {
+        userId: user.uid,
+        timeSinceLastChange: now - lastAuthStateChangeRef.current.timestamp
+      });
+      // Still update the timestamp but don't proceed with navigation
+      lastAuthStateChangeRef.current = { userId: user.uid, timestamp: now };
+      return;
+    }
+    
+    // 🔒 SIGN-OUT PROTECTION: Prevent multiple rapid "No user" auth state changes
+    if (!user && lastAuthStateChangeRef.current && 
+        lastAuthStateChangeRef.current.userId === null && 
+        (now - lastAuthStateChangeRef.current.timestamp) < 1500) { // 1.5 second window
+      console.log("🧭 Ignoring rapid sign-out auth state change", {
+        timeSinceLastChange: now - lastAuthStateChangeRef.current.timestamp
+      });
+      return;
+    }
+    
+    // Update last auth state change tracking
+    if (user) {
+      lastAuthStateChangeRef.current = { userId: user.uid, timestamp: now };
+    } else {
+      lastAuthStateChangeRef.current = { userId: null, timestamp: now };
+    }
+    
     AuthDebug.trackFlowStep('AuthStateChange', 'Started', { 
       userId: user?.uid,
       hasProviders: user?.providerData?.length,
@@ -1059,6 +1145,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           
           if (fetchedUserData) {
             // NAVIGATION LOGIC - This is the single source of truth for where to go
+            console.log(`🧭 onAuthStateChanged calling handleUserNavigation for user ${user.uid}`);
             await handleUserNavigation(fetchedUserData, isGoogleLogin);
           }
         } else {
@@ -1067,25 +1154,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           updateLastActive();
         }
         
-        // 🔄 MODERN STATE SYNC: Keep all user references in sync
-        syncUserState(user);
+        // State sync already happened at the beginning of the function
       } catch (error) {
         console.error("Error in onAuthStateChanged:", error);
         AuthDebug.error('AuthStateChange', 'Error processing authenticated user', { error, userId: user.uid });
       }
     } else {
       AuthDebug.trackFlowStep('AuthStateChange', 'User Signed Out');
-      // Only reset user data if we actually had a user before
-      if (hasUserChanged && userData.userId) {
-        console.log("User signed out, resetting user data");
-        setUserData(initialUserData);
-        
-        // 🔄 MODERN STATE SYNC: Clear all user references
-        syncUserState(null);
-        
-        // Navigate to login screen on sign out
-        router.replace({ pathname: `onboarding/LoginSignupScreen` as any });
-      }
+      console.log("User signed out, resetting user data");
+      
+      // Always reset user data on sign out
+      setUserData(initialUserData);
+      
+      // State sync already happened at the beginning of the function
+      
+      // Navigate to login screen on sign out (always)
+      router.replace({ pathname: `onboarding/LoginSignupScreen` as any });
     }
   };
 
@@ -1145,9 +1229,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           
           AuthDebug.trackFlowStep('GoogleSignIn', 'Updated existing user data');
           
-          // Explicit navigation for existing users
-          // console.log("Manually triggering navigation for existing Google user");
-          await fetchUserData(user.uid, true);
+          // Let onAuthStateChanged handle navigation automatically
         } else {
           // New user - create document
           AuthDebug.trackFlowStep('GoogleSignIn', 'Creating new user document');
@@ -1272,24 +1354,13 @@ const verifyPhoneAndSetUser = async (
         // 🔄 MODERN STATE SYNC: Keep user references in sync
         syncUserState(user);
         
-        // FIX: For new users, manually navigate since onAuthStateChanged might not trigger
-        AuthDebug.trackFlowStep('PhoneVerification', 'New user created, manually navigating to NameScreen');
-        console.log("🆕 New phone user created, navigating to NameScreen...");
-        router.replace({ pathname: 'onboarding/NameScreen' as any });
+        // Let onAuthStateChanged handle navigation automatically
+        AuthDebug.trackFlowStep('PhoneVerification', 'New user created, letting auth state change handle navigation');
+        console.log("🆕 New phone user created, auth state change will handle navigation automatically");
       } else {
-        // FIX: For existing users, manually call fetchUserData and navigate
+        // Let onAuthStateChanged handle navigation automatically
         AuthDebug.trackFlowStep('PhoneVerification', 'Existing phone user authenticated', { userId: user.uid });
-        console.log("📱 Phone verification successful for existing user, fetching user data...");
-        const existingUserData = await fetchUserData(user.uid, false);
-        
-        // 🔧 FIX: Explicitly handle navigation for existing phone users
-        if (existingUserData) {
-          console.log("✅ User data fetched for existing user, handling navigation...");
-          AuthDebug.trackFlowStep('PhoneVerification', 'Handling navigation for existing phone user');
-          await handleUserNavigation(existingUserData, false);
-        } else {
-          console.error("❌ Failed to fetch user data for existing user after phone verification");
-        }
+        console.log("📱 Phone verification successful for existing user, auth state change will handle navigation automatically");
         
         // 🔄 MODERN STATE SYNC: Keep user references in sync
         syncUserState(user);
@@ -1472,8 +1543,42 @@ const verifyPhoneAndSetUser = async (
     }
   };
 
-  // 🧭 NAVIGATION HANDLER - Centralized navigation logic
-  const handleUserNavigation = async (userData: UserDataType, isSSO: boolean) => {
+      // 🧭 NAVIGATION HANDLER - Centralized navigation logic
+    let isNavigating = false;
+    let lastNavigationTime = 0;
+    let lastNavigationUserId = '';
+    const handleUserNavigation = async (userData: UserDataType, isSSO: boolean) => {
+      // 🔒 Prevent multiple simultaneous navigation calls
+      const now = Date.now();
+      if (isNavigating || (now - lastNavigationTime) < 1000) {
+        console.log("🧭 Navigation already in progress or too recent, skipping duplicate call", {
+          isNavigating,
+          timeSinceLastNavigation: now - lastNavigationTime
+        });
+        return;
+      }
+      
+      // 🔒 ADDITIONAL: Prevent multiple navigation calls for the same user within a short time
+      if (userData.userId === lastNavigationUserId && (now - lastNavigationTime) < 3000) {
+        console.log("🧭 Navigation for same user too recent, skipping duplicate call", {
+          userId: userData.userId,
+          timeSinceLastNavigation: now - lastNavigationTime
+        });
+        return;
+      }
+      
+      // 🔒 SIGN-OUT NAVIGATION PROTECTION: Prevent multiple sign-out navigations
+      if (!userData.userId && lastNavigationUserId === '' && (now - lastNavigationTime) < 2000) {
+        console.log("🧭 Sign-out navigation too recent, skipping duplicate call", {
+          timeSinceLastNavigation: now - lastNavigationTime
+        });
+        return;
+      }
+      
+      isNavigating = true;
+      lastNavigationTime = now;
+      lastNavigationUserId = userData.userId;
+    
     try {
       console.log(`🧭 handleUserNavigation called for user ${userData.userId} (isSSO: ${isSSO})`, {
         onboardingCompleted: userData.onboardingCompleted,
@@ -1498,7 +1603,28 @@ const verifyPhoneAndSetUser = async (
           currentOnboardingScreen: "Connect",
         });
         
-        router.replace({ pathname: `/(tabs)/Connect` as any });
+        console.log("🧭 About to navigate to Connect tab");
+        // Add a small delay to ensure the component is fully mounted and router is ready
+        setTimeout(() => {
+          try {
+            router.replace({ pathname: `/(tabs)/Connect` as any });
+            console.log("🧭 Navigation to Connect tab completed");
+            isNavigating = false;
+          } catch (error) {
+            console.error("🧭 Navigation error:", error);
+            // Fallback: try again after a longer delay
+            setTimeout(() => {
+              try {
+                router.replace({ pathname: `/(tabs)/Connect` as any });
+                console.log("🧭 Fallback navigation to Connect tab completed");
+                isNavigating = false;
+              } catch (fallbackError) {
+                console.error("🧭 Fallback navigation also failed:", fallbackError);
+                isNavigating = false;
+              }
+            }, 500);
+          }
+        }, 100);
         return;
       }
       
@@ -1506,7 +1632,28 @@ const verifyPhoneAndSetUser = async (
       if (isSSO && !userData.phoneNumber) {
         AuthDebug.trackFlowStep('UserNavigation', 'Google user needs phone verification');
         console.log(`📱 Google user ${userData.userId} needs to verify phone, navigating to PhoneNumberScreen`);
-        router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
+        console.log("🧭 About to navigate to PhoneNumberScreen");
+        // Add a small delay to ensure the component is fully mounted and router is ready
+        setTimeout(() => {
+          try {
+            router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
+            console.log("🧭 Navigation to PhoneNumberScreen completed");
+            isNavigating = false;
+          } catch (error) {
+            console.error("🧭 Navigation error:", error);
+            // Fallback: try again after a longer delay
+            setTimeout(() => {
+              try {
+                router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
+                console.log("🧭 Fallback navigation to PhoneNumberScreen completed");
+                isNavigating = false;
+              } catch (fallbackError) {
+                console.error("🧭 Fallback navigation also failed:", fallbackError);
+                isNavigating = false;
+              }
+            }, 500);
+          }
+        }, 100);
         return;
       }
       
@@ -1518,14 +1665,36 @@ const verifyPhoneAndSetUser = async (
         screen: screenToNavigateTo
       });
       
-      console.log(`⏩ Continuing onboarding for ${userData.userId} at screen: ${screenToNavigateTo}`);
-      router.replace({ pathname: `onboarding/${screenToNavigateTo}` as any });
-      return;
+        console.log(`⏩ Continuing onboarding for ${userData.userId} at screen: ${screenToNavigateTo}`);
+        console.log(`🧭 About to navigate to ${screenToNavigateTo}`);
+        // Add a small delay to ensure the component is fully mounted and router is ready
+        setTimeout(() => {
+          try {
+            router.replace({ pathname: `onboarding/${screenToNavigateTo}` as any });
+            console.log(`🧭 Navigation to ${screenToNavigateTo} completed`);
+            isNavigating = false;
+          } catch (error) {
+            console.error("🧭 Navigation error:", error);
+            // Fallback: try again after a longer delay
+            setTimeout(() => {
+              try {
+                router.replace({ pathname: `onboarding/${screenToNavigateTo}` as any });
+                console.log(`🧭 Fallback navigation to ${screenToNavigateTo} completed`);
+                isNavigating = false;
+              } catch (fallbackError) {
+                console.error("🧭 Fallback navigation also failed:", fallbackError);
+                isNavigating = false;
+              }
+            }, 500);
+          }
+        }, 100);
+        return;
     } catch (error) {
       AuthDebug.error('UserNavigation', 'Error handling user navigation', error);
       console.error("Error handling user navigation:", error);
       // Fallback to safe screen
       router.replace({ pathname: `onboarding/LoginSignupScreen` as any });
+      isNavigating = false;
     }
   };
 
@@ -2973,21 +3142,18 @@ const verifyPhoneAndSetUser = async (
         console.warn("Google sign out error:", googleError);
       }
   
-      // 4. IMPORTANT: Navigate BEFORE Firebase signout (prevents double navigation)
-      console.log("🚀 Navigating to LoginSignupScreen before Firebase sign out");
-      router.replace("onboarding/LoginSignupScreen" as any);
+      // 4. IMPORTANT: Let auth state change handle navigation (prevents double navigation)
+      console.log("🚀 Letting auth state change handle navigation to LoginSignupScreen");
       
-      // 5. Sign out from Firebase AFTER navigation (with small delay)
-      setTimeout(async () => {
-        if (FIREBASE_AUTH.currentUser) {
-          await FIREBASE_AUTH.signOut();
-          console.log("✅ Firebase user signed out!");
-        }
-      }, 100);
+      // 5. Sign out from Firebase (navigation will happen automatically via onAuthStateChanged)
+      if (FIREBASE_AUTH.currentUser) {
+        await FIREBASE_AUTH.signOut();
+        console.log("✅ Firebase user signed out!");
+      }
   
     } catch (error) {
       console.error("❌ Error during sign-out:", error);
-      router.replace("onboarding/LoginSignupScreen" as any);
+      // Let auth state change handle navigation even on error
     }
   };
 
@@ -4281,6 +4447,7 @@ const verifyPhoneAndSetUser = async (
     refreshPreferencesHash,
     getUserStats,
     validateUserData,
+    initializing,
   };
 
   if (initializing) {
