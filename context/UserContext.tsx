@@ -1139,7 +1139,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           authStateVersion
         });
         
-        if (needsFetch) {
+        // 🔒 SAFETY CHECK: Only fetch if we have a valid user
+        if (needsFetch && user && user.uid) {
           console.log(`⚠️ Calling fetchUserData from onAuthStateChanged for ${isGoogleLogin ? 'Google' : 'Phone'} user: ${user.uid}`);
           const fetchedUserData = await fetchUserData(user.uid, isGoogleLogin);
           
@@ -1151,13 +1152,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           console.log("User data already loaded, skipping fetchUserData");
           // FIX: Even if we don't need to fetch, still update last active status
-          updateLastActive();
+          if (user && user.uid) {
+            updateLastActive();
+          }
         }
         
         // State sync already happened at the beginning of the function
       } catch (error) {
         console.error("Error in onAuthStateChanged:", error);
-        AuthDebug.error('AuthStateChange', 'Error processing authenticated user', { error, userId: user.uid });
+        if (user && user.uid) {
+          AuthDebug.error('AuthStateChange', 'Error processing authenticated user', { error, userId: user.uid });
+        }
       }
     } else {
       AuthDebug.trackFlowStep('AuthStateChange', 'User Signed Out');
