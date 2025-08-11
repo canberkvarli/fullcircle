@@ -27,8 +27,10 @@ exports.createSubscription = createSubscription;
 exports.cancelSubscription = cancelSubscription;
 exports.getSubscriptionStatus = getSubscriptionStatus;
 exports.reactivateSubscription = reactivateSubscription;
+
 exports.createRadiancePayment = createRadiancePayment;
 exports.confirmRadiancePayment = confirmRadiancePayment;
 exports.createLotusPayment = createLotusPayment;
-exports.confirmLotusPayment = confirmLotusPayment; 
+exports.confirmLotusPayment = confirmLotusPayment;
+
 exports.stripeWebhook = stripeWebhook;

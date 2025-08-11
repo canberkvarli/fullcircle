@@ -35,23 +35,23 @@ const stripeWebhook = functions.https.onRequest(async (req, res) => {
         break;
       
       case 'customer.subscription.updated':
-        console.log('🔄 Subscription updated via webhook');
+        console.log('Subscription updated via webhook');
         await handleSubscriptionUpdated(event.data.object);
         break;
       
       case 'customer.subscription.deleted':
-        console.log('❌ Subscription deleted via webhook');
+        console.log('Subscription deleted via webhook');
         await handleSubscriptionDeleted(event.data.object);
         break;
       
       case 'customer.subscription.created':
-        console.log('🆕 Subscription created via webhook');
+        console.log('Subscription created via webhook');
         await handleSubscriptionCreated(event.data.object);
         break;
 
-      // ✅ NEW: Handle invoice.payment_failed for failed renewals
+      // Handle invoice.payment_failed for failed renewals
       case 'invoice.payment_failed':
-        console.log('💥 Invoice payment failed');
+        console.log('Invoice payment failed');
         await handleSubscriptionPaymentFailed(event.data.object);
         break;
       
@@ -72,7 +72,7 @@ const stripeWebhook = functions.https.onRequest(async (req, res) => {
 async function handlePaymentSucceeded(paymentIntent) {
   const userId = paymentIntent.metadata.firebaseUID;
   
-  console.log('🔍 WEBHOOK DEBUG - Payment succeeded:', {
+  console.log('WEBHOOK DEBUG - Payment succeeded:', {
     paymentIntentId: paymentIntent.id,
     userId: userId,
     metadata: paymentIntent.metadata,

@@ -9,8 +9,6 @@ import {
   Animated,
   Alert,
   ScrollView,
-  Modal,
-  TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +20,7 @@ import { FUNCTIONS, FIRESTORE } from "@/services/FirebaseConfig"
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import { CustomIcon } from "@/components/CustomIcon";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
+import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
 
 interface PricingPlan {
   title: string;
@@ -141,7 +140,7 @@ export default function FullCircleSubscription() {
         }));
       }
     } catch (error) {
-      console.error('❌ Error refreshing user data:', error);
+      console.error('Error refreshing user data:', error);
     }
   };
 
@@ -158,10 +157,19 @@ export default function FullCircleSubscription() {
     setIsProcessing(true);
     
     try {
-      console.log(`🚀 Creating ${selectedPlan} subscription...`);
+      // Check if user is authenticated
+      if (!currentUser?.uid || !FIREBASE_AUTH.currentUser) {
+        throw new Error('User not authenticated - please sign in again');
+      }
       
+      console.log(`Creating ${selectedPlan} subscription...`);
+      
+      // Create the Cloud Function call - Firebase SDK handles auth automatically
       const createSubscriptionFunction = FUNCTIONS.httpsCallable('createSubscription');
-      const result = await createSubscriptionFunction({ planType: selectedPlan });
+      
+      const result = await createSubscriptionFunction({ 
+        planType: selectedPlan
+      });
       
       if (!result.data) {
         throw new Error('No data returned from Cloud Function');
@@ -173,7 +181,7 @@ export default function FullCircleSubscription() {
         throw new Error('Invalid response from subscription creation');
       }
       
-      console.log(`✅ Subscription created: ${subscriptionId}`);
+      console.log(`Subscription created: ${subscriptionId}`);
       
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
@@ -190,26 +198,26 @@ export default function FullCircleSubscription() {
       });
 
       if (initError) {
-        console.error('❌ Payment sheet init failed:', initError);
+        console.error('Payment sheet init failed:', initError);
         Alert.alert('Energy Blockage', 'Unable to process payment. Please try again.');
         return;
       }
 
-      console.log('✅ Payment sheet initialized');
+      console.log('Payment sheet initialized');
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log('📱 Presenting payment sheet...');
+      console.log('Presenting payment sheet...');
       const { error: paymentError } = await presentPaymentSheet();
 
       if (paymentError) {
-        console.error('❌ Payment failed:', paymentError);
+        console.error('Payment failed:', paymentError);
         if (paymentError.code !== 'Canceled') {
           Alert.alert('Payment Incomplete', paymentError.message || 'Your payment journey was interrupted.');
         }
         return;
       }
 
-      console.log('✅ Payment completed successfully!');
+      console.log('Payment completed successfully!');
 
       Alert.alert(
         "🌟 Welcome to FullCircle!",
@@ -219,7 +227,7 @@ export default function FullCircleSubscription() {
             text: "Continue Journey", 
             style: "default",
             onPress: async () => {
-              console.log('🔄 Refreshing subscription data before going back...');
+              console.log('Refreshing subscription data...');
               await refreshUserData();
               router.back();
             }
@@ -227,18 +235,50 @@ export default function FullCircleSubscription() {
         ]
       );
 
+      // Background refresh after webhook processing
       setTimeout(async () => {
-        console.log('🔄 Background refresh after webhook processing...');
         await refreshUserData();
       }, 3000);
       
     } catch (error: any) {
-      console.error('💥 Subscription creation failed:', error);
-      Alert.alert(
-        "Journey Interrupted",
-        error.message || "We couldn't begin your FullCircle journey. Please try again.",
-        [{ text: "Try Again", style: "default" }]
-      );
+      console.error('Subscription creation failed:', error);
+      
+      // Enhanced error logging
+      if (error.code === 'functions/unauthenticated' || error.message?.includes('UNAUTHENTICATED')) {
+        console.error('AUTH ERROR: User is not authenticated with Cloud Functions');
+        console.error('Current Firebase Auth State:', FIREBASE_AUTH.currentUser);
+        console.error('Current User Context State:', currentUser);
+        console.error('Error Details:', error);
+        
+        Alert.alert(
+          "Authentication Error",
+          "Your authentication has expired. Please sign out and sign back in to refresh your connection.",
+          [
+            { text: "OK", style: "default" },
+            { 
+              text: "Sign Out & Sign In", 
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  // Force sign out and redirect to login
+                  await FIREBASE_AUTH.signOut();
+                  router.replace('/onboarding/LoginSignupScreen');
+                } catch (signOutError) {
+                  console.error('Sign out failed:', signOutError);
+                  // Force navigation anyway
+                  router.replace('/onboarding/LoginSignupScreen');
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Journey Interrupted",
+          error.message || "We couldn't begin your FullCircle journey. Please try again.",
+          [{ text: "Try Again", style: "default" }]
+        );
+      }
     } finally {
       setIsProcessing(false);
     }

@@ -72,8 +72,8 @@ module.exports = {
       bundleIdentifier: getBundleId(),
       buildNumber: "1",
       deploymentTarget: "15.1",
-      googleServicesFile: "./GoogleService-Info.plist",
-      infoPlist: {
+      googleServicesFile: `./config/${env === 'production' ? 'prod' : env === 'staging' ? 'staging' : 'dev'}/GoogleService-Info.plist`,
+      infoplist: {
         CFBundleURLTypes: [
           {
             CFBundleURLName: getScheme(),
@@ -89,7 +89,7 @@ module.exports = {
     },
     android: {
       package: getBundleId(),
-      googleServicesFile: "./google-services.json",
+      googleServicesFile: `./config/${env === 'production' ? 'prod' : env === 'staging' ? 'staging' : 'dev'}/google-services.json`,
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff",

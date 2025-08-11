@@ -1,4 +1,3 @@
-const functions = require('firebase-functions');
 const Stripe = require('stripe');
 
 // 🔧 Load environment variables from .env file

@@ -2,7 +2,8 @@
   "functions": {
     "source": "functions",
     "codebase": "default",
-    "runtime": "nodejs20"
+    "runtime": "nodejs20",
+    "region": "us-central1"
   },
   "firestore": {
     "rules": "firestore.rules",

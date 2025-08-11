@@ -1,7 +1,7 @@
 {
   "projects": {
-    "default": "fullcircle-dev",
-    "dev": "fullcircle-dev",
+    "default": "fullcircle-dev-1aafd",
+    "dev": "fullcircle-dev-1aafd",
     "staging": "fullcircle-staging",
     "prod": "fullcircle-production"
   }
