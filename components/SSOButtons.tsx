@@ -15,11 +15,13 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useUserContext } from "@/context/UserContext";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "./ouroboros/OuroborosLoader";
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 
 function SSOButtons(): JSX.Element {
   const router = useRouter();
-  const { handleGoogleSignIn, signOut } = useUserContext();
+  const { handleGoogleSignIn, handleAppleSignIn, signOut } = useUserContext();
   const [isInProgress, setIsInProgress] = useState(false);
+  const [signingMethod, setSigningMethod] = useState<'google' | 'apple' | 'phone' | null>(null);
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -30,6 +32,7 @@ function SSOButtons(): JSX.Element {
 
   const onGoogleSignIn = async () => {
     setIsInProgress(true);
+    setSigningMethod('google');
     
     // Start button animation
     Animated.timing(scaleAnim, {
@@ -45,6 +48,31 @@ function SSOButtons(): JSX.Element {
     } finally {
       setTimeout(() => {
         setIsInProgress(false);
+        setSigningMethod(null);
+        resetAnimations();
+      }, 1000);
+    }
+  };
+
+  const onAppleSignIn = async () => {
+    setIsInProgress(true);
+    setSigningMethod('apple');
+    
+    // Start button animation
+    Animated.timing(scaleAnim, {
+      toValue: 0.95,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+
+    try {
+      await handleAppleSignIn();
+    } catch (error) {
+      console.error("Error during Apple Sign-In:", error);
+    } finally {
+      setTimeout(() => {
+        setIsInProgress(false);
+        setSigningMethod(null);
         resetAnimations();
       }, 1000);
     }
@@ -58,9 +86,12 @@ function SSOButtons(): JSX.Element {
     }).start();
   };
 
-  const handleSignInWithApple = () => console.log("Sign in with Apple");
-  const handleSignInWithPhoneNumber = () =>
+  // Check if Apple Sign-In is available (iOS only)
+  const isAppleSignInAvailable = Platform.OS === 'ios' && appleAuth.isSupported;
+  
+  const handleSignInWithPhoneNumber = () => {
     router.replace("onboarding/PhoneNumberScreen" as any);
+  };
 
   return (
     <View style={styles.container}>
@@ -82,7 +113,8 @@ function SSOButtons(): JSX.Element {
       )}
       
       <View style={styles.buttonContainer}>
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        {/* Google Sign-In Button */}
+        <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
           <TouchableOpacity
             style={[
               styles.ssoButton, 
@@ -92,7 +124,7 @@ function SSOButtons(): JSX.Element {
             onPress={onGoogleSignIn}
             disabled={isInProgress}
           >
-            {!isInProgress ? (
+            {!(isInProgress && signingMethod === 'google') ? (
               <>
                 <Ionicons name="logo-google" size={20} color={colors.text} style={styles.buttonIcon} />
                 <Text style={styles.googleButtonText}>Continue with Google</Text>
@@ -108,19 +140,36 @@ function SSOButtons(): JSX.Element {
           </TouchableOpacity>
         </Animated.View>
         
-        {/* <TouchableOpacity
-          style={[
-            styles.ssoButton, 
-            styles.appleButton,
-            isInProgress && styles.buttonDisabled
-          ]}
-          onPress={handleSignInWithApple}
-          disabled={isInProgress}
-        >
-          <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={styles.buttonIcon} />
-          <Text style={styles.appleButtonText}>Continue with Apple</Text>
-        </TouchableOpacity> */}
+        {/* Apple Sign-In Button - Only show on iOS where supported */}
+        {isAppleSignInAvailable && (
+          <Animated.View style={{ transform: [{ scale: scaleAnim }], width: '100%' }}>
+            <TouchableOpacity
+              style={[
+                styles.ssoButton, 
+                styles.appleButton,
+                isInProgress && styles.buttonDisabled
+              ]}
+              onPress={onAppleSignIn}
+              disabled={isInProgress}
+            >
+              {!(isInProgress && signingMethod === 'apple') ? (
+                <>
+                  <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                  <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                </>
+              ) : (
+                <View style={styles.loadingButtonContent}>
+                  <ActivityIndicator size="small" color="#FFFFFF" style={styles.miniSpinner} />
+                  <Text style={[styles.appleButtonText, styles.loadingButtonText]}>
+                    Connecting...
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        )}
         
+        {/* Phone Sign-In Button */}
         <TouchableOpacity
           style={[
             styles.ssoButton, 
@@ -236,6 +285,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     appleButton: {
       backgroundColor: '#000000',
+      paddingHorizontal: Spacing["2xl"],
     },
     phoneButton: {
       backgroundColor: 'rgba(255, 255, 255, 0.15)',

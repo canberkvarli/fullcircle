@@ -85,7 +85,9 @@ module.exports = {
             CFBundleURLSchemes: [getGoogleIOSUrlScheme()]
           }
         ]
-      }
+      },
+      // Add Apple Sign-In capability
+      usesAppleSignIn: true
     },
     android: {
       package: getBundleId(),

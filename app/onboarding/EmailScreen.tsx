@@ -31,6 +31,7 @@ function EmailScreen() {
     navigateToPreviousScreen,
     googleCredential,
     setGoogleCredential,
+    handleAppleSignIn,
   } = useUserContext();
   const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(
@@ -186,9 +187,11 @@ function EmailScreen() {
   };
 
   const isGoogleConnected = () => {
-    return userData?.settings?.connectedAccounts?.google === true || 
-           FIREBASE_AUTH.currentUser?.providerData?.some(provider => provider.providerId === 'google.com') ||
-           googleCredential !== null;
+    return userData.GoogleSSOEnabled || googleCredential;
+  };
+
+  const isAppleConnected = () => {
+    return userData.AppleSSOEnabled;
   };
 
   const handleEmailSubmit = async () => {
@@ -274,7 +277,33 @@ function EmailScreen() {
   const handleModalOption = (option: number) => {
     switch (option) {
       case 1:
-        Alert.alert("Coming Soon", "Apple Sign-In is being prepared for you!");
+        if (isAppleConnected()) {
+          Alert.alert(
+            "Apple Connected",
+            "Your Apple account is already linked. Would you like to switch to a different Apple account?",
+            [
+              {
+                text: "Keep Current",
+                style: "cancel",
+              },
+              {
+                text: "Switch Account",
+                onPress: async () => {
+                  try {
+                    // For Apple, we need to handle this differently since there's no direct signOut
+                    // We'll need to sign out from Firebase first and then sign in again
+                    await FIREBASE_AUTH.signOut();
+                    // The auth state change will handle navigation back to login
+                  } catch (error) {
+                    console.error("Error signing out from Apple:", error);
+                  }
+                },
+              },
+            ]
+          );
+        } else {
+          handleAppleSignIn();
+        }
         break;
       case 2:
         if (isGoogleConnected()) {
@@ -438,7 +467,12 @@ function EmailScreen() {
                   Linking your account creates a smoother experience and easier access to your Circle.
                 </Text>
                 {[
-                  // { option: 1, text: "Connect with Apple", icon: "logo-apple", connected: false },
+                  { 
+                    option: 1, 
+                    text: "Connect with Apple", 
+                    icon: "logo-apple", 
+                    connected: isAppleConnected() 
+                  },
                   { 
                     option: 2, 
                     text: "Connect with Google", 
@@ -467,7 +501,9 @@ function EmailScreen() {
                         item.connected ? styles.connectedText : null,
                       ]}
                     >
-                      {item.connected && item.option === 2 ? "Google account connected ✨" : item.text}
+                      {item.connected && item.option === 1 ? "Apple account connected ✨" : 
+                       item.connected && item.option === 2 ? "Google account connected ✨" : 
+                       item.text}
                     </Text>
                   </TouchableOpacity>
                 ))}

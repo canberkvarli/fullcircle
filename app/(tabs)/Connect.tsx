@@ -87,7 +87,7 @@ const ConnectScreen: React.FC = () => {
   const hasFullCircleSubscription = userData?.subscription?.isActive || false;
   const userDataRef = useRef(userData);
   const matchingStateRef = useRef(matchingState);
-  const currentPotentialMatchRef = useRef(currentPotentialMatch);
+
 
   useEffect(() => {
     userDataRef.current = userData;
@@ -97,9 +97,7 @@ const ConnectScreen: React.FC = () => {
     matchingStateRef.current = matchingState;
   }, [matchingState]);
 
-  useEffect(() => {
-    currentPotentialMatchRef.current = currentPotentialMatch;
-  }, [currentPotentialMatch]);
+
 
   // Simplified loading state management
   useEffect(() => {
@@ -142,7 +140,7 @@ const ConnectScreen: React.FC = () => {
   // Reset animations when match changes
   useEffect(() => {
     if (currentPotentialMatch && !actionInProgress && showContent) {
-      console.log('🔄 Preparing new match:', currentPotentialMatch.userId);
+
       
       // Reset all animation values
       contentOpacity.setValue(1);
@@ -163,8 +161,7 @@ const ConnectScreen: React.FC = () => {
 
   // Enhanced action handler with modern visual feedback
   const handleAction = async (action: 'like' | 'pass' | 'lotus') => {
-    if (actionInProgress || !currentPotentialMatchRef.current) {
-      console.log('🚫 Action blocked: already in progress or no current match');
+    if (actionInProgress || !currentPotentialMatch) {
       return;
     }
     
@@ -172,8 +169,6 @@ const ConnectScreen: React.FC = () => {
       showDivineLotusModal();
       return;
     }
-    
-    console.log(`🎯 Starting ${action} action for user: ${currentPotentialMatchRef.current.userId}`);
     
     setActionInProgress(true);
     setLastAction(action);
@@ -293,7 +288,7 @@ const ConnectScreen: React.FC = () => {
       useNativeDriver: true,
     }).start();
 
-    const userId = currentPotentialMatchRef.current.userId;
+    const userId = currentPotentialMatch.userId;
     
     try {
       // Phase 3: Execute backend operation
@@ -322,6 +317,35 @@ const ConnectScreen: React.FC = () => {
         resetActionState();
         showDailyLimitModalFunc();
         return;
+      }
+      
+      // Even if the action fails, we should still advance to the next match
+      // to prevent the user from getting stuck
+      console.log('⚠️ Action failed, but advancing to next match to prevent getting stuck');
+      
+      // Show a brief error message to the user
+      if (error.message?.includes('permission-denied')) {
+        console.log('🔒 Permission denied - this might be a Firestore rules issue');
+        // You could show a toast or alert here if you want
+      }
+      
+      console.log('🔄 About to call loadNextMatch()...');
+      console.log('🔄 Current state before loadNextMatch:', {
+        currentIndex: matchingState.currentIndex,
+        totalMatches: matchingState.potentialMatches.length,
+        currentMatch: currentPotentialMatch?.firstName || 'NONE'
+      });
+      
+      try {
+        await loadNextMatch();
+        console.log('✅ Successfully advanced to next match after action failure');
+        console.log('✅ New state after loadNextMatch:', {
+          currentIndex: matchingState.currentIndex,
+          totalMatches: matchingState.potentialMatches.length,
+          currentMatch: currentPotentialMatch?.firstName || 'NONE'
+        });
+      } catch (loadError) {
+        console.error('❌ Failed to load next match after action error:', loadError);
       }
       
       resetActionState();
@@ -689,6 +713,18 @@ const ConnectScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           bounces={true}
         >
+          {/* Debug info */}
+          {__DEV__ && (
+            <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.1)', margin: 10, borderRadius: 8 }}>
+              <Text style={{ color: colors.textLight, fontSize: 12, fontFamily: 'monospace' }}>
+                Debug: {currentPotentialMatch?.firstName || 'NONE'} ({currentPotentialMatch?.userId?.slice(-4) || 'NONE'})
+              </Text>
+              <Text style={{ color: colors.textLight, fontSize: 12, fontFamily: 'monospace' }}>
+                Index: {matchingState.currentIndex} | Total: {matchingState.potentialMatches.length}
+              </Text>
+            </View>
+          )}
+          
           {showContent && currentPotentialMatch ? (
             <Animated.View style={{ opacity: contentOpacity }}>
               <PotentialMatch

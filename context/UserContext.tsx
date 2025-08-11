@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { FIREBASE_AUTH, FIRESTORE, STORAGE, FUNCTIONS } from "@/services/FirebaseConfig";
 import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 import auth from "@react-native-firebase/auth";
 import { AuthDebug } from "@/utils/AuthDebug";
 import firestore from "@react-native-firebase/firestore";
@@ -33,6 +34,7 @@ export type UserDataType = {
   number: string;
   email?: string;
   GoogleSSOEnabled?: boolean;
+  AppleSSOEnabled?: boolean;
   marketingRequested?: boolean;
   firstName?: string;
   familyName?: string;
@@ -251,7 +253,12 @@ type UserContextType = {
   >;
   googleUserData: UserDataType;
   setGoogleUserData: React.Dispatch<React.SetStateAction<UserDataType>>;
+  appleCredential: FirebaseAuthTypes.AuthCredential | null;
+  setAppleCredential: React.Dispatch<
+    React.SetStateAction<FirebaseAuthTypes.AuthCredential | null>
+  >;
   handleGoogleSignIn: () => Promise<void>;
+  handleAppleSignIn: () => Promise<void>;
   verifyPhoneAndSetUser: (
     verificationId: string,
     code: string,
@@ -348,19 +355,22 @@ type UserContextType = {
   };
   formatRadianceTime: (seconds: number) => string;
   createLotusPaymentIntent: (lotusCount: number) => Promise<{
-  clientSecret: string;
-  paymentIntentId: string;
+    clientSecret: string;
+    paymentIntentId: string;
   }>;
   confirmLotusPayment: (paymentIntentId: string) => Promise<{
-  success: boolean;
-  lotusCount: number;
-  totalPrice: number;
+    success: boolean;
+    lotusCount: number;
+    totalPrice: number;
   }>;
   isUserBoosted: (userData: UserDataType) => boolean;
   isUserRecentlyActive: (userData: UserDataType) => boolean;
   
   // 🧪 Testing Functions (remove in production)
   createRadiancePaymentIntent: any;
+  
+  // 🪷 Cloud Function Testing (remove in production)
+  testWeeklyLotusFunction: () => Promise<any>;
   
   // 🎯 Utility Functions
   getUserCompatibilityScore: (otherUser: UserDataType) => number;
@@ -387,6 +397,9 @@ type UserContextType = {
   };
   // 🔑 Add initializing state to track auth initialization
   initializing: boolean;
+  // 🔒 Add cancellation flag to track sign out state
+  isSigningOut: boolean;
+
 };
 
 // Initial screens and initial user data
@@ -579,6 +592,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     useState<UserDataType>(initialUserData);
   const [googleCredential, setGoogleCredential] =
     useState<FirebaseAuthTypes.AuthCredential | null>(null);
+  const [appleCredential, setAppleCredential] =
+    useState<FirebaseAuthTypes.AuthCredential | null>(null);
   const [currentUser, setCurrentUser] = useState<FirebaseAuthTypes.User | null>(
     null
   );
@@ -586,12 +601,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const [chatMatches, setChatMatches] = useState<MatchType[]>([]);
   const [unreadMatchesCount, setUnreadMatchesCount] = useState(0);
   const [isLinking, setIsLinking] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  // 🔒 CANCELLATION FLAG: Use ref for reliable access in async functions
+  const isSigningOutRef = useRef(false);
+
   const [authStateVersion, setAuthStateVersion] = useState(0); // Track auth state changes
   const userDataRef = useRef<UserDataType>(userData);
   const router = useRouter();
   
-  // 🔒 Track last auth state change to prevent rapid successive calls
-  const lastAuthStateChangeRef = useRef<{ userId: string | null; timestamp: number } | null>(null);
+  // 🔒 Prevent rapid auth state changes
+  const lastAuthStateChangeRef = useRef<{
+    userId: string | null;
+    timestamp: number;
+  } | null>(null);
 
   // 🔒 SINGLE SOURCE OF TRUTH: Get the authoritative user ID
   const getAuthoritativeUserId = useCallback((): string | null => {
@@ -870,7 +892,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     };
     
     const hash = JSON.stringify(hashData);
-    console.log('🔍 Generated preferences hash:', hash);
     return hash;
   }, []);
 
@@ -879,42 +900,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     lastDoc: any = null,
     batchSize: number = 20
   ) => {
-    console.log('🔍 Building query with comprehensive exclusions:', {
-      ageRange: userDataRef.current.matchPreferences?.preferredAgeRange,
-      connectionPrefs: userDataRef.current.matchPreferences?.connectionPreferences,
-      connectionIntent: userDataRef.current.matchPreferences?.connectionIntent,
-      exclusionCount: exclusionSet.size
-    });
-
     const baseCollection = FIRESTORE.collection("users");
     
-    // Start with basic requirements
-    let query = baseCollection.where("onboardingCompleted", "==", true);
-
-    const prefs = userDataRef.current.matchPreferences;
-    
-    // 🎯 ONLY apply age filter in Firestore if it's specific (not default range)
-    if (prefs?.preferredAgeRange?.min && prefs?.preferredAgeRange?.max && 
-        !(prefs.preferredAgeRange.min === 18 && prefs.preferredAgeRange.max === 70)) {
-      
-      console.log(`🔍 Applying Firestore age filter: ${prefs.preferredAgeRange.min}-${prefs.preferredAgeRange.max}`);
-      
-      query = query
-        .where("age", ">=", prefs.preferredAgeRange.min)
-        .where("age", "<=", prefs.preferredAgeRange.max)
-        .orderBy("age", "asc")
-        .limit(batchSize);
-    } else {
-      // No specific age filter, use creation date ordering
-      console.log('🔍 No specific age filter, showing all ages');
-      query = query.orderBy("createdAt", "desc").limit(batchSize);
-    }
+    // Start with basic requirements - keep it simple
+    let query = baseCollection
+      .where("onboardingCompleted", "==", true)
+      .orderBy("createdAt", "desc")
+      .limit(batchSize);
 
     // Add pagination
     if (lastDoc) {
       query = query.startAfter(lastDoc);
     }
-
+    
     return query;
   }, []);
 
@@ -938,42 +936,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => unsubscribe();
   }, [currentUser]);
 
-  const assignWeeklyLotus = useCallback(async () => {
+
+
+  // 🪷 Real-time listener for lotus updates from cloud function
+  useEffect(() => {
     if (!userData.userId) return;
 
-    const userRef = FIRESTORE.collection("users").doc(userDataRef.current.userId);
-
-    // If they already have >=1 lotus, or we assigned within the last week, bail out.
-    const last = userData.lastLotusAssignedAt?.toMillis?.() ?? 0;
-    const now = Date.now();
-    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-    if ((userData.numOfLotus ?? 0) >= 1 || now - last < oneWeekMs) {
-      return;
-    }
-
-    // Give them one lotus and update the timestamp.
-    await userRef.update({
-      numOfLotus: 1,
-      lastLotusAssignedAt: firestore.FieldValue.serverTimestamp()
+    const userRef = FIRESTORE.collection("users").doc(userData.userId);
+    const unsubscribe = userRef.onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (data) {
+          // Update lotus-related fields in real-time
+          setUserData((prev) => ({
+            ...prev,
+            numOfLotus: data.numOfLotus ?? prev.numOfLotus,
+            lastLotusAssignedAt: data.lastLotusAssignedAt ?? prev.lastLotusAssignedAt,
+          }));
+        }
+      }
+    }, (error) => {
+      console.error('Error listening to lotus updates:', error);
     });
 
-    // Optimistically update local state:
-    setUserData((prev) => ({
-      ...prev,
-      numOfLotus: 1,
-      lastLotusAssignedAt: { toMillis: () => now }, // mirror the TS Timestamp shape
-    }));
-  }, [userData.userId, userData.numOfLotus, userData.lastLotusAssignedAt]);
-
-  useEffect(() => {
-    assignWeeklyLotus();
-    // Also as a safety, every 24h in case the app never backgrounds:
-    const id = setInterval(assignWeeklyLotus, 1000 * 60 * 60 * 24);
-
-    return () => {
-      clearInterval(id);
-    };
-  }, [assignWeeklyLotus]);
+    return () => unsubscribe();
+  }, [userData.userId]);
 
   useEffect(() => {
     if (!userData.userId || !userData.onboardingCompleted) return;
@@ -1026,6 +1013,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     
+
+    
     // 🔒 Prevent rapid successive auth state changes from the same user
     const now = Date.now();
     if (user && lastAuthStateChangeRef.current && 
@@ -1074,8 +1063,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       providers: user?.providerData?.map(p => p.providerId)
     });
     
-    // 🔄 SMART STATE SYNC: Use the new sync function
-    syncUserState(user);
+    // 🔄 SMART STATE SYNC: Only sync when there's a user (not on sign out)
+    if (user) {
+      syncUserState(user);
+    }
     
     // Check if this is actually a new auth state or just a duplicate event
     const hasUserChanged = 
@@ -1092,13 +1083,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (initializing) setInitializing(false);
   
     if (user) {
+      // 🔒 RESET CANCELLATION FLAG: User is signing in, clear the sign out flag
+      if (isSigningOutRef.current) {
+        isSigningOutRef.current = false;
+        console.log('🔄 User signing in, clearing sign out cancellation flag');
+      }
+      
       const isGoogleLogin = user.providerData.some(
         (provider) => provider.providerId === "google.com"
       );
+
+      const isAppleLogin = user.providerData.some(
+        (provider) => provider.providerId === "apple.com"
+      );
+
+      const isSSOLogin = isGoogleLogin || isAppleLogin;
   
       AuthDebug.trackFlowStep('AuthStateChange', 'User Authenticated', { 
         userId: user.uid, 
         isGoogleLogin, 
+        isAppleLogin,
+        isSSOLogin,
         email: user.email,
         phone: user.phoneNumber
       });
@@ -1141,13 +1146,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         
         // 🔒 SAFETY CHECK: Only fetch if we have a valid user
         if (needsFetch && user && user.uid) {
-          console.log(`⚠️ Calling fetchUserData from onAuthStateChanged for ${isGoogleLogin ? 'Google' : 'Phone'} user: ${user.uid}`);
-          const fetchedUserData = await fetchUserData(user.uid, isGoogleLogin);
+          console.log(`⚠️ Calling fetchUserData from onAuthStateChanged for ${isSSOLogin ? 'SSO' : 'Phone'} user: ${user.uid}`);
+          const fetchedUserData = await fetchUserData(user.uid, isSSOLogin);
           
           if (fetchedUserData) {
             // NAVIGATION LOGIC - This is the single source of truth for where to go
             console.log(`🧭 onAuthStateChanged calling handleUserNavigation for user ${user.uid}`);
-            await handleUserNavigation(fetchedUserData, isGoogleLogin);
+            await handleUserNavigation(fetchedUserData, isSSOLogin);
           }
         } else {
           console.log("User data already loaded, skipping fetchUserData");
@@ -1174,7 +1179,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       // State sync already happened at the beginning of the function
       
       // Navigate to login screen on sign out (always)
-      router.replace({ pathname: `onboarding/LoginSignupScreen` as any });
+      router.replace("onboarding/LoginSignupScreen" as any);
     }
   };
 
@@ -1262,6 +1267,130 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const handleAppleSignIn = async (): Promise<void> => {
+    try {
+      console.log('🍎 Apple Sign-In: Starting...');
+      AuthDebug.trackFlowStep('AppleSignIn', 'Started');
+      
+      // Check if Apple Sign-In is supported
+      const isSupported = await appleAuth.isSupported;
+      console.log('🍎 Apple Sign-In supported:', isSupported);
+      
+      if (!isSupported) {
+        throw new Error('Apple Sign-In is not supported on this device');
+      }
+      
+      // Perform the Apple sign-in request
+      console.log('🍎 Apple Sign-In: Performing request...');
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        // Note: FULL_NAME first is important for correct data retrieval
+        requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+      });
+      
+      console.log('🍎 Apple Sign-In response received:', {
+        hasIdentityToken: !!appleAuthRequestResponse.identityToken,
+        hasNonce: !!appleAuthRequestResponse.nonce,
+        hasFullName: !!appleAuthRequestResponse.fullName,
+        hasEmail: !!appleAuthRequestResponse.email
+      });
+      
+      // Ensure Apple returned a user identityToken
+      if (!appleAuthRequestResponse.identityToken) {
+        throw new Error('Apple Sign-In failed - no identity token returned');
+      }
+      
+      AuthDebug.trackFlowStep('AppleSignIn', 'Apple auth response received');
+      
+      // Create a Firebase credential from the response
+      const { identityToken, nonce } = appleAuthRequestResponse;
+      const appleCredential = auth.AppleAuthProvider.credential(identityToken, nonce);
+      
+      AuthDebug.trackFlowStep('AppleSignIn', 'Apple credential obtained');
+      
+      // Sign in to Firebase with the Apple credential
+      const { user } = await FIREBASE_AUTH.signInWithCredential(appleCredential);
+      if (!user) {
+        throw new Error('Failed to get user from credential');
+      }
+      
+      // Store credential and user
+      setAppleCredential(appleCredential);
+      setCurrentUser(user);
+      
+      // Sync user state
+      syncUserState(user);
+      
+      AuthDebug.trackFlowStep('AppleSignIn', 'Firebase auth successful', { userId: user.uid });
+      
+      // Get name data from Apple response
+      // Apple only provides name details on the first sign-in
+      const userFirstName = appleAuthRequestResponse.fullName?.givenName || "";
+      const userFamilyName = appleAuthRequestResponse.fullName?.familyName || "";
+      const userFullName = userFirstName && userFamilyName 
+        ? `${userFirstName} ${userFamilyName}` 
+        : user.displayName || "";
+      
+      if (user) {
+        const userDocRef = FIRESTORE.collection("users").doc(user.uid);
+        const docSnap = await userDocRef.get();
+        
+        if (docSnap.exists) {
+          // Existing user - update their data
+          const existingUser = docSnap.data() as UserDataType;
+          
+          const userDataToUpdate: Partial<UserDataType> = {
+            ...existingUser,
+            userId: user.uid,
+            email: user.email || existingUser.email || "",
+            // Only update name fields if we got them from Apple (first login)
+            // or if they don't exist in the user document yet
+            firstName: userFirstName || existingUser.firstName,
+            familyName: userFamilyName || existingUser.familyName,
+            fullName: userFullName || existingUser.fullName,
+            AppleSSOEnabled: true,
+            settings: {
+              ...existingUser?.settings,
+              connectedAccounts: {
+                ...existingUser?.settings?.connectedAccounts,
+                apple: true,
+              },
+            },
+          };
+          
+          // Update user data but don't navigate
+          await updateUserData(userDataToUpdate);
+          
+          AuthDebug.trackFlowStep('AppleSignIn', 'Updated existing user data');
+          
+          // Let onAuthStateChanged handle navigation
+        } else {
+          // New user - create document
+          AuthDebug.trackFlowStep('AppleSignIn', 'Creating new user document');
+          
+          const userDataToUpdate: Partial<UserDataType> = {
+            ...initialUserData,
+            userId: user.uid,
+            createdAt: firestore.FieldValue.serverTimestamp(),
+            email: user.email || "",
+            firstName: userFirstName,
+            familyName: userFamilyName,
+            fullName: userFullName,
+            AppleSSOEnabled: true,
+            currentOnboardingScreen: "PhoneNumberScreen",
+          };
+          
+          await userDocRef.set(userDataToUpdate);
+          
+          AuthDebug.trackFlowStep('AppleSignIn', 'New user created');
+        }
+      }
+    } catch (error: any) {
+      AuthDebug.error('AppleSignIn', 'Apple sign-in error', error);
+      console.error("Apple sign-in error:", error);
+    }
+  };
+
 const verifyPhoneAndSetUser = async (
   verificationId: string,
   code: string,
@@ -1276,9 +1405,10 @@ const verifyPhoneAndSetUser = async (
     console.log("Auth state before verification:", FIREBASE_AUTH.currentUser ? 
       `User ${FIREBASE_AUTH.currentUser.uid}` : "No user");
 
-    if (googleCredential && FIREBASE_AUTH.currentUser) {
-      // Google user linking phone number
-      AuthDebug.trackFlowStep('PhoneVerification', 'Linking phone to Google SSO user', { 
+    if ((googleCredential || appleCredential) && FIREBASE_AUTH.currentUser) {
+      // SSO user linking phone number
+      const ssoType = googleCredential ? 'Google' : 'Apple';
+      AuthDebug.trackFlowStep('PhoneVerification', `Linking phone to ${ssoType} SSO user`, { 
         userId: FIREBASE_AUTH.currentUser.uid 
       });
       
@@ -1286,9 +1416,9 @@ const verifyPhoneAndSetUser = async (
       
       try {
         await FIREBASE_AUTH.currentUser.linkWithCredential(phoneCredential);
-        AuthDebug.trackFlowStep('PhoneVerification', 'Phone successfully linked to Google account');
+        AuthDebug.trackFlowStep('PhoneVerification', `Phone successfully linked to ${ssoType} account`);
       } catch (error: any) {
-        AuthDebug.error('PhoneVerification', 'Error linking phone number to Google SSO user', error);
+        AuthDebug.error('PhoneVerification', `Error linking phone number to ${ssoType} SSO user`, error);
         setIsLinking(false);
         
         if (error.code === 'auth/credential-already-in-use' || 
@@ -1308,18 +1438,21 @@ const verifyPhoneAndSetUser = async (
         areaCode,
         number,
         currentOnboardingScreen: "NameScreen",
+        // Set the appropriate SSO flag based on the credential type
+        ...(googleCredential && { GoogleSSOEnabled: true }),
+        ...(appleCredential && { AppleSSOEnabled: true }),
       });
       
       AuthDebug.trackFlowStep('PhoneVerification', 'User data updated, calling fetchUserData for navigation');
       setIsLinking(false);
 
-      console.log("📱 Phone verification successful for Google SSO user, fetching updated user data...");
+      console.log(`📱 Phone verification successful for ${ssoType} SSO user, fetching updated user data...`);
       const updatedUserData = await fetchUserData(FIREBASE_AUTH.currentUser.uid, true);
       
-      // 🔧 FIX: Explicitly handle navigation after phone verification for Google SSO users
+      // 🔧 FIX: Explicitly handle navigation after phone verification for SSO users
       if (updatedUserData) {
         console.log("✅ User data fetched, handling navigation to next onboarding screen...");
-        AuthDebug.trackFlowStep('PhoneVerification', 'Handling navigation for Google SSO user after phone verification');
+        AuthDebug.trackFlowStep('PhoneVerification', `Handling navigation for ${ssoType} SSO user after phone verification`);
         await handleUserNavigation(updatedUserData, true);
       } else {
         console.error("❌ Failed to fetch user data after phone verification");
@@ -1476,11 +1609,40 @@ const verifyPhoneAndSetUser = async (
         return null;
       }
       
+      // 🔒 CANCELLATION CHECK: If sign out is in progress, abort immediately
+      if (isSigningOutRef.current) {
+        AuthDebug.warn('FetchUserData', 'Sign out in progress, aborting fetch');
+        console.log('⚠️ fetchUserData called but sign out is in progress, aborting');
+        return null;
+      }
+      
+      // 🔒 SAFETY CHECK: Ensure user is still authenticated before making Firestore calls
+      if (!FIREBASE_AUTH.currentUser) {
+        AuthDebug.warn('FetchUserData', 'User not authenticated, skipping fetch');
+        console.log('⚠️ fetchUserData called but user is not authenticated, skipping');
+        return null;
+      }
+      
       AuthDebug.trackFlowStep('FetchUserData', 'Started', { userId, isSSO });
-      console.log(`🔍 Fetching user data for ${userId} (isSSO: ${isSSO})`);
+  
   
       const docRef = FIRESTORE.collection("users").doc(userId);
+      
+      // 🔒 ADDITIONAL SAFETY CHECK: Verify user is still authenticated before Firestore call
+      if (!FIREBASE_AUTH.currentUser) {
+        AuthDebug.warn('FetchUserData', 'User lost authentication during fetch, aborting');
+        console.log('⚠️ User lost authentication during fetchUserData, aborting');
+        return null;
+      }
+      
       const docSnap = await docRef.get();
+      
+      // 🔒 FINAL SAFETY CHECK: Ensure user is still authenticated after Firestore call
+      if (!FIREBASE_AUTH.currentUser) {
+        AuthDebug.warn('FetchUserData', 'User lost authentication after Firestore call, aborting');
+        console.log('⚠️ User lost authentication after Firestore call, aborting');
+        return null;
+      }
       
       if (docSnap.exists) {
         const userDataFromFirestore = docSnap.data() as UserDataType;
@@ -1513,6 +1675,13 @@ const verifyPhoneAndSetUser = async (
         AuthDebug.trackFlowStep('FetchUserData', 'New phone user, creating document');
         console.log(`🆕 New phone user ${userId}, creating document`);
         
+        // 🔒 SAFETY CHECK: Ensure user is still authenticated before creating document
+        if (!FIREBASE_AUTH.currentUser) {
+          AuthDebug.warn('FetchUserData', 'User lost authentication before document creation, aborting');
+          console.log('⚠️ User lost authentication before document creation, aborting');
+          return null;
+        }
+        
         const newUserData = {
           ...initialUserData,
           userId,
@@ -1525,9 +1694,16 @@ const verifyPhoneAndSetUser = async (
         
         return newUserData;
       } else {
-        // New Google SSO user - need phone verification first
-        AuthDebug.trackFlowStep('FetchUserData', 'New Google user, creating document');
-        console.log(`🆕 New Google user ${userId}, creating document`);
+        // New SSO user (Google or Apple) - need phone verification first
+        AuthDebug.trackFlowStep('FetchUserData', 'New SSO user, creating document');
+        console.log(`🆕 New SSO user ${userId}, creating document`);
+        
+        // 🔒 SAFETY CHECK: Ensure user is still authenticated before creating document
+        if (!FIREBASE_AUTH.currentUser) {
+          AuthDebug.warn('FetchUserData', 'User lost authentication before document creation, aborting');
+          console.log('⚠️ User lost authentication before document creation, aborting');
+          return null;
+        }
         
         const newUserData = {
           ...initialUserData,
@@ -1549,15 +1725,15 @@ const verifyPhoneAndSetUser = async (
   };
 
       // 🧭 NAVIGATION HANDLER - Centralized navigation logic
-    let isNavigating = false;
+    let isNavigationInProgress = false;
     let lastNavigationTime = 0;
     let lastNavigationUserId = '';
     const handleUserNavigation = async (userData: UserDataType, isSSO: boolean) => {
       // 🔒 Prevent multiple simultaneous navigation calls
       const now = Date.now();
-      if (isNavigating || (now - lastNavigationTime) < 1000) {
+      if (isNavigationInProgress || (now - lastNavigationTime) < 1000) {
         console.log("🧭 Navigation already in progress or too recent, skipping duplicate call", {
-          isNavigating,
+          isNavigationInProgress,
           timeSinceLastNavigation: now - lastNavigationTime
         });
         return;
@@ -1580,7 +1756,7 @@ const verifyPhoneAndSetUser = async (
         return;
       }
       
-      isNavigating = true;
+      isNavigationInProgress = true;
       lastNavigationTime = now;
       lastNavigationUserId = userData.userId;
     
@@ -1614,7 +1790,7 @@ const verifyPhoneAndSetUser = async (
           try {
             router.replace({ pathname: `/(tabs)/Connect` as any });
             console.log("🧭 Navigation to Connect tab completed");
-            isNavigating = false;
+            isNavigationInProgress = false;
           } catch (error) {
             console.error("🧭 Navigation error:", error);
             // Fallback: try again after a longer delay
@@ -1622,10 +1798,10 @@ const verifyPhoneAndSetUser = async (
               try {
                 router.replace({ pathname: `/(tabs)/Connect` as any });
                 console.log("🧭 Fallback navigation to Connect tab completed");
-                isNavigating = false;
+                isNavigationInProgress = false;
               } catch (fallbackError) {
                 console.error("🧭 Fallback navigation also failed:", fallbackError);
-                isNavigating = false;
+                isNavigationInProgress = false;
               }
             }, 500);
           }
@@ -1633,17 +1809,17 @@ const verifyPhoneAndSetUser = async (
         return;
       }
       
-      // Case 2: Google SSO user without phone number - must complete phone verification
+      // Case 2: SSO user (Google or Apple) without phone number - must complete phone verification
       if (isSSO && !userData.phoneNumber) {
-        AuthDebug.trackFlowStep('UserNavigation', 'Google user needs phone verification');
-        console.log(`📱 Google user ${userData.userId} needs to verify phone, navigating to PhoneNumberScreen`);
+        AuthDebug.trackFlowStep('UserNavigation', 'SSO user needs phone verification');
+        console.log(`📱 SSO user ${userData.userId} needs to verify phone, navigating to PhoneNumberScreen`);
         console.log("🧭 About to navigate to PhoneNumberScreen");
         // Add a small delay to ensure the component is fully mounted and router is ready
         setTimeout(() => {
           try {
             router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
             console.log("🧭 Navigation to PhoneNumberScreen completed");
-            isNavigating = false;
+            isNavigationInProgress = false;
           } catch (error) {
             console.error("🧭 Navigation error:", error);
             // Fallback: try again after a longer delay
@@ -1651,10 +1827,10 @@ const verifyPhoneAndSetUser = async (
               try {
                 router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
                 console.log("🧭 Fallback navigation to PhoneNumberScreen completed");
-                isNavigating = false;
+                isNavigationInProgress = false;
               } catch (fallbackError) {
                 console.error("🧭 Fallback navigation also failed:", fallbackError);
-                isNavigating = false;
+                isNavigationInProgress = false;
               }
             }, 500);
           }
@@ -1677,7 +1853,7 @@ const verifyPhoneAndSetUser = async (
           try {
             router.replace({ pathname: `onboarding/${screenToNavigateTo}` as any });
             console.log(`🧭 Navigation to ${screenToNavigateTo} completed`);
-            isNavigating = false;
+            isNavigationInProgress = false;
           } catch (error) {
             console.error("🧭 Navigation error:", error);
             // Fallback: try again after a longer delay
@@ -1685,10 +1861,10 @@ const verifyPhoneAndSetUser = async (
               try {
                 router.replace({ pathname: `onboarding/${screenToNavigateTo}` as any });
                 console.log(`🧭 Fallback navigation to ${screenToNavigateTo} completed`);
-                isNavigating = false;
+                isNavigationInProgress = false;
               } catch (fallbackError) {
                 console.error("🧭 Fallback navigation also failed:", fallbackError);
-                isNavigating = false;
+                isNavigationInProgress = false;
               }
             }, 500);
           }
@@ -1699,7 +1875,7 @@ const verifyPhoneAndSetUser = async (
       console.error("Error handling user navigation:", error);
       // Fallback to safe screen
       router.replace({ pathname: `onboarding/LoginSignupScreen` as any });
-      isNavigating = false;
+      isNavigationInProgress = false;
     }
   };
 
@@ -1732,23 +1908,11 @@ const verifyPhoneAndSetUser = async (
   };
 
   const currentPotentialMatch = useMemo(() => {
-    const match = matchingState.potentialMatches[matchingState.currentIndex] || null;
-    console.log('🎯 currentPotentialMatch computed:', {
-      totalMatches: matchingState.potentialMatches.length,
-      currentIndex: matchingState.currentIndex,
-      matchId: match?.userId,
-      matchName: match?.firstName,
-      match: match ? 'Found' : 'NULL'
-    });
+    const match = matchingState.potentialMatches?.[matchingState.currentIndex];
     return match;
   }, [matchingState.potentialMatches, matchingState.currentIndex]);
 
-  console.log('🔍 useMemo debug:', {
-    matchingStatePotentialMatches: matchingState.potentialMatches?.length || 0,
-    matchingStateCurrentIndex: matchingState.currentIndex,
-    calculatedMatch: matchingState.potentialMatches?.[matchingState.currentIndex]?.userId || 'NONE',
-    useMemoResult: currentPotentialMatch?.userId || 'NONE'
-  });
+
 
   const applySpiritualFilter = useCallback((user: UserDataType): { passes: boolean; score: number; reason?: string } => {
       const userSpiritualPrefs = userData.matchPreferences?.spiritualCompatibility;
@@ -1893,7 +2057,7 @@ const verifyPhoneAndSetUser = async (
   const applyBoostPrioritySorting = useCallback((users: UserDataType[]): UserDataType[] => {
       if (!users.length) return users;
       
-      console.log(`🚀 Applying boost priority sorting to ${users.length} users`);
+
       
       const sortedUsers = [...users].sort((a, b) => {
         // 1. HIGHEST PRIORITY: Active boost status
@@ -1901,11 +2065,9 @@ const verifyPhoneAndSetUser = async (
         const bHasActiveBoost = isUserBoosted(b);
         
         if (aHasActiveBoost && !bHasActiveBoost) {
-          console.log(`🚀 ${a.firstName} boosted above ${b.firstName} (active radiance)`);
           return -1;
         }
         if (!aHasActiveBoost && bHasActiveBoost) {
-          console.log(`🚀 ${b.firstName} boosted above ${a.firstName} (active radiance)`);
           return 1;
         }
         
@@ -1931,177 +2093,31 @@ const verifyPhoneAndSetUser = async (
         return bCreated.getTime() - aCreated.getTime();
       });
       
-      // Log top 5 for debugging
-      console.log('🚀 Top 5 prioritized matches:');
-      sortedUsers.slice(0, 5).forEach((user, index) => {
-        const hasBoost = isUserBoosted(user);
-        const isActive = isUserRecentlyActive(user);
-        const likes = user.likesReceivedCount || 0;
-        
-        console.log(`  ${index + 1}. ${user.firstName} - ${hasBoost ? '🚀 BOOSTED' : '⭐'} ${isActive ? '🟢 ACTIVE' : '⚪'} ${likes} likes`);
-      });
+
       
       return sortedUsers;
     }, [isUserBoosted, isUserRecentlyActive]);
 
+  // Simple filtering - removed complex logic that was causing issues
   const applyAllFilters = useCallback((users: UserDataType[]): UserDataType[] => {
-    const prefs = userData.matchPreferences;
-    
-    console.log(`🔍 Starting client-side filtering on ${users.length} users`);
-    console.log('🔍 User preferences for filtering:', {
-      ageRange: prefs?.preferredAgeRange,
-      connectionIntent: prefs?.connectionIntent,
-      connectionPreferences: prefs?.connectionPreferences,
-      preferredDistance: prefs?.preferredDistance,
-      spiritualPrefs: prefs?.spiritualCompatibility
-    });
-    
-    console.log('🚫 Current user ID for exclusion:', userData.userId);
-    console.log('🚫 Exclusion set contents:', Array.from(matchingState.exclusionSet));
+    // Just return users as-is for now to fix the matching issue
+    return users.filter(user => 
+      user.userId !== userData.userId && 
+      user.onboardingCompleted === true &&
+      user.firstName && 
+      user.photos && 
+      user.photos.length > 0
+    );
+  }, [userData.userId]);
 
-    const filteredUsers = users.filter(user => {
-      // 1. 🚫 EXCLUSION CHECK - Use the exclusion set from matching state
-      if (matchingState.exclusionSet.has(user.userId)) {
-        console.log(`❌ ${user.firstName} (${user.userId.slice(-4)}) - Already excluded from exclusion set`);
-        return false;
-      }
-      
-      // 2. 🔥 CRITICAL: Explicit self-check as backup
-      if (user.userId === userData.userId) {
-        console.log(`❌ ${user.firstName} (${user.userId.slice(-4)}) - Cannot show user themselves!`);
-        return false;
-      }
-
-      // 3. 🎯 AGE FILTER 
-      if (prefs?.preferredAgeRange?.min && prefs?.preferredAgeRange?.max) {
-        const userAge = user.age;
-        
-        if (!userAge || userAge < prefs.preferredAgeRange.min || userAge > prefs.preferredAgeRange.max) {
-          console.log(`❌ ${user.firstName} (age ${userAge}) - Outside age range ${prefs.preferredAgeRange.min}-${prefs.preferredAgeRange.max}`);
-          return false;
-        }
-        
-        console.log(`✅ ${user.firstName} (age ${userAge}) - Within age range ${prefs.preferredAgeRange.min}-${prefs.preferredAgeRange.max}`);
-      }
-
-      // 4. 🎯 GENDER/CONNECTION PREFERENCES
-      if (prefs?.connectionPreferences?.length && !prefs.connectionPreferences.includes("Everyone")) {
-        const userGender = Array.isArray(user.gender) ? user.gender[0] : user.gender;
-        
-        const genderMap: Record<string, string> = {
-          "Man": "Men",
-          "Woman": "Women", 
-          "Non-binary": "Non-Binary"
-        };
-        
-        const expectedPreference = genderMap[userGender as string];
-        
-        if (!prefs.connectionPreferences.includes(expectedPreference)) {
-          console.log(`❌ ${user.firstName} (${userGender}) - Not in connection preferences [${prefs.connectionPreferences.join(', ')}]`);
-          return false;
-        }
-        
-        console.log(`✅ ${user.firstName} (${userGender}) - Matches connection preferences`);
-      }
-
-      // 5. 🎯 CONNECTION INTENT COMPATIBILITY
-      if (prefs?.connectionIntent && prefs.connectionIntent !== "both") {
-        const userIntent = user.matchPreferences?.connectionIntent || "both";
-        
-        let compatible = false;
-        
-        if (prefs.connectionIntent === "romantic") {
-          compatible = userIntent === "romantic" || userIntent === "both";
-        } else if (prefs.connectionIntent === "friendship") {
-          compatible = userIntent === "friendship" || userIntent === "both";
-        }
-        
-        if (!compatible) {
-          console.log(`❌ ${user.firstName} - Intent mismatch: User wants "${prefs.connectionIntent}", they want "${userIntent}"`);
-          return false;
-        }
-        
-        console.log(`✅ ${user.firstName} - Intent compatible: User wants "${prefs.connectionIntent}", they want "${userIntent}"`);
-      }
-
-      // 6. 🔮 SPIRITUAL COMPATIBILITY FILTER
-      const spiritualResult = applySpiritualFilter(user);
-      if (!spiritualResult.passes) {
-        return false;
-      }
-      
-      // Store spiritual score for sorting
-      (user as any)._spiritualScore = spiritualResult.score;
-      (user as any)._spiritualReason = spiritualResult.reason;
-
-      // 7. 🎯 DISTANCE FILTER
-      if (prefs?.preferredDistance && userData.latitude && userData.longitude && user.latitude && user.longitude) {
-        const distance = calculateHaversineDistance(
-          userData.latitude,
-          userData.longitude,
-          user.latitude,
-          user.longitude
-        );
-        
-        if (distance > prefs.preferredDistance) {
-          console.log(`❌ ${user.firstName} - Too far: ${distance.toFixed(1)} miles > ${prefs.preferredDistance} miles`);
-          return false;
-        }
-        
-        console.log(`✅ ${user.firstName} - Within distance: ${distance.toFixed(1)} miles <= ${prefs.preferredDistance} miles`);
-      }
-
-      // 8. 🎯 HEIGHT FILTER (if specified)
-      if (prefs?.preferredHeightRange?.min && prefs?.preferredHeightRange?.max && user.height) {
-        if (user.height < prefs.preferredHeightRange.min || user.height > prefs.preferredHeightRange.max) {
-          console.log(`❌ ${user.firstName} - Height ${user.height} outside range ${prefs.preferredHeightRange.min}-${prefs.preferredHeightRange.max}`);
-          return false;
-        }
-      }
-
-      console.log(`✅ ${user.firstName} (age ${user.age}) - PASSED ALL FILTERS`);
-      return true;
-    });
-
-    // 🔮 SORT BY SPIRITUAL COMPATIBILITY SCORE (highest first)
-    const sortedUsers = filteredUsers.sort((a, b) => {
-      const scoreA = (a as any)._spiritualScore || 0;
-      const scoreB = (b as any)._spiritualScore || 0;
-      return scoreB - scoreA; // Higher spiritual compatibility first
-    });
-
-    console.log(`📊 FINAL FILTERED USERS: ${sortedUsers.length} out of ${users.length} raw users`);
-    
-    // 🔮 Log top spiritual matches
-    if (sortedUsers.length > 0) {
-      console.log('🔮 Top spiritual matches:');
-      sortedUsers.slice(0, 3).forEach((user, index) => {
-        const score = (user as any)._spiritualScore || 0;
-        const reason = (user as any)._spiritualReason || 'No spiritual data';
-        console.log(`  ${index + 1}. ${user.firstName} (${(score * 100).toFixed(0)}% spiritual match: ${reason})`);
-      });
-    }
-
-    // 🚀 Apply boost priority sorting to spiritually sorted users
-    const finalSortedUsers = applyBoostPrioritySorting(sortedUsers);
-    console.log(`📊 FINAL PRIORITIZED USERS: ${finalSortedUsers.length} out of ${users.length} raw users`);
-
-    return finalSortedUsers;
-
-  }, [userData.matchPreferences, userData.latitude, userData.longitude, userData.userId, matchingState.exclusionSet, applySpiritualFilter, applyBoostPrioritySorting]);
-
-  const fetchPotentialMatches = useCallback(async (
+    const fetchPotentialMatches = useCallback(async (
     resetBatch: boolean = false,
     overrideExclusions?: Set<string>
   ): Promise<UserDataType[]> => {
     
     if (matchingStateRef.current.loadingBatch) {
-      console.log('⏸️ Already loading, skipping fetch');
       return [];
     }
-    
-    console.log('🔍 === FETCHING POTENTIAL MATCHES ===');
-    console.log('🔍 Reset batch:', resetBatch);
     
     setMatchingState(prev => ({ ...prev, loadingBatch: true }));
     
@@ -2109,14 +2125,11 @@ const verifyPhoneAndSetUser = async (
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
-      console.log('🔍 Using exclusions for query:', Array.from(exclusionsToUse));
-      
-      // Build and execute query
-      const query = buildMatchQuery(exclusionsToUse, lastDoc, 8);
+      // Build and execute query - keep it simple
+      const query = buildMatchQuery(exclusionsToUse, lastDoc, 20); // Larger batch size
       const snapshot = await query.get();
       
       if (snapshot.empty) {
-        console.log('📭 No more users found in Firestore');
         setMatchingState(prev => ({ 
           ...prev, 
           loadingBatch: false, 
@@ -2131,19 +2144,16 @@ const verifyPhoneAndSetUser = async (
         ...doc.data()
       } as UserDataType));
       
-      console.log(`📊 Raw users from Firestore: ${rawUsers.length}`);
-      
-      // Apply all client-side filters
-      const filteredUsers = applyAllFilters(rawUsers);
-      
-      // ✅ FIXED: Simple duplicate check - just make sure we don't add users already in potentialMatches
+      // Simple filtering - just exclude current user and already seen users
       const currentUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
-      const uniqueFilteredUsers = filteredUsers.filter(user => 
-        !currentUserIds.has(user.userId) // Only check against current potentialMatches, not exclusions
+      const filteredUsers = rawUsers.filter(user => 
+        user.userId !== userDataRef.current.userId && 
+        !currentUserIds.has(user.userId) &&
+        user.onboardingCompleted === true &&
+        user.firstName && 
+        user.photos && 
+        user.photos.length > 0
       );
-      
-      console.log(`📊 FINAL UNIQUE USERS: ${uniqueFilteredUsers.length} out of ${rawUsers.length} raw users`);
-      console.log('📊 Final users:', uniqueFilteredUsers.map(u => `${u.firstName} (${u.userId.slice(-4)})`));
       
       // Update pagination state
       const newLastDoc = snapshot.docs.length > 0 ? 
@@ -2153,21 +2163,21 @@ const verifyPhoneAndSetUser = async (
         ...prev,
         lastFetchedDoc: newLastDoc,
         loadingBatch: false,
-        noMoreMatches: uniqueFilteredUsers.length === 0
+        noMoreMatches: filteredUsers.length === 0
       }));
       
-      return uniqueFilteredUsers;
+      return filteredUsers;
       
     } catch (error) {
       console.error('❌ Error fetching matches:', error);
       setMatchingState(prev => ({ 
         ...prev, 
         loadingBatch: false, 
-        noMoreMatches: true 
+        noMoreMatches: false
       }));
       return [];
     }
-  }, [buildMatchQuery, applyAllFilters]);
+  }, [buildMatchQuery]);
 
   useEffect(() => {
     const initializeMatching = async () => {
@@ -2177,36 +2187,51 @@ const verifyPhoneAndSetUser = async (
         return;
       }
       
-      console.log('🚀 Initializing matching system...');
-      
       try {
         // Build exclusion set
         const exclusions = await buildExclusionSet(userData.userId);
-        console.log('🚫 Final exclusion set:', Array.from(exclusions));
         
         // Generate preferences hash
         const preferencesHash = generatePreferencesHash(userData.matchPreferences);
         
-        // 🔥 CRITICAL FIX: Fetch initial batch BEFORE updating state
-        console.log('🔄 Fetching initial batch with exclusion set...');
-        const initialBatch = await fetchPotentialMatches(true, exclusions); // ✅ Now this works!
+        // If user has no match preferences, create default ones
+        if (!userData.matchPreferences) {
+          const defaultPreferences = {
+            preferredAgeRange: { min: 18, max: 70 },
+            preferredHeightRange: { min: 140, max: 220 },
+            preferredDistance: 50,
+            connectionIntent: "both" as const,
+            connectionPreferences: [],
+            connectionStyles: [],
+            spiritualCompatibility: {
+              spiritualDraws: ["Open to All"],
+              practices: ["Open to All"],
+              healingModalities: ["Open to All"]
+            },
+            datePreferences: []
+          };
+          
+          await updateUserData({ matchPreferences: defaultPreferences });
+        }
         
-        // Update state with everything at once
+        // Fetch initial batch
+        const initialBatch = await fetchPotentialMatches(true, exclusions);
+        
+        // Update state
         setMatchingState(prev => ({
           ...prev,
           exclusionSet: exclusions,
           preferencesHash,
           initialized: true,
-          potentialMatches: initialBatch,  // Set the fetched matches
+          potentialMatches: initialBatch,
           currentIndex: 0,
           lastFetchedDoc: null,
           noMoreMatches: initialBatch.length === 0
         }));
         
-        console.log(`🎉 Initialization complete with ${initialBatch.length} matches`);
-        
       } catch (error) {
         console.error('❌ Error initializing matching:', error);
+        setMatchingState(prev => ({ ...prev, initialized: true, noMoreMatches: false }));
       }
     };
     
@@ -2297,28 +2322,41 @@ const verifyPhoneAndSetUser = async (
   }
 
   const loadNextMatch = useCallback(async () => {
-    const { potentialMatches, currentIndex, exclusionSet } = matchingStateRef.current;
+    console.log('🔄 loadNextMatch called');
     
-    console.log(`➡️ Checking if need to load more matches. Current index: ${currentIndex}, Total: ${potentialMatches.length}`);
+    // Use the current state directly instead of the ref
+    const currentState = matchingState;
+    const { potentialMatches, currentIndex } = currentState;
     
-    // Only fetch new batch if we're running low on matches
-    const PREFETCH_THRESHOLD = 2;
-    if (potentialMatches.length - currentIndex <= PREFETCH_THRESHOLD) {
-      console.log('📦 Running low on matches, fetching new batch...');
-      const newBatch = await fetchPotentialMatches(false);
-      
-      if (newBatch.length > 0) {
-        console.log(`📦 Adding ${newBatch.length} new matches to batch`);
-        setMatchingState(prev => ({
-          ...prev,
-          potentialMatches: [...prev.potentialMatches, ...newBatch],
-        }));
-      } else {
-        console.log('📭 No more matches available');
-        setMatchingState(prev => ({ ...prev, noMoreMatches: true }));
-      }
+    console.log('🔄 Current state in loadNextMatch:', {
+      currentIndex,
+      totalMatches: potentialMatches.length,
+      hasMoreMatches: currentIndex < potentialMatches.length - 1
+    });
+    
+    // First, advance to the next match
+    if (currentIndex < potentialMatches.length - 1) {
+      console.log(`🔄 Advancing to next match: ${currentIndex + 1}`);
+      setMatchingState(prev => ({ ...prev, currentIndex: prev.currentIndex + 1 }));
+      return;
     }
-  }, [fetchPotentialMatches]);
+    
+    // If we're at the last match, fetch more
+    console.log('📦 At last match, fetching new batch...');
+    const newBatch = await fetchPotentialMatches(false);
+    
+    if (newBatch.length > 0) {
+      console.log(`📦 Adding ${newBatch.length} new matches to batch`);
+      setMatchingState(prev => ({
+        ...prev,
+        potentialMatches: [...prev.potentialMatches, ...newBatch],
+        currentIndex: prev.currentIndex + 1, // Move to the first new match
+      }));
+    } else {
+      console.log('📭 No more matches available');
+      setMatchingState(prev => ({ ...prev, noMoreMatches: true }));
+    }
+  }, [fetchPotentialMatches, matchingState]);
 
   const shouldResetDailyLikes = (lastResetDate: any): boolean => {
     if (!lastResetDate) return true;
@@ -2381,8 +2419,6 @@ const verifyPhoneAndSetUser = async (
       }
 
       // Check if the TARGET USER (person being liked) has radiance
-      console.log(`🔍 Checking if target user ${matchId} has radiance...`);
-      
       let targetHasRadiance = false;
       
       try {
@@ -2391,41 +2427,17 @@ const verifyPhoneAndSetUser = async (
         if (targetUserDoc.exists) {
           const targetUserData = targetUserDoc.data() as UserDataType;
           
-          console.log('🎯 Target user data:', {
-            userId: matchId,
-            boostExpiresAt: targetUserData.boostExpiresAt,
-            hasBoostField: !!targetUserData.boostExpiresAt
-          });
-          
           if (targetUserData.boostExpiresAt) {
             const expiresAt = targetUserData.boostExpiresAt.toDate 
               ? targetUserData.boostExpiresAt.toDate()
               : new Date(targetUserData.boostExpiresAt);
             
             targetHasRadiance = new Date() < expiresAt;
-            
-            console.log('🔍 Target user radiance check:', {
-              expiresAt: expiresAt.toISOString(),
-              currentTime: new Date().toISOString(),
-              targetHasRadiance
-            });
-          } else {
-            console.log('🔍 Target user has no boostExpiresAt field');
           }
-        } else {
-          console.log('❌ Target user document not found');
         }
       } catch (error) {
         console.error('❌ Error checking target user radiance:', error);
       }
-      
-      console.log('🚀 FINAL RADIANCE CHECK RESULT:', {
-        targetUserId: matchId,
-        targetHasRadiance,
-        meaning: targetHasRadiance 
-          ? 'This like will be marked as viaRadiance because recipient has active boost' 
-          : 'Normal like - recipient has no active boost'
-      });
       
       // 🔧 CRITICAL FIX: Update exclusion set AND remove from UI immediately
       setMatchingState(prev => {
@@ -2448,8 +2460,7 @@ const verifyPhoneAndSetUser = async (
           }
         }
         
-        console.log(`🔧 Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-        console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+
         
         return {
           ...prev,
@@ -2469,11 +2480,11 @@ const verifyPhoneAndSetUser = async (
           targetHasRadiance
         );
         
-        console.log(`✅ Optimized like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal like)'}`);
+
       } catch (likeError: any) {
         // ✅ NEW: Handle case where users are already matched
         if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
-          console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping like recording`);
+
           // Don't rollback the exclusion since we still want them removed from the list
         } else {
           throw likeError; // Re-throw other errors for normal error handling
@@ -2545,13 +2556,7 @@ const verifyPhoneAndSetUser = async (
         console.error('❌ Error checking target user radiance (lotus):', error);
       }
       
-      console.log('🚀 LOTUS + RADIANCE CHECK RESULT:', {
-        targetUserId: matchId,
-        targetHasRadiance,
-        meaning: targetHasRadiance 
-          ? 'This lotus like will be marked as viaRadiance because recipient has active boost' 
-          : 'Normal lotus like - recipient has no active boost'
-      });
+
       
       // Update user data to reflect lotus usage immediately
       setUserData(prev => ({
@@ -2579,8 +2584,7 @@ const verifyPhoneAndSetUser = async (
               }
             }
             
-            console.log(`🔧 After lotus like - Filtered matches: ${filteredMatches.length}, Moving to index: ${nextIndex}`);
-            console.log(`🔧 Next user: ${filteredMatches[nextIndex]?.firstName || 'NONE'}`);
+
             
             return {
               ...prev,
@@ -2600,11 +2604,10 @@ const verifyPhoneAndSetUser = async (
           targetHasRadiance
         );
 
-        console.log(`✅ Optimized lotus like completed for ${matchId}${targetHasRadiance ? ' ✨ (recipient has Sacred Radiance)' : ' (normal lotus like)'}`);
+
       } catch (likeError: any) {
         // Handle case where users are already matched
         if (likeError.message?.includes('already matched') || likeError.message?.includes('User documents do not exist')) {
-          console.log(`⚠️ User ${matchId} already matched or doesn't exist, skipping lotus like recording`);
           // Don't rollback the exclusion since we still want them removed from the list
         } else {
           throw likeError;
@@ -2635,7 +2638,7 @@ const verifyPhoneAndSetUser = async (
           ...prev,
           numOfLotus: (prev.numOfLotus || 0) + 1
         }));
-        console.log(`🔄 Rolled back lotus count`);
+
       }
       
       throw error;
@@ -3114,6 +3117,10 @@ const verifyPhoneAndSetUser = async (
 
   const signOut = async () => {
     console.log("📤 SIGN OUT CALLED!");
+    
+    // 🔒 SET CANCELLATION FLAG: Signal that sign out is in progress
+    isSigningOutRef.current = true;
+    
     try {
       // 1. First clear local state (this won't trigger navigation)
       setUserData(initialUserData);
@@ -3122,17 +3129,17 @@ const verifyPhoneAndSetUser = async (
       // 🔄 MODERN STATE SYNC: Clear all user references
       syncUserState(null);
       
-      // 2. Update user data to ensure currentOnboardingScreen is saved
+      // 2. Update user data to ensure currentOnboardingScreen is saved (non-blocking)
       if (FIREBASE_AUTH.currentUser?.uid) {
-        try {
-          const screenToSave = userData.currentOnboardingScreen || "LoginSignupScreen";
-          await FIRESTORE.collection("users").doc(FIREBASE_AUTH.currentUser.uid).update({
-            currentOnboardingScreen: screenToSave
-          });
+        const screenToSave = userData.currentOnboardingScreen || "LoginSignupScreen";
+        // Use non-blocking update to prevent sign out from hanging
+        FIRESTORE.collection("users").doc(FIREBASE_AUTH.currentUser.uid).update({
+          currentOnboardingScreen: screenToSave
+        }).then(() => {
           console.log("✅ Updated user data before sign out");
-        } catch (updateError) {
+        }).catch((updateError) => {
           console.error("Error updating user data before sign out:", updateError);
-        }
+        });
       }
   
       // 3. Sign out from Google if signed in
@@ -3146,14 +3153,26 @@ const verifyPhoneAndSetUser = async (
       } catch (googleError) {
         console.warn("Google sign out error:", googleError);
       }
+
+      // 4. Sign out from Apple if signed in
+      try {
+        if (appleCredential) {
+          // Apple doesn't have a direct signOut method like Google
+          // But we can clear the credential and let Firebase handle the rest
+          console.log("✅ Apple credential cleared!");
+          setAppleCredential(null);
+        }
+      } catch (appleError) {
+        console.warn("Apple sign out error:", appleError);
+      }
   
-      // 4. IMPORTANT: Let auth state change handle navigation (prevents double navigation)
-      console.log("🚀 Letting auth state change handle navigation to LoginSignupScreen");
-      
-      // 5. Sign out from Firebase (navigation will happen automatically via onAuthStateChanged)
+      // 5. Sign out from Firebase (if there's a current user)
       if (FIREBASE_AUTH.currentUser) {
         await FIREBASE_AUTH.signOut();
         console.log("✅ Firebase user signed out!");
+      } else {
+        router.replace("onboarding/LoginSignupScreen" as any);
+        console.log("⚠️ No Firebase current user to sign out");
       }
   
     } catch (error) {
@@ -3993,9 +4012,21 @@ const verifyPhoneAndSetUser = async (
         }
       }
       
+      // Step 13: Sign out from Apple if connected
+      if (userData.AppleSSOEnabled) {
+        try {
+          // Apple doesn't have a direct signOut method like Google
+          // But we can clear the credential
+          setAppleCredential(null);
+          console.log("Apple credential cleared during account deletion");
+        } catch (appleError) {
+          console.warn("Error clearing Apple credential:", appleError);
+        }
+      }
+      
       console.log("Account successfully deleted");
       
-      // Step 13: Navigate to login screen
+      // Step 14: Navigate to login screen
       router.navigate("onboarding/LoginSignupScreen" as any);
       
     } catch (error: any) {
@@ -4100,6 +4131,20 @@ const verifyPhoneAndSetUser = async (
       return result.data;
     } catch (error: any) {
       console.error('❌ Payment intent creation failed:', error);
+      throw error;
+    }
+  };
+
+  // 🪷 Test function for weekly lotus cloud function (remove in production)
+  const testWeeklyLotusFunction = async () => {
+    try {
+      console.log('🧪 Testing weekly lotus cloud function...');
+      const response = await FUNCTIONS.httpsCallable("manualAssignWeeklyLotus");
+      const result = await response({});
+      console.log('✅ Weekly lotus test result:', result.data);
+      return result.data;
+    } catch (error) {
+      console.error("❌ Error testing weekly lotus function:", error);
       throw error;
     }
   };
@@ -4394,6 +4439,8 @@ const verifyPhoneAndSetUser = async (
     setGoogleCredential,
     googleUserData,
     setGoogleUserData,
+    appleCredential,
+    setAppleCredential,
     updateUserData,
     navigateToNextScreen,
     navigateToPreviousScreen,
@@ -4428,6 +4475,7 @@ const verifyPhoneAndSetUser = async (
     getImageUrl,
     verifyPhoneAndSetUser,
     handleGoogleSignIn,
+    handleAppleSignIn,
     matchingState,
     resetMatching,
     currentPotentialMatch,
@@ -4452,7 +4500,10 @@ const verifyPhoneAndSetUser = async (
     refreshPreferencesHash,
     getUserStats,
     validateUserData,
+    testWeeklyLotusFunction,
     initializing,
+    isSigningOut: isSigningOutRef.current,
+    
   };
 
   if (initializing) {

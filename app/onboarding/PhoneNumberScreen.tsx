@@ -58,6 +58,17 @@ function PhoneNumberScreen(): JSX.Element {
   const colors = Colors[colorScheme];
   const styles = createStyles(colorScheme, isFocused);
 
+  // Handle back button press
+  const handleBackPress = () => {
+    console.log("🔙 Back button pressed in PhoneNumberScreen");
+    console.log("🧭 User wants to go back, signing out to reset authentication state");
+    
+    // Sign out the user to reset the authentication state
+    // This is necessary because the user is still authenticated with Apple
+    // and needs to start fresh from the LoginSignupScreen
+    signOut();
+  };
+
   useEffect(() => {
     // Entrance animations
     Animated.parallel([
@@ -249,7 +260,7 @@ function PhoneNumberScreen(): JSX.Element {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 20}
       >
-        <TouchableOpacity style={styles.backButton} onPress={signOut}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         

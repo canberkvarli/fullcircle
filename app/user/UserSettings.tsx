@@ -27,7 +27,7 @@ import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 export default function UserSettings() {
   const router = useRouter();
-  const { userData, updateUserSettings, signOut, updateUserData, deleteAccount } = useUserContext();
+  const { userData, updateUserSettings, signOut, updateUserData, deleteAccount, handleAppleSignIn } = useUserContext();
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -266,6 +266,74 @@ export default function UserSettings() {
               Alert.alert("Disconnection Failed", errorMessage);
             } finally {
               setIsConnectingGoogle(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDisconnectApple = async () => {
+    if (!userData.userId || !FIREBASE_AUTH.currentUser) {
+      Alert.alert("Error", "No user session found.");
+      return;
+    }
+
+    Alert.alert(
+      "Disconnect Apple Account",
+      "Are you sure you want to disconnect your Apple account? You'll still be able to sign in with your phone number.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Get the current user's providers
+              const user = FIREBASE_AUTH.currentUser;
+              if (!user) throw new Error("No current user");
+
+              // Check if user has phone authentication as backup
+              const hasPhoneAuth = user.providerData.some(
+                provider => provider.providerId === 'phone'
+              );
+              
+              if (!hasPhoneAuth) {
+                Alert.alert(
+                  "Cannot Disconnect", 
+                  "You need to have a phone number linked to your account before disconnecting Apple."
+                );
+                return;
+              }
+
+              // Unlink Apple provider from Firebase
+              await user.unlink('apple.com');
+              
+              // Update user data to reflect Apple disconnection
+              await updateUserData({
+                AppleSSOEnabled: false,
+                settings: {
+                  ...userData.settings,
+                  connectedAccounts: {
+                    ...userData.settings?.connectedAccounts,
+                    apple: false,
+                  },
+                },
+              });
+              
+              console.log("Successfully disconnected Apple account");
+              Alert.alert("Disconnected", "Your Apple account has been disconnected.");
+              
+            } catch (error: any) {
+              console.error("Apple disconnect error: ", error);
+              
+              let errorMessage = "Failed to disconnect Apple account.";
+              
+              if (error.code === 'auth/no-such-provider') {
+                errorMessage = "Apple account is not connected to this account.";
+              }
+              
+              Alert.alert("Disconnection Failed", errorMessage);
             }
           },
         },
@@ -691,16 +759,28 @@ export default function UserSettings() {
 
           <View style={styles.separator} />
           
-          {/* Apple section remains commented out as requested */}
-          {/* <View style={styles.row}>
+          {/* Apple Account Toggle */}
+          <View style={styles.row}>
             <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Apple</Text>
             <Switch
               value={userData.settings?.connectedAccounts?.apple || false}
-              onValueChange={() => console.log("Toggle Apple")}
+              onValueChange={async (value) => {
+                if (value) {
+                  // Connect Apple account
+                  try {
+                    await handleAppleSignIn();
+                  } catch (error) {
+                    console.error("Apple sign-in error:", error);
+                  }
+                } else {
+                  // Disconnect Apple account
+                  handleDisconnectApple();
+                }
+              }}
               trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
               thumbColor={userData.settings?.connectedAccounts?.apple ? '#8B4513' : colors.textMuted}
             />
-          </View> */}
+          </View>
         </View>
 
         <View style={styles.section}>
