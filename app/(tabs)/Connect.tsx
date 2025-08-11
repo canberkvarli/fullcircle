@@ -101,18 +101,11 @@ const ConnectScreen: React.FC = () => {
     currentPotentialMatchRef.current = currentPotentialMatch;
   }, [currentPotentialMatch]);
 
-  // Enhanced loading state management
+  // Simplified loading state management
   useEffect(() => {
     const actuallyLoading = matchingStateRef.current.loadingBatch || 
-                          !currentPotentialMatchRef.current || 
-                          !matchingStateRef.current.initialized;
-    
-    console.log('🔄 Loading state check:', {
-      loadingBatch: matchingStateRef.current.loadingBatch,
-      hasCurrentMatch: !!currentPotentialMatchRef.current,
-      initialized: matchingStateRef.current.initialized,
-      actuallyLoading
-    });
+                          !matchingStateRef.current.initialized ||
+                          (matchingStateRef.current.initialized && matchingStateRef.current.potentialMatches.length === 0 && !matchingStateRef.current.noMoreMatches);
     
     if (actuallyLoading) {
       setIsLoading(true);
@@ -144,7 +137,7 @@ const ConnectScreen: React.FC = () => {
         });
       }, 300); // Brief delay to ensure content is ready
     }
-  }, [matchingState.loadingBatch, currentPotentialMatch, matchingState.initialized]);
+  }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches]);
 
   // Reset animations when match changes
   useEffect(() => {
@@ -538,8 +531,8 @@ const ConnectScreen: React.FC = () => {
     }, 400);
   };
 
-  // No more matches screen
-  if (matchingState.noMoreMatches) {
+  // No more matches screen - only show after we've actually tried to find matches
+  if (matchingState.noMoreMatches && matchingState.initialized && matchingState.potentialMatches.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -608,6 +601,8 @@ const ConnectScreen: React.FC = () => {
                 Adjust Preferences
               </Text>
             </TouchableOpacity>
+            
+
           </View>
         </View>
       </View>
@@ -655,11 +650,14 @@ const ConnectScreen: React.FC = () => {
             strokeWidth={1}
           />
         </Animated.View>
+        
+
       </View>
     );
   }
 
   // Main content with enhanced animations
+  
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -1675,6 +1673,8 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.3,
   },
+  
+
   
   contentPlaceholder: {
     flex: 1,

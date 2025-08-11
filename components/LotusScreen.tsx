@@ -286,7 +286,7 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
               <View style={[styles.currentLotusFlowersDisplay, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <CustomIcon name="lotus" size={22} />
                 <Text style={[styles.currentLotusFlowersText, fonts.bodyFont, { color: colors.textDark }]}>
-                  {userData.numOfLotus || 0} otus flowers
+                  {userData.numOfLotus || 0} lotus flower{userData.numOfLotus !== 1 ? 's' : ''}
                 </Text>
               </View>
               

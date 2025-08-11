@@ -22,6 +22,12 @@ const {
 
 const { stripeWebhook } = require('./stripe/webhooks');
 
+// Import Weekly Lotus functions
+const { 
+  assignWeeklyLotus,
+  manualAssignWeeklyLotus
+} = require('./weeklyLotus');
+
 // Export all functions
 exports.createSubscription = createSubscription;
 exports.cancelSubscription = cancelSubscription;
@@ -34,3 +40,7 @@ exports.createLotusPayment = createLotusPayment;
 exports.confirmLotusPayment = confirmLotusPayment;
 
 exports.stripeWebhook = stripeWebhook;
+
+// Export Weekly Lotus functions
+exports.assignWeeklyLotus = assignWeeklyLotus;
+exports.manualAssignWeeklyLotus = manualAssignWeeklyLotus;
