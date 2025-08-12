@@ -1013,8 +1013,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     
-
-    
     // 🔒 Prevent rapid successive auth state changes from the same user
     const now = Date.now();
     if (user && lastAuthStateChangeRef.current && 
@@ -1083,11 +1081,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     if (initializing) setInitializing(false);
   
     if (user) {
-      // 🔒 RESET CANCELLATION FLAG: User is signing in, clear the sign out flag
-      if (isSigningOutRef.current) {
-        isSigningOutRef.current = false;
-        console.log('🔄 User signing in, clearing sign out cancellation flag');
-      }
+
       
       const isGoogleLogin = user.providerData.some(
         (provider) => provider.providerId === "google.com"
@@ -1308,8 +1302,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       AuthDebug.trackFlowStep('AppleSignIn', 'Apple credential obtained');
       
-      // Sign in to Firebase with the Apple credential
-      const { user } = await FIREBASE_AUTH.signInWithCredential(appleCredential);
+      let user: FirebaseAuthTypes.User;
+      
+      // Check if there's already an authenticated user to link to
+      if (FIREBASE_AUTH.currentUser) {
+        // Link Apple credential to existing user
+        console.log('🔗 Linking Apple credential to existing user:', FIREBASE_AUTH.currentUser.uid);
+        const userCredential = await FIREBASE_AUTH.currentUser.linkWithCredential(appleCredential);
+        user = userCredential.user;
+        AuthDebug.trackFlowStep('AppleSignIn', 'Linked Apple credential to existing user', { userId: user.uid });
+      } else {
+        // Sign in with Apple credential (new user)
+        console.log('🍎 Signing in with Apple credential (new user)');
+        const userCredential = await FIREBASE_AUTH.signInWithCredential(appleCredential);
+        user = userCredential.user;
+        AuthDebug.trackFlowStep('AppleSignIn', 'Firebase auth successful', { userId: user.uid });
+      }
+      
       if (!user) {
         throw new Error('Failed to get user from credential');
       }
@@ -1320,8 +1329,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       
       // Sync user state
       syncUserState(user);
-      
-      AuthDebug.trackFlowStep('AppleSignIn', 'Firebase auth successful', { userId: user.uid });
       
       // Get name data from Apple response
       // Apple only provides name details on the first sign-in
@@ -1342,6 +1349,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           const userDataToUpdate: Partial<UserDataType> = {
             ...existingUser,
             userId: user.uid,
+            // Use Apple email as primary email when linking accounts
             email: user.email || existingUser.email || "",
             // Only update name fields if we got them from Apple (first login)
             // or if they don't exist in the user document yet
@@ -1609,12 +1617,7 @@ const verifyPhoneAndSetUser = async (
         return null;
       }
       
-      // 🔒 CANCELLATION CHECK: If sign out is in progress, abort immediately
-      if (isSigningOutRef.current) {
-        AuthDebug.warn('FetchUserData', 'Sign out in progress, aborting fetch');
-        console.log('⚠️ fetchUserData called but sign out is in progress, aborting');
-        return null;
-      }
+
       
       // 🔒 SAFETY CHECK: Ensure user is still authenticated before making Firestore calls
       if (!FIREBASE_AUTH.currentUser) {

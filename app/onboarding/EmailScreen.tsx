@@ -32,6 +32,7 @@ function EmailScreen() {
     googleCredential,
     setGoogleCredential,
     handleAppleSignIn,
+    signOut,
   } = useUserContext();
   const [email, setEmail] = useState(userData.email || "");
   const [marketingRequested, setMarketingRequested] = useState(
@@ -290,10 +291,7 @@ function EmailScreen() {
                 text: "Switch Account",
                 onPress: async () => {
                   try {
-                    // For Apple, we need to handle this differently since there's no direct signOut
-                    // We'll need to sign out from Firebase first and then sign in again
-                    await FIREBASE_AUTH.signOut();
-                    // The auth state change will handle navigation back to login
+                      handleAppleSignIn();
                   } catch (error) {
                     console.error("Error signing out from Apple:", error);
                   }
