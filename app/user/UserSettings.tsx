@@ -383,6 +383,29 @@ export default function UserSettings() {
       return;
     }
     
+    // Check if SSO accounts are linked
+    const hasLinkedSSO = userData.settings?.connectedAccounts?.google || userData.settings?.connectedAccounts?.apple;
+    
+    if (hasLinkedSSO) {
+      Alert.alert(
+        "Cannot Change Email",
+        "You cannot change your email address while SSO accounts are linked. Please disconnect your Google or Apple accounts first, then change your email.",
+        [
+          { text: "OK", style: "default" },
+          { 
+            text: "Disconnect SSO", 
+            style: "destructive",
+            onPress: () => {
+              setEmailExpanded(false);
+              // Scroll to connected accounts section
+              // Note: In a real app, you might want to add a ref to scroll to that section
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
@@ -601,13 +624,34 @@ export default function UserSettings() {
 
           <View style={styles.separator} />
 
-          <TouchableOpacity style={styles.row} onPress={toggleEmailExpand}>
+          <TouchableOpacity 
+            style={[
+              styles.row,
+              (userData.settings?.connectedAccounts?.google || userData.settings?.connectedAccounts?.apple) && styles.disabledRow
+            ]} 
+            onPress={() => {
+              // Only allow email editing if no SSO accounts are linked
+              if (!userData.settings?.connectedAccounts?.google && !userData.settings?.connectedAccounts?.apple) {
+                toggleEmailExpand();
+              }
+            }}
+            disabled={userData.settings?.connectedAccounts?.google || userData.settings?.connectedAccounts?.apple}
+          >
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
                 {userData.email || "Email Address"}
               </Text>
+              {(userData.settings?.connectedAccounts?.google || userData.settings?.connectedAccounts?.apple) && (
+                <Text style={[styles.linkedAccountNote, fonts.captionFont]}>
+                  Linked to SSO account
+                </Text>
+              )}
             </View>
-            <Text style={[styles.editText, fonts.buttonFont]}>Edit</Text>
+            {!userData.settings?.connectedAccounts?.google && !userData.settings?.connectedAccounts?.apple && (
+              <Text style={[styles.editText, fonts.buttonFont]}>
+                Edit
+              </Text>
+            )}
           </TouchableOpacity>
           
           <Animated.View
@@ -709,28 +753,33 @@ export default function UserSettings() {
         </View>
 
         {/* Connected Accounts Section */}
-       <View style={styles.section}>
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, fonts.captionFont]}>CONNECTED ACCOUNTS</Text>
           
-          <View style={styles.row}>
-            <View style={styles.rowContent}>
-              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
-                Google
+          {/* Google Account */}
+          <View style={[
+            styles.accountRow,
+            userData.settings?.connectedAccounts?.google && styles.connectedAccountRow
+          ]}>
+            <View style={styles.accountInfo}>
+              <View style={styles.accountHeader}>
+                <Text style={[styles.accountTitle, fonts.spiritualBodyFont]}>Google</Text>
                 {userData.settings?.connectedAccounts?.google && (
-                  <Text> ✨</Text>
+                  <View style={styles.connectedBadge}>
+                    <Text style={[styles.connectedBadgeText, fonts.captionFont]}>CONNECTED</Text>
+                  </View>
                 )}
-              </Text>
-              <Text style={[styles.rowDescription, fonts.captionFont]}>
-                {userData.settings?.connectedAccounts?.google 
-                  ? "Connected - Use Google to sign in"
-                  : "Connect Google for easier sign-in"
-                }
-              </Text>
+              </View>
+              {userData.settings?.connectedAccounts?.google && (
+                <Text style={[styles.accountEmail, fonts.captionFont]}>
+                  {userData.email}
+                </Text>
+              )}
             </View>
             
             {isConnectingGoogle ? (
               <OuroborosLoader 
-                size={50}
+                size={40}
                 duration={3000}
                 fillColor="#F5E6D3"
                 strokeColor="#7B6B5C"
@@ -748,20 +797,27 @@ export default function UserSettings() {
             )}
           </View>
 
-          {/* Optional: Show email associated with Google account */}
-          {userData.settings?.connectedAccounts?.google && userData.GoogleSSOEnabled && (
-            <View style={styles.connectedAccountInfo}>
-              <Text style={[styles.connectedAccountText, fonts.captionFont]}>
-                Connected as: {userData.email}
-              </Text>
+          {/* Apple Account */}
+          <View style={[
+            styles.accountRow,
+            userData.settings?.connectedAccounts?.apple && styles.connectedAccountRow
+          ]}>
+            <View style={styles.accountInfo}>
+              <View style={styles.accountHeader}>
+                <Text style={[styles.accountTitle, fonts.spiritualBodyFont]}>Apple</Text>
+                {userData.settings?.connectedAccounts?.apple && (
+                  <View style={styles.connectedBadge}>
+                    <Text style={[styles.connectedBadgeText, fonts.captionFont]}>CONNECTED</Text>
+                  </View>
+                )}
+              </View>
+              {userData.settings?.connectedAccounts?.apple && (
+                <Text style={[styles.accountEmail, fonts.captionFont]}>
+                  {userData.email}
+                </Text>
+              )}
             </View>
-          )}
-
-          <View style={styles.separator} />
-          
-          {/* Apple Account Toggle */}
-          <View style={styles.row}>
-            <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Apple</Text>
+            
             <Switch
               value={userData.settings?.connectedAccounts?.apple || false}
               onValueChange={async (value) => {
@@ -790,15 +846,6 @@ export default function UserSettings() {
               thumbColor={userData.settings?.connectedAccounts?.apple ? '#8B4513' : colors.textMuted}
             />
           </View>
-          
-          {/* Optional: Show email associated with Apple account */}
-          {userData.settings?.connectedAccounts?.apple && userData.AppleSSOEnabled && (
-            <View style={styles.connectedAccountInfo}>
-              <Text style={[styles.connectedAccountText, fonts.captionFont]}>
-                Connected as: {userData.email}
-              </Text>
-            </View>
-          )}
         </View>
 
         <View style={styles.section}>
@@ -1284,6 +1331,70 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontSize: Typography.sizes.sm,
       color: '#8B4513',
       fontStyle: 'italic',
+    },
+    // New account styles
+    accountRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: Spacing.md,
+      backgroundColor: colors.card,
+      marginVertical: Spacing.xs,
+      paddingHorizontal: Spacing.lg,
+      borderRadius: BorderRadius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    connectedAccountRow: {
+      borderColor: '#8B4513',
+      borderWidth: 2,
+      backgroundColor: '#8B4513' + '08',
+    },
+    accountInfo: {
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    accountHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: Spacing.xs,
+    },
+    accountTitle: {
+      fontSize: Typography.sizes.base,
+      color: colors.textDark,
+      fontWeight: Typography.weights.medium,
+      marginRight: Spacing.sm,
+    },
+    connectedBadge: {
+      backgroundColor: '#8B4513',
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: 2,
+      borderRadius: BorderRadius.sm,
+    },
+    connectedBadgeText: {
+      color: '#FFFFFF',
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+      letterSpacing: 0.5,
+    },
+    accountEmail: {
+      fontSize: Typography.sizes.sm,
+      color: colors.textLight,
+      fontStyle: 'italic',
+    },
+    // Disabled email row styles
+    disabledRow: {
+      opacity: 0.6,
+      backgroundColor: colors.background,
+    },
+    linkedAccountNote: {
+      fontSize: Typography.sizes.xs,
+      color: colors.textMuted,
+      fontStyle: 'italic',
+      marginTop: 2,
+    },
+    disabledEditText: {
+      color: colors.textMuted,
     },
     marketingSection: {
       marginTop: 30,

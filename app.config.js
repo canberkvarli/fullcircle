@@ -169,6 +169,14 @@ module.exports = {
           enableGooglePay: true,
           publishableKey: getStripePublishableKey()
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/images/store_badges/fullcircle_appstore.png",
+          color: "#8B4513",
+          sounds: ["./assets/notification-sound.wav"]
+        }
       ]
     ],
     experiments: {
