@@ -769,6 +769,15 @@ export default function UserSettings() {
                   // Connect Apple account
                   try {
                     await handleAppleSignIn();
+                    
+                    // After successful Apple connection, update the email field
+                    // This mirrors the Google connection behavior
+                    if (FIREBASE_AUTH.currentUser?.email) {
+                      await updateUserData({
+                        email: FIREBASE_AUTH.currentUser.email,
+                      });
+                      console.log("Successfully updated email from Apple account:", FIREBASE_AUTH.currentUser.email);
+                    }
                   } catch (error) {
                     console.error("Apple sign-in error:", error);
                   }
@@ -781,6 +790,15 @@ export default function UserSettings() {
               thumbColor={userData.settings?.connectedAccounts?.apple ? '#8B4513' : colors.textMuted}
             />
           </View>
+          
+          {/* Optional: Show email associated with Apple account */}
+          {userData.settings?.connectedAccounts?.apple && userData.AppleSSOEnabled && (
+            <View style={styles.connectedAccountInfo}>
+              <Text style={[styles.connectedAccountText, fonts.captionFont]}>
+                Connected as: {userData.email}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
