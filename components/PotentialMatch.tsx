@@ -25,6 +25,7 @@ const MAX_PHOTO_SIZE = screenWidth - IMAGE_MARGIN;
 
 type Props = {
   currentPotentialMatch: UserDataType;
+  currentUserData?: UserDataType; // Add current user data for comparison
   isMatched?: boolean;
   onPhotosLoaded?: () => void;
 };
@@ -135,8 +136,42 @@ const getConnectionIntentText = (user: UserDataType) => {
   return baseText;
 };
 
+// Helper function to find shared spiritual items
+const findSharedSpiritualItems = (currentUser: UserDataType | undefined, potentialMatch: UserDataType) => {
+  if (!currentUser?.spiritualProfile) return { practices: [], healingModalities: [], draws: [] };
+  
+  const shared = {
+    practices: [] as string[],
+    healingModalities: [] as string[],
+    draws: [] as string[]
+  };
+  
+  // Compare spiritual practices
+  if (currentUser.spiritualProfile.practices && potentialMatch.spiritualProfile?.practices) {
+    shared.practices = currentUser.spiritualProfile.practices.filter(practice => 
+      potentialMatch.spiritualProfile?.practices?.includes(practice)
+    );
+  }
+  
+  // Compare healing modalities
+  if (currentUser.spiritualProfile.healingModalities && potentialMatch.spiritualProfile?.healingModalities) {
+    shared.healingModalities = currentUser.spiritualProfile.healingModalities.filter(modality => 
+      potentialMatch.spiritualProfile?.healingModalities?.includes(modality)
+    );
+  }
+  
+  // Compare spiritual draws
+  if (currentUser.spiritualProfile.draws && potentialMatch.spiritualProfile?.draws) {
+    shared.draws = currentUser.spiritualProfile.draws.filter(draw => 
+      potentialMatch.spiritualProfile?.draws?.includes(draw)
+    );
+  }
+  
+  return shared;
+};
+
 // Generate organized info cards for interleaving with photos
-const generateInfoCards = (user: UserDataType) => {
+const generateInfoCards = (user: UserDataType, sharedItems: any) => {
   const cards = [];
   const connectionColors = getConnectionIntentColors(user.matchPreferences?.connectionIntent || "romantic");
 
@@ -163,57 +198,77 @@ const generateInfoCards = (user: UserDataType) => {
   });
 
   // 2. Connection Styles using InfoCard with custom heart icon
-  if (user.matchPreferences?.connectionStyles && user.matchPreferences.connectionStyles.length > 0) {
-    cards.push({
-      title: "Connection Style",
-      content: "",
-      icon: "hand-heart",
-      iconType: "custom",
-      pillsData: user.matchPreferences.connectionStyles,
-      color: connectionColors.primary,
-      type: 'info-card'
-    });
-  }
+  // Removed as it's not essential UI/UX - connection intent is already shown in header
 
   // 3. Spiritual Practices using InfoCard with custom lotus icon
   if (user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
-    cards.push({
-      title: "Spiritual Practices",
-      content: user.spiritualProfile.practices.slice(0, 3).join(", "),
-      icon: "meditation",
-      iconType: "custom",
-      pillsData: user.spiritualProfile.practices,
-      color: '#059669',
-      type: 'info-card'
-    });
+    // Filter out meaningless placeholder values like "Open to All"
+    const meaningfulPractices = user.spiritualProfile.practices.filter(practice => 
+      practice !== "Open to All" && practice.trim() !== ""
+    );
+    
+    if (meaningfulPractices.length > 0) {
+      const hasShared = sharedItems.practices.length > 0;
+      cards.push({
+        title: "Spiritual Practices",
+        content: meaningfulPractices.slice(0, 3).join(", "),
+        icon: "meditation",
+        iconType: "custom",
+        pillsData: meaningfulPractices,
+        color: '#059669',
+        type: 'info-card',
+        sharedItems: sharedItems.practices,
+        hasShared
+      });
+    }
   }
 
   // 4. Healing Modalities using InfoCard with custom healing hands icon
   if (user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
-    cards.push({
-      title: "Healing Path",
-      content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
-      icon: "yinyang", // Custom healing hands icon
-      iconType: "custom",
-      pillsData: user.spiritualProfile.healingModalities,
-      color: '#0891B2', // Cyan for healing
-      type: 'info-card'
-    });
+    // Filter out meaningless placeholder values like "Open to All"
+    const meaningfulModalities = user.spiritualProfile.healingModalities.filter(modality => 
+      modality !== "Open to All" && modality.trim() !== ""
+    );
+    
+    if (meaningfulModalities.length > 0) {
+      const hasShared = sharedItems.healingModalities.length > 0;
+      cards.push({
+        title: "Healing Path",
+        content: meaningfulModalities.slice(0, 3).join(", "),
+        icon: "yinyang", // Custom healing hands icon
+        iconType: "custom",
+        pillsData: meaningfulModalities,
+        color: '#0891B2', // Cyan for healing
+        type: 'info-card',
+        sharedItems: sharedItems.healingModalities,
+        hasShared
+      });
+    }
   }
 
   // 5. Spiritual Draws using InfoCard with custom spiritual energy icon
   if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
-    const spiritualDrawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
+    // Filter out meaningless placeholder values like "Open to All"
+    const meaningfulDraws = user.spiritualProfile.draws.filter(draw => 
+      draw !== "Open to All" && draw.trim() !== ""
+    );
     
-    cards.push({
-      title: "Spiritual Draws",
-      content: spiritualDrawLabels.slice(0, 3).join(", "),
-      icon: "ohm", // Custom spiritual energy icon
-      iconType: "custom",
-      pillsData: spiritualDrawLabels,
-      color: '#DC2626', // Red for draws
-      type: 'info-card'
-    });
+    if (meaningfulDraws.length > 0) {
+      const spiritualDrawLabels = getSpiritualDrawLabels(meaningfulDraws);
+      const hasShared = sharedItems.draws.length > 0;
+      
+      cards.push({
+        title: "Spiritual Draws",
+        content: spiritualDrawLabels.slice(0, 3).join(", "),
+        icon: "ohm", // Custom spiritual energy icon
+        iconType: "custom",
+        pillsData: spiritualDrawLabels,
+        color: '#DC2626', // Red for draws
+        type: 'info-card',
+        sharedItems: sharedItems.draws,
+        hasShared
+      });
+    }
   }
 
   return cards;
@@ -221,6 +276,7 @@ const generateInfoCards = (user: UserDataType) => {
 
 const PotentialMatch: React.FC<Props> = ({
   currentPotentialMatch,
+  currentUserData,
   isMatched = false,
   onPhotosLoaded,
 }) => {
@@ -248,25 +304,46 @@ const PotentialMatch: React.FC<Props> = ({
 
   if (isPhotoLoading) return null;
 
-  const infoCards = generateInfoCards(currentPotentialMatch);
+  // Find shared spiritual items
+  const sharedItems = findSharedSpiritualItems(currentUserData, currentPotentialMatch);
+  const infoCards = generateInfoCards(currentPotentialMatch, sharedItems);
   const connectionColors = getConnectionIntentColors(currentPotentialMatch.matchPreferences?.connectionIntent || "romantic");
   const connectionIcon = getConnectionIntentIcon(currentPotentialMatch.matchPreferences?.connectionIntent || "romantic");
   
   const styles = createStyles(colors, fonts, connectionColors);
 
-  // Render pills with proper styling
-  const renderPills = (items: string[], color: string) => (
+  // Render pills with proper styling and highlighting for shared items
+  const renderPills = (items: string[], color: string, sharedItems: string[] = []) => (
     <View style={styles.pillsContainer}>
-      {items.slice(0, 6).map((item, index) => (
-        <View key={index} style={[styles.pill, { 
-          backgroundColor: color + '15',
-          borderColor: color + '30'
-        }]}>
-          <Text style={[styles.pillText, { color: color }]}>
-            {item}
-          </Text>
-        </View>
-      ))}
+      {items.slice(0, 6).map((item, index) => {
+        const isShared = sharedItems.includes(item);
+        return (
+          <View key={index} style={[
+            styles.pill, 
+            isShared && styles.sharedPill,
+            { 
+              backgroundColor: isShared ? color + '40' : color + '15',
+              borderColor: isShared ? color : color + '30',
+              borderWidth: isShared ? 2 : 1,
+              shadowColor: isShared ? color : 'transparent',
+              shadowOffset: isShared ? { width: 0, height: 2 } : { width: 0, height: 0 },
+              shadowOpacity: isShared ? 0.3 : 0,
+              shadowRadius: isShared ? 4 : 0,
+              elevation: isShared ? 4 : 0,
+            }
+          ]}>
+            <Text style={[
+              styles.pillText, 
+              { 
+                color: isShared ? color : colors.textMuted,
+                fontWeight: isShared ? Typography.weights.bold : Typography.weights.medium
+              }
+            ]}>
+              {item}
+            </Text>
+          </View>
+        );
+      })}
       {items.length > 6 && (
         <View style={[styles.pill, styles.morePill, { 
           backgroundColor: color + '10',
@@ -313,6 +390,8 @@ const PotentialMatch: React.FC<Props> = ({
           iconType={card.iconType}
           pillsData={card.pillsData}
           customColor={card.color}
+          sharedItems={card.sharedItems}
+          hasShared={card.hasShared}
         />
       );
     }
@@ -328,7 +407,9 @@ const PotentialMatch: React.FC<Props> = ({
     iconType?: string;
     pillsData: string[];
     customColor?: string;
-  }> = ({ title, content, icon, iconType = "ionicon", pillsData, customColor }) => {
+    sharedItems?: string[];
+    hasShared?: boolean;
+  }> = ({ title, content, icon, iconType = "ionicon", pillsData, customColor, sharedItems = [], hasShared = false }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const shouldTruncate = pillsData.length > 4 || content.length > 120;
     const canExpand = shouldTruncate;
@@ -340,29 +421,61 @@ const PotentialMatch: React.FC<Props> = ({
         const hasMore = pillsData.length > 4;
         
         return (
-          <View style={styles.pillsContainer}>
-            {displayItems.map((item, index) => (
-              <View key={index} style={[styles.pill, { 
-                backgroundColor: cardColor + '20',
-                borderColor: cardColor + '40'
-              }]}>
-                <Text style={[styles.pillText, { color: cardColor }]}>{item}</Text>
-              </View>
-            ))}
-            {hasMore && !isExpanded && (
-              <TouchableOpacity 
-                style={[styles.pill, {
-                  backgroundColor: cardColor + '15',
-                  borderColor: cardColor + '30'
-                }]}
-                onPress={() => setIsExpanded(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.pillText, { color: cardColor, fontStyle: 'italic' }]}>
-                  +{pillsData.length - 4} more
+          <View>
+            {/* Shared items indicator */}
+            {hasShared && (
+              <View style={styles.sharedIndicator}>
+                <Text style={[styles.sharedText, { color: colors.textMuted }]}>
+                  • {sharedItems.length} shared
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
+            
+            <View style={styles.pillsContainer}>
+              {displayItems.map((item, index) => {
+                const isShared = sharedItems.includes(item);
+                return (
+                  <View key={index} style={[
+                    styles.pill, 
+                    isShared && styles.sharedPill,
+                    { 
+                      backgroundColor: isShared ? cardColor + '40' : cardColor + '15',
+                      borderColor: isShared ? cardColor : cardColor + '30',
+                      borderWidth: isShared ? 2 : 1,
+                      shadowColor: isShared ? cardColor : 'transparent',
+                      shadowOffset: isShared ? { width: 0, height: 2 } : { width: 0, height: 0 },
+                      shadowOpacity: isShared ? 0.3 : 0,
+                      shadowRadius: isShared ? 4 : 0,
+                      elevation: isShared ? 4 : 0,
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.pillText, 
+                      { 
+                        color: isShared ? cardColor : colors.textMuted,
+                        fontWeight: isShared ? Typography.weights.bold : Typography.weights.medium
+                      }
+                    ]}>
+                      {item}
+                    </Text>
+                  </View>
+                );
+              })}
+              {hasMore && !isExpanded && (
+                <TouchableOpacity 
+                  style={[styles.pill, {
+                    backgroundColor: cardColor + '15',
+                    borderColor: cardColor + '30'
+                  }]}
+                  onPress={() => setIsExpanded(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.pillText, { color: cardColor, fontStyle: 'italic' }]}>
+                    +{pillsData.length - 4} more
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         );
       }
@@ -740,6 +853,23 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   
   infoWrapper: {
     width: '100%',
+  },
+
+  sharedIndicator: {
+    marginBottom: Spacing.sm,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignSelf: 'flex-start',
+  },
+
+  sharedText: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.normal,
+    textAlign: 'left',
+    opacity: 0.6,
   },
 });
 

@@ -565,6 +565,7 @@ const ConnectScreen: React.FC = () => {
               <Animated.View style={{ opacity: contentOpacity }}>
                 <PotentialMatch
                   currentPotentialMatch={currentPotentialMatch}
+                  currentUserData={userData}
                   isMatched={false}
                   onPhotosLoaded={handlePhotosLoaded}
                 />

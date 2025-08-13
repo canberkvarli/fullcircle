@@ -631,6 +631,7 @@ const Chat: React.FC = () => {
                   >
                     <PotentialMatch
                       currentPotentialMatch={fullUserData}
+                      currentUserData={userData}
                       isMatched={true}
                     />
                   </ScrollView>
