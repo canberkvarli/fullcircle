@@ -913,7 +913,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const baseCollection = FIRESTORE.collection("users");
     
-    // Start with basic requirements - keep it simple
+    // Start with basic requirements
     let query = baseCollection
       .where("onboardingCompleted", "==", true)
       .orderBy("createdAt", "desc")
@@ -926,6 +926,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     
     return query;
   }, []);
+
+
 
   useEffect(() => {
     if (!currentUser) return;
@@ -2130,6 +2132,68 @@ const verifyPhoneAndSetUser = async (
       return sortedUsers;
     }, [isUserBoosted, isUserRecentlyActive]);
 
+  // 🆕 NEW: Enhanced filtering function that applies all user preferences
+  const applyUserPreferences = useCallback((users: UserDataType[]): UserDataType[] => {
+    if (!userData.matchPreferences) return users;
+    
+    const prefs = userData.matchPreferences;
+    
+    return users.filter(user => {
+      // Skip if user is the current user
+      if (user.userId === userData.userId) return false;
+      
+      // 🔗 Connection Intent Filtering
+      if (prefs.connectionIntent && prefs.connectionIntent !== 'both') {
+        const userIntent = user.matchPreferences?.connectionIntent;
+        if (userIntent && userIntent !== 'both' && userIntent !== prefs.connectionIntent) {
+          console.log(`❌ ${user.firstName} - Connection intent mismatch: ${userIntent} vs ${prefs.connectionIntent}`);
+          return false;
+        }
+      }
+      
+      // 🎂 Age Range Filtering
+      if (prefs.preferredAgeRange && user.age) {
+        const { min, max } = prefs.preferredAgeRange;
+        if (user.age < min || user.age > max) {
+          console.log(`❌ ${user.firstName} - Age out of range: ${user.age} (${min}-${max})`);
+          return false;
+        }
+      }
+      
+      // 📏 Height Range Filtering
+      if (prefs.preferredHeightRange && user.height) {
+        const { min, max } = prefs.preferredHeightRange;
+        if (user.height < min || user.height > max) {
+          console.log(`❌ ${user.firstName} - Height out of range: ${user.height} (${min}-${max})`);
+          return false;
+        }
+      }
+      
+      // 🌍 Distance Filtering
+      if (prefs.preferredDistance && user.latitude && user.longitude && 
+          userData.latitude && userData.longitude) {
+        const distance = calculateHaversineDistance(
+          userData.latitude, userData.longitude,
+          user.latitude, user.longitude
+        );
+        if (distance > prefs.preferredDistance) {
+          console.log(`❌ ${user.firstName} - Distance too far: ${distance.toFixed(1)}km (max: ${prefs.preferredDistance}km)`);
+          return false;
+        }
+      }
+      
+      // 🔮 Spiritual Compatibility Filtering
+      const spiritualCheck = applySpiritualFilter(user);
+      if (!spiritualCheck.passes) {
+        console.log(`❌ ${user.firstName} - Spiritual compatibility failed: ${spiritualCheck.reason}`);
+        return false;
+      }
+      
+      console.log(`✅ ${user.firstName} - Passes all filters`);
+      return true;
+    });
+  }, [userData.matchPreferences, userData.userId, userData.latitude, userData.longitude, applySpiritualFilter]);
+
   // Simple filtering - removed complex logic that was causing issues
   const applyAllFilters = useCallback((users: UserDataType[]): UserDataType[] => {
     // Just return users as-is for now to fix the matching issue
@@ -2157,11 +2221,18 @@ const verifyPhoneAndSetUser = async (
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
+      console.log('🔍 Fetching potential matches with exclusions:', {
+        exclusionCount: exclusionsToUse.size,
+        resetBatch,
+        lastDoc: !!lastDoc
+      });
+      
       // Build and execute query - keep it simple
       const query = buildMatchQuery(exclusionsToUse, lastDoc, 20); // Larger batch size
       const snapshot = await query.get();
       
       if (snapshot.empty) {
+        console.log('📭 No more users found in database');
         setMatchingState(prev => ({ 
           ...prev, 
           loadingBatch: false, 
@@ -2170,22 +2241,48 @@ const verifyPhoneAndSetUser = async (
         return [];
       }
       
+      console.log(`📦 Raw users from database: ${snapshot.docs.length}`);
+      
       // Convert Firestore docs to user objects
       const rawUsers = snapshot.docs.map(doc => ({
         userId: doc.id,
         ...doc.data()
       } as UserDataType));
       
-      // Simple filtering - just exclude current user and already seen users
-      const currentUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
-      const filteredUsers = rawUsers.filter(user => 
-        user.userId !== userDataRef.current.userId && 
-        !currentUserIds.has(user.userId) &&
-        user.onboardingCompleted === true &&
-        user.firstName && 
-        user.photos && 
-        user.photos.length > 0
-      );
+      // 🆕 ENHANCED: Apply comprehensive filtering
+      let filteredUsers = rawUsers.filter(user => {
+        // Basic requirements
+        if (!user.onboardingCompleted || !user.firstName || !user.photos || user.photos.length === 0) {
+          return false;
+        }
+        
+        // Exclude current user
+        if (user.userId === userDataRef.current.userId) {
+          return false;
+        }
+        
+        // Exclude already seen users
+        const currentUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
+        if (currentUserIds.has(user.userId)) {
+          return false;
+        }
+        
+        // Exclude users in exclusion set
+        if (exclusionsToUse.has(user.userId)) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      console.log(`🔍 After basic filtering: ${filteredUsers.length} users`);
+      
+      // 🆕 NEW: Apply user preferences filtering
+      if (userDataRef.current.matchPreferences) {
+        const beforePreferences = filteredUsers.length;
+        filteredUsers = applyUserPreferences(filteredUsers);
+        console.log(`🔍 After preferences filtering: ${filteredUsers.length} users (removed ${beforePreferences - filteredUsers.length})`);
+      }
       
       // Update pagination state
       const newLastDoc = snapshot.docs.length > 0 ? 
@@ -2198,18 +2295,24 @@ const verifyPhoneAndSetUser = async (
         noMoreMatches: filteredUsers.length === 0
       }));
       
+      console.log(`✅ Successfully fetched ${filteredUsers.length} potential matches`);
       return filteredUsers;
       
     } catch (error) {
       console.error('❌ Error fetching matches:', error);
+      
+      // 🆕 ENHANCED ERROR HANDLING: Don't get stuck in loading state
       setMatchingState(prev => ({ 
         ...prev, 
         loadingBatch: false, 
-        noMoreMatches: false
+        noMoreMatches: false,
+        initialized: true // Mark as initialized to prevent infinite loading
       }));
+      
+      // Return empty array but don't crash the app
       return [];
     }
-  }, [buildMatchQuery]);
+  }, [buildMatchQuery, applyUserPreferences]);
 
   useEffect(() => {
     const initializeMatching = async () => {
@@ -2283,28 +2386,42 @@ const verifyPhoneAndSetUser = async (
         console.log('🔄 New hash:', newHash);
         console.log('🔄 New preferences:', newPreferences);
         
-        // COMPLETE RESET - Clear everything
+        // COMPLETE RESET - Clear everything and mark as loading
         setMatchingState(prev => ({
           ...prev,
           preferencesHash: newHash,
           potentialMatches: [],      // Clear all matches
           currentIndex: 0,           // Reset to first
           lastFetchedDoc: null,      // Reset pagination
-          noMoreMatches: false       // Reset no-more flag
+          noMoreMatches: false,      // Reset no-more flag
+          loadingBatch: true         // 🆕 NEW: Mark as loading to show loading state
         }));
         
-        // Wait a moment for state to update, then fetch fresh
-        setTimeout(async () => {
+        try {
           console.log('🔄 Fetching fresh matches with new preferences...');
           const newBatch = await fetchPotentialMatches(true); // Force reset
           
+          // 🆕 ENHANCED: Update state with proper error handling
           setMatchingState(prev => ({
             ...prev,
-            potentialMatches: newBatch
+            potentialMatches: newBatch,
+            loadingBatch: false,     // 🆕 NEW: Clear loading state
+            noMoreMatches: newBatch.length === 0, // 🆕 NEW: Set noMoreMatches properly
+            initialized: true        // 🆕 NEW: Ensure initialized is set to true
           }));
           
           console.log(`🔄 Loaded ${newBatch.length} new matches with updated preferences`);
-        }, 100);
+        } catch (error) {
+          console.error('❌ Error fetching matches after preference change:', error);
+          
+          // 🆕 NEW: Handle errors gracefully
+          setMatchingState(prev => ({
+            ...prev,
+            loadingBatch: false,
+            noMoreMatches: false,
+            initialized: true // Ensure we don't get stuck
+          }));
+        }
       }
     }, 1000), // 1 second debounce to ensure preferences are fully saved
     [userData.userId, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches]

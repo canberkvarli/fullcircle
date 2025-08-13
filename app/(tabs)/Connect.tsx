@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   StyleSheet,
   Platform,
   StatusBar,
@@ -16,11 +15,9 @@ import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
 import LotusScreen from "@/components/LotusScreen";
-import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
@@ -30,7 +27,6 @@ const ConnectScreen: React.FC = () => {
     dislikeMatch,
     lotusLike,
     loadNextMatch,
-    resetMatching,
     currentPotentialMatch,
     matchingState,
     DAILY_LIKE_LIMIT,
@@ -51,7 +47,6 @@ const ConnectScreen: React.FC = () => {
   const [showLotusModal, setShowLotusModal] = useState(false);
   const [showLotusScreen, setShowLotusScreen] = useState(false);
   const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -70,9 +65,7 @@ const ConnectScreen: React.FC = () => {
   const lotusGlow = useRef(new Animated.Value(0)).current;
   const lotusRotation = useRef(new Animated.Value(0)).current;
   
-  // Card transition animations
-  const nextCardOpacity = useRef(new Animated.Value(0)).current;
-  const nextCardTranslateY = useRef(new Animated.Value(50)).current;
+
   
   // Smooth loading transition
   const loadingOpacity = useRef(new Animated.Value(1)).current;
@@ -99,13 +92,32 @@ const ConnectScreen: React.FC = () => {
 
 
 
-  // Simplified loading state management
+  // 🆕 ENHANCED: Improved loading state management with error handling
   useEffect(() => {
+    // 🆕 FIXED: Better logic for when to show loading vs no matches
     const actuallyLoading = matchingStateRef.current.loadingBatch || 
-                          !matchingStateRef.current.initialized ||
+                          (!matchingStateRef.current.initialized && !matchingStateRef.current.noMoreMatches) ||
                           (matchingStateRef.current.initialized && matchingStateRef.current.potentialMatches.length === 0 && !matchingStateRef.current.noMoreMatches);
     
+    console.log('🔄 Loading state check:', {
+      loadingBatch: matchingStateRef.current.loadingBatch,
+      initialized: matchingStateRef.current.initialized,
+      potentialMatchesLength: matchingStateRef.current.potentialMatches.length,
+      noMoreMatches: matchingStateRef.current.noMoreMatches,
+      actuallyLoading
+    });
+    
+    // 🆕 NEW: Add timeout protection to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading && matchingStateRef.current.loadingBatch) {
+        console.log('⚠️ Loading timeout reached, forcing state update');
+        setIsLoading(false);
+        setShowContent(true);
+      }
+    }, 10000); // 10 second timeout
+    
     if (actuallyLoading) {
+      console.log('🔄 Setting loading state to true');
       setIsLoading(true);
       setShowContent(false);
       
@@ -116,6 +128,7 @@ const ConnectScreen: React.FC = () => {
         useNativeDriver: true,
       }).start();
     } else {
+      console.log('🔄 Setting loading state to false, showing content');
       // Smooth transition to content with proper timing
       setTimeout(() => {
         Animated.sequence([
@@ -135,6 +148,8 @@ const ConnectScreen: React.FC = () => {
         });
       }, 300); // Brief delay to ensure content is ready
     }
+    
+    return () => clearTimeout(loadingTimeout);
   }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches]);
 
   // Reset animations when match changes
@@ -152,14 +167,12 @@ const ConnectScreen: React.FC = () => {
       lotusParticles.setValue(0);
       lotusGlow.setValue(0);
       lotusRotation.setValue(0);
-      nextCardOpacity.setValue(0);
-      nextCardTranslateY.setValue(50);
       
       setPhotosLoaded(false);
     }
   }, [currentPotentialMatch?.userId, showContent, actionInProgress]);
 
-  // Enhanced action handler with modern visual feedback
+  // 🆕 ENHANCED: Action handler with better error handling and recovery
   const handleAction = async (action: 'like' | 'pass' | 'lotus') => {
     if (actionInProgress || !currentPotentialMatch) {
       return;
@@ -173,6 +186,14 @@ const ConnectScreen: React.FC = () => {
     setActionInProgress(true);
     setLastAction(action);
     setIsTransitioning(true);
+    
+    // 🆕 NEW: Add timeout protection for actions
+    const actionTimeout = setTimeout(() => {
+      console.log('⚠️ Action timeout reached, resetting state');
+      setActionInProgress(false);
+      setIsTransitioning(false);
+      resetActionState();
+    }, 15000); // 15 second timeout
     
     // Phase 1: Enhanced visual feedback animations
     if (action === 'like') {
@@ -291,6 +312,9 @@ const ConnectScreen: React.FC = () => {
     const userId = currentPotentialMatch.userId;
     
     try {
+      // 🆕 NEW: Clear the action timeout since action is proceeding
+      clearTimeout(actionTimeout);
+      
       // Phase 3: Execute backend operation
       switch (action) {
         case 'pass':
@@ -310,6 +334,8 @@ const ConnectScreen: React.FC = () => {
       await loadNextMatch();
       
     } catch (error: any) {
+      // 🆕 NEW: Clear the action timeout since we're handling the error
+      clearTimeout(actionTimeout);
       console.error(`❌ ${action} action failed:`, error);
       
       if (error.message === "DAILY_LIMIT_REACHED") {
@@ -354,6 +380,9 @@ const ConnectScreen: React.FC = () => {
 
     // Phase 5: Smooth transition to next match
     setTimeout(() => {
+      // 🆕 NEW: Clear the action timeout since action completed successfully
+      clearTimeout(actionTimeout);
+      
       // Reset scroll position
       scrollViewRef.current?.scrollTo({ y: 0, animated: false });
       
@@ -411,6 +440,7 @@ const ConnectScreen: React.FC = () => {
 
   const resetActionState = () => {
     setActionInProgress(false);
+    setIsTransitioning(false);
     setLastAction(null);
     
     // Reset all animation values
@@ -420,11 +450,12 @@ const ConnectScreen: React.FC = () => {
     likeOverlayOpacity.setValue(0);
     passOverlayOpacity.setValue(0);
     lotusOverlayOpacity.setValue(0);
-    lotusParticles.setValue(0);
-    lotusGlow.setValue(0);
-    lotusRotation.setValue(0);
-    nextCardOpacity.setValue(0);
-    nextCardTranslateY.setValue(50);
+          lotusParticles.setValue(0);
+      lotusGlow.setValue(0);
+      lotusRotation.setValue(0);
+    
+    // 🆕 NEW: Reset photos loaded state to trigger button animation again
+    setPhotosLoaded(false);
   };
 
   // Enhanced modal functions (keeping existing logic but with smoother animations)
@@ -510,24 +541,7 @@ const ConnectScreen: React.FC = () => {
     }).start();
   };
 
-  // Pull-to-refresh handler
-  const onRefresh = async () => {
-    if (isRefreshing) return;
-    
-    console.log('🔄 User pulled to refresh - resetting matches...');
-    setIsRefreshing(true);
-    
-    try {
-      await resetMatching();
-      setTimeout(() => {
-        setIsRefreshing(false);
-        console.log('✅ Refresh complete');
-      }, 2000);
-    } catch (error) {
-      console.error('❌ Error during refresh:', error);
-      setIsRefreshing(false);
-    }
-  };
+
 
   // Navigate functions - FIXED TO USE MODAL INSTEAD OF NAVIGATION
   const navigateToLotusShop = () => {
@@ -627,6 +641,7 @@ const ConnectScreen: React.FC = () => {
             </TouchableOpacity>
             
 
+
           </View>
         </View>
       </View>
@@ -673,6 +688,8 @@ const ConnectScreen: React.FC = () => {
             strokeColor="#7B6B5C"        
             strokeWidth={1}
           />
+          
+
         </Animated.View>
         
 
@@ -1353,7 +1370,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 80,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    minHeight: screenHeight * 0.8,
+            minHeight: 600,
   },
   
   buttonsContainer: {
@@ -1717,7 +1734,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    minHeight: screenHeight * 0.6,
+            minHeight: 500,
   },
   
   resetTimeText: {

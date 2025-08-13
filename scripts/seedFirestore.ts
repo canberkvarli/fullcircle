@@ -161,6 +161,11 @@ export type UserDataType = {
   jobTitle?: string;
   educationDegree?: string;
   spiritualPractices?: string[];
+  spiritualProfile?: {
+    draws?: string[];
+    practices?: string[];
+    healingModalities?: string[];
+  };
   photos?: string[];
   hiddenFields?: { [key: string]: boolean };
   location?: {
@@ -190,12 +195,18 @@ export type UserDataType = {
       min: number;
       max: number;
     };
+    connectionIntent?: "romantic" | "friendship" | "both";
     childrenPreference?: string;
     preferredEthnicities?: string[];
     preferredDistance: number;
     datePreferences: string[];
     desiredRelationship?: string;
     preferredSpiritualPractices?: string[];
+    spiritualCompatibility?: {
+      spiritualDraws?: string[];
+      practices?: string[];
+      healingModalities?: string[];
+    };
   };
 };
 
@@ -427,7 +438,7 @@ async function generateDummyUser(): Promise<UserDataType> {
     birthmonth,
     birthyear,
     age,
-    height: faker.number.int({ min: 150, max: 200 }), // cm
+    height: faker.number.int({ min: 4, max: 7 }), // feet
     regionName: faker.location.state(),
     longitude: faker.location.longitude({ min: -123.5, max: -120.5 }), // SF Bay Area
     latitude: faker.location.latitude({ min: 36.5, max: 38.5 }), // SF Bay Area
@@ -438,6 +449,11 @@ async function generateDummyUser(): Promise<UserDataType> {
     jobTitle: faker.person.jobTitle(),
     educationDegree: faker.helpers.arrayElement(educationDegrees),
     spiritualPractices: faker.helpers.arrayElements(spiritualPracticesArray, { min: 0, max: 5 }),
+    spiritualProfile: {
+      draws: faker.helpers.arrayElements(['Open to All', 'Meditation', 'Yoga', 'Astrology', 'Tarot', 'Crystal Healing'], { min: 1, max: 3 }),
+      practices: faker.helpers.arrayElements(['Open to All', 'Mindfulness', 'Breathwork', 'Energy Work', 'Sound Healing'], { min: 1, max: 3 }),
+      healingModalities: faker.helpers.arrayElements(['Open to All', 'Reiki', 'Chakra Healing', 'Qi Gong', 'Ayurveda'], { min: 1, max: 3 }),
+    },
     photos: photos,
     hiddenFields: {
       gender: faker.datatype.boolean(0.2),
@@ -469,15 +485,21 @@ async function generateDummyUser(): Promise<UserDataType> {
         max: Math.min(65, age + 10),
       },
       preferredHeightRange: {
-        min: 150,
-        max: 200,
+        min: 4,
+        max: 7,
       },
+      connectionIntent: faker.helpers.arrayElement(['romantic', 'friendship', 'both']),
       childrenPreference: faker.helpers.arrayElement(['Want', 'Don\'t want', 'Maybe', 'Open to children']),
       preferredEthnicities: faker.helpers.arrayElements(ethnicities, { min: 1, max: 4 }),
       preferredDistance: faker.number.int({ min: 5, max: 50 }),
       datePreferences: faker.helpers.arrayElements(['Coffee', 'Dinner', 'Drinks', 'Activity', 'Spiritual Practice'], { min: 1, max: 3 }),
       desiredRelationship: faker.helpers.arrayElement(['Casual', 'Serious', 'Marriage', 'Spiritual Partnership']),
       preferredSpiritualPractices: faker.helpers.arrayElements(spiritualPracticesArray, { min: 0, max: 3 }),
+      spiritualCompatibility: {
+        spiritualDraws: faker.helpers.arrayElements(['Open to All', 'Meditation', 'Yoga', 'Astrology', 'Tarot', 'Crystal Healing'], { min: 1, max: 3 }),
+        practices: faker.helpers.arrayElements(['Open to All', 'Mindfulness', 'Breathwork', 'Energy Work', 'Sound Healing'], { min: 1, max: 3 }),
+        healingModalities: faker.helpers.arrayElements(['Open to All', 'Reiki', 'Chakra Healing', 'Qi Gong', 'Ayurveda'], { min: 1, max: 3 }),
+      },
     },
   };
 }
