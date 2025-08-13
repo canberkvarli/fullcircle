@@ -8,12 +8,10 @@ import {
   Animated,
   ScrollView,
   useColorScheme,
-  Platform,
   StatusBar,
   Dimensions,
   StyleSheet,
   Alert,
-  Modal,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from "expo-router";
@@ -26,7 +24,7 @@ import LotusScreen from "@/components/LotusScreen";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get("window");
 
 export default function SacredSelf() {
   const { 
@@ -34,7 +32,6 @@ export default function SacredSelf() {
     activateRadiance, 
     getRadianceTimeRemaining,
     getRadianceStatus,
-    updateUserData
   } = useUserContext();
   
   const verified = userData?.settings?.isSelfieVerified || false;
@@ -167,13 +164,6 @@ export default function SacredSelf() {
     } finally {
       setIsActivatingBoost(false);
     }
-  };
-
-  const calculateAge = () => {
-    if (userData.birthyear) {
-      return new Date().getFullYear() - parseInt(userData.birthyear);
-    }
-    return userData.age || 'Unknown';
   };
 
   const getLocation = () => {
@@ -840,31 +830,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     fontStyle: 'italic',
   },
-  premiumUpgradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    borderRadius: 16,
-    marginBottom: Spacing.lg,
-    borderWidth: 2,
-    borderColor: '#FFD700',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  upgradeIcon: {
-    marginRight: Spacing.sm,
-  },
-  upgradeButtonText: {
-    color: '#FFFFFF',
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.semibold,
-    letterSpacing: 0.3,
-  },
   currentResourcesContainer: {
     width: '100%',
     alignItems: 'center',
@@ -964,70 +929,5 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
     letterSpacing: 0.2,
     flex: 1,
-  },
-  
-  fullCircleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: 12,
-    marginBottom: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    alignSelf: 'center',
-    maxWidth: '80%',
-  },
-  fullCircleIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  fullCircleBadgeText: {
-    fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
-    letterSpacing: 0.2,
-    flex: 1,
-  },
-  // Tooltip Styles
-  tooltipOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  tooltipContainer: {
-    borderRadius: 16,
-    padding: Spacing.xl,
-    maxWidth: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  tooltipHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  tooltipTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-    letterSpacing: 0.5,
-  },
-  tooltipText: {
-    fontSize: Typography.sizes.base,
-    lineHeight: Typography.sizes.base * 1.5,
-    marginBottom: Spacing.md,
-    textAlign: 'left',
   },
 });
