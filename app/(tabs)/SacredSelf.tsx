@@ -192,12 +192,6 @@ export default function SacredSelf() {
         backgroundColor: colors.background,
         borderBottomWidth: 0
       }]}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.headerLeftText, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-            Circle
-          </Text>
-        </View>
-        
         <Animated.Text style={[
           styles.animatedHeaderTitle, 
           fonts.spiritualTitleFont, 
@@ -650,22 +644,12 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     borderBottomWidth: 1,
   },
-  headerLeft: {
-    flex: 1,
-  },
-  headerLeftText: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    letterSpacing: 0.5,
-  },
+
   animatedHeaderTitle: {
     fontWeight: Typography.weights.bold,
     letterSpacing: 0.5,
-    position: 'absolute',
-    left: 80,
-    right: 80,
+    flex: 1,
     textAlign: 'center',
-    maxWidth: screenWidth - 160,
   },
   headerIcons: {
     flexDirection: 'row',

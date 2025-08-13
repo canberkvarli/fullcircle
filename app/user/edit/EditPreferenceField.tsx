@@ -193,7 +193,7 @@ function EditPreferenceField() {
 
         console.log(`Saving ${fieldName}:`, cleanedValue);
         await updateUserData(updatedData);
-        await resetMatching();
+        // await resetMatching();
       } catch (error) {
         console.error("Error updating preferences:", error);
       }

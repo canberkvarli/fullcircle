@@ -398,6 +398,8 @@ type UserContextType = {
     issues: string[];
     score: number;
   };
+  checkAndRefetchIfNeeded: () => void;
+  forceRefetchOnReturn: () => Promise<void>;
   // 🔑 Add initializing state to track auth initialization
   initializing: boolean;
   // 🔒 Add cancellation flag to track sign out state
@@ -816,7 +818,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const buildExclusionSet = useCallback(async (userId: string): Promise<Set<string>> => {
     if (!userId) return new Set();
     
-    console.log('🚫 Building comprehensive exclusion set for user:', userId);
+    
     
     try {
       // 🔄 ENHANCED: Parallel fetch of ALL exclusion data
@@ -859,24 +861,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       }
       
-      console.log('🚫 Smart exclusion breakdown:', {
-        self: 1,
-        matches: matchesSnap.docs.length,
-        reports: reportsSnap.docs.length,
-        unmatches: unmatchesSnap.docs.length,
-        dislikes: dislikesSnap.docs.length,
-        likesGiven: likesSnap.docs.length, // This should ALWAYS be included
-        receivedLikes: Math.min(receivedLikesSnap.docs.length, maxExclusionSize - criticalExclusions.size),
-        totalExcluded: finalExclusions.size,
-        maxAllowed: maxExclusionSize
-      });
+
       
-      // 🆕 NEW: Log specific user if they appear in exclusions
-      if (finalExclusions.has("g1WzJzgrTISlIiQybrFYW5wPmAm1")) {
-        console.log('🚫 CONFIRMED: Asgsadgsdgsdagsadgsdagsda is in exclusion set');
-      } else {
-        console.log('⚠️ WARNING: Asgsadgsdgsdagsadgsdagsda NOT in exclusion set');
-      }
+
       
       return finalExclusions;
       
@@ -889,20 +876,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const generatePreferencesHash = useCallback((prefs: typeof userData.matchPreferences) => {
     if (!prefs) return '';
     
+    // 🔧 FOCUSED: Only hash the fields that actually affect filtering
     const hashData = {
       ageMin: prefs.preferredAgeRange?.min || 18,
       ageMax: prefs.preferredAgeRange?.max || 70,
       heightMin: prefs.preferredHeightRange?.min || 3,
       heightMax: prefs.preferredHeightRange?.max || 8,
       distance: prefs.preferredDistance || 100,
-      connectionPreferences: [...(prefs.connectionPreferences || ["Everyone"])].sort(),
       connectionIntent: prefs.connectionIntent || 'both',
-      spiritualDraws: [...(prefs.spiritualCompatibility?.spiritualDraws || [])].sort(),
-      spiritualPractices: [...(prefs.spiritualCompatibility?.practices || [])].sort(),
-      healingModalities: [...(prefs.spiritualCompatibility?.healingModalities || [])].sort(),
+      // Only include spiritual fields if they're not empty arrays
+      spiritualDraws: (prefs.spiritualCompatibility?.spiritualDraws && prefs.spiritualCompatibility.spiritualDraws.length > 0) ? 
+        [...prefs.spiritualCompatibility.spiritualDraws].sort() : [],
+      spiritualPractices: (prefs.spiritualCompatibility?.practices && prefs.spiritualCompatibility.practices.length > 0) ? 
+        [...prefs.spiritualCompatibility.practices].sort() : [],
+      healingModalities: (prefs.spiritualCompatibility?.healingModalities && prefs.spiritualCompatibility.healingModalities.length > 0) ? 
+        [...prefs.spiritualCompatibility.healingModalities].sort() : [],
     };
     
     const hash = JSON.stringify(hashData);
+    console.log('🔍 Generated preferences hash:', {
+      connectionIntent: hashData.connectionIntent,
+      ageRange: `${hashData.ageMin}-${hashData.ageMax}`,
+      heightRange: `${hashData.heightMin}-${hashData.heightMax}`,
+      distance: hashData.distance,
+      hashLength: hash.length
+    });
     return hash;
   }, []);
 
@@ -1594,6 +1592,29 @@ const verifyPhoneAndSetUser = async (
         
         // 🔄 Update ref to keep everything in sync
         userDataRef.current = newData;
+        
+        // 🔄 If match preferences changed, just update the hash - NO FETCHING
+        if (data.matchPreferences) {
+          const newHash = generatePreferencesHash(data.matchPreferences);
+          
+          console.log('🔄 updateUserData - Hash update:', {
+            oldHash: matchingState.preferencesHash.substring(0, 100) + '...',
+            newHash: newHash.substring(0, 100) + '...',
+            connectionIntent: data.matchPreferences.connectionIntent,
+            oldConnectionIntent: matchingState.preferencesHash.includes('"connectionIntent":"romantic"') ? 'romantic' : 
+                               matchingState.preferencesHash.includes('"connectionIntent":"friendship"') ? 'friendship' : 'unknown'
+          });
+          
+          // Just update the hash, don't fetch yet
+          setMatchingState(prev => ({
+            ...prev,
+            preferencesHash: newHash
+          }));
+          
+          // Also update the ref
+          matchingStateRef.current.preferencesHash = newHash;
+        }
+        
         return newData;
       });
 
@@ -1942,9 +1963,18 @@ const verifyPhoneAndSetUser = async (
   };
 
   const currentPotentialMatch = useMemo(() => {
-    const match = matchingState.potentialMatches?.[matchingState.currentIndex];
+    // 🔧 FIXED: Always return the first match (index 0) since we clear matches when preferences change
+    const match = matchingState.potentialMatches?.[0];
+    
+    console.log('🔍 currentPotentialMatch check:', {
+      hasMatches: matchingState.potentialMatches.length > 0,
+      currentIndex: matchingState.currentIndex,
+      firstMatch: match ? `${match.firstName} (${match.userId})` : 'none',
+      totalMatches: matchingState.potentialMatches.length
+    });
+    
     return match;
-  }, [matchingState.potentialMatches, matchingState.currentIndex]);
+  }, [matchingState.potentialMatches]);
 
 
 
@@ -1968,7 +1998,6 @@ const verifyPhoneAndSetUser = async (
       
       // If ALL categories are "Open to All", show everyone
       if (hasOpenToAllPractices && hasOpenToAllDraws && hasOpenToAllHealing) {
-        console.log(`✅ ${user.firstName} - User is open to all spiritual preferences (showing everyone)`);
         return { passes: true, score: 0 };
       }
       
@@ -1978,7 +2007,6 @@ const verifyPhoneAndSetUser = async (
       const hasSpecificHealing = userSpiritualPrefs.healingModalities?.length && !hasOpenToAllHealing;
       
       if (!hasSpecificPractices && !hasSpecificDraws && !hasSpecificHealing) {
-        console.log(`✅ ${user.firstName} - User has only 'Open to All' preferences (showing everyone)`);
         return { passes: true, score: 0 };
       }
       
@@ -1987,7 +2015,6 @@ const verifyPhoneAndSetUser = async (
           (!candidateProfile.draws?.length && 
           !candidateProfile.practices?.length && 
           !candidateProfile.healingModalities?.length)) {
-        console.log(`✅ ${user.firstName} - No spiritual profile (open to all)`);
         return { passes: true, score: 0 };
       }
       
@@ -2008,7 +2035,7 @@ const verifyPhoneAndSetUser = async (
         }
         totalCategories += 1;
         
-        console.log(`🔮 ${user.firstName} - Draws check: ${commonDraws.length > 0 ? '✅' : '❌'} (${commonDraws.join(', ')})`);
+
       }
       
       // Check practices compatibility (only if user has specific practices preferences)
@@ -2023,7 +2050,7 @@ const verifyPhoneAndSetUser = async (
         }
         totalCategories += 1;
         
-        console.log(`🔮 ${user.firstName} - Practices check: ${commonPractices.length > 0 ? '✅' : '❌'} (${commonPractices.join(', ')})`);
+
       }
       
       // Check healing modalities compatibility (only if user has specific healing preferences)
@@ -2038,7 +2065,7 @@ const verifyPhoneAndSetUser = async (
         }
         totalCategories += 1;
         
-        console.log(`🔮 ${user.firstName} - Healing modalities check: ${commonModalities.length > 0 ? '✅' : '❌'} (${commonModalities.join(', ')})`);
+
       }
       
       const compatibilityScore = totalCategories > 0 ? score / totalCategories : 0;
@@ -2046,18 +2073,11 @@ const verifyPhoneAndSetUser = async (
       // 🎯 COMPATIBILITY LOGIC
       if (totalCategories === 0) {
         // User has spiritual preferences but candidate has no matching categories
-        console.log(`✅ ${user.firstName} - No overlapping spiritual categories (showing anyway)`);
         return { passes: true, score: 0 };
       }
       
       // Must have at least ONE shared spiritual interest (or be open to all)
       const passes = score > 0;
-      
-      if (passes) {
-        console.log(`✅ ${user.firstName} - Spiritual match! Score: ${(compatibilityScore * 100).toFixed(0)}% (${matchDetails.join('; ')})`);
-      } else {
-        console.log(`❌ ${user.firstName} - No spiritual compatibility`);
-      }
       
       return { 
         passes, 
@@ -2142,9 +2162,15 @@ const verifyPhoneAndSetUser = async (
       // Skip if user is the current user
       if (user.userId === userData.userId) return false;
       
-      // 🔗 Connection Intent Filtering - STRICT
+      // 🔗 Connection Intent Filtering
       if (prefs.connectionIntent && prefs.connectionIntent !== 'both') {
         const userIntent = user.matchPreferences?.connectionIntent;
+        console.log(`🔗 Connection intent check for ${user.firstName}:`, {
+          yourIntent: prefs.connectionIntent,
+          theirIntent: userIntent,
+          shouldShow: (prefs.connectionIntent === 'romantic' && (userIntent === 'romantic' || userIntent === 'both')) ||
+                     (prefs.connectionIntent === 'friendship' && (userIntent === 'friendship' || userIntent === 'both'))
+        });
         
         // If user wants only romantic, only show romantic or both
         if (prefs.connectionIntent === 'romantic') {
@@ -2152,6 +2178,7 @@ const verifyPhoneAndSetUser = async (
             console.log(`❌ ${user.firstName} - Connection intent mismatch: ${userIntent} vs ${prefs.connectionIntent}`);
             return false;
           }
+          console.log(`✅ ${user.firstName} - Connection intent compatible: ${userIntent} with ${prefs.connectionIntent}`);
         }
         
         // If user wants only friendship, only show friendship or both
@@ -2160,41 +2187,31 @@ const verifyPhoneAndSetUser = async (
             console.log(`❌ ${user.firstName} - Connection intent mismatch: ${userIntent} vs ${prefs.connectionIntent}`);
             return false;
           }
+          console.log(`✅ ${user.firstName} - Connection intent compatible: ${userIntent} with ${prefs.connectionIntent}`);
         }
-        
-        console.log(`✅ ${user.firstName} - Connection intent compatible: ${userIntent} with ${prefs.connectionIntent}`);
+      } else {
+        console.log(`🔗 Connection intent check for ${user.firstName}: No specific intent preference (showing everyone)`);
       }
       
       // 🎂 Age Range Filtering
       if (prefs.preferredAgeRange && user.age) {
         const { min, max } = prefs.preferredAgeRange;
+        console.log(`🎂 Age check for ${user.firstName}: ${user.age} (range: ${min}-${max})`);
         if (user.age < min || user.age > max) {
           console.log(`❌ ${user.firstName} - Age out of range: ${user.age} (${min}-${max})`);
           return false;
         }
+        console.log(`✅ ${user.firstName} - Age in range: ${user.age}`);
+      } else {
+        console.log(`🎂 Age check for ${user.firstName}: No age data or preferences`);
       }
       
-      // 📏 Height Range Filtering - ENHANCED
+      // 📏 Height Range Filtering
       if (prefs.preferredHeightRange && user.height) {
         const { min, max } = prefs.preferredHeightRange;
-        
-        // 🆕 WARNING: Check if height range is too restrictive
-        if (max - min < 0.5) {
-          console.log(`⚠️ WARNING: Height range is very narrow (${min}-${max}ft), this may filter out too many users`);
-        }
-        
-        // 🆕 WARNING: Check if height range is unrealistically low
-        if (max < 4.5) {
-          console.log(`⚠️ WARNING: Height range ${min}-${max}ft is very low - most adults are 5-6ft tall`);
-          console.log(`💡 Suggestion: Consider expanding to 4.5-6.5ft for better matching`);
-        }
-        
         if (user.height < min || user.height > max) {
-          console.log(`❌ ${user.firstName} - Height out of range: ${user.height}ft (${min}-${max}ft)`);
           return false;
         }
-        
-        console.log(`✅ ${user.firstName} - Height in range: ${user.height}ft`);
       }
       
       // 🌍 Distance Filtering
@@ -2205,7 +2222,6 @@ const verifyPhoneAndSetUser = async (
           user.latitude, user.longitude
         );
         if (distance > prefs.preferredDistance) {
-          console.log(`❌ ${user.firstName} - Distance too far: ${distance.toFixed(1)}km (max: ${prefs.preferredDistance}km)`);
           return false;
         }
       }
@@ -2213,13 +2229,12 @@ const verifyPhoneAndSetUser = async (
       // 🔮 Spiritual Compatibility Filtering
       const spiritualCheck = applySpiritualFilter(user);
       if (!spiritualCheck.passes) {
-        console.log(`❌ ${user.firstName} - Spiritual compatibility failed: ${spiritualCheck.reason}`);
         return false;
       }
       
-      console.log(`✅ ${user.firstName} - Passes all filters`);
       return true;
     });
+    
   }, [userData.matchPreferences, userData.userId, userData.latitude, userData.longitude, applySpiritualFilter]);
 
   // Simple filtering - removed complex logic that was causing issues
@@ -2249,18 +2264,11 @@ const verifyPhoneAndSetUser = async (
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
-      console.log('🔍 Fetching potential matches with exclusions:', {
-        exclusionCount: exclusionsToUse.size,
-        resetBatch,
-        lastDoc: !!lastDoc
-      });
-      
       // Build and execute query - keep it simple
       const query = buildMatchQuery(exclusionsToUse, lastDoc, 20); // Larger batch size
       const snapshot = await query.get();
       
       if (snapshot.empty) {
-        console.log('📭 No more users found in database');
         setMatchingState(prev => ({ 
           ...prev, 
           loadingBatch: false, 
@@ -2268,8 +2276,6 @@ const verifyPhoneAndSetUser = async (
         }));
         return [];
       }
-      
-      console.log(`📦 Raw users from database: ${snapshot.docs.length}`);
       
       // Convert Firestore docs to user objects
       const rawUsers = snapshot.docs.map(doc => ({
@@ -2303,13 +2309,25 @@ const verifyPhoneAndSetUser = async (
         return true;
       });
       
-      console.log(`🔍 After basic filtering: ${filteredUsers.length} users`);
-      
-      // 🆕 NEW: Apply user preferences filtering
-      if (userDataRef.current.matchPreferences) {
-        const beforePreferences = filteredUsers.length;
+      // Apply user preferences filtering
+      if (userData.matchPreferences) {
+        console.log('🔍 Applying preferences filter:', {
+          ageRange: userData.matchPreferences.preferredAgeRange,
+          heightRange: userData.matchPreferences.preferredHeightRange,
+          connectionIntent: userData.matchPreferences.connectionIntent,
+          connectionPreferences: userData.matchPreferences.connectionPreferences
+        });
+        console.log('🔍 Before filtering:', filteredUsers.length, 'users');
         filteredUsers = applyUserPreferences(filteredUsers);
-        console.log(`🔍 After preferences filtering: ${filteredUsers.length} users (removed ${beforePreferences - filteredUsers.length})`);
+        console.log('🔍 After filtering:', filteredUsers.length, 'users');
+        
+        // 🆕 NEW: Show connection intent filtering summary
+        if (userData.matchPreferences.connectionIntent && userData.matchPreferences.connectionIntent !== 'both') {
+          console.log(`🎯 Connection Intent Filter: ${userData.matchPreferences.connectionIntent.toUpperCase()}`);
+          console.log(`📋 Will show users with intent: ${userData.matchPreferences.connectionIntent} OR both`);
+        }
+      } else {
+        console.log('⚠️ No match preferences found in userData');
       }
       
       // Update pagination state
@@ -2323,7 +2341,6 @@ const verifyPhoneAndSetUser = async (
         noMoreMatches: filteredUsers.length === 0
       }));
       
-      console.log(`✅ Successfully fetched ${filteredUsers.length} potential matches`);
       return filteredUsers;
       
     } catch (error) {
@@ -2402,17 +2419,52 @@ const verifyPhoneAndSetUser = async (
   }, [userData.userId, userData.onboardingCompleted, fetchPotentialMatches]); // ✅ Add fetchPotentialMatches to deps
 
 
+  // 🆕 NEW: Track if preferences update is in progress
+  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+
   const debouncedPreferencesUpdate = useCallback(
     debounce(async (newPreferences: typeof userData.matchPreferences) => {
+      console.log('🔄 debouncedPreferencesUpdate called with:', {
+        userId: userData.userId,
+        initialized: matchingState.initialized,
+        newPreferences: newPreferences,
+        currentHash: matchingState.preferencesHash,
+        isUpdating: isUpdatingPreferences
+      });
+      
+      // 🆕 NEW: Prevent duplicate updates
+      if (isUpdatingPreferences) {
+        console.log('⚠️ Preferences update already in progress, skipping duplicate call');
+        return;
+      }
+      
       if (!userData.userId || !matchingState.initialized) return;
       
       const newHash = generatePreferencesHash(newPreferences);
+      console.log('🔄 Hash comparison:', {
+        newHash: newHash,
+        currentHash: matchingState.preferencesHash,
+        hasChanged: newHash !== matchingState.preferencesHash
+      });
       
       if (newHash !== matchingState.preferencesHash) {
-        console.log('🔄 === PREFERENCES CHANGED - COMPLETE RESET ===');
-        console.log('🔄 Old hash:', matchingState.preferencesHash);
-        console.log('🔄 New hash:', newHash);
-        console.log('🔄 New preferences:', newPreferences);
+        console.log('🔄 Preferences changed! Hash comparison:', {
+          oldHash: matchingState.preferencesHash,
+          newHash: newHash,
+          oldPreferences: userData.matchPreferences,
+          newPreferences: newPreferences
+        });
+        
+        // 🆕 NEW: Show connection intent change details
+        const oldIntent = userData.matchPreferences?.connectionIntent;
+        const newIntent = newPreferences?.connectionIntent;
+        if (oldIntent !== newIntent) {
+          console.log(`🔄 CONNECTION INTENT CHANGED: ${oldIntent} → ${newIntent}`);
+          console.log(`🔄 This will trigger a complete refetch with new filtering!`);
+        }
+        
+        // 🆕 NEW: Set updating flag to prevent duplicates
+        setIsUpdatingPreferences(true);
         
         // COMPLETE RESET - Clear everything and mark as loading
         setMatchingState(prev => ({
@@ -2426,19 +2478,16 @@ const verifyPhoneAndSetUser = async (
         }));
         
         try {
-          console.log('🔄 Fetching fresh matches with new preferences...');
           const newBatch = await fetchPotentialMatches(true); // Force reset
           
-          // 🆕 ENHANCED: Update state with proper error handling
+          // Update state with proper error handling
           setMatchingState(prev => ({
             ...prev,
             potentialMatches: newBatch,
-            loadingBatch: false,     // 🆕 NEW: Clear loading state
-            noMoreMatches: newBatch.length === 0, // 🆕 NEW: Set noMoreMatches properly
-            initialized: true        // 🆕 NEW: Ensure initialized is set to true
+            loadingBatch: false,
+            noMoreMatches: newBatch.length === 0,
+            initialized: true
           }));
-          
-          console.log(`🔄 Loaded ${newBatch.length} new matches with updated preferences`);
         } catch (error) {
           console.error('❌ Error fetching matches after preference change:', error);
           
@@ -2449,17 +2498,118 @@ const verifyPhoneAndSetUser = async (
             noMoreMatches: false,
             initialized: true // Ensure we don't get stuck
           }));
+        } finally {
+          // 🆕 NEW: Clear updating flag when done
+          setIsUpdatingPreferences(false);
         }
       }
-    }, 1000), // 1 second debounce to ensure preferences are fully saved
-    [userData.userId, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches]
+    }, 2000), // 🆕 INCREASED: 2 second debounce to prevent rapid successive updates
+    [userData.userId, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches, generatePreferencesHash, isUpdatingPreferences]
   );
 
+  // 🆕 CLEAN: Single hash comparison that triggers one refetch when preferences change
   useEffect(() => {
-    if (userData.matchPreferences && matchingState.initialized) {
-      debouncedPreferencesUpdate(userData.matchPreferences);
+    // Only run when we have preferences and are initialized
+    if (!userData.matchPreferences || !matchingState.initialized) return;
+    
+    const currentHash = generatePreferencesHash(userData.matchPreferences);
+    const hashChanged = currentHash !== matchingState.preferencesHash;
+    
+    console.log('🔍 Hash comparison check:', {
+      currentHash: currentHash.substring(0, 50) + '...',
+      storedHash: matchingState.preferencesHash.substring(0, 50) + '...',
+      hashChanged,
+      connectionIntent: userData.matchPreferences.connectionIntent
+    });
+    
+    // 🔧 FIXED: Only refetch if hash actually changed, prevent multiple calls
+    if (hashChanged) {
+      console.log('🔄 Preferences hash changed, triggering single refetch');
+      // Clear current matches and fetch fresh data
+      setMatchingState(prev => ({
+        ...prev,
+        potentialMatches: [],
+        currentIndex: 0,
+        lastFetchedDoc: null,
+        noMoreMatches: false
+      }));
+      
+      // Single fetch with new preferences and update state with results
+      const fetchAndUpdate = async () => {
+        try {
+          const newUsers = await fetchPotentialMatches(true); // true = reset batch
+          console.log('🔄 Fetched new users:', newUsers.length);
+          
+          // Update state with the new users
+          setMatchingState(prev => ({
+            ...prev,
+            potentialMatches: newUsers,
+            currentIndex: 0,
+            noMoreMatches: newUsers.length === 0
+          }));
+        } catch (error) {
+          console.error('❌ Error fetching new users:', error);
+        }
+      };
+      
+      fetchAndUpdate();
+    } else {
+      console.log('✅ Hash unchanged, no refetch needed');
+      console.log('🔍 Debug hash comparison:', {
+        currentHash: currentHash.substring(0, 100) + '...',
+        storedHash: matchingState.preferencesHash.substring(0, 100) + '...',
+        currentConnectionIntent: userData.matchPreferences?.connectionIntent,
+        storedConnectionIntent: matchingState.preferencesHash.includes('"connectionIntent":"romantic"') ? 'romantic' : 
+                                matchingState.preferencesHash.includes('"connectionIntent":"friendship"') ? 'friendship' : 'unknown'
+      });
     }
-  }, [userData.matchPreferences, debouncedPreferencesUpdate]);
+  }, [userData.matchPreferences, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches, generatePreferencesHash]);
+
+  // 🆕 NEW: Force refetch when returning to Connect screen to catch preference changes
+  const forceRefetchOnReturn = useCallback(async () => {
+    if (!userData.matchPreferences || !matchingState.initialized) return;
+    
+    console.log('🔄 Force refetch on return to Connect screen');
+    
+    // Always fetch fresh data when returning to ensure we have latest preferences
+    try {
+      const newUsers = await fetchPotentialMatches(true); // true = reset batch
+      console.log('🔄 Force refetch completed:', newUsers.length, 'users');
+      
+      // Update state with the new users
+      setMatchingState(prev => ({
+        ...prev,
+        potentialMatches: newUsers,
+        currentIndex: 0,
+        noMoreMatches: newUsers.length === 0
+      }));
+    } catch (error) {
+      console.error('❌ Error in force refetch:', error);
+    }
+  }, [userData.matchPreferences, matchingState.initialized, fetchPotentialMatches]);
+
+  // 🆕 SIMPLIFIED: Just check if preferences changed, no refetch needed
+  const checkAndRefetchIfNeeded = useCallback(() => {
+    if (!userData.matchPreferences || !matchingState.initialized) return;
+    
+    const currentHash = generatePreferencesHash(userData.matchPreferences);
+    const hashChanged = currentHash !== matchingState.preferencesHash;
+    
+    console.log('🔍 checkAndRefetchIfNeeded:', {
+      hashChanged,
+      connectionIntent: userData.matchPreferences.connectionIntent,
+      hasMatches: matchingState.potentialMatches.length > 0
+    });
+    
+    // No need to refetch here - the useEffect above handles it automatically
+    if (hashChanged) {
+      console.log('✅ Preferences changed, useEffect will handle refetch');
+    } else {
+      console.log('✅ Preferences unchanged, no action needed');
+    }
+  }, [userData.matchPreferences, matchingState.preferencesHash, matchingState.potentialMatches.length, generatePreferencesHash]);
+
+
 
   const resetMatching = useCallback(async () => {
     console.log('🔄 Manual reset of matching system');
@@ -4678,6 +4828,8 @@ const verifyPhoneAndSetUser = async (
     getUserStats,
     validateUserData,
     testWeeklyLotusFunction,
+    checkAndRefetchIfNeeded,
+    forceRefetchOnReturn,
     initializing,
     isSigningOut: isSigningOutRef.current,
     

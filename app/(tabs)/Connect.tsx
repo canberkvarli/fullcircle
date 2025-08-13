@@ -31,6 +31,8 @@ const ConnectScreen: React.FC = () => {
     matchingState,
     DAILY_LIKE_LIMIT,
     userData,
+    checkAndRefetchIfNeeded,
+    forceRefetchOnReturn,
   } = useUserContext();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -80,6 +82,21 @@ const ConnectScreen: React.FC = () => {
     matchingStateRef.current = matchingState;
   }, [matchingState]);
 
+  // 🆕 NEW: Check if preferences changed while user was away
+  useEffect(() => {
+    if (matchingState.initialized) {
+      checkAndRefetchIfNeeded();
+    }
+  }, [matchingState.initialized, checkAndRefetchIfNeeded]);
+
+  // 🆕 NEW: Force refetch when returning to Connect screen to catch preference changes
+  useEffect(() => {
+    if (matchingState.initialized) {
+      console.log('🔄 Connect screen focused, forcing refetch to catch preference changes');
+      forceRefetchOnReturn();
+    }
+  }, [matchingState.initialized, forceRefetchOnReturn]);
+
 
 
   // 🆕 ENHANCED: Improved loading state management with error handling
@@ -89,6 +106,15 @@ const ConnectScreen: React.FC = () => {
     const isCurrentlyLoading = matchingStateRef.current.loadingBatch;
     const isInitialized = matchingStateRef.current.initialized;
     const noMoreAvailable = matchingStateRef.current.noMoreMatches;
+    
+    console.log('🔍 Connect screen loading state:', {
+      hasMatches,
+      isCurrentlyLoading,
+      isInitialized,
+      noMoreAvailable,
+      potentialMatchesLength: matchingStateRef.current.potentialMatches.length,
+      currentPotentialMatch: currentPotentialMatch ? `${currentPotentialMatch.firstName} (${currentPotentialMatch.userId})` : 'none'
+    });
     
     // Show loading when fetching or not initialized
     if (isCurrentlyLoading || !isInitialized) {
@@ -119,7 +145,7 @@ const ConnectScreen: React.FC = () => {
         setShowContent(false);
       }
     }
-  }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches]);
+  }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches, currentPotentialMatch]);
 
   // Reset animations when match changes
   useEffect(() => {
@@ -965,6 +991,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     zIndex: 1,
   },
+
+
 
   centeredLoadingContainer: {
     flex: 1,

@@ -122,12 +122,12 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          height: Platform.OS === 'ios' ? 85 : 70,
+          height: Platform.OS === 'ios' ? 100 : 70,
           backgroundColor: colors.background,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 35 : 8,
+          paddingTop: 12,
           paddingHorizontal: Spacing.md,
           position: 'absolute',
           shadowColor: '#000',
