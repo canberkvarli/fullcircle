@@ -2142,13 +2142,27 @@ const verifyPhoneAndSetUser = async (
       // Skip if user is the current user
       if (user.userId === userData.userId) return false;
       
-      // 🔗 Connection Intent Filtering
+      // 🔗 Connection Intent Filtering - STRICT
       if (prefs.connectionIntent && prefs.connectionIntent !== 'both') {
         const userIntent = user.matchPreferences?.connectionIntent;
-        if (userIntent && userIntent !== 'both' && userIntent !== prefs.connectionIntent) {
-          console.log(`❌ ${user.firstName} - Connection intent mismatch: ${userIntent} vs ${prefs.connectionIntent}`);
-          return false;
+        
+        // If user wants only romantic, only show romantic or both
+        if (prefs.connectionIntent === 'romantic') {
+          if (userIntent !== 'romantic' && userIntent !== 'both') {
+            console.log(`❌ ${user.firstName} - Connection intent mismatch: ${userIntent} vs ${prefs.connectionIntent}`);
+            return false;
+          }
         }
+        
+        // If user wants only friendship, only show friendship or both
+        if (prefs.connectionIntent === 'friendship') {
+          if (userIntent !== 'friendship' && userIntent !== 'both') {
+            console.log(`❌ ${user.firstName} - Connection intent mismatch: ${userIntent} vs ${prefs.connectionIntent}`);
+            return false;
+          }
+        }
+        
+        console.log(`✅ ${user.firstName} - Connection intent compatible: ${userIntent} with ${prefs.connectionIntent}`);
       }
       
       // 🎂 Age Range Filtering
@@ -2160,13 +2174,27 @@ const verifyPhoneAndSetUser = async (
         }
       }
       
-      // 📏 Height Range Filtering
+      // 📏 Height Range Filtering - ENHANCED
       if (prefs.preferredHeightRange && user.height) {
         const { min, max } = prefs.preferredHeightRange;
+        
+        // 🆕 WARNING: Check if height range is too restrictive
+        if (max - min < 0.5) {
+          console.log(`⚠️ WARNING: Height range is very narrow (${min}-${max}ft), this may filter out too many users`);
+        }
+        
+        // 🆕 WARNING: Check if height range is unrealistically low
+        if (max < 4.5) {
+          console.log(`⚠️ WARNING: Height range ${min}-${max}ft is very low - most adults are 5-6ft tall`);
+          console.log(`💡 Suggestion: Consider expanding to 4.5-6.5ft for better matching`);
+        }
+        
         if (user.height < min || user.height > max) {
-          console.log(`❌ ${user.firstName} - Height out of range: ${user.height} (${min}-${max})`);
+          console.log(`❌ ${user.firstName} - Height out of range: ${user.height}ft (${min}-${max}ft)`);
           return false;
         }
+        
+        console.log(`✅ ${user.firstName} - Height in range: ${user.height}ft`);
       }
       
       // 🌍 Distance Filtering
