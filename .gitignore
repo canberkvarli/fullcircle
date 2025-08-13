@@ -39,4 +39,4 @@ firebase-debug.log
 functions/firebase-debug.log
 
 # macOS
-.DS_Store
+.DS_Storeconfig/dev/vision-api.env
