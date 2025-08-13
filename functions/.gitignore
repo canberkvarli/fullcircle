@@ -1,5 +1,5 @@
 node_modules/
 *.local
-.env
+# .env  # Commented out to allow .env to be deployed
 .env.local
 functions/firebase-debug.log

@@ -13,6 +13,7 @@
 
 namespace facebook::react {
 
+
 void KeyboardControllerViewEventEmitter::onKeyboardMoveStart(OnKeyboardMoveStart $event) const {
   dispatchEvent("keyboardMoveStart", [$event=std::move($event)](jsi::Runtime &runtime) {
     auto $payload = jsi::Object(runtime);
@@ -115,6 +116,7 @@ void KeyboardControllerViewEventEmitter::onFocusedInputSelectionChanged(OnFocuse
     return $payload;
   });
 }
+
 
 
 

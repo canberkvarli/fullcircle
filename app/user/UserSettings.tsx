@@ -22,12 +22,12 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
-import { FIREBASE_AUTH } from "@/services/FirebaseConfig";  
+import { FIREBASE_AUTH, FUNCTIONS } from "@/services/FirebaseConfig";  
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 export default function UserSettings() {
   const router = useRouter();
-  const { userData, updateUserSettings, signOut, updateUserData, deleteAccount, handleAppleSignIn } = useUserContext();
+  const { userData, updateUserSettings, signOut, updateUserData, deleteAccount, handleAppleSignIn, fetchUserData } = useUserContext();
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -500,6 +500,52 @@ export default function UserSettings() {
     }
   };
 
+  const handleTestWeeklyLotus = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🪷 Testing weekly lotus assignment...');
+      
+      const result = await FUNCTIONS.httpsCallable('manualAssignWeeklyLotus')({});
+      
+      const data = result.data as any;
+      console.log('✅ Weekly lotus test result:', data);
+      
+      if (data.success) {
+        // Refresh user data to show updated lotus count
+        if (userData.userId) {
+          try {
+            await fetchUserData(userData.userId, false);
+            console.log('✅ User data refreshed after weekly lotus test');
+          } catch (refreshError) {
+            console.warn('⚠️ Failed to refresh user data:', refreshError);
+          }
+        }
+        
+        Alert.alert(
+          '✅ Weekly Lotus Test Successful!',
+          `${data.message}\n\nProcessed: ${data.processedCount} users\nEligible: ${data.eligibleUsersCount} users\nTimestamp: ${new Date(data.timestamp).toLocaleString()}`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          '❌ Weekly Lotus Test Failed',
+          `Failed to assign weekly lotus: ${data.reason || 'Unknown error'}`,
+          [{ text: 'OK' }]
+        );
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Weekly lotus test error:', error);
+      Alert.alert(
+        '❌ Error',
+        `Failed to test weekly lotus: ${error.message || 'Unknown error occurred'}`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteReasons = [
     "I found someone special",
     "Taking a break",
@@ -559,6 +605,29 @@ export default function UserSettings() {
               trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
               thumbColor={showLastActive ? '#8B4513' : colors.textMuted}
             />
+          </View>
+
+          <View style={styles.separator} />
+          
+          <View style={styles.row}>
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Current Lotus Count</Text>
+              <Text style={[styles.rowDescription, fonts.captionFont]}>
+                You currently have {userData.numOfLotus || 0} lotus available
+                {userData.lastLotusAssignedAt && (
+                  `\nLast assigned: ${new Date(
+                    userData.lastLotusAssignedAt.toDate ? 
+                    userData.lastLotusAssignedAt.toDate() : 
+                    userData.lastLotusAssignedAt
+                  ).toLocaleDateString()}`
+                )}
+              </Text>
+            </View>
+            <View style={styles.lotusBadge}>
+              <Text style={[styles.lotusBadgeText, fonts.captionFont]}>
+                {userData.numOfLotus || 0} 🪷
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -717,6 +786,58 @@ export default function UserSettings() {
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
+
+        {/* Developer Section */}
+        {__DEV__ && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, fonts.captionFont]}>🧪 DEVELOPER TOOLS</Text>
+            
+            <TouchableOpacity 
+              style={styles.row}
+              onPress={() => router.navigate("/user/NotificationTester" as any)}
+            >
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Test Notifications</Text>
+                <Text style={[styles.rowDescription, fonts.captionFont]}>
+                  Debug and test push notification system
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.row}
+              onPress={handleTestWeeklyLotus}
+              disabled={isLoading}
+            >
+              <View style={styles.rowContent}>
+                <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Test Weekly Lotus</Text>
+                <Text style={[styles.rowDescription, fonts.captionFont]}>
+                  Manually trigger weekly lotus assignment
+                </Text>
+              </View>
+              {isLoading ? (
+                <OuroborosLoader 
+                  size={24}
+                  duration={2000}
+                  fillColor="#F5E6D3"
+                  strokeColor="#7B6B5C"
+                  strokeWidth={1.5}
+                  loop={true}
+                />
+              ) : (
+                <View style={styles.rowRight}>
+                  <View style={styles.lotusBadge}>
+                    <Text style={[styles.lotusBadgeText, fonts.captionFont]}>
+                      {userData.numOfLotus || 0} 🪷
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Subscription Section */}
         <View style={styles.section}>
@@ -1123,9 +1244,25 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     goldText: {
       color: '#B8860B',
     },
+    lotusBadge: {
+      backgroundColor: '#8B4513',
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      borderRadius: BorderRadius.md,
+    },
+    lotusBadgeText: {
+      color: '#FFFFFF',
+      fontSize: Typography.sizes.xs,
+      fontWeight: Typography.weights.bold,
+    },
     rowContent: {
       flex: 1,
       marginRight: Spacing.md,
+    },
+    rowRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
     },
     rowTitle: {
       fontSize: Typography.sizes.base,

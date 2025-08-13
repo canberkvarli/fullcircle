@@ -356,22 +356,26 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     buttonSection: {
       width: '100%',
-      height: 200, // Fixed height to prevent layout shifts
+      height: 220, // Increased height for better centering
       position: 'relative',
       justifyContent: 'center',
+      alignItems: 'center', // Added to center buttons horizontally
     },
     absoluteButtonContainer: {
       position: 'absolute',
       width: '100%',
       paddingHorizontal: Spacing.xl,
-      gap: Spacing.sm,
+      gap: Spacing.md, // Increased gap for better spacing
       alignItems: 'center',
+      justifyContent: 'center', // Added to center buttons vertically
     },
     button: {
       borderRadius: BorderRadius.full,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.xl,
       alignItems: 'center',
+      justifyContent: 'center', // Added to center button content
+      minHeight: 56, // Added minimum height for consistency
       minWidth: 200,
       width: '100%',
       maxWidth: 280,

@@ -219,12 +219,44 @@ function EditFieldScreen() {
     try {
       const places = await Location.reverseGeocodeAsync(region);
       if (places.length > 0) {
-        setRegionName(
-          places[0].district ||
-          places[0].region ||
-          places[0].country ||
-          "Unknown Location"
-        );
+        const placeData = places[0];
+        
+        // Smart location hierarchy - prioritize most specific, recognizable name
+        let locationName = "";
+        
+        // 1. Try neighborhood/area name first (most specific)
+        if (placeData.district && placeData.district !== placeData.city) {
+          locationName = placeData.district;
+        }
+        // 2. Try subregion (often contains neighborhood info)
+        else if (placeData.subregion && placeData.subregion !== placeData.city) {
+          locationName = placeData.subregion;
+        }
+        // 3. Use city name (most reliable)
+        else if (placeData.city) {
+          locationName = placeData.city;
+        }
+        // 4. Fallback to region/state
+        else if (placeData.region) {
+          locationName = placeData.region;
+        }
+        // 5. Last resort
+        else if (placeData.country) {
+          locationName = placeData.country;
+        }
+        
+        // If we still don't have a good name, try to create a more descriptive one
+        if (!locationName || locationName === placeData.region) {
+          if (placeData.city && placeData.region) {
+            locationName = `${placeData.city}, ${placeData.region}`;
+          } else if (placeData.city) {
+            locationName = placeData.city;
+          } else {
+            locationName = "You are exactly where you are meant to be 🌱";
+          }
+        }
+        
+        setRegionName(locationName);
       } else {
         setRegionName("Unknown Location");
       }

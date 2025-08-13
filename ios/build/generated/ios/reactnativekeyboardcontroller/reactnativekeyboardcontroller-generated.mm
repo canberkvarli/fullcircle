@@ -34,6 +34,10 @@ namespace facebook::react {
       return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "setDefaultMode", @selector(setDefaultMode), args, count);
     }
 
+    static facebook::jsi::Value __hostFunction_NativeKeyboardControllerSpecJSI_preload(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
+      return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "preload", @selector(preload), args, count);
+    }
+
     static facebook::jsi::Value __hostFunction_NativeKeyboardControllerSpecJSI_dismiss(facebook::jsi::Runtime& rt, TurboModule &turboModule, const facebook::jsi::Value* args, size_t count) {
       return static_cast<ObjCTurboModule&>(turboModule).invokeObjCMethod(rt, VoidKind, "dismiss", @selector(dismiss:), args, count);
     }
@@ -57,6 +61,9 @@ namespace facebook::react {
         
         
         methodMap_["setDefaultMode"] = MethodMetadata {0, __hostFunction_NativeKeyboardControllerSpecJSI_setDefaultMode};
+        
+        
+        methodMap_["preload"] = MethodMetadata {0, __hostFunction_NativeKeyboardControllerSpecJSI_preload};
         
         
         methodMap_["dismiss"] = MethodMetadata {1, __hostFunction_NativeKeyboardControllerSpecJSI_dismiss};

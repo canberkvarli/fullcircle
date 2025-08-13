@@ -37,7 +37,20 @@ const getScheme = () => {
 };
 
 const getStripePublishableKey = () => {
-  return process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  // Try to load from environment first
+  if (process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+    return process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  }
+  
+  // Fallback to hardcoded keys based on environment
+  switch (env) {
+    case 'production':
+      return 'pk_live_your_production_stripe_key_here';
+    case 'staging':
+      return 'pk_test_your_staging_stripe_key_here';
+    default:
+      return 'pk_test_your_development_stripe_key_here';
+  }
 };
 
 // Get iOS URL scheme for Google Sign-In based on environment
@@ -58,15 +71,9 @@ module.exports = {
     slug: "fullcircle",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/store_badges/fullcircle_appstore.png",
     scheme: getScheme(),
     userInterfaceStyle: "automatic",
     newArchEnabled: false,
-    splash: {
-      image: "./assets/images/store_badges/fullcircle_appstore.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff"
-    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: getBundleId(),

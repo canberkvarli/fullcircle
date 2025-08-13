@@ -13,7 +13,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@protocol RCTKeyboardBackgroundViewViewProtocol <NSObject>
+
+@end
+
 @protocol RCTKeyboardControllerViewViewProtocol <NSObject>
+
+@end
+
+@protocol RCTKeyboardExtenderViewProtocol <NSObject>
 
 @end
 

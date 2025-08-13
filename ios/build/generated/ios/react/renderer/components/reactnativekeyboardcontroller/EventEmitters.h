@@ -13,6 +13,13 @@
 
 
 namespace facebook::react {
+class KeyboardBackgroundViewEventEmitter : public ViewEventEmitter {
+ public:
+  using ViewEventEmitter::ViewEventEmitter;
+
+  
+  
+};
 class KeyboardControllerViewEventEmitter : public ViewEventEmitter {
  public:
   using ViewEventEmitter::ViewEventEmitter;
@@ -98,6 +105,13 @@ class KeyboardControllerViewEventEmitter : public ViewEventEmitter {
   void onFocusedInputTextChanged(OnFocusedInputTextChanged value) const;
 
   void onFocusedInputSelectionChanged(OnFocusedInputSelectionChanged value) const;
+};
+class KeyboardExtenderEventEmitter : public ViewEventEmitter {
+ public:
+  using ViewEventEmitter::ViewEventEmitter;
+
+  
+  
 };
 class KeyboardGestureAreaEventEmitter : public ViewEventEmitter {
  public:

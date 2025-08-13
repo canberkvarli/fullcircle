@@ -35,6 +35,7 @@
 
 - (void)setInputMode:(double)mode;
 - (void)setDefaultMode;
+- (void)preload;
 - (void)dismiss:(BOOL)keepFocus;
 - (void)setFocusTo:(NSString *)direction;
 - (void)addListener:(NSString *)eventName;

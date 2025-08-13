@@ -14,6 +14,16 @@
 
 namespace facebook::react {
 
+class KeyboardBackgroundViewProps final : public ViewProps {
+ public:
+  KeyboardBackgroundViewProps() = default;
+  KeyboardBackgroundViewProps(const PropsParserContext& context, const KeyboardBackgroundViewProps &sourceProps, const RawProps &rawProps);
+
+#pragma mark - Props
+
+  
+};
+
 class KeyboardControllerViewProps final : public ViewProps {
  public:
   KeyboardControllerViewProps() = default;
@@ -25,6 +35,16 @@ class KeyboardControllerViewProps final : public ViewProps {
   bool statusBarTranslucent{false};
   bool navigationBarTranslucent{false};
   bool preserveEdgeToEdge{false};
+};
+
+class KeyboardExtenderProps final : public ViewProps {
+ public:
+  KeyboardExtenderProps() = default;
+  KeyboardExtenderProps(const PropsParserContext& context, const KeyboardExtenderProps &sourceProps, const RawProps &rawProps);
+
+#pragma mark - Props
+
+  bool enabled{false};
 };
 
 enum class KeyboardGestureAreaInterpolator { Linear, Ios };

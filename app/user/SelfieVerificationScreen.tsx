@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Animated,
   ScrollView,
+  Image,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
@@ -18,11 +19,11 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import * as ImagePicker from 'expo-image-picker';
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
-import { CustomIcon } from "@/components/CustomIcon";
+import { SelfieVerificationService, VerificationResult } from "@/services/SelfieVerificationService";
 
-export default function SelfieVerification() {
+export default function SelfieVerificationScreen() {
   const router = useRouter();
-  const { userData, updateUserSettings } = useUserContext();
+  const { userData, updateUserSettings, updateUserData } = useUserContext();
   
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -32,10 +33,28 @@ export default function SelfieVerification() {
   const [verificationStep, setVerificationStep] = useState<'intro' | 'capture' | 'processing' | 'success' | 'failed'>('intro');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // Get profile image URL on component mount
+  useEffect(() => {
+    if (userData) {
+      const profileUrl = SelfieVerificationService.getProfileImageUrl(userData);
+      setProfileImageUrl(profileUrl);
+      
+      if (!profileUrl) {
+        Alert.alert(
+          'Profile Photo Required',
+          'Please add a profile photo before attempting verification. This helps us verify your identity.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      }
+    }
+  }, [userData]);
 
   // Start pulsing animation for camera
   const startPulseAnimation = () => {
@@ -80,9 +99,6 @@ export default function SelfieVerification() {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
 
-    setVerificationStep('capture');
-    startPulseAnimation();
-
     try {
       const result = await ImagePicker.launchCameraAsync({
         // @ts-ignore - suppressing deprecation warning until library is updated
@@ -95,7 +111,7 @@ export default function SelfieVerification() {
 
       if (!result.canceled && result.assets[0]) {
         setCapturedImage(result.assets[0].uri);
-        processVerification(result.assets[0]);
+        setVerificationStep('capture');
       } else {
         setVerificationStep('intro');
       }
@@ -106,32 +122,60 @@ export default function SelfieVerification() {
   };
 
   const processVerification = async (imageAsset: any) => {
+    if (!profileImageUrl) {
+      Alert.alert('Error', 'No profile image found for comparison');
+      setVerificationStep('intro');
+      return;
+    }
+
     setVerificationStep('processing');
     setIsProcessing(true);
     animateProgress();
 
     try {
-      // TODO: Implement actual verification logic
-      // This is where you'd call your backend API for verification
-      // Example: await verifyUserSelfie(imageAsset.base64, userData.userId);
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // For demo purposes, randomly succeed or fail
-      const success = Math.random() > 0.2; // 80% success rate for demo
-      
-      if (success) {
-        await updateUserSettings({
-          isSelfieVerified: true,
-          selfieVerificationDate: new Date(),
+      // Validate the captured image
+      const validation = SelfieVerificationService.validateImage(imageAsset.uri);
+      if (!validation.valid) {
+        throw new Error(validation.error || 'Invalid image');
+      }
+
+      // Get the base64 data for the selfie
+      let imageBase64 = imageAsset.uri;
+      if (imageAsset.base64) {
+        imageBase64 = imageAsset.base64;
+      }
+
+      // Call the verification service
+      const result = await SelfieVerificationService.verifySelfie(
+        imageBase64,
+        profileImageUrl
+      );
+
+      setVerificationResult(result);
+
+      if (result.verified) {
+        // Update user context with verification status in settings
+        await updateUserData({
+          settings: {
+            ...(userData.settings || {}),
+            isSelfieVerified: true,
+            selfieVerificationDate: new Date(),
+          }
         });
+        // Update verification status in Firestore
+        await SelfieVerificationService.updateUserVerificationStatus(true, result.score);
+        
         setVerificationStep('success');
       } else {
         setVerificationStep('failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Verification error:', error);
+      Alert.alert(
+        'Verification Failed',
+        error.message || 'An unexpected error occurred. Please try again.',
+        [{ text: 'OK' }]
+      );
       setVerificationStep('failed');
     } finally {
       setIsProcessing(false);
@@ -187,6 +231,56 @@ export default function SelfieVerification() {
           Take Selfie
         </Text>
       </TouchableOpacity>
+    </View>
+  );
+
+  const renderCaptureStep = () => (
+    <View style={styles.contentContainer}>
+      <View style={styles.iconContainer}>
+        <View style={[styles.iconBackground, { backgroundColor: '#FF9800' + '20' }]}>
+          <Ionicons name="camera" size={48} color="#FF9800" />
+        </View>
+      </View>
+      
+      <Text style={[styles.title, fonts.spiritualTitleFont]}>
+        Review Your Selfie
+      </Text>
+      
+      <Text style={[styles.description, fonts.spiritualBodyFont]}>
+        Take a moment to review your photo. Make sure your face is clearly visible and well-lit before proceeding with verification.
+      </Text>
+      
+      {capturedImage && (
+        <View style={styles.imagePreviewContainer}>
+          <Image 
+            source={{ uri: capturedImage }} 
+            style={styles.imagePreview}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+      
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={[styles.primaryButton, { backgroundColor: '#4CAF50' }]} 
+          onPress={() => processVerification({ uri: capturedImage, base64: null })}
+        >
+          <Ionicons name="checkmark" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+          <Text style={[styles.primaryButtonText, fonts.buttonFont]}>
+            Verify This Photo
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.secondaryButton} 
+          onPress={resetVerification}
+        >
+          <Ionicons name="camera" size={20} color={colors.textMuted} style={styles.buttonIcon} />
+          <Text style={[styles.secondaryButtonText, fonts.buttonFont]}>
+            Take Another Photo
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -250,6 +344,26 @@ export default function SelfieVerification() {
         Your identity has been verified! You now carry a verification badge, building greater trust with others seeking genuine connections.
       </Text>
       
+      {verificationResult && (
+        <View style={[styles.verificationDetailsContainer, { backgroundColor: '#4CAF50' + '10' }]}>
+          <Text style={[styles.verificationDetailsTitle, fonts.spiritualBodyFont]}>
+            Verification Details:
+          </Text>
+          <View style={styles.verificationDetailRow}>
+            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+            <Text style={[styles.verificationDetailText, fonts.captionFont]}>
+              Similarity Score: {Math.round(verificationResult.score * 100)}%
+            </Text>
+          </View>
+          <View style={styles.verificationDetailRow}>
+            <Ionicons name="shield-checkmark" size={16} color="#4CAF50" />
+            <Text style={[styles.verificationDetailText, fonts.captionFont]}>
+              Status: Verified
+            </Text>
+          </View>
+        </View>
+      )}
+      
       <View style={styles.benefitsContainer}>
         <Text style={[styles.benefitsTitle, fonts.spiritualBodyFont]}>
           Benefits Unlocked:
@@ -295,6 +409,28 @@ export default function SelfieVerification() {
         We couldn't verify your photo against your profile. This sometimes happens when lighting or angles make it difficult to match.
       </Text>
       
+      {verificationResult && (
+        <View style={[styles.verificationDetailsContainer, { backgroundColor: '#FF6B6B' + '10' }]}>
+          <Text style={[styles.verificationDetailsTitle, fonts.spiritualBodyFont]}>
+            Verification Details:
+          </Text>
+          <View style={styles.verificationDetailRow}>
+            <Ionicons name="information-circle" size={16} color="#FF6B6B" />
+            <Text style={[styles.verificationDetailText, fonts.captionFont]}>
+              Reason: {verificationResult.reason}
+            </Text>
+          </View>
+          {verificationResult.score > 0 && (
+            <View style={styles.verificationDetailRow}>
+              <Ionicons name="analytics" size={16} color="#FF6B6B" />
+              <Text style={[styles.verificationDetailText, fonts.captionFont]}>
+                Similarity Score: {Math.round(verificationResult.score * 100)}%
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+      
       <View style={styles.tipsContainer}>
         <Text style={[styles.tipsTitle, fonts.spiritualBodyFont]}>
           Try These Adjustments:
@@ -336,6 +472,8 @@ export default function SelfieVerification() {
     switch (verificationStep) {
       case 'intro':
         return renderIntroStep();
+      case 'capture':
+        return renderCaptureStep();
       case 'processing':
         return renderProcessingStep();
       case 'success':
@@ -614,6 +752,45 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     buttonIcon: {
       marginRight: Spacing.sm,
+    },
+    imagePreviewContainer: {
+      width: '100%',
+      alignItems: 'center',
+      marginBottom: Spacing.xl,
+    },
+    imagePreview: {
+      width: 200,
+      height: 200,
+      borderRadius: BorderRadius.xl,
+      borderWidth: 3,
+      borderColor: colors.primary + '40',
+    },
+    verificationDetailsContainer: {
+      width: '100%',
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      marginBottom: Spacing.xl,
+      borderWidth: 1,
+      borderColor: '#4CAF50' + '20',
+    },
+    verificationDetailsTitle: {
+      fontSize: Typography.sizes.lg,
+      fontWeight: Typography.weights.semibold,
+      color: colors.textDark,
+      marginBottom: Spacing.md,
+      letterSpacing: 0.3,
+    },
+    verificationDetailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.sm,
+    },
+    verificationDetailText: {
+      fontSize: Typography.sizes.sm,
+      color: colors.textLight,
+      marginLeft: Spacing.sm,
+      flex: 1,
+      lineHeight: 20,
     },
   });
 };

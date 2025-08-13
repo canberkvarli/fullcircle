@@ -23,6 +23,7 @@ public:
   virtual jsi::Object getConstants(jsi::Runtime &rt) = 0;
   virtual void setInputMode(jsi::Runtime &rt, double mode) = 0;
   virtual void setDefaultMode(jsi::Runtime &rt) = 0;
+  virtual void preload(jsi::Runtime &rt) = 0;
   virtual void dismiss(jsi::Runtime &rt, bool keepFocus) = 0;
   virtual void setFocusTo(jsi::Runtime &rt, jsi::String direction) = 0;
   virtual void addListener(jsi::Runtime &rt, jsi::String eventName) = 0;
@@ -76,6 +77,14 @@ private:
 
       return bridging::callFromJs<void>(
           rt, &T::setDefaultMode, jsInvoker_, instance_);
+    }
+    void preload(jsi::Runtime &rt) override {
+      static_assert(
+          bridging::getParameterCount(&T::preload) == 1,
+          "Expected preload(...) to have 1 parameters");
+
+      return bridging::callFromJs<void>(
+          rt, &T::preload, jsInvoker_, instance_);
     }
     void dismiss(jsi::Runtime &rt, bool keepFocus) override {
       static_assert(

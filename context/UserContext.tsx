@@ -17,6 +17,8 @@ import { AuthDebug } from "@/utils/AuthDebug";
 import firestore from "@react-native-firebase/firestore";
 
 import { AppState } from "react-native";
+import NotificationService from "@/services/NotificationService";
+import { Colors } from '@/constants/Colors';
 
 export type UserDataType = {
   userId: string;
@@ -163,6 +165,7 @@ export type UserSettings = {
   isSelfieVerified?: boolean;
   selfieVerificationDate?: Date;
   pushNotifications?: PushNotificationSettings;
+  pushToken?: string;
   connectedAccounts?: {
     google?: boolean;
     apple?: boolean;
@@ -698,6 +701,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     matchingStateRef.current = matchingState;
   }, [matchingState]);
+
+  // Register for push notifications when user data is available
+  useEffect(() => {
+    if (userData?.userId && userData?.settings?.pushToken === undefined) {
+      console.log('🔔 Registering for push notifications...');
+      registerForPushNotifications();
+    }
+  }, [userData?.userId, userData?.settings?.pushToken]);
 
   useEffect(() => {
     console.log("Setting up Firebase auth state change listener and app state monitor");
@@ -1607,6 +1618,24 @@ const verifyPhoneAndSetUser = async (
     } catch (error) {
       console.error("Error updating user settings:", error);
       throw error;
+    }
+  };
+
+  // Register for push notifications
+  const registerForPushNotifications = async () => {
+    try {
+      const permissionStatus = await NotificationService.requestPermissions();
+      if (permissionStatus === 'granted') {
+        const token = await NotificationService.getPushToken();
+        if (token) {
+          // Update user's push token in Firestore
+          await updateUserSettings({
+            pushToken: token,
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Error registering for push notifications:', error);
     }
   };
 

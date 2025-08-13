@@ -199,8 +199,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     buttonContainer: {
       width: '100%',
-      gap: Spacing.sm,
+      gap: Spacing.md, // Increased from sm to md for better spacing
       alignItems: 'center',
+      justifyContent: 'center', // Added to center buttons vertically
     },
     
     // Simplified Loading Styles
@@ -245,7 +246,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     ssoButton: {
       width: '100%',
       maxWidth: 280,
+      minHeight: 56, // Added minimum height for consistency
       paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl, // Added horizontal padding for consistency
       borderRadius: BorderRadius.full,
       alignItems: "center",
       justifyContent: "center",
@@ -281,11 +284,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     googleButton: {
       backgroundColor: colors.primary,
-      paddingHorizontal: Spacing["2xl"],
     },
     appleButton: {
       backgroundColor: '#000000',
-      paddingHorizontal: Spacing["2xl"],
     },
     phoneButton: {
       backgroundColor: 'rgba(255, 255, 255, 0.15)',

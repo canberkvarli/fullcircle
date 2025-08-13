@@ -216,6 +216,23 @@ export default function TabsLayout() {
           ),
         }}
       />
+      
+      {process.env.EXPO_PUBLIC_ENV === 'development' && (
+        <Tabs.Screen
+          name="DevTools"
+          options={{
+            tabBarLabel: "Dev",
+            tabBarIcon: ({ color, size, focused }) => (
+              <SpiritualIcon 
+                iconName="construct" 
+                color={color} 
+                size={size} 
+                focused={focused} 
+              />
+            ),
+          }}
+        />
+      )}
     </Tabs>
   );
 }

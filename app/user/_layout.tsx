@@ -8,6 +8,7 @@ const UserLayout = () => {
       <Stack.Screen name="EditUserProfile" options={{ headerShown: false }} />
       <Stack.Screen name="UserSettings" options={{ headerShown: false }} />
       <Stack.Screen name="PushNotifications" options={{ headerShown: false }} />
+      <Stack.Screen name="NotificationTester" options={{ headerShown: false }} />
       <Stack.Screen name="SelfieVerificationScreen" options={{ headerShown: false }} />
       <Stack.Screen name="EditFieldScreen" options={{ headerShown: false }} />
       <Stack.Screen name="ConnectingPreferences" options={{ headerShown: false }} />

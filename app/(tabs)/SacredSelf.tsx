@@ -37,7 +37,7 @@ export default function SacredSelf() {
     updateUserData
   } = useUserContext();
   
-  const [verified, _] = useState(userData.settings?.isSelfieVerified || false);
+  const verified = userData?.settings?.isSelfieVerified || false;
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [showLotusModal, setshowLotusModal] = useState(false);
   const [showOuroborosTooltip, setShowOuroborosTooltip] = useState(false);
@@ -48,6 +48,10 @@ export default function SacredSelf() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
   const isFullCircle = userData.subscription?.isActive;
+  
+  // Only show dev tools in development mode
+  const env = process.env.EXPO_PUBLIC_ENV || 'development';
+  const isDevelopment = env === 'development';
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -196,9 +200,13 @@ export default function SacredSelf() {
       
       <View style={[styles.header, { 
         backgroundColor: colors.background,
-        borderBottomColor: colors.border 
+        borderBottomWidth: 0
       }]}>
-        <View style={styles.headerLeft} />
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerLeftText, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            Circle
+          </Text>
+        </View>
         
         <Animated.Text style={[
           styles.animatedHeaderTitle, 
@@ -233,6 +241,17 @@ export default function SacredSelf() {
               />
             </TouchableOpacity>
           </Link>
+          {isDevelopment && (
+            <Link href="/(tabs)/DevTools" asChild>
+              <TouchableOpacity style={styles.iconButton}>
+                <Ionicons
+                  name="construct"
+                  size={22}
+                  color={colorScheme === 'dark' ? '#F5E6D3' : '#8B4513'}
+                />
+              </TouchableOpacity>
+            </Link>
+          )}
         </View>
       </View>
 
@@ -272,27 +291,47 @@ export default function SacredSelf() {
               <Text style={[styles.userName, fonts.spiritualTitleFont, { color: colors.textDark }]}>
                 {userData.firstName}
               </Text>
-              <TouchableOpacity 
-                style={[styles.verifyButton, { 
-                  backgroundColor: verified ? '#FFD700' + '20' : colors.card,
-                  borderColor: verified ? '#FFD700' : colors.border
-                }]} 
-                onPress={handleVerify}
-                activeOpacity={0.7}
-              >
-                <Ionicons 
-                  name={verified ? "checkmark-circle" : "shield-checkmark-outline"} 
-                  size={16} 
-                  color={verified ? '#FFD700' : '#000000'} 
-                />
-                <Text style={[
-                  styles.verifyText, 
-                  fonts.spiritualBodyFont,
-                  { color: verified ? '#FFD700' : '#000000' }
-                ]}>
-                  {verified ? 'Verified' : 'Verify'}
-                </Text>
-              </TouchableOpacity>
+              {!verified ? (
+                <TouchableOpacity 
+                  style={[styles.verifyButton, { 
+                    backgroundColor: colors.card,
+                    borderColor: colors.border
+                  }]} 
+                  onPress={handleVerify}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="shield-checkmark-outline" 
+                    size={16} 
+                    color="#000000" 
+                  />
+                  <Text style={[
+                    styles.verifyText, 
+                    fonts.spiritualBodyFont,
+                    { color: '#000000' }
+                  ]}>
+                    Verify
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.verifyButton, { 
+                  backgroundColor: '#8B4513' + '20',
+                  borderColor: '#8B4513'
+                }]}>
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={16} 
+                    color="#8B4513" 
+                  />
+                  <Text style={[
+                    styles.verifyText, 
+                    fonts.spiritualBodyFont,
+                    { color: '#8B4513' }
+                  ]}>
+                    Verified
+                  </Text>
+                </View>
+              )}
             </View>
             
             <View style={styles.locationRow}>
@@ -624,6 +663,11 @@ const styles = StyleSheet.create({
   headerLeft: {
     flex: 1,
   },
+  headerLeftText: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    letterSpacing: 0.5,
+  },
   animatedHeaderTitle: {
     fontWeight: Typography.weights.bold,
     letterSpacing: 0.5,
@@ -706,7 +750,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     gap: Spacing.xs,
-    backgroundColor: 'transparent',
   },
   verifyText: {
     fontSize: Typography.sizes.sm,

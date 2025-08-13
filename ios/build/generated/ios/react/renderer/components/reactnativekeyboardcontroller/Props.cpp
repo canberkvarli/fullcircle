@@ -14,6 +14,13 @@
 
 namespace facebook::react {
 
+KeyboardBackgroundViewProps::KeyboardBackgroundViewProps(
+    const PropsParserContext &context,
+    const KeyboardBackgroundViewProps &sourceProps,
+    const RawProps &rawProps): ViewProps(context, sourceProps, rawProps)
+
+    
+      {}
 KeyboardControllerViewProps::KeyboardControllerViewProps(
     const PropsParserContext &context,
     const KeyboardControllerViewProps &sourceProps,
@@ -23,6 +30,13 @@ KeyboardControllerViewProps::KeyboardControllerViewProps(
     statusBarTranslucent(convertRawProp(context, rawProps, "statusBarTranslucent", sourceProps.statusBarTranslucent, {false})),
     navigationBarTranslucent(convertRawProp(context, rawProps, "navigationBarTranslucent", sourceProps.navigationBarTranslucent, {false})),
     preserveEdgeToEdge(convertRawProp(context, rawProps, "preserveEdgeToEdge", sourceProps.preserveEdgeToEdge, {false}))
+      {}
+KeyboardExtenderProps::KeyboardExtenderProps(
+    const PropsParserContext &context,
+    const KeyboardExtenderProps &sourceProps,
+    const RawProps &rawProps): ViewProps(context, sourceProps, rawProps),
+
+    enabled(convertRawProp(context, rawProps, "enabled", sourceProps.enabled, {false}))
       {}
 KeyboardGestureAreaProps::KeyboardGestureAreaProps(
     const PropsParserContext &context,

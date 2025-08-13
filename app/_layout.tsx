@@ -10,10 +10,14 @@ import Constants from 'expo-constants';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import * as Notifications from 'expo-notifications';
+import { useRouter } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const router = useRouter();
+  
   const [fontsLoaded] = useFonts({
     'Nunito-Light': require('../assets/fonts/nunito/Nunito-Light.ttf'),
     'Nunito-Regular': require('../assets/fonts/nunito/Nunito-Regular.ttf'),
@@ -40,6 +44,28 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  // Handle notification responses (when user taps on notification)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      console.log('🔔 Notification tapped:', data);
+      
+      // Handle navigation based on notification type
+      if (data?.type === 'newMatch' && data?.matchedUserId) {
+        // Navigate to the matched user's profile
+        router.push(`/user/${data.matchedUserId}`);
+      } else if (data?.type === 'newMessage') {
+        // Navigate to chats
+        router.push('/(tabs)/SoulChats');
+      } else if (data?.type === 'newLike') {
+        // Navigate to matches or profile
+        router.push('/(tabs)/KindredSpirits');
+      }
+    });
+
+    return () => subscription.remove();
+  }, [router]);
 
   // 🔑 Get the publishable key from multiple sources
   const getPublishableKey = () => {

@@ -25,8 +25,30 @@ const { stripeWebhook } = require('./stripe/webhooks');
 // Import Weekly Lotus functions
 const { 
   assignWeeklyLotus,
-  manualAssignWeeklyLotus
+  manualAssignWeeklyLotus,
+  testWeeklyLotus,
+  resetLotusForTesting
 } = require('./weeklyLotus');
+
+// Import notification functions
+const { 
+  sendPushNotification,
+  sendLikeNotification,
+  sendMatchNotification,
+  sendMessageNotification
+} = require('./notifications');
+
+// Import test functions
+const { 
+  sendTestNotification,
+  checkNotificationStatus
+} = require('./testNotifications');
+
+// Import selfie verification functions
+const { 
+  verifySelfie,
+  getVerificationHistory
+} = require('./selfieVerification');
 
 // Export all functions
 exports.createSubscription = createSubscription;
@@ -44,3 +66,19 @@ exports.stripeWebhook = stripeWebhook;
 // Export Weekly Lotus functions
 exports.assignWeeklyLotus = assignWeeklyLotus;
 exports.manualAssignWeeklyLotus = manualAssignWeeklyLotus;
+exports.testWeeklyLotus = testWeeklyLotus;
+exports.resetLotusForTesting = resetLotusForTesting;
+
+// Export notification functions
+exports.sendPushNotification = sendPushNotification;
+exports.sendLikeNotification = sendLikeNotification;
+exports.sendMatchNotification = sendMatchNotification;
+exports.sendMessageNotification = sendMessageNotification;
+
+// Export test functions
+exports.sendTestNotification = sendTestNotification;
+exports.checkNotificationStatus = checkNotificationStatus;
+
+// Export selfie verification functions
+exports.verifySelfie = verifySelfie;
+exports.getVerificationHistory = getVerificationHistory;

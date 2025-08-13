@@ -29,6 +29,12 @@ static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_setDefaultMo
   );
   return jsi::Value::undefined();
 }
+static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_preload(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
+  static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->preload(
+    rt
+  );
+  return jsi::Value::undefined();
+}
 static jsi::Value __hostFunction_NativeKeyboardControllerCxxSpecJSI_dismiss(jsi::Runtime &rt, TurboModule &turboModule, const jsi::Value* args, size_t count) {
   static_cast<NativeKeyboardControllerCxxSpecJSI *>(&turboModule)->dismiss(
     rt,
@@ -63,6 +69,7 @@ NativeKeyboardControllerCxxSpecJSI::NativeKeyboardControllerCxxSpecJSI(std::shar
   methodMap_["getConstants"] = MethodMetadata {0, __hostFunction_NativeKeyboardControllerCxxSpecJSI_getConstants};
   methodMap_["setInputMode"] = MethodMetadata {1, __hostFunction_NativeKeyboardControllerCxxSpecJSI_setInputMode};
   methodMap_["setDefaultMode"] = MethodMetadata {0, __hostFunction_NativeKeyboardControllerCxxSpecJSI_setDefaultMode};
+  methodMap_["preload"] = MethodMetadata {0, __hostFunction_NativeKeyboardControllerCxxSpecJSI_preload};
   methodMap_["dismiss"] = MethodMetadata {1, __hostFunction_NativeKeyboardControllerCxxSpecJSI_dismiss};
   methodMap_["setFocusTo"] = MethodMetadata {1, __hostFunction_NativeKeyboardControllerCxxSpecJSI_setFocusTo};
   methodMap_["addListener"] = MethodMetadata {1, __hostFunction_NativeKeyboardControllerCxxSpecJSI_addListener};
