@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Image, Platform, useColorScheme } from "react-native";
+import React, { useRef, useEffect, useState } from "react";
+import { View, Image, Platform, useColorScheme, Animated } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 import { useUserContext } from "@/context/UserContext";
@@ -8,35 +8,85 @@ import { MatchesIconWithBadge } from "@/components/MatchesIconWithBadge";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG"; // Import your Ouroboros SVG
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader"; // Import your Ouroboros Loader
 
-// Spiritual Ouroboros icon component
-const SpiritualOuroboros = ({ 
+// Animated Spiritual Ouroboros icon component
+const AnimatedSpiritualOuroboros = ({ 
   color, 
   size, 
-  focused
+  focused,
+  userData
 }: { 
   color: string; 
   size: number; 
   focused: boolean;
-}) => (
-  <View style={{
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 2,
-    width: size + 4,
-    height: size + 4,
-  }}>
-    <OuroborosSVG
-      size={focused ? 55 : 50}
-      fillColor={focused ? '#8B4513' : color}
-      strokeColor={focused ? '#8B4513' : color}
-      strokeWidth={focused ? 1 : 0.8}
-    />
-  </View>
-);
+  userData?: any;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const animationKey = useRef(0);
 
-// Simple spiritual icon component
-const SpiritualIcon = ({ 
+  useEffect(() => {
+    // Always increment the key when focused to ensure animation restarts
+    if (focused) {
+      animationKey.current += 1;
+    }
+
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: focused ? 1.1 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: focused ? 1 : 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [focused, scaleAnim, opacityAnim]);
+
+  // Force re-render when focused to ensure animation restarts
+  const forceUpdate = useRef(0);
+  if (focused) {
+    forceUpdate.current += 1;
+  }
+
+  return (
+    <Animated.View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+      width: size + 4,
+      height: size + 4,
+      transform: [{ scale: scaleAnim }],
+      opacity: opacityAnim,
+    }}>
+      {focused ? (
+        <OuroborosLoader
+          key={`loader-${animationKey.current}-${forceUpdate.current}`}
+          size={55}
+          fillColor={userData?.subscription?.isActive ? "#FFD700" : "#8B4513"}
+          strokeColor={userData?.subscription?.isActive ? "#FFA500" : "#BFA98A"}
+          strokeWidth={1}
+          duration={2000}
+          loop={false}
+          variant="landing"
+        />
+      ) : (
+        <OuroborosSVG
+          size={50}
+          fillColor={color}
+          strokeColor={color}
+          strokeWidth={0.8}
+        />
+      )}
+    </Animated.View>
+  );
+};
+
+// Animated spiritual icon component
+const AnimatedSpiritualIcon = ({ 
   iconName, 
   color, 
   size, 
@@ -46,22 +96,44 @@ const SpiritualIcon = ({
   color: string; 
   size: number; 
   focused: boolean;
-}) => (
-  <View style={{
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 2,
-  }}>
-    <Ionicons 
-      name={iconName as any} 
-      color={focused ? '#8B4513' : color} 
-      size={focused ? size + 2 : size} 
-    />
-  </View>
-);
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
 
-// Simple spiritual avatar component
-const SpiritualAvatar = ({ 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: focused ? 1.1 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: focused ? 1 : 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [focused, scaleAnim, opacityAnim]);
+
+  return (
+    <Animated.View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+      transform: [{ scale: scaleAnim }],
+      opacity: opacityAnim,
+    }}>
+      <Ionicons 
+        name={iconName as any} 
+        color={focused ? '#8B4513' : color} 
+        size={focused ? size + 2 : size} 
+      />
+    </Animated.View>
+  );
+};
+
+// Animated spiritual avatar component
+const AnimatedSpiritualAvatar = ({ 
   photoUri, 
   color, 
   size, 
@@ -72,28 +144,60 @@ const SpiritualAvatar = ({
   size: number; 
   focused: boolean;
 }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const borderAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: focused ? 1.1 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: focused ? 1 : 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(borderAnim, {
+        toValue: focused ? 2 : 1,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [focused, scaleAnim, opacityAnim, borderAnim]);
+
   if (!photoUri) {
     return (
-      <SpiritualIcon 
-        iconName="person-circle" 
-        color={color} 
-        size={size} 
-        focused={focused} 
-      />
+      <Animated.View style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        transform: [{ scale: scaleAnim }],
+        opacity: opacityAnim,
+      }}>
+        <Ionicons 
+          name="person-circle" 
+          color={color} 
+          size={size} 
+        />
+      </Animated.View>
     );
   }
 
   return (
-    <View style={{
+    <Animated.View style={{
       alignItems: 'center',
       justifyContent: 'center',
+      transform: [{ scale: scaleAnim }],
+      opacity: opacityAnim,
     }}>
-      <View style={{
+      <Animated.View style={{
         width: size + 4,
         height: size + 4,
         borderRadius: (size + 4) / 2,
         overflow: "hidden",
-        borderWidth: focused ? 2 : 1,
+        borderWidth: borderAnim,
         borderColor: focused ? '#8B4513' : '#8B4513' + '40',
         backgroundColor: '#8B4513' + '10',
       }}>
@@ -106,8 +210,96 @@ const SpiritualAvatar = ({
             borderRadius: size / 2,
           }}
         />
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
+  );
+};
+
+// Animated LikedBy icon with badge
+const AnimatedLikedByIcon = ({ 
+  color, 
+  size, 
+  focused
+}: { 
+  color: string; 
+  size: number; 
+  focused: boolean;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: focused ? 1.1 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: focused ? 1 : 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [focused, scaleAnim, opacityAnim]);
+
+  return (
+    <Animated.View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+      transform: [{ scale: scaleAnim }],
+      opacity: opacityAnim,
+    }}>
+      <LikedByIconWithBadge 
+        color={focused ? '#8B4513' : color} 
+        size={focused ? size + 2 : size} 
+      />
+    </Animated.View>
+  );
+};
+
+// Animated Matches icon with badge
+const AnimatedMatchesIcon = ({ 
+  color, 
+  size, 
+  focused
+}: { 
+  color: string; 
+  size: number; 
+  focused: boolean;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: focused ? 1.1 : 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: focused ? 1 : 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [focused, scaleAnim, opacityAnim]);
+
+  return (
+    <Animated.View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 2,
+      transform: [{ scale: scaleAnim }],
+      opacity: opacityAnim,
+    }}>
+      <MatchesIconWithBadge 
+        color={focused ? '#8B4513' : color} 
+        size={focused ? size + 2 : size} 
+      />
+    </Animated.View>
   );
 };
 
@@ -155,10 +347,11 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Connect",
           tabBarIcon: ({ color, size, focused }) => (
-            <SpiritualOuroboros 
+            <AnimatedSpiritualOuroboros 
               color={color} 
               size={size} 
               focused={focused}
+              userData={userData}
             />
           ),
         }}
@@ -169,16 +362,11 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Spirits",
           tabBarIcon: ({ color, size, focused }) => (
-            <View style={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 2,
-            }}>
-              <LikedByIconWithBadge 
-                color={focused ? '#8B4513' : color} 
-                size={focused ? size + 2 : size} 
-              />
-            </View>
+            <AnimatedLikedByIcon 
+              color={color} 
+              size={size} 
+              focused={focused}
+            />
           ),
         }}
       />
@@ -188,16 +376,11 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Chats",
           tabBarIcon: ({ color, size, focused }) => (
-            <View style={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: 2,
-            }}>
-              <MatchesIconWithBadge 
-                color={focused ? '#8B4513' : color} 
-                size={focused ? size + 2 : size} 
-              />
-            </View>
+            <AnimatedMatchesIcon 
+              color={color} 
+              size={size} 
+              focused={focused}
+            />
           ),
         }}
       />
@@ -207,7 +390,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Self",
           tabBarIcon: ({ color, size, focused }) => (
-            <SpiritualAvatar
+            <AnimatedSpiritualAvatar
               photoUri={userData?.photos?.[0]}
               color={color}
               size={size}
@@ -223,7 +406,7 @@ export default function TabsLayout() {
           options={{
             tabBarLabel: "Dev",
             tabBarIcon: ({ color, size, focused }) => (
-              <SpiritualIcon 
+              <AnimatedSpiritualIcon 
                 iconName="construct" 
                 color={color} 
                 size={size} 
