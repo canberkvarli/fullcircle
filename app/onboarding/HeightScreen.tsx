@@ -47,6 +47,9 @@ function HeightScreen() {
     height: userData?.hiddenFields?.height || false,
   });
 
+  // Convert feet to inches for the ruler (3-8 feet = 36-96 inches)
+  const heightInInches = Math.round(selectedHeight * 12);
+
   useEffect(() => {
     if (selectedHeight < 3) {
       setSelectedHeight(3);
@@ -54,6 +57,11 @@ function HeightScreen() {
       setSelectedHeight(8);
     }
   }, [selectedHeight]);
+
+  const handleHeightChange = (inches: string) => {
+    const feet = Number(inches) / 12;
+    setSelectedHeight(feet);
+  };
 
   const handleHeightSubmit = async () => {
     try {
@@ -107,12 +115,12 @@ function HeightScreen() {
 
           <View style={styles.rulerContainer}>
             <RulerPicker
-              min={3}
-              max={8}
-              step={0.1}
-              initialValue={selectedHeight}
-              onValueChange={(number) => setSelectedHeight(Number(number))}
-              unit="ft"
+              min={36}
+              max={96}
+              step={1}
+              initialValue={heightInInches}
+              onValueChange={(number) => handleHeightChange(number)}
+              unit="in"
               width={rulerWidth}
               height={rulerHeight}
               indicatorHeight={60} // Smaller indicator

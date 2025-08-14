@@ -533,6 +533,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       justifyContent: 'center',
       alignItems: 'center',
       overflow: 'hidden',
+      position: 'relative',
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -557,6 +558,8 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     placeholderContent: {
       alignItems: 'center',
       justifyContent: 'center',
+      width: '100%',
+      height: '100%',
     },
     iconContainer: {
       width: 28,
@@ -575,14 +578,15 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     deleteButton: {
       position: 'absolute',
-      top: -6,
-      right: -6,
-      width: 18,
-      height: 18,
-      borderRadius: 9,
+      top: 0,
+      right: 0,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       backgroundColor: colors.error,
       justifyContent: 'center',
       alignItems: 'center',
+      zIndex: 10,
       ...Platform.select({
         ios: {
           shadowColor: colors.error,

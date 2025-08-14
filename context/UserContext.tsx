@@ -1839,6 +1839,7 @@ const verifyPhoneAndSetUser = async (
         // Add a small delay to ensure the component is fully mounted and router is ready
         setTimeout(() => {
           try {
+            // 🔧 FIXED: Use router.replace for final destination (no animation needed)
             router.replace({ pathname: `/(tabs)/Connect` as any });
             console.log("🧭 Navigation to Connect tab completed");
             isNavigationInProgress = false;
@@ -1847,6 +1848,7 @@ const verifyPhoneAndSetUser = async (
             // Fallback: try again after a longer delay
             setTimeout(() => {
               try {
+                // 🔧 FIXED: Use router.replace for final destination (no animation needed)
                 router.replace({ pathname: `/(tabs)/Connect` as any });
                 console.log("🧭 Fallback navigation to Connect tab completed");
                 isNavigationInProgress = false;
@@ -1868,7 +1870,8 @@ const verifyPhoneAndSetUser = async (
         // Add a small delay to ensure the component is fully mounted and router is ready
         setTimeout(() => {
           try {
-            router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
+            // 🔧 FIXED: Use router.replace for auth flow navigation (no animation needed)
+            router.replace("onboarding/PhoneNumberScreen" as any);
             console.log("🧭 Navigation to PhoneNumberScreen completed");
             isNavigationInProgress = false;
           } catch (error) {
@@ -1876,7 +1879,8 @@ const verifyPhoneAndSetUser = async (
             // Fallback: try again after a longer delay
             setTimeout(() => {
               try {
-                router.replace({ pathname: `onboarding/PhoneNumberScreen` as any });
+                // 🔧 FIXED: Use router.replace for auth flow navigation (no animation needed)
+                router.replace("onboarding/PhoneNumberScreen" as any);
                 console.log("🧭 Fallback navigation to PhoneNumberScreen completed");
                 isNavigationInProgress = false;
               } catch (fallbackError) {
@@ -3467,6 +3471,7 @@ const verifyPhoneAndSetUser = async (
         await FIREBASE_AUTH.signOut();
         console.log("✅ Firebase user signed out!");
       } else {
+        // 🔧 FIXED: Use router.replace for sign out navigation (no animation needed)
         router.replace("onboarding/LoginSignupScreen" as any);
         console.log("⚠️ No Firebase current user to sign out");
       }
@@ -3491,6 +3496,7 @@ const verifyPhoneAndSetUser = async (
         syncUserState(FIREBASE_AUTH.currentUser);
       }
       
+      // 🔧 FIXED: Use router.push for forward navigation (this is correct)
       router.push(`onboarding/${nextScreen}` as any);
     } else {
       await updateUserData({
@@ -3503,7 +3509,8 @@ const verifyPhoneAndSetUser = async (
         syncUserState(FIREBASE_AUTH.currentUser);
       }
       
-      router.replace("/(tabs)/Connect" as any); // or wherever you want to go after onboarding
+      // 🔧 FIXED: Use router.replace for final destination (no animation needed)
+      router.replace("/(tabs)/Connect" as any);
     }
   };
 
@@ -3525,11 +3532,12 @@ const verifyPhoneAndSetUser = async (
         syncUserState(FIREBASE_AUTH.currentUser);
       }
       
-      // Navigate to the actual previous screen instead of using router.back()
+      // 🔧 FIXED: Use router.back() for proper back animation, or replace for login screen
       if (previousScreen === "LoginSignupScreen") {
         router.replace("onboarding/LoginSignupScreen" as any);
       } else {
-        router.push(`onboarding/${previousScreen}` as any);
+        // Use router.back() to get proper left-to-right back animation
+        router.back();
       }
     } else {
       // If we're at the first screen, go back to login
@@ -3542,6 +3550,7 @@ const verifyPhoneAndSetUser = async (
       router.replace("onboarding/LoginSignupScreen" as any);
     } else {
       await saveProgress(screen);
+      // 🔧 FIXED: Use router.push for forward navigation (this is correct)
       router.push(`onboarding/${screen}` as any);
     }
   };
@@ -3559,6 +3568,7 @@ const verifyPhoneAndSetUser = async (
         syncUserState(FIREBASE_AUTH.currentUser);
       }
       
+      // 🔧 FIXED: Use router.replace for final destination (no animation needed)
       router.replace("/(tabs)/Connect" as any);
     } catch (error) {
       console.error("Failed to complete onboarding: ", error);
