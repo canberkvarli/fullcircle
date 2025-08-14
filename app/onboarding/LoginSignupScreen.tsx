@@ -14,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Platform } from "react-native";
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
-import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import TermsModal from "@/components/modals/TermsModal";
 
@@ -296,7 +295,7 @@ function LoginSignupScreen(): JSX.Element {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  const { buttonFont, captionFont, logoTextFont, logoTitleFont } = useFont();
+  const { buttonFont, captionFont, logoTextFont, subtitleFont, juryDutyLargeTitleFont } = useFont();
   
   return StyleSheet.create({
     container: {
@@ -339,16 +338,16 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       elevation: 10,
     },
     title: {
-      ...logoTitleFont,
+      ...juryDutyLargeTitleFont,
       color: colors.text,
-      letterSpacing: 1,
+      letterSpacing: 10,
       marginBottom: Spacing.xs,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 2, height: 2 },
       textShadowRadius: 1,
     },
     subTitle: {
-      ...logoTextFont,
+      ...subtitleFont,
       color: colors.text,
       textShadowColor: 'rgba(0, 0, 0, 0.6)',
       textShadowOffset: { width: 1, height: 1 },

@@ -2367,6 +2367,12 @@ const verifyPhoneAndSetUser = async (
         return;
       }
       
+      // 🆕 SIMPLE FIX: Wait for user's actual preferences to load before fetching
+      if (!userData.matchPreferences) {
+        console.log('⏳ Waiting for user preferences to load before initializing matching...');
+        return;
+      }
+      
       try {
         // Build exclusion set
         const exclusions = await buildExclusionSet(userData.userId);
@@ -2374,27 +2380,7 @@ const verifyPhoneAndSetUser = async (
         // Generate preferences hash
         const preferencesHash = generatePreferencesHash(userData.matchPreferences);
         
-        // If user has no match preferences, create default ones
-        if (!userData.matchPreferences) {
-          const defaultPreferences = {
-            preferredAgeRange: { min: 18, max: 70 },
-            preferredHeightRange: { min: 140, max: 220 },
-            preferredDistance: 50,
-            connectionIntent: "both" as const,
-            connectionPreferences: [],
-            connectionStyles: [],
-            spiritualCompatibility: {
-              spiritualDraws: ["Open to All"],
-              practices: ["Open to All"],
-              healingModalities: ["Open to All"]
-            },
-            datePreferences: []
-          };
-          
-          await updateUserData({ matchPreferences: defaultPreferences });
-        }
-        
-        // Fetch initial batch
+        // Fetch initial batch with user's actual preferences
         const initialBatch = await fetchPotentialMatches(true, exclusions);
         
         // Update state
@@ -2416,7 +2402,7 @@ const verifyPhoneAndSetUser = async (
     };
     
     initializeMatching();
-  }, [userData.userId, userData.onboardingCompleted, fetchPotentialMatches]); // ✅ Add fetchPotentialMatches to deps
+  }, [userData.userId, userData.onboardingCompleted, userData.matchPreferences, fetchPotentialMatches]); // ✅ Add matchPreferences to deps
 
 
   // 🆕 NEW: Track if preferences update is in progress
@@ -2571,22 +2557,26 @@ const verifyPhoneAndSetUser = async (
     
     console.log('🔄 Force refetch on return to Connect screen');
     
-    // Always fetch fresh data when returning to ensure we have latest preferences
-    try {
-      const newUsers = await fetchPotentialMatches(true); // true = reset batch
-      console.log('🔄 Force refetch completed:', newUsers.length, 'users');
-      
-      // Update state with the new users
-      setMatchingState(prev => ({
-        ...prev,
-        potentialMatches: newUsers,
-        currentIndex: 0,
-        noMoreMatches: newUsers.length === 0
-      }));
-    } catch (error) {
-      console.error('❌ Error in force refetch:', error);
+    // Only fetch if we don't already have matches
+    if (matchingState.potentialMatches.length === 0) {
+      try {
+        const newUsers = await fetchPotentialMatches(true); // true = reset batch
+        console.log('🔄 Force refetch completed:', newUsers.length, 'users');
+        
+        // Update state with the new users
+        setMatchingState(prev => ({
+          ...prev,
+          potentialMatches: newUsers,
+          currentIndex: 0,
+          noMoreMatches: newUsers.length === 0
+        }));
+      } catch (error) {
+        console.error('❌ Error in force refetch:', error);
+      }
+    } else {
+      console.log('✅ Already have matches, no need to refetch');
     }
-  }, [userData.matchPreferences, matchingState.initialized, fetchPotentialMatches]);
+  }, [userData.matchPreferences, matchingState.initialized, matchingState.potentialMatches.length, fetchPotentialMatches]);
 
   // 🆕 SIMPLIFIED: Just check if preferences changed, no refetch needed
   const checkAndRefetchIfNeeded = useCallback(() => {

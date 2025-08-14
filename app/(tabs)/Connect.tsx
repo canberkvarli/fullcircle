@@ -32,7 +32,6 @@ const ConnectScreen: React.FC = () => {
     DAILY_LIKE_LIMIT,
     userData,
     checkAndRefetchIfNeeded,
-    forceRefetchOnReturn,
   } = useUserContext();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -89,13 +88,7 @@ const ConnectScreen: React.FC = () => {
     }
   }, [matchingState.initialized, checkAndRefetchIfNeeded]);
 
-  // 🆕 NEW: Force refetch when returning to Connect screen to catch preference changes
-  useEffect(() => {
-    if (matchingState.initialized) {
-      console.log('🔄 Connect screen focused, forcing refetch to catch preference changes');
-      forceRefetchOnReturn();
-    }
-  }, [matchingState.initialized, forceRefetchOnReturn]);
+  // 🆕 REMOVED: Unnecessary force refetch that was causing glitches and multiple fetches
 
 
 
@@ -399,7 +392,7 @@ const ConnectScreen: React.FC = () => {
   // No more matches screen - only show after we've actually tried to find matches
   // 🆕 FIXED: Added fallback condition to prevent infinite loading
   if ((matchingState.noMoreMatches && matchingState.initialized && matchingState.potentialMatches.length === 0) ||
-      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch && !isLoading)) {
+      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch && !isLoading && matchingState.lastFetchedDoc !== undefined)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -482,19 +475,6 @@ const ConnectScreen: React.FC = () => {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
-        
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
-              Circle
-            </Text>
-            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Meaningful{' '}
-              <Text style={styles.highlightedWord}>connections</Text>
-              {' await'}
-            </Text>
-          </View>
-        </View>
 
         <TouchableOpacity 
           style={[
@@ -517,11 +497,7 @@ const ConnectScreen: React.FC = () => {
             strokeColor="#7B6B5C"        
             strokeWidth={1}
           />
-          
-
         </Animated.View>
-        
-
       </View>
     );
   }

@@ -107,6 +107,10 @@ export const Typography = {
     '4xl': 36,
     '5xl': 64,
     '6xl': 84,
+    '7xl': 100,
+    '8xl': 120,
+    '9xl': 140,
+    '10xl': 160,
   },
   // Use proper TypeScript types for font weights
   weights: {
@@ -142,6 +146,10 @@ export const Typography = {
 
     //Custom spritiuality font
     main: 'Spirituality',
+    
+    // New custom fonts
+    juryDuty: 'JuryDutyFont',
+    highEmpathy: 'High Empathy',
   }
 };
 

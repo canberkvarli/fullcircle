@@ -94,6 +94,26 @@ export const useFont = () => {
     // Special logo font (for "Circle" title)
     logoTitleFont: getFontStyle('6xl', 'main'),
 
+    // New custom title fonts using Jury Duty and High Empathy
+    // More Jury Duty font options (all sizes)
+    juryDutyLargeTitleFont: getFontStyle('7xl', 'juryDuty'),
+    juryDutyTitleFont: getFontStyle('4xl', 'juryDuty'),
+    juryDutySubtitleFont: getFontStyle('2xl', 'juryDuty'),
+    juryDutyBodyFont: getFontStyle('lg', 'juryDuty'),
+    juryDutyBaseFont: getFontStyle('base', 'juryDuty'),
+    juryDutyButtonFont: getFontStyle('base', 'juryDuty'),
+    juryDutyCaptionFont: getFontStyle('sm', 'juryDuty'),
+    juryDutySmallFont: getFontStyle('xs', 'juryDuty'),
+
+    // More High Empathy font options (all sizes)
+    highEmpathyLargeTitleFont: getFontStyle('7xl', 'highEmpathy'),
+    highEmpathyTitleFont: getFontStyle('3xl', 'highEmpathy'),
+    highEmpathySubtitleFont: getFontStyle('xl', 'highEmpathy'),
+    highEmpathyBodyFont: getFontStyle('base', 'highEmpathy'),
+    highEmpathyBaseFont: getFontStyle('base', 'highEmpathy'),
+    highEmpathyButtonFont: getFontStyle('base', 'highEmpathy'),
+    highEmpathyCaptionFont: getFontStyle('sm', 'highEmpathy'),
+    highEmpathySmallFont: getFontStyle('xs', 'highEmpathy'),
 
     logoSubtitleFont: getFontStyle('xl', 'main'),
     logoTextFont: getFontStyle('3xl', 'main'),

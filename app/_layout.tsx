@@ -37,6 +37,8 @@ export default function RootLayout() {
     'Raleway-Bold': require('../assets/fonts/raleway/Raleway-Bold.ttf'),
     'Raleway-Italic': require('../assets/fonts/raleway/Raleway-Italic.ttf'),
     'Spirituality': require('../assets/fonts/custom/Spirituality.ttf'),
+    'JuryDutyFont': require('../assets/fonts/custom/JuryDutyFont.ttf'),
+    'High Empathy': require('../assets/fonts/custom/High Empathy.ttf'),
   });
 
   useEffect(() => {
