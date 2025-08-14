@@ -36,6 +36,7 @@ export default function ConnectingPreferences() {
   // Modal state
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [selectedOption, setSelectedOption] = useState(connectionIntent);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
@@ -243,15 +244,10 @@ export default function ConnectingPreferences() {
 
   const handleSaveSelection = async () => {
     try {
-      Animated.timing(modalAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setShowConnectionModal(false);
-      });
-
       if (selectedOption !== connectionIntent) {
+        // Show loading state
+        setIsSaving(true);
+        
         Animated.timing(fadeAnim, {
           toValue: 0.7,
           duration: 150,
@@ -283,8 +279,24 @@ export default function ConnectingPreferences() {
             datePreferences: userData.matchPreferences?.datePreferences || [],
           },
         });
-      }
+        
+        // Add a longer delay to let the backend process the changes
+        // This prevents the flicker when returning to Connect screen
+        setTimeout(() => {
+          // Close the modal first while keeping loading state active
+          // This prevents the flicker of modal content appearing before closing
+          setShowConnectionModal(false);
+          // Reset loading state after modal is closed
+          setTimeout(() => {
+            setIsSaving(false);
+          }, 300); // Wait for modal close animation to complete
+        }, 1000); // 1 second delay
+      } else {
+        // No changes, just close modal
+        setShowConnectionModal(false);
+      } 
     } catch (error: any) {
+      setIsSaving(false);
       Alert.alert("Error", "Unable to update connection type: " + error.message);
     }
   };
@@ -565,7 +577,7 @@ export default function ConnectingPreferences() {
         <TouchableOpacity 
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={handleCancelSelection}
+          onPress={isSaving ? undefined : handleCancelSelection}
         >
           <Animated.View 
             style={[
@@ -580,88 +592,112 @@ export default function ConnectingPreferences() {
                   },
                 ],
                 opacity: modalAnimation,
+                backgroundColor: isSaving ? 'transparent' : undefined,
               }
             ]}
           >
             <TouchableOpacity activeOpacity={1}>
-              <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-                <Text style={[styles.modalTitle, fonts.modalTitleFont, { color: colors.textDark }]}>
-                  Choose Connection Type
-                </Text>
-                <Text style={[styles.modalSubtitle, fonts.modalBodyFont, { color: colors.textMuted }]}>
-                  Select how you'd like to connect with others
-                </Text>
-
-                <View style={styles.optionsContainer}>
-                  {connectionOptions.map((option) => (
-                    <TouchableOpacity
-                      key={option.id}
-                      style={[
-                        styles.optionButton,
-                        {
-                          backgroundColor: selectedOption === option.id 
-                            ? option.color + '15' 
-                            : colors.background,
-                          borderColor: selectedOption === option.id 
-                            ? option.color 
-                            : colors.border,
-                          borderWidth: selectedOption === option.id ? 2 : 1,
-                        }
-                      ]}
-                      onPress={() => handleConnectionIntentChange(option.id as "romantic" | "friendship" | "both")}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.optionContent}>
-                        <View style={styles.optionLeft}>
-                          <View style={[styles.optionIcon, { backgroundColor: option.color + '20' }]}>
-                            <Ionicons 
-                              name={option.icon as any} 
-                              size={24} 
-                              color={option.color} 
-                            />
-                          </View>
-                          <View style={styles.optionText}>
-                            <Text style={[styles.optionTitle, fonts.modalBodyFont, { 
-                              color: selectedOption === option.id ? option.color : colors.textDark,
-                              fontWeight: selectedOption === option.id ? Typography.weights.bold : Typography.weights.semibold
-                            }]}>
-                              {option.title}
-                            </Text>
-                            <Text style={[styles.optionSubtitle, fonts.modalBodyFont, { color: colors.textMuted }]}>
-                              {option.subtitle}
-                            </Text>
-                          </View>
-                        </View>
-                        
-                        <View style={styles.checkmarkContainer}>
-                          {selectedOption === option.id && (
-                            <Ionicons name="checkmark-circle" size={24} color={option.color} />
-                          )}
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <View style={styles.modalActions}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    onPress={handleCancelSelection}
-                  >
-                    <Text style={[styles.cancelButtonText, fonts.modalBodyFont, { color: colors.textMuted }]}>
-                      Cancel
+              <View style={[
+                styles.modalContent, 
+                { 
+                  backgroundColor: isSaving ? 'transparent' : colors.card 
+                }
+              ]}>
+                {isSaving ? (
+                  // Show just the Ouroboros spinner when saving - centered content
+                  <View style={styles.modalLoadingContent}>
+                    <OuroborosSVG
+                      size={80}
+                      fillColor={colors.primary}
+                      strokeColor={colors.primary}
+                      strokeWidth={2}
+                    />
+                    <Text style={[styles.modalLoadingText, fonts.modalBodyFont, { color: colors.textDark, marginTop: Spacing.lg }]}>
+                      Updating your intention...
                     </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
-                    onPress={handleSaveSelection}
-                  >
-                    <Text style={[styles.saveButtonText, fonts.modalBodyFont]}>
-                      Save
+                  </View>
+                ) : (
+                  // Show the normal modal content when not saving
+                  <>
+                    <Text style={[styles.modalTitle, fonts.modalTitleFont, { color: colors.textDark }]}>
+                      Choose Connection Type
                     </Text>
-                  </TouchableOpacity>
-                </View>
+                    <Text style={[styles.modalSubtitle, fonts.modalBodyFont, { color: colors.textMuted }]}>
+                      Select how you'd like to connect with others
+                    </Text>
+
+                    <View style={styles.optionsContainer}>
+                      {connectionOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option.id}
+                          style={[
+                            styles.optionButton,
+                            {
+                              backgroundColor: selectedOption === option.id 
+                                ? option.color + '15' 
+                                : colors.background,
+                              borderColor: selectedOption === option.id 
+                                ? option.color 
+                                : colors.border,
+                              borderWidth: selectedOption === option.id ? 2 : 1,
+                            }
+                          ]}
+                          onPress={() => handleConnectionIntentChange(option.id as "romantic" | "friendship" | "both")}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.optionContent}>
+                            <View style={styles.optionLeft}>
+                              <View style={[styles.optionIcon, { backgroundColor: option.color + '20' }]}>
+                                <Ionicons 
+                                  name={option.icon as any} 
+                                  size={24} 
+                                  color={option.color} 
+                                />
+                              </View>
+                              <View style={styles.optionText}>
+                                <Text style={[styles.optionTitle, fonts.modalBodyFont, { 
+                                  color: selectedOption === option.id ? option.color : colors.textDark,
+                                  fontWeight: selectedOption === option.id ? Typography.weights.bold : Typography.weights.semibold
+                                }]}>
+                                  {option.title}
+                                </Text>
+                                <Text style={[styles.optionSubtitle, fonts.modalBodyFont, { color: colors.textMuted }]}>
+                                  {option.subtitle}
+                                </Text>
+                              </View>
+                            </View>
+                            
+                            <View style={styles.checkmarkContainer}>
+                              {selectedOption === option.id && (
+                                <Ionicons name="checkmark-circle" size={24} color={option.color} />
+                              )}
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    <View style={styles.modalActions}>
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                        onPress={handleCancelSelection}
+                      >
+                        <Text style={[styles.cancelButtonText, fonts.modalBodyFont, { color: colors.textMuted }]}>
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
+                        onPress={handleSaveSelection}
+                      >
+                        <Text style={[styles.saveButtonText, fonts.modalBodyFont]}>
+                          Save
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -933,6 +969,7 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
   modalContent: {
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
+    position: 'relative',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -1049,5 +1086,38 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.semibold,
     color: 'white',
+  },
+
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    borderRadius: BorderRadius.xl,
+    // No background - just the spinner and text
+  },
+
+  modalLoadingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: Spacing['2xl'],
+    // Completely transparent - no background
+  },
+
+  modalLoadingText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
   },
 });

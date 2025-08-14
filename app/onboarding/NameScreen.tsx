@@ -221,7 +221,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont, // Keeping the font for consistency
+      ...fonts.spiritualityTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -229,7 +229,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont, // Keeping the font but removing italics
+      ...fonts.spiritualitySubtitleFont,
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.md, // Reduced from xl to md
@@ -245,7 +245,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       position: 'relative', // For positioning the underline
     },
     input: {
-      ...fonts.inputFont,
+      ...fonts.spiritualityBaseFont,
       height: 48, // Slightly shorter than before
       paddingVertical: Spacing.xs,
       paddingHorizontal: 0, // No horizontal padding for underline style
@@ -266,14 +266,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.md, // Reduced from xl to md
     },
     optionalText: {
-      ...fonts.spiritualBodyFont, // Keeping font but removing italics
+      ...fonts.spiritualityBodyFont,
       fontStyle: "normal", // Changed from italic
       color: colors.textMuted,
       lineHeight: Typography.sizes.base * 1.3, // Reduced line height slightly
       fontSize: Typography.sizes.sm, // Made text slightly smaller
     },
     linkText: {
-      ...fonts.buttonFont,
+      ...fonts.spiritualityButtonFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
@@ -284,7 +284,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.lg,
     },
     affirmation: {
-      ...fonts.elegantItalicFont, // Using Raleway italic for elegant feel
+      ...fonts.spiritualityAffirmationFont,
       textAlign: "left",
       color: colors.textDark, // Darker color for better visibility
       lineHeight: Typography.sizes.lg * 1.5,
@@ -376,14 +376,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualTitleFont, // Keeping the font
+      ...fonts.spiritualityTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.spiritualBodyFont, // Keeping font but removing italics
+      ...fonts.spiritualityBodyFont,
       textAlign: "center",
       color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
@@ -391,7 +391,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "normal", // Changed from italic
     },
     modalSubText: {
-      ...fonts.captionFont,
+      ...fonts.spiritualityCaptionFont,
       textAlign: "center",
       color: colors.primary,
       marginBottom: Spacing.xl,
@@ -417,7 +417,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalCloseText: {
-      ...fonts.buttonFont,
+      ...fonts.spiritualityButtonFont,
       color: colors.background,
       textAlign: 'center',
     },

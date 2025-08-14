@@ -341,7 +341,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       elevation: 10,
     },
     title: {
-      ...fonts.spiritualityLargeTitleFont,
+      ...fonts.spiritualityHeroFont,
       color: colors.text,
       letterSpacing: 0,
       marginBottom: 2,
@@ -350,9 +350,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 1,
     },
     subTitle: {
-      ...fonts.spiritualSubtitleFont,
+      ...fonts.spiritualityAffirmationFont,
       color: colors.text,
-      // Use a bolder custom font style for the subtitle, but keep the size similar to spiritualityHeadingFont
+      // Enhanced styling for the subtitle to make it more vibrant and impactful
       textShadowColor: 'rgba(11, 8, 8, 0.6)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
@@ -404,7 +404,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderColor: colors.primary,
     },
     buttonText: {
-      ...fonts.buttonFont,
+      ...fonts.spiritualityButtonFont,
       color: colors.text,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -440,7 +440,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     termsText: {
-      ...fonts.captionFont,
+      ...fonts.spiritualityCaptionFont,
       color: colors.text,
       textAlign: "center",
       lineHeight: 18,
@@ -450,7 +450,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 2,
     },
     termsLink: {
-      ...fonts.buttonFont,
+      ...fonts.spiritualityButtonFont,
       color: '#F5E6D3',
       textDecorationLine: "underline",
       fontWeight: '600',

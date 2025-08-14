@@ -96,17 +96,9 @@ const ConnectScreen: React.FC = () => {
     if (matchingState.initialized && userData.userId) {
       // Small delay to ensure state has propagated from preference changes
       setTimeout(() => {
-        // Show loading state while refetching
-        setIsLoading(true);
-        setShowContent(false);
-        
-        forceRefetchOnReturn().finally(() => {
-          // Hide loading state after refetch completes
-          setTimeout(() => {
-            setIsLoading(false);
-            setShowContent(true);
-          }, 500);
-        });
+        // Let the main loading state logic handle the loading states
+        // Just trigger the refetch
+        forceRefetchOnReturn();
       }, 100); // Small delay to let state settle
     }
   }, [matchingState.initialized, userData.userId, forceRefetchOnReturn]);
@@ -423,7 +415,8 @@ const ConnectScreen: React.FC = () => {
       !isLoading && 
       matchingState.potentialMatches.length === 0 && 
       matchingState.noMoreMatches &&
-      matchingState.lastFetchedDoc !== undefined) { // Ensure we've actually tried to fetch
+      matchingState.lastFetchedDoc !== undefined && 
+      !actionInProgress) { // Also don't show during actions to prevent flash
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -501,8 +494,11 @@ const ConnectScreen: React.FC = () => {
     );
   }
 
-  // Enhanced loading screen
-  if (isLoading || (!showContent && !matchingState.noMoreMatches)) {
+  // Enhanced loading screen - prevent flash of no matches container
+  if (isLoading || 
+      !showContent || 
+      matchingState.loadingBatch || 
+      (matchingState.potentialMatches.length === 0 && !matchingState.noMoreMatches)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />

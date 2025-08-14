@@ -223,7 +223,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualityTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,
@@ -231,7 +231,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualSubtitleFont,
+      ...fonts.spiritualitySubtitleFont,
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.md,
@@ -246,7 +246,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       position: 'relative',
     },
     input: {
-      ...fonts.inputFont,
+      ...fonts.spiritualityBaseFont,
       height: 48,
       paddingVertical: Spacing.xs,
       paddingHorizontal: 0,
@@ -267,13 +267,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       alignItems: 'flex-start',
     },
     privacyNote: {
-      ...fonts.captionFont,
+      ...fonts.spiritualityCaptionFont,
       color: colors.textMuted,
       fontSize: Typography.sizes.xs,
     },
 
     linkText: {
-      ...fonts.captionFont,
+      ...fonts.spiritualityCaptionFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
@@ -282,7 +282,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
 
     affirmation: {
-      ...fonts.elegantItalicFont,
+      ...fonts.spiritualityAffirmationFont,
       textAlign: "left",
       color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
@@ -356,14 +356,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualityTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.spiritualBodyFont,
+      ...fonts.spiritualityBodyFont,
       textAlign: "center",
       color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
@@ -371,7 +371,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "normal",
     },
     modalSubText: {
-      ...fonts.captionFont,
+      ...fonts.spiritualityCaptionFont,
       textAlign: "center",
       color: colors.primary,
       marginBottom: Spacing.xl,
@@ -397,7 +397,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalCloseText: {
-      ...fonts.buttonFont,
+      ...fonts.spiritualityButtonFont,
       color: colors.background,
       textAlign: 'center',
     },
