@@ -94,6 +94,7 @@ export const useFont = () => {
     // Spiritual fonts (Spirituality) - for spiritual content, affirmations, special text
     spiritualityLargeTitleFont: getFontStyle('7xl', 'spirituality'),
     spiritualityTitleFont: getFontStyle('6xl', 'spirituality'),
+    spiritualityLargeSubtitleFont: getFontStyle('5xl', 'spirituality'),
     spiritualitySubtitleFont: getFontStyle('4xl', 'spirituality'),
     spiritualityHeadingFont: getFontStyle('3xl', 'spirituality'),
     spiritualityBodyFont: getFontStyle('lg', 'spirituality'),

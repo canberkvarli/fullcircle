@@ -2415,11 +2415,14 @@ const verifyPhoneAndSetUser = async (
       hasPreferences: !!userData.matchPreferences,
       isInitialized: matchingState.initialized,
       connectionIntent: userData.matchPreferences?.connectionIntent,
-      preferencesHash: matchingState.preferencesHash.substring(0, 50) + '...'
+      preferencesHash: matchingState.preferencesHash.substring(0, 50) + '...',
+      isLoading: matchingState.loadingBatch
     });
     
     // Only run when we have preferences and are initialized
     if (!userData.matchPreferences || !matchingState.initialized) return;
+    
+
     
     // 🔧 ADDED: Log the exact data being hashed
     console.log('🔍 Preferences change detection - Raw data:', {
@@ -2450,16 +2453,16 @@ const verifyPhoneAndSetUser = async (
     if (hashChanged) {
       console.log('🔄 Preferences hash changed, triggering single refetch');
       
-      // 🔧 FIXED: Update hash first to prevent duplicate triggers
-      setMatchingState(prev => ({
-        ...prev,
-        preferencesHash: currentHash, // Update hash immediately
-        potentialMatches: [],
-        currentIndex: 0,
-        lastFetchedDoc: null,
-        noMoreMatches: false,
-        loadingBatch: true // Show loading state
-      }));
+              // 🔧 FIXED: Update hash first to prevent duplicate triggers
+        setMatchingState(prev => ({
+          ...prev,
+          preferencesHash: currentHash, // Update hash immediately
+          potentialMatches: [],
+          currentIndex: 0,
+          lastFetchedDoc: null,
+          noMoreMatches: false,
+          loadingBatch: true // Show loading state
+        }));
       
       // Single fetch with new preferences and update state with results
       const fetchAndUpdate = async () => {
@@ -2476,6 +2479,8 @@ const verifyPhoneAndSetUser = async (
             noMoreMatches: newUsers.length === 0,
             loadingBatch: false
           }));
+          
+          console.log('✅ Preferences refetch completed successfully');
         } catch (error) {
           console.error('❌ Error fetching new users:', error);
           // Reset loading state on error
@@ -2490,7 +2495,7 @@ const verifyPhoneAndSetUser = async (
     } else {
       console.log('✅ Hash unchanged, no refetch needed');
     }
-  }, [userData.matchPreferences, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches, generatePreferencesHash]);
+  }, [userData.matchPreferences, matchingState.initialized, fetchPotentialMatches, generatePreferencesHash]);
 
   // 🔧 STABLE: Smart refetch when returning to Connect screen
   const forceRefetchOnReturn = useCallback(async () => {
