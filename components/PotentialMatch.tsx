@@ -315,35 +315,65 @@ const PotentialMatch: React.FC<Props> = ({
   // Render pills with proper styling and highlighting for shared items
   const renderPills = (items: string[], color: string, sharedItems: string[] = []) => (
     <View style={styles.pillsContainer}>
-      {items.slice(0, 6).map((item, index) => {
-        const isShared = sharedItems.includes(item);
-        return (
-          <View key={index} style={[
+      {/* Show shared items first */}
+      {items
+        .slice(0, 6)
+        .filter(item => sharedItems.includes(item))
+        .map((item, index) => (
+          <View key={`shared-${index}`} style={[
             styles.pill, 
-            isShared && styles.sharedPill,
             { 
-              backgroundColor: isShared ? color + '40' : color + '15',
-              borderColor: isShared ? color : color + '30',
-              borderWidth: isShared ? 2 : 1,
-              shadowColor: isShared ? color : 'transparent',
-              shadowOffset: isShared ? { width: 0, height: 2 } : { width: 0, height: 0 },
-              shadowOpacity: isShared ? 0.3 : 0,
-              shadowRadius: isShared ? 4 : 0,
-              elevation: isShared ? 4 : 0,
+              backgroundColor: color + '40',
+              borderColor: color,
+              borderWidth: 2,
+              shadowColor: color,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 4,
             }
           ]}>
             <Text style={[
               styles.pillText, 
               { 
-                color: isShared ? color : colors.textMuted,
-                fontWeight: isShared ? Typography.weights.bold : Typography.weights.medium
+                color: color,
+                fontWeight: Typography.weights.bold
               }
             ]}>
               {item}
             </Text>
           </View>
-        );
-      })}
+        ))}
+      
+      {/* Then show non-shared items */}
+      {items
+        .slice(0, 6)
+        .filter(item => !sharedItems.includes(item))
+        .map((item, index) => (
+          <View key={`non-shared-${index}`} style={[
+            styles.pill, 
+            { 
+              backgroundColor: color + '15',
+              borderColor: color + '30',
+              borderWidth: 1,
+              shadowColor: 'transparent',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0,
+              shadowRadius: 0,
+              elevation: 0,
+            }
+          ]}>
+            <Text style={[
+              styles.pillText, 
+              { 
+                color: colors.textMuted,
+                fontWeight: Typography.weights.medium
+              }
+            ]}>
+              {item}
+            </Text>
+          </View>
+        ))}
       {items.length > 6 && (
         <View style={[styles.pill, styles.morePill, { 
           backgroundColor: color + '10',
@@ -432,35 +462,63 @@ const PotentialMatch: React.FC<Props> = ({
             )}
             
             <View style={styles.pillsContainer}>
-              {displayItems.map((item, index) => {
-                const isShared = sharedItems.includes(item);
-                return (
-                  <View key={index} style={[
+              {/* Show shared items first */}
+              {displayItems
+                .filter(item => sharedItems.includes(item))
+                .map((item, index) => (
+                  <View key={`shared-${index}`} style={[
                     styles.pill, 
-                    isShared && styles.sharedPill,
                     { 
-                      backgroundColor: isShared ? cardColor + '40' : cardColor + '15',
-                      borderColor: isShared ? cardColor : cardColor + '30',
-                      borderWidth: isShared ? 2 : 1,
-                      shadowColor: isShared ? cardColor : 'transparent',
-                      shadowOffset: isShared ? { width: 0, height: 2 } : { width: 0, height: 0 },
-                      shadowOpacity: isShared ? 0.3 : 0,
-                      shadowRadius: isShared ? 4 : 0,
-                      elevation: isShared ? 4 : 0,
+                      backgroundColor: cardColor + '40',
+                      borderColor: cardColor,
+                      borderWidth: 2,
+                      shadowColor: cardColor,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 4,
+                      elevation: 4,
                     }
                   ]}>
                     <Text style={[
                       styles.pillText, 
                       { 
-                        color: isShared ? cardColor : colors.textMuted,
-                        fontWeight: isShared ? Typography.weights.bold : Typography.weights.medium
+                        color: cardColor,
+                        fontWeight: Typography.weights.bold
                       }
                     ]}>
                       {item}
                     </Text>
                   </View>
-                );
-              })}
+                ))}
+              
+              {/* Then show non-shared items */}
+              {displayItems
+                .filter(item => !sharedItems.includes(item))
+                .map((item, index) => (
+                  <View key={`non-shared-${index}`} style={[
+                    styles.pill, 
+                    { 
+                      backgroundColor: cardColor + '20',
+                      borderColor: cardColor + '30',
+                      borderWidth: 1,
+                      shadowColor: 'transparent',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: 0,
+                      shadowRadius: 0,
+                      elevation: 0,
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.pillText, 
+                      { 
+                        color: colors.textMuted,
+                        fontWeight: Typography.weights.medium
+                      }
+                    ]}>
+                      {item}
+                    </Text>
+                  </View>
+                ))}
               {hasMore && !isExpanded && (
                 <TouchableOpacity 
                   style={[styles.pill, {
@@ -618,9 +676,7 @@ const PotentialMatch: React.FC<Props> = ({
           </View>
 
           {/* Connection Intent Description with custom icons */}
-          <View style={[styles.connectionIntentRow, { 
-            backgroundColor: connectionColors.secondary,
-          }]}>
+          <View style={styles.connectionIntentRow}>
             {renderIcon(connectionIcon.name, connectionIcon.iconType, 26, connectionColors.primary)}
             <Text style={[styles.connectionIntentDescription, { color: connectionColors.primary }]}>
               {currentPotentialMatch.matchPreferences?.connectionIntent === "romantic" ? "Looking for romantic connections" 
@@ -697,9 +753,8 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   connectionIntentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.lg,
+    paddingHorizontal: 0,
+    paddingVertical: Spacing.xs,
     marginTop: Spacing.sm,
     gap: Spacing.sm,
   },
@@ -867,7 +922,7 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
 
   sharedText: {
     fontSize: Typography.sizes.xs,
-    fontWeight: Typography.weights.normal,
+    fontWeight: Typography.weights.regular,
     textAlign: 'left',
     opacity: 0.6,
   },

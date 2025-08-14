@@ -8,6 +8,7 @@
     "env:staging": "cp config/staging/.env . && cp config/staging/google-services.json . && cp config/staging/GoogleService-Info.plist . && firebase use fullcircle-staging",
     "env:prod": "cp config/prod/.env . && cp config/prod/google-services.json . && cp config/prod/GoogleService-Info.plist . && firebase use fullcircle-prod",
     "dev": "npm run env:dev && EXPO_PUBLIC_ENV=development expo start",
+    "dev:tunnel": "npm run env:dev && EXPO_PUBLIC_ENV=development expo start --tunnel",
     "dev:clear": "npm run env:dev && EXPO_PUBLIC_ENV=development expo start --clear",
     "staging": "npm run env:staging && EXPO_PUBLIC_ENV=staging expo start",
     "prod": "npm run env:prod && EXPO_PUBLIC_ENV=production expo start",
@@ -53,12 +54,14 @@
     "expo-checkbox": "~4.0.1",
     "expo-constants": "~17.0.3",
     "expo-dev-client": "~5.0.3",
+    "expo-device": "~7.0.3",
     "expo-font": "~13.0.1",
     "expo-image": "~2.0.0",
     "expo-image-manipulator": "~13.0.1",
     "expo-image-picker": "~16.0.2",
     "expo-linking": "~7.0.2",
     "expo-location": "~18.0.2",
+    "expo-notifications": "~0.29.14",
     "expo-router": "~4.0.9",
     "expo-splash-screen": "~0.29.12",
     "expo-status-bar": "~2.0.0",
@@ -85,9 +88,7 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
     "stripe": "^18.3.0",
-    "uuid": "^10.0.0",
-    "expo-notifications": "~0.28.0",
-    "expo-device": "~7.0.3"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",

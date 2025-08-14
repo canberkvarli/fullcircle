@@ -15,11 +15,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { useUserContext } from "@/context/UserContext";
+
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
+
 import { useFont } from "@/hooks/useFont";
-import * as ImagePicker from 'expo-image-picker';
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 import { SelfieVerificationService, VerificationResult } from "@/services/SelfieVerificationService";
+import * as ImagePicker from 'expo-image-picker';
+
+// Soft, spiritual cherry red color scheme
+const CHERRY_RED = '#A67C8E';
+const CHERRY_RED_LIGHT = '#C4A5A7';
+const CHERRY_RED_DARK = '#8B6B7A';
 
 export default function SelfieVerificationScreen() {
   const router = useRouter();
@@ -35,6 +42,7 @@ export default function SelfieVerificationScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
   
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -83,41 +91,30 @@ export default function SelfieVerificationScreen() {
     }).start();
   };
 
-  const requestCameraPermission = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Camera Access',
-        'We need camera permission to verify your divine essence. Please enable camera access in your device settings.'
-      );
-      return false;
-    }
-    return true;
-  };
-
   const takeSelfie = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
-
     try {
+      // Request camera permission
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Camera permission is required to take a selfie.');
+        return;
+      }
+
+      // Launch camera with front camera
       const result = await ImagePicker.launchCameraAsync({
-        // @ts-ignore - suppressing deprecation warning until library is updated
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
+        allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
-        base64: true,
+        cameraType: ImagePicker.CameraType.front,
       });
 
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         setCapturedImage(result.assets[0].uri);
         setVerificationStep('capture');
-      } else {
-        setVerificationStep('intro');
       }
     } catch (error) {
-      Alert.alert('Cosmic Interference', 'Unable to access your camera. Please try again.');
-      setVerificationStep('intro');
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
     }
   };
 
@@ -192,8 +189,8 @@ export default function SelfieVerificationScreen() {
   const renderIntroStep = () => (
     <View style={styles.contentContainer}>
       <View style={styles.iconContainer}>
-        <View style={[styles.iconBackground, { backgroundColor: '#9D4EDD' + '20' }]}>
-          <Ionicons name="aperture" size={48} color="#9D4EDD" />
+        <View style={[styles.iconBackground, { backgroundColor: CHERRY_RED + '20' }]}>
+          <Ionicons name="aperture" size={48} color={CHERRY_RED_LIGHT} />
         </View>
       </View>
       
@@ -217,7 +214,7 @@ export default function SelfieVerificationScreen() {
           'Be in a quiet space where you can focus'
         ].map((instruction, index) => (
           <View key={index} style={styles.instructionRow}>
-            <Ionicons name="checkmark-circle" size={16} color="#9D4EDD" />
+            <Ionicons name="checkmark-circle" size={16} color={CHERRY_RED_LIGHT} />
             <Text style={[styles.instructionText, fonts.captionFont]}>
               {instruction}
             </Text>
@@ -485,6 +482,8 @@ export default function SelfieVerificationScreen() {
     }
   };
 
+
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Floating Back Button */}
@@ -578,8 +577,9 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       borderRadius: 50,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
-      borderColor: '#9D4EDD' + '40',
+      borderWidth: 1,
+      borderColor: CHERRY_RED_LIGHT + '30',
+      backgroundColor: CHERRY_RED + '10',
     },
     title: {
       fontSize: Typography.sizes['2xl'],
@@ -713,20 +713,22 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#9D4EDD',
-      borderRadius: BorderRadius.lg,
+      backgroundColor: CHERRY_RED,
+      borderRadius: BorderRadius.xl,
       paddingVertical: Spacing.lg,
       paddingHorizontal: Spacing.xl,
       width: '100%',
+      borderWidth: 1,
+      borderColor: CHERRY_RED_LIGHT,
       ...Platform.select({
         ios: {
-          shadowColor: '#9D4EDD',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          shadowColor: CHERRY_RED,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4,
         },
         android: {
-          elevation: 6,
+          elevation: 2,
         },
       }),
     },

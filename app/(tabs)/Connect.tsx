@@ -399,7 +399,7 @@ const ConnectScreen: React.FC = () => {
   // No more matches screen - only show after we've actually tried to find matches
   // 🆕 FIXED: Added fallback condition to prevent infinite loading
   if ((matchingState.noMoreMatches && matchingState.initialized && matchingState.potentialMatches.length === 0) ||
-      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch)) {
+      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch && !isLoading)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
