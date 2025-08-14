@@ -137,37 +137,14 @@ function EmailScreen() {
       return;
     }
     
-    // Check for basic email format
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    
-    if (!emailRegex.test(emailToValidate)) {
-      setIsEmailValid(false);
+    // For optional email, we'll be more lenient - just check basic structure
+    // Allow incomplete emails since they can be completed later
+    if (emailToValidate.includes('@')) {
+      setIsEmailValid(true);
       return;
     }
     
-    // Check for common issues
-    if (emailToValidate.includes('..')) {
-      setIsEmailValid(false);
-      return;
-    }
-    
-    if (emailToValidate.startsWith('.') || emailToValidate.endsWith('.')) {
-      setIsEmailValid(false);
-      return;
-    }
-    
-    if (emailToValidate.includes('@.') || emailToValidate.includes('.@')) {
-      setIsEmailValid(false);
-      return;
-    }
-    
-    // Check domain length
-    const domain = emailToValidate.split('@')[1];
-    if (domain && domain.length > 253) {
-      setIsEmailValid(false);
-      return;
-    }
-    
+    // If no @ symbol, still valid (user might be typing)
     setIsEmailValid(true);
   };
 
@@ -178,14 +155,8 @@ function EmailScreen() {
     }
     validateEmail(text);
     
-    // Delay showing error feedback to avoid immediate red border
-    if (text.trim() && !isEmailValid) {
-      setTimeout(() => {
-        setShowErrorFeedback(true);
-      }, 1000); // 1 second delay
-    } else {
-      setShowErrorFeedback(false);
-    }
+    // Since email is optional, don't show error feedback for incomplete emails
+    setShowErrorFeedback(false);
   };
 
   const isGoogleConnected = () => {
@@ -197,15 +168,10 @@ function EmailScreen() {
   };
 
   const handleEmailSubmit = async () => {
-    // Email is optional, so only validate if user entered something
-    if (email.trim() !== "" && !isEmailValid) {
-      setEmailError("Please enter a valid email address");
-      return;
-    }
-
+    // Email is optional - allow any input or empty string
     try {
       await updateUserData({
-        email: email.trim() || "", // Save empty string if no email provided
+        email: email.trim(), // Save whatever the user typed, even if incomplete
         marketingRequested: marketingRequested ? false : true,
       });
       setModalVisible(true);
@@ -346,7 +312,7 @@ function EmailScreen() {
 
         <OnboardingProgressBar currentScreen="EmailScreen" />
 
-        <Text style={styles.title}>stay in touch</Text>
+        <Text style={styles.title}>Stay in touch</Text>
         
         <View style={styles.inputWrapper}>
           <TextInput
@@ -544,7 +510,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualityTitleFont,
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.lg,

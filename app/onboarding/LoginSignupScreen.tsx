@@ -197,8 +197,10 @@ function LoginSignupScreen(): JSX.Element {
               </View>
             </Animated.View>
             
-            <Text style={styles.title}>circle</Text>
-            <Text style={styles.subTitle}>Where intention meets connection</Text>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>circle</Text>
+              <Text style={styles.subTitle}>Where intention meets connection</Text>
+            </View>
           </View>
           
           {/* Buttons Section - Fixed positioning */}
@@ -325,9 +327,12 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     },
     titleSection: {
       alignItems: 'center',
-      marginTop: Spacing["4xl"],
       flex: 1,
       justifyContent: 'center',
+    },
+    titleContainer: {
+      alignItems: 'center',
+      gap: Spacing.xs,
     },
     logoContainer: {
       alignItems: 'center',
@@ -344,18 +349,15 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       ...fonts.spiritualityHeroFont,
       color: colors.text,
       letterSpacing: 0,
-      marginBottom: 2,
+      marginBottom: 0,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 2, height: 2 },
       textShadowRadius: 1,
     },
     subTitle: {
-      ...fonts.spiritualityAffirmationFont,
+      ...fonts.elegantSubtitleFont,
       color: colors.text,
-      // Enhanced styling for the subtitle to make it more vibrant and impactful
-      textShadowColor: 'rgba(11, 8, 8, 0.6)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3,
+      fontWeight: 'bold',
     },
     buttonSection: {
       width: '100%',

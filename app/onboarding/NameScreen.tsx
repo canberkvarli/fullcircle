@@ -103,7 +103,7 @@ function NameScreen() {
           <OnboardingProgressBar currentScreen="NameScreen" />
 
           {/* Title */}
-          <Text style={styles.title}>What should we call you</Text>
+          <Text style={styles.title}>What should we call you?</Text>
 
           {/* Input Fields - with underline style */}
           <View style={styles.inputContainer}>
@@ -221,7 +221,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualityTitleFont,
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.sm,

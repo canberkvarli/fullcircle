@@ -274,6 +274,7 @@ function PhoneNumberScreen(): JSX.Element {
           ]}
         >
           <Text style={styles.title}>Let's connect you</Text>
+          <Text style={styles.subtitle}>Enter your phone number to get started</Text>
         </Animated.View>
         
         <View style={styles.mainContent}>
@@ -479,7 +480,7 @@ const createStyles = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
       letterSpacing: 0.5,
     },
     title: {
-      ...fonts.spiritualityVibrantTitleFont,
+      ...fonts.spiritualTitleFont,
       color: colors.textDark,
       marginBottom: Spacing.xs,
     },
@@ -488,11 +489,7 @@ const createStyles = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
       fontSize: Typography.sizes.base,
       color: colors.textMuted,
       lineHeight: Typography.sizes.base * 1.5,
-    },
-    previewContainer: {
-      marginTop: Spacing.lg,
-      padding: Spacing.md,
-      backgroundColor: colors.primary + '10',
+   backgroundColor: colors.primary + '10',
       borderRadius: BorderRadius.md,
       alignItems: 'center',
     },
@@ -514,7 +511,7 @@ const createStyles = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
       marginBottom: Spacing.lg,
     },
     affirmation: {
-      ...fonts.elegantItalicFont,
+      ...fonts.spiritualSubtitleFont,
       color: colors.textDark,
       textAlign: 'center',
       lineHeight: Typography.sizes.lg * 1.6,
