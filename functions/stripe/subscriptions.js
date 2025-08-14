@@ -37,13 +37,27 @@ const createSubscription = onCall({
     }
 
     const userData = userDoc.data();
+    
+    // Validate email is present and valid
+    if (!userData.email || !userData.email.trim()) {
+      throw new HttpsError('invalid-argument', 'Email address is required for subscription');
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email.trim())) {
+      throw new HttpsError('invalid-argument', 'Invalid email address format');
+    }
+    
+    console.log(`📧 Using validated email: ${userData.email.trim()}`);
+    
     let customerId = userData.subscription?.stripeCustomerId || userData.stripeCustomerId;
 
     // Create customer if doesn't exist
     if (!customerId) {
       console.log('👤 Creating new Stripe customer...');
       const customer = await stripe.customers.create({
-        email: userData.email,
+        email: userData.email.trim(), // Use validated and trimmed email
         name: userData.fullName || `${userData.firstName} ${userData.familyName}`,
         metadata: {
           firebaseUID: userId,

@@ -3,8 +3,21 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, '.env') });
+// Load environment variables from multiple possible locations
+const envPaths = [
+  path.join(__dirname, '.env'),                    // functions/.env
+  path.join(__dirname, '..', '.env'),             // root/.env
+  path.join(__dirname, '..', 'config', 'dev', '.env'), // config/dev/.env
+];
+
+// Try to load from each path
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    console.log(`📁 Loading environment from: ${envPath}`);
+    dotenv.config({ path: envPath });
+    break;
+  }
+}
 
 class ConfigLoader {
   constructor() {
@@ -14,6 +27,14 @@ class ConfigLoader {
 
   loadConfig() {
     try {
+      // Load Stripe configuration
+      this.config.stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+      if (!this.config.stripeSecretKey) {
+        console.warn('⚠️ Warning: STRIPE_SECRET_KEY not found in environment variables');
+      } else {
+        console.log('✅ Stripe secret key loaded');
+      }
+
       // Parse Google Cloud Vision credentials
       if (process.env.GOOGLE_CLOUD_VISION_CREDENTIALS) {
         try {
@@ -34,7 +55,7 @@ class ConfigLoader {
           throw new Error('Invalid Google Cloud Vision credentials format. Must be valid JSON.');
         }
       } else {
-        throw new Error('Missing required configuration: GOOGLE_CLOUD_VISION_CREDENTIALS');
+        console.warn('⚠️ Warning: GOOGLE_CLOUD_VISION_CREDENTIALS not found in environment variables');
       }
 
       // Load Google Cloud Project ID
@@ -42,7 +63,7 @@ class ConfigLoader {
                              (this.config.visionCredentials ? this.config.visionCredentials.project_id : null);
       
       if (!this.config.projectId) {
-        throw new Error('Missing required configuration: GOOGLE_CLOUD_PROJECT_ID');
+        console.warn('⚠️ Warning: GOOGLE_CLOUD_PROJECT_ID not found in environment variables');
       }
 
       // Load verification thresholds
@@ -51,6 +72,14 @@ class ConfigLoader {
 
       // Additional configuration as needed
       this.config.environment = process.env.NODE_ENV || 'development';
+      
+      // Log environment variables for debugging
+      console.log('🔧 Environment variables loaded:');
+      console.log(`🌐 NODE_ENV: ${process.env.NODE_ENV}`);
+      console.log(`🔑 STRIPE_SECRET_KEY: ${this.config.stripeSecretKey ? '✅ Loaded' : '❌ Missing'}`);
+      console.log(`👁️ GOOGLE_CLOUD_VISION_CREDENTIALS: ${this.config.visionCredentials ? '✅ Loaded' : '❌ Missing'}`);
+      console.log(`🌍 GOOGLE_CLOUD_PROJECT_ID: ${this.config.projectId || '❌ Missing'}`);
+      
     } catch (error) {
       console.error('Config loader error:', error);
       throw error;
@@ -63,12 +92,16 @@ class ConfigLoader {
 
   validate() {
     // Validate essential configuration
+    if (!this.config.stripeSecretKey) {
+      throw new Error('Missing required configuration: STRIPE_SECRET_KEY');
+    }
+    
     if (!this.config.visionCredentials) {
-      throw new Error('Missing Google Cloud Vision credentials');
+      throw new Error('Missing required configuration: GOOGLE_CLOUD_VISION_CREDENTIALS');
     }
     
     if (!this.config.projectId) {
-      throw new Error('Missing Google Cloud Project ID');
+      throw new Error('Missing required configuration: GOOGLE_CLOUD_PROJECT_ID');
     }
     
     // Validate service account structure
@@ -85,8 +118,9 @@ class ConfigLoader {
   printSummary() {
     console.log('🔧 Configuration Summary:');
     console.log(`🌐 Environment: ${this.config.environment}`);
+    console.log(`🔑 Stripe Key: ${this.config.stripeSecretKey ? '✅ Loaded' : '❌ Missing'}`);
     console.log(`🔑 Project ID: ${this.config.projectId}`);
-    console.log(`👤 Service Account: ${this.config.visionCredentials.client_email}`);
+    console.log(`👤 Service Account: ${this.config.visionCredentials ? this.config.visionCredentials.client_email : '❌ Missing'}`);
     console.log(`🧮 Face Quality Threshold: ${this.config.faceQualityThreshold}`);
     console.log(`🔍 Similarity Threshold: ${this.config.similarityThreshold}`);
   }

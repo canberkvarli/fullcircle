@@ -1,10 +1,10 @@
 const Stripe = require('stripe');
 
-// 🔧 Load environment variables from .env file
-require('dotenv').config();
+// 🔧 Use configLoader instead of dotenv directly
+const configLoader = require('../configLoader');
 
-// 🔧 MODERN WAY: Use environment variables instead of functions.config()
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+// 🔧 Get Stripe secret key from configLoader
+const STRIPE_SECRET_KEY = configLoader.get('stripeSecretKey');
 
 if (!STRIPE_SECRET_KEY) {
   throw new Error('Stripe secret key not configured. Add STRIPE_SECRET_KEY to your .env file');

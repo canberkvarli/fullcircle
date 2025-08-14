@@ -2,6 +2,9 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
+// 🔧 Load configuration early to ensure environment variables are available
+require('./configLoader');
+
 // Initialize Firebase Admin
 admin.initializeApp();
 

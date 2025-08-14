@@ -41,7 +41,7 @@ function EmailScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [isEmailValid, setIsEmailValid] = useState(false);
+  const [isEmailValid, setEmailValid] = useState(false);
   const [hasUserStartedTyping, setHasUserStartedTyping] = useState(false);
   const [showErrorFeedback, setShowErrorFeedback] = useState(false);
   
@@ -86,6 +86,10 @@ function EmailScreen() {
   useEffect(() => {
     if (email && email.trim()) {
       validateEmail(email);
+    } else {
+      // If no email, ensure submit button is disabled
+      setEmailValid(false);
+      setEmailError("Email address is required");
     }
   }, []);
   
@@ -131,21 +135,24 @@ function EmailScreen() {
   const validateEmail = (emailToValidate: string) => {
     setEmailError("");
     
-    // If email is empty, it's valid (optional field)
+    // Email is required - empty is invalid
     if (!emailToValidate.trim()) {
-      setIsEmailValid(true);
+      setEmailError("Email address is required");
+      setEmailValid(false);
       return;
     }
     
-    // For optional email, we'll be more lenient - just check basic structure
-    // Allow incomplete emails since they can be completed later
-    if (emailToValidate.includes('@')) {
-      setIsEmailValid(true);
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailToValidate.trim())) {
+      setEmailError("Please enter a valid email address");
+      setEmailValid(false);
       return;
     }
     
-    // If no @ symbol, still valid (user might be typing)
-    setIsEmailValid(true);
+    // Email is valid
+    setEmailValid(true);
+    setEmailError("");
   };
 
   const handleEmailChange = (text: string) => {
@@ -155,8 +162,12 @@ function EmailScreen() {
     }
     validateEmail(text);
     
-    // Since email is optional, don't show error feedback for incomplete emails
-    setShowErrorFeedback(false);
+    // Show error feedback for invalid emails
+    if (text.trim() && !isEmailValid) {
+      setShowErrorFeedback(true);
+    } else {
+      setShowErrorFeedback(false);
+    }
   };
 
   const isGoogleConnected = () => {
@@ -168,10 +179,22 @@ function EmailScreen() {
   };
 
   const handleEmailSubmit = async () => {
-    // Email is optional - allow any input or empty string
+    // Email is required - validate before proceeding
+    if (!email.trim()) {
+      setEmailError("Email address is required");
+      setShowErrorFeedback(true);
+      return;
+    }
+    
+    if (!isEmailValid) {
+      setEmailError("Please enter a valid email address");
+      setShowErrorFeedback(true);
+      return;
+    }
+    
     try {
       await updateUserData({
-        email: email.trim(), // Save whatever the user typed, even if incomplete
+        email: email.trim(),
         marketingRequested: marketingRequested ? false : true,
       });
       setModalVisible(true);
@@ -329,6 +352,9 @@ function EmailScreen() {
             styles.inputUnderline,
             showErrorFeedback && styles.inputUnderlineError
           ]} />
+          {showErrorFeedback && emailError ? (
+            <Text style={styles.errorText}>{emailError}</Text>
+          ) : null}
         </View>
         
 
@@ -367,8 +393,12 @@ function EmailScreen() {
             
             <View style={styles.keyboardButtonContainer}>
               <TouchableOpacity 
-                style={styles.submitButton}
+                style={[
+                  styles.submitButton,
+                  !isEmailValid && styles.submitButtonDisabled
+                ]}
                 onPress={handleEmailSubmit}
+                disabled={!isEmailValid}
               >
                 <Ionicons 
                   name="chevron-forward" 
@@ -394,14 +424,18 @@ function EmailScreen() {
           
           <View style={styles.bottomButtonContainer}>
             <TouchableOpacity 
-              style={styles.submitButton}
+              style={[
+                styles.submitButton,
+                !isEmailValid && styles.submitButtonDisabled
+              ]}
               onPress={handleEmailSubmit}
+              disabled={!isEmailValid}
             >
-                              <Ionicons 
-                  name="chevron-forward" 
-                  size={24} 
-                  color={colors.background} 
-                />
+              <Ionicons 
+                name="chevron-forward" 
+                size={24} 
+                color={colors.background} 
+              />
             </TouchableOpacity>
           </View>
         </View>

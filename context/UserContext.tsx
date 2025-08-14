@@ -34,7 +34,7 @@ export type UserDataType = {
   countryCode: string;
   areaCode: string;
   number: string;
-  email?: string;
+  email: string; // Required email address
   GoogleSSOEnabled?: boolean;
   AppleSSOEnabled?: boolean;
   marketingRequested?: boolean;
@@ -530,6 +530,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     countryCode: '',
     areaCode: '',
     number: '',
+    email: '', // Required email field
     onboardingCompleted: false,
     dailyLikesCount: 0,
     lastLikeResetDate: null,
