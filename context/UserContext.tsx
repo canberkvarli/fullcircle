@@ -3432,8 +3432,9 @@ const verifyPhoneAndSetUser = async (
           currentOnboardingScreen: screenToSave
         }).then(() => {
           console.log("✅ Updated user data before sign out");
-        }).catch((updateError) => {
-          console.error("Error updating user data before sign out:", updateError);
+        }).catch(() => {
+          // Silently ignore errors during sign-out - this is expected behavior
+          // console.error("Error updating user data before sign out:", updateError);
         });
       }
   

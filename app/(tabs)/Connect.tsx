@@ -84,14 +84,16 @@ const ConnectScreen: React.FC = () => {
 
   // 🆕 NEW: Check if preferences changed while user was away
   useEffect(() => {
-    if (matchingState.initialized) {
+    // 🔒 AUTH GUARD: Only proceed if user is authenticated and matching is initialized
+    if (matchingState.initialized && userData.userId) {
       checkAndRefetchIfNeeded();
     }
-  }, [matchingState.initialized, checkAndRefetchIfNeeded]);
+  }, [matchingState.initialized, userData.userId, checkAndRefetchIfNeeded]);
 
   // 🆕 PATIENT: Refetch when returning to Connect screen to catch preference changes
   useEffect(() => {
-    if (matchingState.initialized) {
+    // 🔒 AUTH GUARD: Only proceed if user is authenticated and matching is initialized
+    if (matchingState.initialized && userData.userId) {
       // Small delay to ensure state has propagated from preference changes
       setTimeout(() => {
         // Show loading state while refetching
@@ -107,7 +109,7 @@ const ConnectScreen: React.FC = () => {
         });
       }, 100); // Small delay to let state settle
     }
-  }, [matchingState.initialized, forceRefetchOnReturn]);
+  }, [matchingState.initialized, userData.userId, forceRefetchOnReturn]);
 
 
 
