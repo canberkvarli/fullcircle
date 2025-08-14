@@ -568,7 +568,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualityTitleFont,
       color: colors.textDark,
       textAlign: "left",
       marginTop: Spacing.xl,

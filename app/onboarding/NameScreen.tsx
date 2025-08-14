@@ -103,7 +103,7 @@ function NameScreen() {
           <OnboardingProgressBar currentScreen="NameScreen" />
 
           {/* Title */}
-          <Text style={styles.title}>What should we call you?</Text>
+          <Text style={styles.title}>What should we call you</Text>
 
           {/* Input Fields - with underline style */}
           <View style={styles.inputContainer}>
@@ -229,7 +229,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualitySubtitleFont,
+      ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.md, // Reduced from xl to md
@@ -245,7 +245,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       position: 'relative', // For positioning the underline
     },
     input: {
-      ...fonts.spiritualityBaseFont,
+      ...fonts.inputFont,
       height: 48, // Slightly shorter than before
       paddingVertical: Spacing.xs,
       paddingHorizontal: 0, // No horizontal padding for underline style
@@ -266,14 +266,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.md, // Reduced from xl to md
     },
     optionalText: {
-      ...fonts.spiritualityBodyFont,
+      ...fonts.spiritualBodyFont,
       fontStyle: "normal", // Changed from italic
       color: colors.textMuted,
       lineHeight: Typography.sizes.base * 1.3, // Reduced line height slightly
       fontSize: Typography.sizes.sm, // Made text slightly smaller
     },
     linkText: {
-      ...fonts.spiritualityButtonFont,
+      ...fonts.buttonFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
@@ -284,7 +284,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.lg,
     },
     affirmation: {
-      ...fonts.spiritualityAffirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "left",
       color: colors.textDark, // Darker color for better visibility
       lineHeight: Typography.sizes.lg * 1.5,
@@ -376,14 +376,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualityTitleFont,
+      ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.spiritualityBodyFont,
+      ...fonts.spiritualBodyFont,
       textAlign: "center",
       color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
@@ -391,7 +391,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "normal", // Changed from italic
     },
     modalSubText: {
-      ...fonts.spiritualityCaptionFont,
+      ...fonts.captionFont,
       textAlign: "center",
       color: colors.primary,
       marginBottom: Spacing.xl,
@@ -417,7 +417,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalCloseText: {
-      ...fonts.spiritualityButtonFont,
+      ...fonts.buttonFont,
       color: colors.background,
       textAlign: 'center',
     },

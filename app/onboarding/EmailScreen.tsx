@@ -131,8 +131,9 @@ function EmailScreen() {
   const validateEmail = (emailToValidate: string) => {
     setEmailError("");
     
+    // If email is empty, it's valid (optional field)
     if (!emailToValidate.trim()) {
-      setIsEmailValid(false);
+      setIsEmailValid(true);
       return;
     }
     
@@ -196,19 +197,15 @@ function EmailScreen() {
   };
 
   const handleEmailSubmit = async () => {
-    if (email.trim() === "") {
-      setEmailError("Please share your email to stay connected");
-      return;
-    }
-
-    if (!isEmailValid) {
+    // Email is optional, so only validate if user entered something
+    if (email.trim() !== "" && !isEmailValid) {
       setEmailError("Please enter a valid email address");
       return;
     }
 
     try {
       await updateUserData({
-        email,
+        email: email.trim() || "", // Save empty string if no email provided
         marketingRequested: marketingRequested ? false : true,
       });
       setModalVisible(true);
@@ -349,7 +346,7 @@ function EmailScreen() {
 
         <OnboardingProgressBar currentScreen="EmailScreen" />
 
-        <Text style={styles.title}>Stay in touch</Text>
+        <Text style={styles.title}>stay in touch</Text>
         
         <View style={styles.inputWrapper}>
           <TextInput
@@ -367,6 +364,8 @@ function EmailScreen() {
             showErrorFeedback && styles.inputUnderlineError
           ]} />
         </View>
+        
+
         
         <View style={styles.toggleContainer}>
           <TouchableOpacity
@@ -402,17 +401,13 @@ function EmailScreen() {
             
             <View style={styles.keyboardButtonContainer}>
               <TouchableOpacity 
-                style={[
-                  styles.submitButton,
-                  (!email.trim() || !isEmailValid) && styles.submitButtonDisabled
-                ]} 
+                style={styles.submitButton}
                 onPress={handleEmailSubmit}
-                disabled={!email.trim() || !isEmailValid}
               >
                 <Ionicons 
                   name="chevron-forward" 
                   size={24} 
-                  color={email.trim() ? colors.background : colors.background} 
+                  color={colors.background} 
                 />
               </TouchableOpacity>
             </View>
@@ -433,18 +428,14 @@ function EmailScreen() {
           
           <View style={styles.bottomButtonContainer}>
             <TouchableOpacity 
-              style={[
-                styles.submitButton,
-                (!email.trim() || !isEmailValid) && styles.submitButtonDisabled
-              ]} 
+              style={styles.submitButton}
               onPress={handleEmailSubmit}
-              disabled={!email.trim() || !isEmailValid}
             >
-              <Ionicons 
-                name="chevron-forward" 
-                size={24} 
-                color={email.trim() ? colors.background : colors.background} 
-              />
+                              <Ionicons 
+                  name="chevron-forward" 
+                  size={24} 
+                  color={colors.background} 
+                />
             </TouchableOpacity>
           </View>
         </View>
@@ -553,10 +544,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     title: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualityTitleFont,
       color: colors.textDark,
       textAlign: "left",
-      marginTop: Spacing.sm,
+      marginTop: Spacing.lg,
       marginBottom: Spacing.md,
       paddingHorizontal: Spacing.lg,
     },

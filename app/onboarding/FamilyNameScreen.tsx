@@ -102,7 +102,7 @@ function FamilyNameScreen() {
           <OnboardingProgressBar currentScreen="FamilyNameScreen" />
 
           {/* Title */}
-          <Text style={styles.title}>What's your family name?</Text>
+          <Text style={styles.title}>What's your family name</Text>
 
           {/* Input Fields - with underline style */}
           <View style={styles.inputContainer}>
@@ -231,7 +231,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     subtitle: {
-      ...fonts.spiritualitySubtitleFont,
+      ...fonts.spiritualSubtitleFont,
       color: colors.textLight,
       textAlign: "left",
       marginBottom: Spacing.md,
@@ -246,7 +246,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       position: 'relative',
     },
     input: {
-      ...fonts.spiritualityBaseFont,
+      ...fonts.inputFont,
       height: 48,
       paddingVertical: Spacing.xs,
       paddingHorizontal: 0,
@@ -267,13 +267,13 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       alignItems: 'flex-start',
     },
     privacyNote: {
-      ...fonts.spiritualityCaptionFont,
+      ...fonts.captionFont,
       color: colors.textMuted,
       fontSize: Typography.sizes.xs,
     },
 
     linkText: {
-      ...fonts.spiritualityCaptionFont,
+      ...fonts.captionFont,
       fontStyle: "normal",
       textDecorationLine: "underline",
       color: colors.primary,
@@ -282,7 +282,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
 
     affirmation: {
-      ...fonts.spiritualityAffirmationFont,
+      ...fonts.elegantItalicFont,
       textAlign: "left",
       color: colors.textDark,
       lineHeight: Typography.sizes.lg * 1.5,
@@ -356,14 +356,14 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalTitle: {
-      ...fonts.spiritualityTitleFont,
+      ...fonts.spiritualTitleFont,
       fontSize: Typography.sizes.xl,
       color: colors.textDark,
       marginBottom: Spacing.lg,
       textAlign: "center",
     },
     modalText: {
-      ...fonts.spiritualityBodyFont,
+      ...fonts.spiritualBodyFont,
       textAlign: "center",
       color: colors.textLight,
       lineHeight: Typography.sizes.base * 1.6,
@@ -371,7 +371,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       fontStyle: "normal",
     },
     modalSubText: {
-      ...fonts.spiritualityCaptionFont,
+      ...fonts.captionFont,
       textAlign: "center",
       color: colors.primary,
       marginBottom: Spacing.xl,
@@ -397,7 +397,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       }),
     },
     modalCloseText: {
-      ...fonts.spiritualityButtonFont,
+      ...fonts.buttonFont,
       color: colors.background,
       textAlign: 'center',
     },

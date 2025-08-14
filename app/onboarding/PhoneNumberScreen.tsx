@@ -274,7 +274,6 @@ function PhoneNumberScreen(): JSX.Element {
           ]}
         >
           <Text style={styles.title}>Let's connect you</Text>
-          <Text style={styles.subtitle}>Enter your phone number to begin your journey</Text>
         </Animated.View>
         
         <View style={styles.mainContent}>
@@ -480,7 +479,7 @@ const createStyles = (colorScheme: 'light' | 'dark', isFocused: boolean) => {
       letterSpacing: 0.5,
     },
     title: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualityVibrantTitleFont,
       color: colors.textDark,
       marginBottom: Spacing.xs,
     },

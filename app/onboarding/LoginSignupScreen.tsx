@@ -404,7 +404,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderColor: colors.primary,
     },
     buttonText: {
-      ...fonts.spiritualityButtonFont,
+      ...fonts.buttonFont,
       color: colors.text,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -440,7 +440,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     termsText: {
-      ...fonts.spiritualityCaptionFont,
+      ...fonts.captionFont,
       color: colors.text,
       textAlign: "center",
       lineHeight: 18,
@@ -450,7 +450,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 2,
     },
     termsLink: {
-      ...fonts.spiritualityButtonFont,
+      ...fonts.buttonFont,
       color: '#F5E6D3',
       textDecorationLine: "underline",
       fontWeight: '600',
