@@ -2557,26 +2557,30 @@ const verifyPhoneAndSetUser = async (
     
     console.log('🔄 Force refetch on return to Connect screen');
     
-    // Only fetch if we don't already have matches
-    if (matchingState.potentialMatches.length === 0) {
-      try {
-        const newUsers = await fetchPotentialMatches(true); // true = reset batch
-        console.log('🔄 Force refetch completed:', newUsers.length, 'users');
-        
-        // Update state with the new users
-        setMatchingState(prev => ({
-          ...prev,
-          potentialMatches: newUsers,
-          currentIndex: 0,
-          noMoreMatches: newUsers.length === 0
-        }));
-      } catch (error) {
-        console.error('❌ Error in force refetch:', error);
-      }
-    } else {
-      console.log('✅ Already have matches, no need to refetch');
+    // Check if preferences have changed since last fetch
+    const currentHash = generatePreferencesHash(userData.matchPreferences);
+    const hashChanged = currentHash !== matchingState.preferencesHash;
+    
+    // 🆕 FIXED: Always refetch when returning to Connect screen to ensure fresh matches
+    // This prevents the race condition where preferences change but matches don't update
+    console.log('🔄 Always refetching on return to ensure fresh matches');
+    
+    try {
+      const newUsers = await fetchPotentialMatches(true); // true = reset batch
+      console.log('🔄 Force refetch completed:', newUsers.length, 'users');
+      
+      // Update state with the new users
+      setMatchingState(prev => ({
+        ...prev,
+        potentialMatches: newUsers,
+        currentIndex: 0,
+        noMoreMatches: newUsers.length === 0,
+        preferencesHash: currentHash // Update the hash
+      }));
+    } catch (error) {
+      console.error('❌ Error in force refetch:', error);
     }
-  }, [userData.matchPreferences, matchingState.initialized, matchingState.potentialMatches.length, fetchPotentialMatches]);
+  }, [userData.matchPreferences, matchingState.initialized, fetchPotentialMatches, generatePreferencesHash]);
 
   // 🆕 SIMPLIFIED: Just check if preferences changed, no refetch needed
   const checkAndRefetchIfNeeded = useCallback(() => {

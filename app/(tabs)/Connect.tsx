@@ -32,6 +32,7 @@ const ConnectScreen: React.FC = () => {
     DAILY_LIKE_LIMIT,
     userData,
     checkAndRefetchIfNeeded,
+    forceRefetchOnReturn,
   } = useUserContext();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -88,7 +89,23 @@ const ConnectScreen: React.FC = () => {
     }
   }, [matchingState.initialized, checkAndRefetchIfNeeded]);
 
-  // 🆕 REMOVED: Unnecessary force refetch that was causing glitches and multiple fetches
+  // 🆕 NEW: Force refetch when returning to Connect screen to catch preference changes
+  useEffect(() => {
+    if (matchingState.initialized) {
+      console.log('🔄 Connect screen focused, forcing refetch to catch preference changes');
+      // Show loading state while refetching
+      setIsLoading(true);
+      setShowContent(false);
+      
+      forceRefetchOnReturn().finally(() => {
+        // Hide loading state after refetch completes
+        setTimeout(() => {
+          setIsLoading(false);
+          setShowContent(true);
+        }, 500); // Small delay to ensure smooth transition
+      });
+    }
+  }, [matchingState.initialized, forceRefetchOnReturn]);
 
 
 
@@ -392,7 +409,7 @@ const ConnectScreen: React.FC = () => {
   // No more matches screen - only show after we've actually tried to find matches
   // 🆕 FIXED: Added fallback condition to prevent infinite loading
   if ((matchingState.noMoreMatches && matchingState.initialized && matchingState.potentialMatches.length === 0) ||
-      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch && !isLoading && matchingState.lastFetchedDoc !== undefined)) {
+      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch && !isLoading)) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -475,17 +492,6 @@ const ConnectScreen: React.FC = () => {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
-
-        <TouchableOpacity 
-          style={[
-            styles.settingsFloating, 
-            { backgroundColor: colors.card, borderColor: colors.border }
-          ]}
-          onPress={() => router.push('/user/ConnectingPreferences')}
-          activeOpacity={0.7}
-        >
-          <CustomIcon name="options" size={22} color="#B8860B" />
-        </TouchableOpacity>
 
         <Animated.View style={[styles.centeredLoadingContainer, { opacity: loadingOpacity }]}>
           <OuroborosLoader
