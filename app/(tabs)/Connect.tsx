@@ -89,45 +89,52 @@ const ConnectScreen: React.FC = () => {
     }
   }, [matchingState.initialized, checkAndRefetchIfNeeded]);
 
-  // 🆕 NEW: Force refetch when returning to Connect screen to catch preference changes
+  // 🆕 PATIENT: Refetch when returning to Connect screen to catch preference changes
   useEffect(() => {
     if (matchingState.initialized) {
-      console.log('🔄 Connect screen focused, forcing refetch to catch preference changes');
-      // Show loading state while refetching
-      setIsLoading(true);
-      setShowContent(false);
-      
-      forceRefetchOnReturn().finally(() => {
-        // Hide loading state after refetch completes
-        setTimeout(() => {
-          setIsLoading(false);
-          setShowContent(true);
-        }, 500); // Small delay to ensure smooth transition
-      });
+      // Small delay to ensure state has propagated from preference changes
+      setTimeout(() => {
+        // Show loading state while refetching
+        setIsLoading(true);
+        setShowContent(false);
+        
+        forceRefetchOnReturn().finally(() => {
+          // Hide loading state after refetch completes
+          setTimeout(() => {
+            setIsLoading(false);
+            setShowContent(true);
+          }, 500);
+        });
+      }, 100); // Small delay to let state settle
     }
   }, [matchingState.initialized, forceRefetchOnReturn]);
 
 
 
-  // 🆕 ENHANCED: Improved loading state management with error handling
+  // 🆕 BULLETPROOF: Improved loading state management with better logic
   useEffect(() => {
-    // 🆕 FIXED: Proper loading state management
+    // 🆕 FIXED: More precise loading state management
     const hasMatches = matchingStateRef.current.potentialMatches.length > 0;
     const isCurrentlyLoading = matchingStateRef.current.loadingBatch;
     const isInitialized = matchingStateRef.current.initialized;
     const noMoreAvailable = matchingStateRef.current.noMoreMatches;
+    const hasTriedFetching = matchingStateRef.current.lastFetchedDoc !== undefined;
     
     console.log('🔍 Connect screen loading state:', {
       hasMatches,
       isCurrentlyLoading,
       isInitialized,
       noMoreAvailable,
+      hasTriedFetching,
       potentialMatchesLength: matchingStateRef.current.potentialMatches.length,
       currentPotentialMatch: currentPotentialMatch ? `${currentPotentialMatch.firstName} (${currentPotentialMatch.userId})` : 'none'
     });
     
-    // Show loading when fetching or not initialized
-    if (isCurrentlyLoading || !isInitialized) {
+    // Show loading when:
+    // 1. Currently fetching a batch, OR
+    // 2. Not initialized yet, OR  
+    // 3. Initialized but haven't tried fetching yet (first time)
+    if (isCurrentlyLoading || !isInitialized || (isInitialized && !hasTriedFetching)) {
       setIsLoading(true);
       setShowContent(false);
       
@@ -155,7 +162,7 @@ const ConnectScreen: React.FC = () => {
         setShowContent(false);
       }
     }
-  }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches, currentPotentialMatch]);
+  }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches, matchingState.lastFetchedDoc, currentPotentialMatch]);
 
   // Reset animations when match changes
   useEffect(() => {
@@ -407,9 +414,14 @@ const ConnectScreen: React.FC = () => {
   };
 
   // No more matches screen - only show after we've actually tried to find matches
-  // 🆕 FIXED: Added fallback condition to prevent infinite loading
-  if ((matchingState.noMoreMatches && matchingState.initialized && matchingState.potentialMatches.length === 0) ||
-      (matchingState.initialized && matchingState.potentialMatches.length === 0 && !matchingState.loadingBatch && !isLoading)) {
+  // 🆕 BULLETPROOF: Only show no matches when we're absolutely sure there are none
+  // Don't show if we're still loading, fetching, or if this is the first time
+  if (matchingState.initialized && 
+      !matchingState.loadingBatch && 
+      !isLoading && 
+      matchingState.potentialMatches.length === 0 && 
+      matchingState.noMoreMatches &&
+      matchingState.lastFetchedDoc !== undefined) { // Ensure we've actually tried to fetch
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
@@ -554,9 +566,6 @@ const ConnectScreen: React.FC = () => {
               </Animated.View>
             ) : (
               <View style={styles.contentPlaceholder}>
-                <Text style={{ color: colors.textLight, fontSize: 14, marginBottom: 20, textAlign: 'center' }}>
-                  {!showContent ? 'Loading content...' : 'No current match'}
-                </Text>
                 <OuroborosLoader
                   variant="pulse"
                   size={60}

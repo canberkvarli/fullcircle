@@ -899,7 +899,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       ageRange: `${hashData.ageMin}-${hashData.ageMax}`,
       heightRange: `${hashData.heightMin}-${hashData.heightMax}`,
       distance: hashData.distance,
-      hashLength: hash.length
+      hashLength: hash.length,
+      rawData: hashData // 🔧 ADDED: Show raw data for debugging
     });
     return hash;
   }, []);
@@ -1593,26 +1594,21 @@ const verifyPhoneAndSetUser = async (
         // 🔄 Update ref to keep everything in sync
         userDataRef.current = newData;
         
-        // 🔄 If match preferences changed, just update the hash - NO FETCHING
+        // 🔧 FIXED: Don't update hash here - let the useEffect handle it
+        // This prevents the race condition where hash is updated before useEffect runs
         if (data.matchPreferences) {
-          const newHash = generatePreferencesHash(data.matchPreferences);
-          
-          console.log('🔄 updateUserData - Hash update:', {
-            oldHash: matchingState.preferencesHash.substring(0, 100) + '...',
-            newHash: newHash.substring(0, 100) + '...',
+          console.log('🔄 updateUserData - Match preferences updated:', {
             connectionIntent: data.matchPreferences.connectionIntent,
-            oldConnectionIntent: matchingState.preferencesHash.includes('"connectionIntent":"romantic"') ? 'romantic' : 
-                               matchingState.preferencesHash.includes('"connectionIntent":"friendship"') ? 'friendship' : 'unknown'
+            oldConnectionIntent: prevData.matchPreferences?.connectionIntent,
+            willTriggerRefetch: true,
+            // 🔧 ADDED: More detailed debugging
+            newPreferences: data.matchPreferences,
+            oldPreferences: prevData.matchPreferences,
+            fullUpdate: data
           });
           
-          // Just update the hash, don't fetch yet
-          setMatchingState(prev => ({
-            ...prev,
-            preferencesHash: newHash
-          }));
-          
-          // Also update the ref
-          matchingStateRef.current.preferencesHash = newHash;
+          // Don't update hash here - let the useEffect detect the change
+          // and handle the refetch properly
         }
         
         return newData;
@@ -2380,6 +2376,12 @@ const verifyPhoneAndSetUser = async (
         // Generate preferences hash
         const preferencesHash = generatePreferencesHash(userData.matchPreferences);
         
+        console.log('🔍 Initialization - Setting preferences hash:', {
+          preferencesHash: preferencesHash.substring(0, 50) + '...',
+          connectionIntent: userData.matchPreferences.connectionIntent,
+          willInitialize: true
+        });
+        
         // Fetch initial batch with user's actual preferences
         const initialBatch = await fetchPotentialMatches(true, exclusions);
         
@@ -2405,184 +2407,149 @@ const verifyPhoneAndSetUser = async (
   }, [userData.userId, userData.onboardingCompleted, userData.matchPreferences, fetchPotentialMatches]); // ✅ Add matchPreferences to deps
 
 
-  // 🆕 NEW: Track if preferences update is in progress
-  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  // 🔧 REMOVED: No more debounced preferences update - the useEffect handles everything cleanly
 
-  const debouncedPreferencesUpdate = useCallback(
-    debounce(async (newPreferences: typeof userData.matchPreferences) => {
-      console.log('🔄 debouncedPreferencesUpdate called with:', {
-        userId: userData.userId,
-        initialized: matchingState.initialized,
-        newPreferences: newPreferences,
-        currentHash: matchingState.preferencesHash,
-        isUpdating: isUpdatingPreferences
-      });
-      
-      // 🆕 NEW: Prevent duplicate updates
-      if (isUpdatingPreferences) {
-        console.log('⚠️ Preferences update already in progress, skipping duplicate call');
-        return;
-      }
-      
-      if (!userData.userId || !matchingState.initialized) return;
-      
-      const newHash = generatePreferencesHash(newPreferences);
-      console.log('🔄 Hash comparison:', {
-        newHash: newHash,
-        currentHash: matchingState.preferencesHash,
-        hasChanged: newHash !== matchingState.preferencesHash
-      });
-      
-      if (newHash !== matchingState.preferencesHash) {
-        console.log('🔄 Preferences changed! Hash comparison:', {
-          oldHash: matchingState.preferencesHash,
-          newHash: newHash,
-          oldPreferences: userData.matchPreferences,
-          newPreferences: newPreferences
-        });
-        
-        // 🆕 NEW: Show connection intent change details
-        const oldIntent = userData.matchPreferences?.connectionIntent;
-        const newIntent = newPreferences?.connectionIntent;
-        if (oldIntent !== newIntent) {
-          console.log(`🔄 CONNECTION INTENT CHANGED: ${oldIntent} → ${newIntent}`);
-          console.log(`🔄 This will trigger a complete refetch with new filtering!`);
-        }
-        
-        // 🆕 NEW: Set updating flag to prevent duplicates
-        setIsUpdatingPreferences(true);
-        
-        // COMPLETE RESET - Clear everything and mark as loading
-        setMatchingState(prev => ({
-          ...prev,
-          preferencesHash: newHash,
-          potentialMatches: [],      // Clear all matches
-          currentIndex: 0,           // Reset to first
-          lastFetchedDoc: null,      // Reset pagination
-          noMoreMatches: false,      // Reset no-more flag
-          loadingBatch: true         // 🆕 NEW: Mark as loading to show loading state
-        }));
-        
-        try {
-          const newBatch = await fetchPotentialMatches(true); // Force reset
-          
-          // Update state with proper error handling
-          setMatchingState(prev => ({
-            ...prev,
-            potentialMatches: newBatch,
-            loadingBatch: false,
-            noMoreMatches: newBatch.length === 0,
-            initialized: true
-          }));
-        } catch (error) {
-          console.error('❌ Error fetching matches after preference change:', error);
-          
-          // 🆕 NEW: Handle errors gracefully
-          setMatchingState(prev => ({
-            ...prev,
-            loadingBatch: false,
-            noMoreMatches: false,
-            initialized: true // Ensure we don't get stuck
-          }));
-        } finally {
-          // 🆕 NEW: Clear updating flag when done
-          setIsUpdatingPreferences(false);
-        }
-      }
-    }, 2000), // 🆕 INCREASED: 2 second debounce to prevent rapid successive updates
-    [userData.userId, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches, generatePreferencesHash, isUpdatingPreferences]
-  );
-
-  // 🆕 CLEAN: Single hash comparison that triggers one refetch when preferences change
+  // 🔧 FIXED: Stable preferences change detection with proper hash management
   useEffect(() => {
+    console.log('🔍 Preferences change detection useEffect triggered:', {
+      hasPreferences: !!userData.matchPreferences,
+      isInitialized: matchingState.initialized,
+      connectionIntent: userData.matchPreferences?.connectionIntent,
+      preferencesHash: matchingState.preferencesHash.substring(0, 50) + '...'
+    });
+    
     // Only run when we have preferences and are initialized
     if (!userData.matchPreferences || !matchingState.initialized) return;
+    
+    // 🔧 ADDED: Log the exact data being hashed
+    console.log('🔍 Preferences change detection - Raw data:', {
+      matchPreferences: userData.matchPreferences,
+      connectionIntent: userData.matchPreferences.connectionIntent,
+      ageRange: userData.matchPreferences.preferredAgeRange,
+      heightRange: userData.matchPreferences.preferredHeightRange,
+      distance: userData.matchPreferences.preferredDistance,
+      spiritualCompatibility: userData.matchPreferences.spiritualCompatibility
+    });
     
     const currentHash = generatePreferencesHash(userData.matchPreferences);
     const hashChanged = currentHash !== matchingState.preferencesHash;
     
-    console.log('🔍 Hash comparison check:', {
+    console.log('🔍 Preferences change detection:', {
       currentHash: currentHash.substring(0, 50) + '...',
       storedHash: matchingState.preferencesHash.substring(0, 50) + '...',
       hashChanged,
-      connectionIntent: userData.matchPreferences.connectionIntent
+      currentConnectionIntent: userData.matchPreferences.connectionIntent,
+      storedConnectionIntent: matchingState.preferencesHash.includes('"connectionIntent":"romantic"') ? 'romantic' : 
+                              matchingState.preferencesHash.includes('"connectionIntent":"friendship"') ? 'friendship' : 'unknown',
+      // 🔧 ADDED: More detailed debugging
+      currentPreferences: userData.matchPreferences,
+      storedHashFull: matchingState.preferencesHash
     });
     
     // 🔧 FIXED: Only refetch if hash actually changed, prevent multiple calls
     if (hashChanged) {
       console.log('🔄 Preferences hash changed, triggering single refetch');
-      // Clear current matches and fetch fresh data
+      
+      // 🔧 FIXED: Update hash first to prevent duplicate triggers
       setMatchingState(prev => ({
         ...prev,
+        preferencesHash: currentHash, // Update hash immediately
         potentialMatches: [],
         currentIndex: 0,
         lastFetchedDoc: null,
-        noMoreMatches: false
+        noMoreMatches: false,
+        loadingBatch: true // Show loading state
       }));
       
       // Single fetch with new preferences and update state with results
       const fetchAndUpdate = async () => {
         try {
+          console.log('🔄 Fetching new matches with updated preferences...');
           const newUsers = await fetchPotentialMatches(true); // true = reset batch
           console.log('🔄 Fetched new users:', newUsers.length);
           
-          // Update state with the new users
+          // Update state with the new users and complete loading
           setMatchingState(prev => ({
             ...prev,
             potentialMatches: newUsers,
             currentIndex: 0,
-            noMoreMatches: newUsers.length === 0
+            noMoreMatches: newUsers.length === 0,
+            loadingBatch: false
           }));
         } catch (error) {
           console.error('❌ Error fetching new users:', error);
+          // Reset loading state on error
+          setMatchingState(prev => ({
+            ...prev,
+            loadingBatch: false
+          }));
         }
       };
       
       fetchAndUpdate();
     } else {
       console.log('✅ Hash unchanged, no refetch needed');
-      console.log('🔍 Debug hash comparison:', {
-        currentHash: currentHash.substring(0, 100) + '...',
-        storedHash: matchingState.preferencesHash.substring(0, 100) + '...',
-        currentConnectionIntent: userData.matchPreferences?.connectionIntent,
-        storedConnectionIntent: matchingState.preferencesHash.includes('"connectionIntent":"romantic"') ? 'romantic' : 
-                                matchingState.preferencesHash.includes('"connectionIntent":"friendship"') ? 'friendship' : 'unknown'
-      });
     }
   }, [userData.matchPreferences, matchingState.initialized, matchingState.preferencesHash, fetchPotentialMatches, generatePreferencesHash]);
 
-  // 🆕 NEW: Force refetch when returning to Connect screen to catch preference changes
+  // 🔧 STABLE: Smart refetch when returning to Connect screen
   const forceRefetchOnReturn = useCallback(async () => {
     if (!userData.matchPreferences || !matchingState.initialized) return;
     
-    console.log('🔄 Force refetch on return to Connect screen');
-    
-    // Check if preferences have changed since last fetch
+    // Generate current hash from fresh userData (most reliable source)
     const currentHash = generatePreferencesHash(userData.matchPreferences);
+    
+    // Compare with stored hash, but be patient about state updates
     const hashChanged = currentHash !== matchingState.preferencesHash;
     
-    // 🆕 FIXED: Always refetch when returning to Connect screen to ensure fresh matches
-    // This prevents the race condition where preferences change but matches don't update
-    console.log('🔄 Always refetching on return to ensure fresh matches');
+    console.log('🔍 forceRefetchOnReturn:', {
+      hashChanged,
+      connectionIntent: userData.matchPreferences.connectionIntent,
+      hasMatches: matchingState.potentialMatches.length > 0,
+      currentHash: currentHash.substring(0, 50) + '...',
+      storedHash: matchingState.preferencesHash.substring(0, 50) + '...'
+    });
     
-    try {
-      const newUsers = await fetchPotentialMatches(true); // true = reset batch
-      console.log('🔄 Force refetch completed:', newUsers.length, 'users');
+    // Only refetch when preferences changed or no matches
+    if (matchingState.potentialMatches.length === 0 || hashChanged) {
+      if (hashChanged) {
+        console.log('🔄 Preferences changed, refetching with new criteria');
+      } else {
+        console.log('🔄 No matches available, fetching fresh batch');
+      }
       
-      // Update state with the new users
-      setMatchingState(prev => ({
-        ...prev,
-        potentialMatches: newUsers,
-        currentIndex: 0,
-        noMoreMatches: newUsers.length === 0,
-        preferencesHash: currentHash // Update the hash
-      }));
-    } catch (error) {
-      console.error('❌ Error in force refetch:', error);
+      try {
+        // Show loading state
+        setMatchingState(prev => ({
+          ...prev,
+          loadingBatch: true
+        }));
+        
+        const newUsers = await fetchPotentialMatches(true);
+        
+        // Update state with new data and hash
+        setMatchingState(prev => ({
+          ...prev,
+          potentialMatches: newUsers,
+          currentIndex: 0,
+          noMoreMatches: newUsers.length === 0,
+          preferencesHash: currentHash,
+          loadingBatch: false
+        }));
+      } catch (error) {
+        console.error('❌ Error in refetch:', error);
+        // Reset loading state on error
+        setMatchingState(prev => ({
+          ...prev,
+          loadingBatch: false
+        }));
+      }
+    } else {
+      console.log('✅ Preferences unchanged, using existing matches');
     }
-  }, [userData.matchPreferences, matchingState.initialized, fetchPotentialMatches, generatePreferencesHash]);
+  }, [userData.matchPreferences, matchingState.initialized, matchingState.potentialMatches.length, matchingState.preferencesHash, fetchPotentialMatches, generatePreferencesHash]);
 
-  // 🆕 SIMPLIFIED: Just check if preferences changed, no refetch needed
+  // 🔧 SIMPLIFIED: Just check if preferences changed, no refetch needed
   const checkAndRefetchIfNeeded = useCallback(() => {
     if (!userData.matchPreferences || !matchingState.initialized) return;
     
@@ -2619,6 +2586,8 @@ const verifyPhoneAndSetUser = async (
     console.log('🚫 Fresh exclusions from Firebase:', Array.from(freshExclusions));
     console.log('🚫 Fresh exclusion set size:', freshExclusions.size);
     
+    // 🔧 FIXED: Keep preferencesHash to maintain state consistency
+    // The useEffect will handle hash updates when preferences change
     setMatchingState({
       potentialMatches: [],
       currentIndex: 0,
@@ -2627,7 +2596,7 @@ const verifyPhoneAndSetUser = async (
       noMoreMatches: false,
       exclusionSet: freshExclusions, // ✅ Use fresh exclusions from Firebase
       initialized: false,
-      preferencesHash: '',
+      preferencesHash: matchingState.preferencesHash, // 🔧 KEEP: Maintain hash for consistency
     });
   }, [userData.userId, buildExclusionSet]); // Add buildExclusionSet as dependency
 

@@ -264,14 +264,23 @@ export default function ConnectingPreferences() {
           }).start();
         });
         
+        // Only update the connection intent, preserve other preferences
         await updateUserData({
           matchPreferences: {
             ...userData.matchPreferences,
             connectionIntent: selectedOption,
-            connectionPreferences: selectedOption === "friendship" ? ["Everyone"] : [],
-            connectionStyles: [],
+            // 🔧 FIXED: Ensure all required fields are preserved with proper defaults
             preferredDistance: userData.matchPreferences?.preferredDistance || 100,
-            datePreferences: [],
+            preferredAgeRange: userData.matchPreferences?.preferredAgeRange || { min: 18, max: 70 },
+            preferredHeightRange: userData.matchPreferences?.preferredHeightRange || { min: 3, max: 8 },
+            connectionPreferences: userData.matchPreferences?.connectionPreferences || ["Everyone"],
+            connectionStyles: userData.matchPreferences?.connectionStyles || ["Open to All"],
+            spiritualCompatibility: {
+              practices: userData.matchPreferences?.spiritualCompatibility?.practices || [],
+              spiritualDraws: userData.matchPreferences?.spiritualCompatibility?.spiritualDraws || [],
+              healingModalities: userData.matchPreferences?.spiritualCompatibility?.healingModalities || []
+            },
+            datePreferences: userData.matchPreferences?.datePreferences || [],
           },
         });
       }
