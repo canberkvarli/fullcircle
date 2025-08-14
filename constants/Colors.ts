@@ -144,8 +144,8 @@ export const Typography = {
     elegantBold: 'Raleway-Bold',
     elegantItalic: 'Raleway-Italic',
 
-    //Custom spritiuality font
-    main: 'Spirituality',
+    // Spiritual fonts (Spirituality)
+    spirituality: 'Spirituality',
     
     // New custom fonts
     juryDuty: 'JuryDutyFont',

@@ -18,6 +18,7 @@ import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import TermsModal from "@/components/modals/TermsModal";
 
 const videoSource = require("../../assets/videos/danielle.mp4");
+const fonts = useFont();
 
 function LoginSignupScreen(): JSX.Element {
   const router = useRouter();
@@ -56,14 +57,14 @@ function LoginSignupScreen(): JSX.Element {
   }, []);
 
   useEffect(() => {
-  if (video.current) {
-    const interval = setInterval(() => {
-      video.current?.setPositionAsync(0);
-    }, videoDuration);
-    
-    return () => clearInterval(interval);
-  }
-}, [videoDuration]);
+    if (video.current) {
+      const interval = setInterval(() => {
+        video.current?.setPositionAsync(0);
+      }, videoDuration);
+      
+      return () => clearInterval(interval);
+    }
+  }, [videoDuration]);
 
   const handleVideoLoad = () => {
     setVideoLoaded(true);
@@ -186,17 +187,17 @@ function LoginSignupScreen(): JSX.Element {
               ]}
             >
               <View style={styles.logoGlow}>
-                <OuroborosSVG
+                {/* <OuroborosSVG
                   size={120}
                   fillColor="#F5E6D3"
                   strokeColor="#B8860B"
                   // strokeColor="#7B6B5C"
                   strokeWidth={2}
-                />
+                /> */}
               </View>
             </Animated.View>
             
-            <Text style={styles.title}>Circle</Text>
+            <Text style={styles.title}>circle</Text>
             <Text style={styles.subTitle}>Where intention meets connection</Text>
           </View>
           
@@ -295,7 +296,7 @@ function LoginSignupScreen(): JSX.Element {
 
 const createStyles = (colorScheme: 'light' | 'dark') => {
   const colors = Colors[colorScheme];
-  const { buttonFont, captionFont, logoTextFont, subtitleFont, juryDutyLargeTitleFont } = useFont();
+  const fonts = useFont();
   
   return StyleSheet.create({
     container: {
@@ -325,6 +326,8 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     titleSection: {
       alignItems: 'center',
       marginTop: Spacing["4xl"],
+      flex: 1,
+      justifyContent: 'center',
     },
     logoContainer: {
       alignItems: 'center',
@@ -338,18 +341,19 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       elevation: 10,
     },
     title: {
-      ...juryDutyLargeTitleFont,
+      ...fonts.spiritualityLargeTitleFont,
       color: colors.text,
-      letterSpacing: 10,
-      marginBottom: Spacing.xs,
+      letterSpacing: 0,
+      marginBottom: 2,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 2, height: 2 },
       textShadowRadius: 1,
     },
     subTitle: {
-      ...subtitleFont,
+      ...fonts.spiritualSubtitleFont,
       color: colors.text,
-      textShadowColor: 'rgba(0, 0, 0, 0.6)',
+      // Use a bolder custom font style for the subtitle, but keep the size similar to spiritualityHeadingFont
+      textShadowColor: 'rgba(11, 8, 8, 0.6)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
     },
@@ -357,8 +361,9 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       width: '100%',
       height: 220, // Increased height for better centering
       position: 'relative',
-      justifyContent: 'center',
+      justifyContent: 'flex-end',
       alignItems: 'center', // Added to center buttons horizontally
+      marginBottom: Spacing.xl,
     },
     absoluteButtonContainer: {
       position: 'absolute',
@@ -399,7 +404,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       borderColor: colors.primary,
     },
     buttonText: {
-      ...buttonFont,
+      ...fonts.buttonFont,
       color: colors.text,
       letterSpacing: 0.5,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -435,7 +440,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       }),
     },
     termsText: {
-      ...captionFont,
+      ...fonts.captionFont,
       color: colors.text,
       textAlign: "center",
       lineHeight: 18,
@@ -445,7 +450,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       textShadowRadius: 2,
     },
     termsLink: {
-      ...buttonFont,
+      ...fonts.buttonFont,
       color: '#F5E6D3',
       textDecorationLine: "underline",
       fontWeight: '600',

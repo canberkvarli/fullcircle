@@ -71,6 +71,9 @@ const KindredSpirits: React.FC = () => {
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [radianceTimeRemaining, setRadianceTimeRemaining] = useState<number>(0);
   const [isActivatingBoost, setIsActivatingBoost] = useState(false);
+  const [displayedUsers, setDisplayedUsers] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -123,6 +126,9 @@ const KindredSpirits: React.FC = () => {
   useEffect(() => {
     if (likedByUsers.length === 0) {
       setSortedUsers([]);
+      setDisplayedUsers([]);
+      setCurrentPage(1);
+      setHasMoreUsers(false);
       return;
     }
 
@@ -136,19 +142,19 @@ const KindredSpirits: React.FC = () => {
         case 'lastActive':
           const aActive = a.lastActive?.toDate?.() || a.lastActive || new Date(0);
           const bActive = b.lastActive?.toDate?.() || b.lastActive || new Date(0);
-          return new Date(bActive).getTime() - new Date(aActive).getTime();
+          return new Date(bActive).getTime() - new Date(bActive).getTime();
           
         case 'newest':
           const aCreated = a.createdAt?.toDate?.() || a.createdAt || new Date(0);
           const bCreated = b.createdAt?.toDate?.() || b.createdAt || new Date(0);
-          return new Date(bCreated).getTime() - new Date(aCreated).getTime();
+          return new Date(bCreated).getTime() - new Date(bCreated).getTime();
           
         case 'viaLotus':
           if (a.viaLotus && !b.viaLotus) return -1;
           if (!a.viaLotus && b.viaLotus) return 1;
           const aTimeLotus = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
           const bTimeLotus = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
-          return new Date(bTimeLotus).getTime() - new Date(aTimeLotus).getTime();
+          return new Date(bTimeLotus).getTime() - new Date(bTimeLotus).getTime();
           
         default:
           return 0;
@@ -156,7 +162,23 @@ const KindredSpirits: React.FC = () => {
     });
 
     setSortedUsers(sorted);
+    
+    // Reset pagination when sort changes
+    setCurrentPage(1);
+    const initialBatch = sorted.slice(0, 15); // Show first 15 users
+    setDisplayedUsers(initialBatch);
+    setHasMoreUsers(sorted.length > 15);
   }, [likedByUsers, selectedSort]);
+
+  const loadMoreUsers = () => {
+    const nextPage = currentPage + 1;
+    const endIndex = nextPage * 15;
+    const newUsers = sortedUsers.slice(0, endIndex);
+    
+    setDisplayedUsers(newUsers);
+    setCurrentPage(nextPage);
+    setHasMoreUsers(endIndex < sortedUsers.length);
+  };
 
   const handleCardPress = (user: any, isFirst: boolean) => {
     if (hasFullCircle || isFirst) {
@@ -452,7 +474,7 @@ const KindredSpirits: React.FC = () => {
     );
   }
 
-  const [firstUser, ...rest] = sortedUsers;
+  const [firstUser, ...rest] = displayedUsers;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -575,7 +597,7 @@ const KindredSpirits: React.FC = () => {
             )}
             
             <View style={styles.gridContainer}>
-              {rest.map((user) => (
+              {rest.slice(0, displayedUsers.length - 1).map((user) => (
                 <View key={user.userId} style={styles.userCardContainer}>
                   <TouchableOpacity 
                     onPress={() => handleCardPress(user, false)}
@@ -598,6 +620,20 @@ const KindredSpirits: React.FC = () => {
                 </View>
               ))}
             </View>
+            
+            {/* Load More Button */}
+            {hasMoreUsers && (
+              <TouchableOpacity
+                style={[styles.loadMoreButton, { borderColor: colors.border }]}
+                onPress={loadMoreUsers}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.loadMoreText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+                  Load More ({sortedUsers.length - displayedUsers.length} remaining)
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={colors.textDark} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
         
@@ -862,6 +898,24 @@ const styles = StyleSheet.create({
   
   bottomSpacing: {
     height: Spacing['2xl'],
+  },
+  
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  
+  loadMoreText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.3,
   },
 });
 

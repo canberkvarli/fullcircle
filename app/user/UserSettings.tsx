@@ -787,58 +787,6 @@ export default function UserSettings() {
           </TouchableOpacity>
         </View>
 
-        {/* Developer Section */}
-        {__DEV__ && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.captionFont]}>🧪 DEVELOPER TOOLS</Text>
-            
-            <TouchableOpacity 
-              style={styles.row}
-              onPress={() => router.navigate("/user/NotificationTester" as any)}
-            >
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Test Notifications</Text>
-                <Text style={[styles.rowDescription, fonts.captionFont]}>
-                  Debug and test push notification system
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.row}
-              onPress={handleTestWeeklyLotus}
-              disabled={isLoading}
-            >
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Test Weekly Lotus</Text>
-                <Text style={[styles.rowDescription, fonts.captionFont]}>
-                  Manually trigger weekly lotus assignment
-                </Text>
-              </View>
-              {isLoading ? (
-                <OuroborosLoader 
-                  size={24}
-                  duration={2000}
-                  fillColor="#F5E6D3"
-                  strokeColor="#7B6B5C"
-                  strokeWidth={1.5}
-                  loop={true}
-                />
-              ) : (
-                <View style={styles.rowRight}>
-                  <View style={styles.lotusBadge}>
-                    <Text style={[styles.lotusBadgeText, fonts.captionFont]}>
-                      {userData.numOfLotus || 0} 🪷
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Subscription Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, fonts.captionFont]}>SUBSCRIPTION</Text>

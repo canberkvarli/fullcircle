@@ -91,8 +91,16 @@ export const useFont = () => {
     modalTitleFont: getFontStyle('xl', 'semibold'),
     modalBodyFont: getFontStyle('base', 'regular'),
     
-    // Special logo font (for "Circle" title)
-    logoTitleFont: getFontStyle('6xl', 'main'),
+    // Spiritual fonts (Spirituality) - for spiritual content, affirmations, special text
+    spiritualityLargeTitleFont: getFontStyle('7xl', 'spirituality'),
+    spiritualityTitleFont: getFontStyle('6xl', 'spirituality'),
+    spiritualitySubtitleFont: getFontStyle('4xl', 'spirituality'),
+    spiritualityHeadingFont: getFontStyle('3xl', 'spirituality'),
+    spiritualityBodyFont: getFontStyle('lg', 'spirituality'),
+    spiritualityBaseFont: getFontStyle('base', 'spirituality'),
+    spiritualityButtonFont: getFontStyle('base', 'spirituality'),
+    spiritualityCaptionFont: getFontStyle('sm', 'spirituality'),
+    spiritualitySmallFont: getFontStyle('xs', 'spirituality'),
 
     // New custom title fonts using Jury Duty and High Empathy
     // More Jury Duty font options (all sizes)
@@ -108,16 +116,12 @@ export const useFont = () => {
     // More High Empathy font options (all sizes)
     highEmpathyLargeTitleFont: getFontStyle('7xl', 'highEmpathy'),
     highEmpathyTitleFont: getFontStyle('3xl', 'highEmpathy'),
+    highEmpathyHeadingFont: getFontStyle('3xl', 'highEmpathy'),
     highEmpathySubtitleFont: getFontStyle('xl', 'highEmpathy'),
     highEmpathyBodyFont: getFontStyle('base', 'highEmpathy'),
     highEmpathyBaseFont: getFontStyle('base', 'highEmpathy'),
     highEmpathyButtonFont: getFontStyle('base', 'highEmpathy'),
     highEmpathyCaptionFont: getFontStyle('sm', 'highEmpathy'),
     highEmpathySmallFont: getFontStyle('xs', 'highEmpathy'),
-
-    logoSubtitleFont: getFontStyle('xl', 'main'),
-    logoTextFont: getFontStyle('3xl', 'main'),
-    logoBodyFont: getFontStyle('base', 'main'),
-    logoButtonFont: getFontStyle('base', 'main'),
   };
 };
