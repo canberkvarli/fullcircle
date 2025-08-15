@@ -16,26 +16,26 @@ import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
 import LotusScreen from "@/components/LotusScreen";
 import { Colors, Typography, Spacing } from "@/constants/Colors";
+
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 /**
- * 🚀 PERFORMANCE OPTIMIZED CONNECT SCREEN WITH PHOTO CACHING (TESTING MODE)
+ * 🚀 PERFORMANCE OPTIMIZED CONNECT SCREEN WITH PHOTO CACHING
  * 
  * KEY PERFORMANCE FEATURES:
  * 1. PHOTO CACHING: Preloads next user's photos for instant display
  * 2. SMART PRELOADING: Automatically fetches next batch when 3 users remain
  * 3. INSTANT TRANSITIONS: Next user is always ready when you swipe
  * 4. BACKGROUND LOADING: No UI blocking during data fetching
- * 5. NO ANIMATIONS: Clean testing mode to verify photo caching performance
+ * 5. OPTIMIZED ANIMATIONS: 600ms swipe + instant new user display
  * 
  * PHOTO CACHING STRATEGY:
  * - When viewing a user, automatically start loading next user's photos
  * - Photos are cached in memory and displayed instantly on swipe
  * - Fallback to normal loading if cache miss (never breaks existing functionality)
  * 
- * TESTING MODE: All animations removed to test if photo caching works
- * This lets you see instant user transitions without animation delays!
+ * This eliminates the "loading" experience and makes user transitions feel instant!
  */
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
