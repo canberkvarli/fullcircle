@@ -167,19 +167,31 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
     const sections = [];
     const warmNeutral = '#8B7355'; // Warm brown-gray color for all basic info
 
+    // Helper function to check if a field is hidden
+    const isFieldHidden = (fieldName: string) => {
+      return userData.hiddenFields?.[fieldName] === true;
+    };
+
     // 1. Basic Demographics (About Me) - similar to PotentialMatch
-    const age = userData.age || 'Age not shared';
-    const location = getLocation(userData);
-    const height = userData.height ? `${userData.height} ft tall` : 'Height not shared';
+    const age = !isFieldHidden('age') && userData.age ? userData.age : null;
+    const location = !isFieldHidden('location') ? getLocation(userData) : null;
+    const height = !isFieldHidden('height') && userData.height ? `${userData.height} ft tall` : null;
     
-    const basicItems = [
-      { icon: "cake", iconType: "custom", text: age, color: warmNeutral },
-      { icon: "swap-vertical-outline", iconType: "ionicon", text: height, color: warmNeutral },
-      { icon: "temple", iconType: "custom", text: location, color: warmNeutral }
-    ];
+    const basicItems = [];
     
-    // Add gender identity if available
-    if (userData.gender && userData.gender.length > 0) {
+    // Only add items that aren't hidden and have valid data
+    if (age) {
+      basicItems.push({ icon: "cake", iconType: "custom", text: age, color: warmNeutral });
+    }
+    if (height) {
+      basicItems.push({ icon: "swap-vertical-outline", iconType: "ionicon", text: height, color: warmNeutral });
+    }
+    if (location) {
+      basicItems.push({ icon: "temple", iconType: "custom", text: location, color: warmNeutral });
+    }
+    
+    // Add gender identity if available and not hidden
+    if (!isFieldHidden('gender') && userData.gender && userData.gender.length > 0) {
       basicItems.push({ 
         icon: "person-outline", 
         iconType: "ionicon", 
@@ -188,13 +200,16 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       });
     }
     
-    sections.push({
-      type: 'basic-info',
-      items: basicItems
-    });
+    // Only add basic info section if we have items to show
+    if (basicItems.length > 0) {
+      sections.push({
+        type: 'basic-info',
+        items: basicItems
+      });
+    }
 
     // 2. Spiritual Practices using custom meditation icon
-    if (userData.spiritualProfile?.practices && userData.spiritualProfile.practices.length > 0) {
+    if (!isFieldHidden('spiritualPractices') && userData.spiritualProfile?.practices && userData.spiritualProfile.practices.length > 0) {
       const meaningfulPractices = userData.spiritualProfile.practices.filter(practice => 
         practice !== "Open to All" && practice.trim() !== ""
       );
@@ -214,7 +229,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
     }
 
     // 3. Healing Modalities using custom yinyang icon
-    if (userData.spiritualProfile?.healingModalities && userData.spiritualProfile.healingModalities.length > 0) {
+    if (!isFieldHidden('healingModalities') && userData.spiritualProfile?.healingModalities && userData.spiritualProfile.healingModalities.length > 0) {
       const meaningfulModalities = userData.spiritualProfile.healingModalities.filter(modality => 
         modality !== "Open to All" && modality.trim() !== ""
       );
@@ -234,7 +249,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
     }
 
     // 4. Spiritual Draws using custom ohm icon
-    if (userData.spiritualProfile?.draws && userData.spiritualProfile.draws.length > 0) {
+    if (!isFieldHidden('spiritualDraws') && userData.spiritualProfile?.draws && userData.spiritualProfile.draws.length > 0) {
       const meaningfulDraws = userData.spiritualProfile.draws.filter(draw => 
         draw !== "Open to All" && draw.trim() !== ""
       );

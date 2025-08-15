@@ -243,28 +243,45 @@ const UserShow: React.FC = () => {
     const cards = [];
     const warmNeutral = '#8B7355';
     
+    // Helper function to check if a field is hidden
+    const isFieldHidden = (fieldName: string) => {
+      return user.hiddenFields?.[fieldName] === true;
+    };
+    
     // 1. Basic Demographics
-    const age = calculateAge(user);
-    const location = getLocation(user);
+    const age = !isFieldHidden('age') && calculateAge(user);
+    const location = !isFieldHidden('location') ? getLocation(user) : null;
+    const height = !isFieldHidden('height') && user.height ? `${user.height}` : null;
     
-    const basicItems = [
-      { icon: "calendar-outline", text: age ? `${age}` : "Age not shared", color: warmNeutral },
-      { icon: "swap-vertical-outline", text: user.height ? `${user.height}` : "Height not shared", color: warmNeutral },
-      { icon: "location-outline", text: location, color: warmNeutral }
-    ];
+    const basicItems = [];
     
-    if (user.gender && user.gender.length > 0) {
+    // Only add items that aren't hidden and have valid data
+    if (age) {
+      basicItems.push({ icon: "calendar-outline", text: `${age}`, color: warmNeutral });
+    }
+    if (height) {
+      basicItems.push({ icon: "swap-vertical-outline", text: height, color: warmNeutral });
+    }
+    if (location) {
+      basicItems.push({ icon: "location-outline", text: location, color: warmNeutral });
+    }
+    
+    // Add gender identity if available and not hidden
+    if (!isFieldHidden('gender') && user.gender && user.gender.length > 0) {
       basicItems.push({ icon: "person-outline", text: user.gender.join(", "), color: warmNeutral });
     }
     
-    cards.push({
-      title: "",
-      items: basicItems,
-      type: 'basic-info'
-    });
+    // Only add basic info section if we have items to show
+    if (basicItems.length > 0) {
+      cards.push({
+        title: "",
+        items: basicItems,
+        type: 'basic-info'
+      });
+    }
 
     // 2. Connection Styles
-    if (user.matchPreferences?.connectionStyles && user.matchPreferences.connectionStyles.length > 0) {
+    if (!isFieldHidden('connectionStyles') && user.matchPreferences?.connectionStyles && user.matchPreferences.connectionStyles.length > 0) {
       cards.push({
         title: "Connection Style",
         content: "",
@@ -276,7 +293,7 @@ const UserShow: React.FC = () => {
     }
 
     // 3. Spiritual Practices
-    if (user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
+    if (!isFieldHidden('spiritualPractices') && user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
       cards.push({
         title: "Spiritual Practices",
         content: user.spiritualProfile.practices.slice(0, 3).join(", "),
@@ -288,7 +305,7 @@ const UserShow: React.FC = () => {
     }
 
     // 4. Healing Modalities
-    if (user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
+    if (!isFieldHidden('healingModalities') && user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
       cards.push({
         title: "Healing Path",
         content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
@@ -300,18 +317,18 @@ const UserShow: React.FC = () => {
     }
 
     // 5. Spiritual Draws
-  if (user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
-    const drawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
-    
-    cards.push({
-      title: "Spiritual Draws",
-      content: drawLabels.slice(0, 3).join(", "), // UPDATED: Use labels instead of values
-      icon: "heart-outline",
-      pillsData: drawLabels, // UPDATED: Use labels instead of values
-      color: '#DC2626',
-      type: 'info-card'
-    });
-  }
+    if (!isFieldHidden('spiritualDraws') && user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
+      const drawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
+      
+      cards.push({
+        title: "Spiritual Draws",
+        content: drawLabels.slice(0, 3).join(", "), // UPDATED: Use labels instead of values
+        icon: "heart-outline",
+        pillsData: drawLabels, // UPDATED: Use labels instead of values
+        color: '#DC2626',
+        type: 'info-card'
+      });
+    }
 
     return cards;
   };
