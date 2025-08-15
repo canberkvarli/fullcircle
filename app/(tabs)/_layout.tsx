@@ -66,8 +66,8 @@ const AnimatedSpiritualOuroboros = ({
         <OuroborosLoader
           key={`loader-${animationKey.current}-${forceUpdate.current}`}
           size={55}
-          fillColor={userData?.subscription?.isActive ? "#FFD700" : "#8B4513"}
-          strokeColor={userData?.subscription?.isActive ? "#FFA500" : "#BFA98A"}
+          fillColor={userData?.subscription?.isActive ? "#F5E6D3" : "#8B4513"}
+          strokeColor={userData?.subscription?.isActive ? "#B8860B" : "#BFA98A"}
           strokeWidth={1}
           duration={2000}
           loop={false}
@@ -90,12 +90,14 @@ const AnimatedSpiritualIcon = ({
   iconName, 
   color, 
   size, 
-  focused
+  focused,
+  userData
 }: { 
   iconName: string; 
   color: string; 
   size: number; 
   focused: boolean;
+  userData?: any;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -115,6 +117,10 @@ const AnimatedSpiritualIcon = ({
     ]).start();
   }, [focused, scaleAnim, opacityAnim]);
 
+  // Golden colors for subscribed users
+  const goldenColor = userData?.subscription?.isActive ? '#DAA520' : '#8B4513'; // GoldenRod for subscribed, brown for others
+  const focusedColor = userData?.subscription?.isActive ? '#B8860B' : '#8B4513'; // DarkGoldenRod for focused subscribed
+
   return (
     <Animated.View style={{
       alignItems: 'center',
@@ -125,7 +131,7 @@ const AnimatedSpiritualIcon = ({
     }}>
       <Ionicons 
         name={iconName as any} 
-        color={focused ? '#8B4513' : color} 
+        color={focused ? focusedColor : goldenColor} 
         size={focused ? size + 2 : size} 
       />
     </Animated.View>
@@ -137,12 +143,14 @@ const AnimatedSpiritualAvatar = ({
   photoUri, 
   color, 
   size, 
-  focused
+  focused,
+  userData
 }: { 
   photoUri?: string; 
   color: string; 
   size: number; 
   focused: boolean;
+  userData?: any;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -168,6 +176,10 @@ const AnimatedSpiritualAvatar = ({
     ]).start();
   }, [focused, scaleAnim, opacityAnim, borderAnim]);
 
+  // Golden colors for subscribed users
+  const goldenColor = userData?.subscription?.isActive ? '#DAA520' : '#8B4513'; // GoldenRod for subscribed, brown for others
+  const focusedColor = userData?.subscription?.isActive ? '#B8860B' : '#8B4513'; // DarkGoldenRod for focused subscribed
+
   if (!photoUri) {
     return (
       <Animated.View style={{
@@ -178,7 +190,7 @@ const AnimatedSpiritualAvatar = ({
       }}>
         <Ionicons 
           name="person-circle" 
-          color={color} 
+          color={goldenColor} 
           size={size} 
         />
       </Animated.View>
@@ -198,8 +210,8 @@ const AnimatedSpiritualAvatar = ({
         borderRadius: (size + 4) / 2,
         overflow: "hidden",
         borderWidth: borderAnim,
-        borderColor: focused ? '#8B4513' : '#8B4513' + '40',
-        backgroundColor: '#8B4513' + '10',
+        borderColor: focused ? focusedColor : goldenColor + '40',
+        backgroundColor: goldenColor + '10',
       }}>
         <Image
           source={{ uri: photoUri }}
@@ -219,11 +231,13 @@ const AnimatedSpiritualAvatar = ({
 const AnimatedLikedByIcon = ({ 
   color, 
   size, 
-  focused
+  focused,
+  userData
 }: { 
   color: string; 
   size: number; 
   focused: boolean;
+  userData?: any;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -242,6 +256,10 @@ const AnimatedLikedByIcon = ({
       }),
     ]).start();
   }, [focused, scaleAnim, opacityAnim]);
+
+  // Golden colors for subscribed users
+  const goldenColor = userData?.subscription?.isActive ? '#DAA520' : '#8B4513'; // GoldenRod for subscribed, brown for others
+  const focusedColor = userData?.subscription?.isActive ? '#B8860B' : '#8B4513'; // DarkGoldenRod for focused subscribed
 
   return (
     <Animated.View style={{
@@ -252,7 +270,7 @@ const AnimatedLikedByIcon = ({
       opacity: opacityAnim,
     }}>
       <LikedByIconWithBadge 
-        color={focused ? '#8B4513' : color} 
+        color={focused ? focusedColor : goldenColor} 
         size={focused ? size + 2 : size} 
       />
     </Animated.View>
@@ -263,11 +281,13 @@ const AnimatedLikedByIcon = ({
 const AnimatedMatchesIcon = ({ 
   color, 
   size, 
-  focused
+  focused,
+  userData
 }: { 
   color: string; 
   size: number; 
   focused: boolean;
+  userData?: any;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -287,6 +307,10 @@ const AnimatedMatchesIcon = ({
     ]).start();
   }, [focused, scaleAnim, opacityAnim]);
 
+  // Golden colors for subscribed users
+  const goldenColor = userData?.subscription?.isActive ? '#DAA520' : '#8B4513'; // GoldenRod for subscribed, brown for others
+  const focusedColor = userData?.subscription?.isActive ? '#B8860B' : '#8B4513'; // DarkGoldenRod for focused subscribed
+
   return (
     <Animated.View style={{
       alignItems: 'center',
@@ -296,7 +320,7 @@ const AnimatedMatchesIcon = ({
       opacity: opacityAnim,
     }}>
       <MatchesIconWithBadge 
-        color={focused ? '#8B4513' : color} 
+        color={focused ? focusedColor : goldenColor} 
         size={focused ? size + 2 : size} 
       />
     </Animated.View>
@@ -366,6 +390,7 @@ export default function TabsLayout() {
               color={color} 
               size={size} 
               focused={focused}
+              userData={userData}
             />
           ),
         }}
@@ -380,6 +405,7 @@ export default function TabsLayout() {
               color={color} 
               size={size} 
               focused={focused}
+              userData={userData}
             />
           ),
         }}
@@ -395,6 +421,7 @@ export default function TabsLayout() {
               color={color}
               size={size}
               focused={focused}
+              userData={userData}
             />
           ),
         }}
@@ -411,6 +438,7 @@ export default function TabsLayout() {
                 color={color} 
                 size={size} 
                 focused={focused} 
+                userData={userData}
               />
             ),
           }}
