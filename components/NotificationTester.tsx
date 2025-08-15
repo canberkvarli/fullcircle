@@ -107,7 +107,7 @@ export default function NotificationTester() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="flask" size={24} color="#8B4513" />
-        <Text style={[styles.title, fonts.spiritualTitleFont]}>Notification Tester</Text>
+        <Text style={[styles.title, fonts.spiritualLargeTitleFont]}>Notification Tester</Text>
       </View>
 
       <View style={styles.section}>

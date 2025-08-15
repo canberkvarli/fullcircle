@@ -123,7 +123,7 @@ export default function NotificationTester() {
               <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Minimal Title */}
           <View style={styles.titleSection}>
-            <Text style={[styles.pageTitle, fonts.spiritualTitleFont]}>🧪 Notification Tester</Text>
+            <Text style={[styles.pageTitle, fonts.spiritualLargeTitleFont]}>🧪 Notification Tester</Text>
             <Text style={[styles.pageSubtitle, fonts.captionFont]}>Debug and test your push notification system</Text>
           </View>
 

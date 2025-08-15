@@ -328,7 +328,7 @@ const KindredSpirits: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[fonts.spiritualityHeadingFont, { color: colors.textDark }]}>
+            <Text style={[fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
               Kindred Spirits
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -390,7 +390,7 @@ const KindredSpirits: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[fonts.spiritualityHeadingFont, { color: colors.textDark }]}>
+            <Text style={[fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
               Kindred Spirits
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -430,7 +430,7 @@ const KindredSpirits: React.FC = () => {
             <CustomIcon name="hand-heart" size={54} color="#8B4513" />
           </View>
           
-          <Text style={[styles.noLikesTitle, fonts.spiritualityHeadingFont, { color: colors.textDark }]}>
+          <Text style={[styles.noLikesTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
             Your connections are coming
           </Text>
           
@@ -482,7 +482,7 @@ const KindredSpirits: React.FC = () => {
       
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={[fonts.spiritualityHeadingFont, { color: colors.textDark }]}>
+          <Text style={[fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
             Kindred Spirits
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -796,7 +796,6 @@ const styles = StyleSheet.create({
   
   primaryButtonText: {
     fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },

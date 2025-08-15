@@ -150,7 +150,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginBottom: Spacing.lg,
     },
     infoFeatureTitle: {
-      ...fonts.spiritualTitleFont,
+      ...fonts.spiritualLargeTitleFont,
       fontSize: Typography.sizes.base,
       fontWeight: Typography.weights.bold,
       color: colors.textDark,

@@ -79,7 +79,7 @@ const BoostOption: React.FC<BoostOptionProps> = ({
       
       <View style={styles.boostDisplay}>
         <View style={[styles.boostIcon, { backgroundColor: '#B8860B' + '20' }]}>
-          <Text style={[styles.boostCountText, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+          <Text style={[styles.boostCountText, fonts.spiritualLargeTitleFont, { color: '#B8860B' }]}>
             {boostCount}
           </Text>
         </View>
@@ -367,11 +367,11 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
                 <View style={[styles.activeRadianceCard, { backgroundColor: '#B8860B' + '08', borderColor: '#B8860B' }]}>
                   <View style={styles.activeRadianceHeader}>
                     <Ionicons name="radio" size={24} color="#B8860B" />
-                    <Text style={[styles.activeRadianceTitle, fonts.spiritualTitleFont, { color: '#B8860B' }]}>
+                    <Text style={[styles.activeRadianceTitle, fonts.spiritualLargeTitleFont, { color: '#B8860B' }]}>
                       Radiance Active
                     </Text>
                   </View>
-                  <Text style={[styles.activeRadianceTime, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  <Text style={[styles.activeRadianceTime, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                     {radianceStatus.formattedTime}
                   </Text>
                   <Text style={[styles.activeRadianceSubtext, fonts.bodyFont, { color: colors.textMuted }]}>
@@ -391,7 +391,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
                   </Text>
                 </View>
                 
-                <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                <Text style={[styles.heroTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                   Activate Your Radiance
                 </Text>
                 
@@ -431,7 +431,7 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
             {/* Simple Hero for Purchase */}
             {(!hasAvailableBoosts || hasActiveRadiance) && (
               <View style={styles.heroSection}>
-                <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                <Text style={[styles.heroTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                   {hasActiveRadiance ? "Get More Radiance" : "Radiance Boosts"}
                 </Text>
                 <Text style={[styles.heroSubtitle, fonts.bodyFont, { color: colors.textMuted }]}>

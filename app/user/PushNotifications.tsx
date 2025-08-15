@@ -100,7 +100,7 @@ export default function PushNotifications() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>Divine Messages</Text>
+        <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont]}>Divine Messages</Text>
         <View style={styles.headerRight} />
       </View>
 

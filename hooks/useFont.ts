@@ -114,7 +114,7 @@ export const useFont = () => {
     // Since Spirituality font only has one weight, we use size + styling variations
     spiritualityHeroFont: getSpiritualityStyle('7xl', 'affirmation'),
     spiritualityMegaTitleFont: getSpiritualityStyle('6xl', 'affirmation'),
-    spiritualityLargeTitleFont: getSpiritualityStyle('5xl', 'vibrant'),
+    spiritualityLargeTitleFont: getSpiritualityStyle('5xl', 'affirmation'),
     spiritualityTitleFont: getSpiritualityStyle('4xl', 'vibrant'),
     
     // Bolder, more vibrant subtitles and affirmations using enhanced styling
@@ -153,6 +153,7 @@ export const useFont = () => {
     
     // Spiritual fonts (Quicksand) - Tertiary, for variety
     spiritualTitleFont: getFontStyle('4xl', 'spiritualBold'),
+    spiritualLargeTitleFont: getFontStyle('3xl', 'spiritualBold'),
     spiritualSubtitleFont: getFontStyle('lg', 'spiritualLight'),
     affirmationFont: getFontStyle('lg', 'spiritualLight'),
     spiritualBodyFont: getFontStyle('base', 'spiritualRegular'),

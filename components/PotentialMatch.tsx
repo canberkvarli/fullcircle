@@ -744,7 +744,7 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   },
   
   userName: {
-    ...fonts.spiritualTitleFont,
+    ...fonts.spiritualLargeTitleFont,
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
     textAlign: "left",

@@ -82,7 +82,7 @@ const LotusOptionCard: React.FC<{
             size={38} 
           />
         </View>
-        <Text style={[styles.lotusCountText, fonts.spiritualTitleFont]}>
+        <Text style={[styles.lotusCountText, fonts.spiritualLargeTitleFont]}>
           {option.lotusCount}
         </Text>
         <Text style={[styles.lotusLabel, fonts.bodyFont, { color: colors.textMuted }]}>
@@ -290,7 +290,7 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
                 </Text>
               </View>
               
-              <Text style={[styles.heroTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              <Text style={[styles.heroTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                 Express Deep Connection
               </Text>
               

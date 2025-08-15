@@ -561,7 +561,7 @@ export default function UserSettings() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft} />
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>Settings</Text>
+        <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont]}>Settings</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={colors.textDark} />
         </TouchableOpacity>
@@ -982,7 +982,7 @@ export default function UserSettings() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Pause Your Profile?</Text>
+            <Text style={[styles.modalTitle, fonts.spiritualLargeTitleFont]}>Pause Your Profile?</Text>
             <Text style={[styles.modalDescription, fonts.spiritualBodyFont]}>
               Pausing will hide your profile from new people. You can still chat with current matches and unpause anytime.
             </Text>
@@ -1010,7 +1010,7 @@ export default function UserSettings() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Verification Code</Text>
+            <Text style={[styles.modalTitle, fonts.spiritualLargeTitleFont]}>Verification Code</Text>
             <Text style={[styles.modalDescription, fonts.spiritualBodyFont]}>
               We sent a verification code to {newEmail}
             </Text>
@@ -1060,7 +1060,7 @@ export default function UserSettings() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, fonts.spiritualTitleFont]}>Why are you leaving?</Text>
+            <Text style={[styles.modalTitle, fonts.spiritualLargeTitleFont]}>Why are you leaving?</Text>
             
             {deleteReasons.map((reason, index) => (
               <TouchableOpacity

@@ -509,7 +509,7 @@ const Chat: React.FC = () => {
                 </TouchableOpacity>
                 <View style={styles.titleContainer}>
                   <View style={styles.nameWithIcon}>
-                    <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                    <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                       {otherUserData?.firstName || "Soul"}
                     </Text>
                     {/* Connection icon next to name */}

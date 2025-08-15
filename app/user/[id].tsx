@@ -590,7 +590,7 @@ const UserShow: React.FC = () => {
                 <Text
                   style={[
                     styles.centerName,
-                    fonts.spiritualTitleFont,
+                    fonts.spiritualLargeTitleFont,
                     { color: colors.textDark }
                   ]}
                 >
@@ -613,7 +613,7 @@ const UserShow: React.FC = () => {
             <Animated.View style={{ opacity: leftNameOpacity }}>
               <View style={styles.headerContainer}>
                 <View style={styles.nameRow}>
-                  <Text style={[styles.userName, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                  <Text style={[styles.userName, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                     {currentUser.firstName}
                   </Text>
                 </View>

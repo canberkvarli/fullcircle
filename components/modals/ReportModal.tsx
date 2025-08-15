@@ -105,7 +105,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#8B4513" />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
               Report {userName}
             </Text>
             <View style={styles.placeholder} />
@@ -180,7 +180,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
                     color="#8B4513" 
                   />
                 </View>
-                <Text style={[styles.detailsTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+                <Text style={[styles.detailsTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                   {reportReasons.find((r) => r.id === selectedReason)?.label}
                 </Text>
               </View>

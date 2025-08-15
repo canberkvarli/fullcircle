@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>Privacy Policy</Text>
+        <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont]}>Privacy Policy</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -45,7 +45,7 @@ export default function PrivacyPolicy() {
           </Text>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Information We Collect</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Information We Collect</Text>
             
             <Text style={[styles.subsectionTitle, fonts.buttonFont]}>Account Information</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
@@ -65,7 +65,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>How We Use Your Information</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>How We Use Your Information</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We use your information to:{'\n\n'}
               • Provide and improve our matching service{'\n'}
@@ -77,7 +77,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Information Sharing</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Information Sharing</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We respect your privacy and do not sell your personal information. We may share information only:{'\n\n'}
               • With other users as part of the matching process{'\n'}
@@ -88,7 +88,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Data Security</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Data Security</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We implement industry-standard security measures to protect your data, including:{'\n\n'}
               • Encryption of sensitive information{'\n'}
@@ -99,7 +99,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Your Rights</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Your Rights</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               You have the right to:{'\n\n'}
               • Access your personal information{'\n'}
@@ -111,7 +111,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Data Retention</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Data Retention</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We retain your information only as long as necessary to provide our services. 
               When you delete your account, we remove your personal information within 30 days, 
@@ -120,7 +120,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Children's Privacy</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Children's Privacy</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               Circle is not intended for users under 18. We do not knowingly collect 
               information from children under 18. If we learn we have collected such information, 
@@ -129,7 +129,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Changes to This Policy</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Changes to This Policy</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We may update this Privacy Policy from time to time. We will notify you of any 
               significant changes through the app or by email. Your continued use of Circle 
@@ -138,7 +138,7 @@ export default function PrivacyPolicy() {
           </View>
 
           <View style={styles.contactSection}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Contact Us</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Contact Us</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               If you have questions about this Privacy Policy or your data, please contact us:
             </Text>

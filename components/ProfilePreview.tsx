@@ -428,7 +428,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
         <Text
           style={[
             styles.topName, 
-            fonts.spiritualTitleFont,
+            fonts.spiritualLargeTitleFont,
             { color: colors.textDark }
           ]}
         >

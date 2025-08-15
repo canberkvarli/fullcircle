@@ -423,7 +423,7 @@ const ConnectScreen: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualityVibrantTitleFont, { color: colors.textDark }]}>
               Circle
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -444,7 +444,7 @@ const ConnectScreen: React.FC = () => {
               strokeColor="#B8860B"
             />
           
-          <Text  style={[styles.noLikesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text  style={[styles.noLikesTitle, fonts.spiritualityVibrantTitleFont, { color: colors.textDark }]}>
             {hasFullCircleSubscription 
               ? "You've explored your current circle"
               : "More connections coming soon"
@@ -711,7 +711,7 @@ const ConnectScreen: React.FC = () => {
               
               <Text style={[
                 styles.divineTitle, 
-                fonts.spiritualTitleFont, 
+                fonts.spiritualityVibrantTitleFont, 
                 { color: colors.textDark }
               ]}>
                 Lotus Needed
@@ -791,7 +791,7 @@ const ConnectScreen: React.FC = () => {
               
               <Text style={[
                 styles.divineTitle, 
-                fonts.spiritualTitleFont, 
+                fonts.spiritualityVibrantTitleFont, 
                 { color: colors.textDark }
               ]}>
                 Daily Hearts Used
@@ -894,7 +894,6 @@ const styles = StyleSheet.create({
   
   headerTitle: {
     fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
     marginBottom: 2,
     letterSpacing: 0.5,
   },
@@ -1067,7 +1066,6 @@ const styles = StyleSheet.create({
   
   divineTitle: {
     fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
     textAlign: 'center',
     marginBottom: Spacing.lg,
     letterSpacing: 0.5,
@@ -1146,7 +1144,6 @@ const styles = StyleSheet.create({
   
   noLikesTitle: {
     fontSize: Typography.sizes['2xl'],
-    fontWeight: Typography.weights.bold,
     textAlign: 'center',
     marginBottom: Spacing.lg,
     letterSpacing: 0.5,
@@ -1181,7 +1178,6 @@ const styles = StyleSheet.create({
   
   primaryButtonText: {
     fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
@@ -1198,7 +1194,6 @@ const styles = StyleSheet.create({
   
   secondaryButtonText: {
     fontSize: Typography.sizes.base,
-    fontWeight: Typography.weights.medium,
     letterSpacing: 0.3,
   },
   
@@ -1217,7 +1212,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     letterSpacing: 0.3,
-    fontWeight: Typography.weights.medium,
   },
 });
 

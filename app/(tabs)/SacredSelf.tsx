@@ -194,7 +194,7 @@ export default function SacredSelf() {
       }]}>
         <Animated.Text style={[
           styles.animatedHeaderTitle, 
-          fonts.spiritualTitleFont, 
+          fonts.spiritualLargeTitleFont, 
           { 
             color: colors.textDark,
             opacity: headerOpacity,
@@ -272,7 +272,7 @@ export default function SacredSelf() {
 
           <View style={styles.userInfoContainer}>
             <View style={styles.nameVerificationRow}>
-              <Text style={[styles.userName, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+              <Text style={[styles.userName, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
                 {userData.firstName}
               </Text>
               {!verified ? (

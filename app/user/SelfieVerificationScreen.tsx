@@ -194,7 +194,7 @@ export default function SelfieVerificationScreen() {
         </View>
       </View>
       
-      <Text style={[styles.title, fonts.spiritualTitleFont]}>
+      <Text style={[styles.title, fonts.spiritualLargeTitleFont]}>
         Verify Your Identity
       </Text>
       
@@ -239,7 +239,7 @@ export default function SelfieVerificationScreen() {
         </View>
       </View>
       
-      <Text style={[styles.title, fonts.spiritualTitleFont]}>
+      <Text style={[styles.title, fonts.spiritualLargeTitleFont]}>
         Review Your Selfie
       </Text>
       
@@ -296,7 +296,7 @@ export default function SelfieVerificationScreen() {
         </View>
       </View>
       
-      <Text style={[styles.title, fonts.spiritualTitleFont]}>
+      <Text style={[styles.title, fonts.spiritualLargeTitleFont]}>
         Analyzing Your Photo
       </Text>
       
@@ -333,7 +333,7 @@ export default function SelfieVerificationScreen() {
         </View>
       </View>
       
-      <Text style={[styles.title, fonts.spiritualTitleFont]}>
+      <Text style={[styles.title, fonts.spiritualLargeTitleFont]}>
         Verification Complete!
       </Text>
       
@@ -398,7 +398,7 @@ export default function SelfieVerificationScreen() {
         </View>
       </View>
       
-      <Text style={[styles.title, fonts.spiritualTitleFont]}>
+      <Text style={[styles.title, fonts.spiritualLargeTitleFont]}>
         Verification Failed
       </Text>
       

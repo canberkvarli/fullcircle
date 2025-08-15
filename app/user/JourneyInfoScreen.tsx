@@ -174,7 +174,7 @@ export default function JourneyInfoScreen() {
           </TouchableOpacity>
           
           <View style={styles.headerCenter}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
               Your Journey
             </Text>
           </View>

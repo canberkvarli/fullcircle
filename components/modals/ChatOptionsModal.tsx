@@ -119,7 +119,7 @@ export default function ChatOptionsModal({
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.handle} />
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
             Chat Options
           </Text>
         </View>

@@ -28,7 +28,7 @@ export default function TermsOfService() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>Terms of Service</Text>
+        <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont]}>Terms of Service</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -45,7 +45,7 @@ export default function TermsOfService() {
           </Text>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Acceptance of Terms</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Acceptance of Terms</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               By creating an account or using Circle, you agree to be bound by these Terms of Service 
               and our Privacy Policy. If you do not agree to these terms, please do not use our app.
@@ -53,7 +53,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Eligibility</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Eligibility</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               You must be at least 18 years old to use Circle. By using our app, you represent that:{'\n\n'}
               • You are at least 18 years of age{'\n'}
@@ -64,7 +64,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Account Guidelines</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Account Guidelines</Text>
             
             <Text style={[styles.subsectionTitle, fonts.buttonFont]}>Profile Requirements</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
@@ -86,7 +86,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>User Conduct</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>User Conduct</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               You agree to:{'\n\n'}
               • Treat other users with respect and kindness{'\n'}
@@ -99,7 +99,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Safety and Security</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Safety and Security</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               While we strive to provide a safe environment, you acknowledge that:{'\n\n'}
               • You are responsible for your own safety when meeting users{'\n'}
@@ -111,7 +111,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Subscription and Payments</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Subscription and Payments</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               For Circle premium features:{'\n\n'}
               • Subscriptions automatically renew unless cancelled{'\n'}
@@ -123,7 +123,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Intellectual Property</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Intellectual Property</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               • Circle owns all rights to the app and its content{'\n'}
               • You retain rights to content you create{'\n'}
@@ -133,7 +133,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Termination</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Termination</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We may terminate or suspend your account if you:{'\n\n'}
               • Violate these Terms of Service{'\n'}
@@ -145,7 +145,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Disclaimer</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Disclaimer</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               Circle is provided "as is" without warranties of any kind. We do not guarantee:{'\n\n'}
               • That you will find compatible matches{'\n'}
@@ -156,7 +156,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Limitation of Liability</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Limitation of Liability</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               To the fullest extent permitted by law, Circle shall not be liable for any indirect, 
               incidental, special, or consequential damages arising from your use of the app, including 
@@ -165,7 +165,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Changes to Terms</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Changes to Terms</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               We may update these Terms of Service from time to time. We will notify you of any 
               material changes through the app or by email. Your continued use of Circle after 
@@ -174,7 +174,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Governing Law</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Governing Law</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               These Terms of Service shall be governed by and construed in accordance with the laws 
               of the State of California, without regard to its conflict of law provisions.
@@ -182,7 +182,7 @@ export default function TermsOfService() {
           </View>
 
           <View style={styles.contactSection}>
-            <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>Contact Us</Text>
+            <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>Contact Us</Text>
             <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
               If you have questions about these Terms of Service, please contact us:
             </Text>

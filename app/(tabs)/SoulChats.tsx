@@ -137,7 +137,7 @@ const SoulChats: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
               Soul Chats
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -170,7 +170,7 @@ const SoulChats: React.FC = () => {
         
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+            <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
               Soul Chats
             </Text>
             <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
@@ -190,7 +190,7 @@ const SoulChats: React.FC = () => {
             />
           </View>
           
-          <Text style={[styles.noMatchesTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text style={[styles.noMatchesTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
             Your conversations await
           </Text>
           
@@ -224,7 +224,7 @@ const SoulChats: React.FC = () => {
       
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, fonts.spiritualTitleFont, { color: colors.textDark }]}>
+          <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
             Soul Chats
           </Text>
           <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>

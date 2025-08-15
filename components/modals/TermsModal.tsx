@@ -123,7 +123,7 @@ export default function TermsModal({ visible, onClose, type }: TermsModalProps) 
         <View style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.headerTitle, fonts.spiritualTitleFont]}>
+            <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont]}>
               {content.title}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -140,7 +140,7 @@ export default function TermsModal({ visible, onClose, type }: TermsModalProps) 
 
               {content.content.map((section, index) => (
                 <View key={index} style={styles.section}>
-                  <Text style={[styles.sectionTitle, fonts.spiritualTitleFont]}>
+                  <Text style={[styles.sectionTitle, fonts.spiritualLargeTitleFont]}>
                     {section.section}
                   </Text>
                   <Text style={[styles.bodyText, fonts.spiritualBodyFont]}>
