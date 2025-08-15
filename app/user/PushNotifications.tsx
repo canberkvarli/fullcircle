@@ -9,6 +9,8 @@ import {
   StyleSheet,
   useColorScheme,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
@@ -35,69 +37,116 @@ export default function PushNotifications() {
     announcements: userData.settings?.pushNotifications?.announcements ?? true,
   });
 
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const handleNotificationToggle = async (key: keyof typeof notifications, value: boolean) => {
-    let newNotifications = { ...notifications };
+    // Set loading state for this specific toggle
+    setLoadingStates(prev => ({ ...prev, [key]: true }));
     
-    // Special handling for enableAll and muteAll
-    if (key === 'enableAll') {
-      if (value) {
-        // Enable all notifications
-        newNotifications = {
-          enableAll: true,
-          muteAll: false,
-          newLikes: true,
-          newMatches: true,
-          newMessages: true,
-          promotions: true,
-          announcements: true,
-        };
-      } else {
-        // Just turn off enableAll
-        newNotifications.enableAll = false;
-      }
-    } else if (key === 'muteAll') {
-      if (value) {
-        // Mute all notifications
-        newNotifications = {
-          ...newNotifications,
-          muteAll: true,
-          enableAll: false,
-        };
-      } else {
-        // Just turn off muteAll
-        newNotifications.muteAll = false;
-      }
-    } else {
-      // Regular notification toggle
-      newNotifications[key] = value;
+    try {
+      let newNotifications = { ...notifications };
       
-      // Check if all individual notifications are enabled
-      const allEnabled = newNotifications.newLikes && 
-                        newNotifications.newMatches && 
-                        newNotifications.newMessages && 
-                        newNotifications.promotions && 
-                        newNotifications.announcements;
-      
-      if (allEnabled && !newNotifications.muteAll) {
-        newNotifications.enableAll = true;
+      // Special handling for enableAll and muteAll
+      if (key === 'enableAll') {
+        if (value) {
+          // Enable all notifications
+          newNotifications = {
+            enableAll: true,
+            muteAll: false,
+            newLikes: true,
+            newMatches: true,
+            newMessages: true,
+            promotions: true,
+            announcements: true,
+          };
+        } else {
+          // Just turn off enableAll
+          newNotifications.enableAll = false;
+        }
+      } else if (key === 'muteAll') {
+        if (value) {
+          // Mute all notifications
+          newNotifications = {
+            ...newNotifications,
+            muteAll: true,
+            enableAll: false,
+          };
+        } else {
+          // Just turn off muteAll
+          newNotifications.muteAll = false;
+        }
       } else {
-        newNotifications.enableAll = false;
+        // Regular notification toggle
+        newNotifications[key] = value;
+        
+        // Check if all individual notifications are enabled
+        const allEnabled = newNotifications.newLikes && 
+                          newNotifications.newMatches && 
+                          newNotifications.newMessages && 
+                          newNotifications.promotions && 
+                          newNotifications.announcements;
+        
+        if (allEnabled && !newNotifications.muteAll) {
+          newNotifications.enableAll = true;
+        } else {
+          newNotifications.enableAll = false;
+        }
       }
+      
+      setNotifications(newNotifications);
+      
+      // Update in backend
+      await updateUserSettings({
+        pushNotifications: newNotifications,
+      });
+      
+      // Show success feedback
+      if (Platform.OS === 'ios') {
+        // iOS haptic feedback could be added here
+      }
+      
+    } catch (error) {
+      console.error('Failed to update notification settings:', error);
+      
+      // Revert the change on error
+      setNotifications(notifications);
+      
+      Alert.alert(
+        'Update Failed',
+        'Failed to update notification settings. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      // Clear loading state
+      setLoadingStates(prev => ({ ...prev, [key]: false }));
     }
-    
-    setNotifications(newNotifications);
-    
-    // Update in backend
-    await updateUserSettings({
-      pushNotifications: newNotifications,
-    });
   };
+
+  const isToggleDisabled = (key: string) => {
+    if (key === 'enableAll') return notifications.muteAll;
+    if (key === 'muteAll') return false;
+    return notifications.muteAll;
+  };
+
+  const getSwitchColors = (isEnabled: boolean) => ({
+    trackColor: { 
+      false: colors.border, 
+      true: colors.primary + '80' 
+    },
+    thumbColor: isEnabled ? colors.primary : colors.textMuted
+  });
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={24} color={colors.textDark} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, fonts.spiritualLargeTitleFont]}>Divine Messages</Text>
@@ -116,13 +165,18 @@ export default function PushNotifications() {
                 Open your spirit to receive all divine notifications from the universe
               </Text>
             </View>
-            <Switch
-              value={notifications.enableAll}
-              onValueChange={(value) => handleNotificationToggle('enableAll', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.enableAll ? '#8B4513' : colors.textMuted}
-              disabled={notifications.muteAll}
-            />
+            {loadingStates.enableAll ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.enableAll}
+                onValueChange={(value) => handleNotificationToggle('enableAll', value)}
+                {...getSwitchColors(notifications.enableAll)}
+                disabled={isToggleDisabled('enableAll')}
+                accessibilityLabel="Enable all notifications"
+                accessibilityHint="Toggles all notification types on or off"
+              />
+            )}
           </View>
 
           <View style={styles.separator} />
@@ -134,12 +188,17 @@ export default function PushNotifications() {
                 Enter a peaceful state of digital meditation and silence
               </Text>
             </View>
-            <Switch
-              value={notifications.muteAll}
-              onValueChange={(value) => handleNotificationToggle('muteAll', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.muteAll ? '#8B4513' : colors.textMuted}
-            />
+            {loadingStates.muteAll ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.muteAll}
+                onValueChange={(value) => handleNotificationToggle('muteAll', value)}
+                {...getSwitchColors(notifications.muteAll)}
+                accessibilityLabel="Mute all notifications"
+                accessibilityHint="Toggles all notifications to silent mode"
+              />
+            )}
           </View>
         </View>
 
@@ -154,13 +213,18 @@ export default function PushNotifications() {
                 When souls appreciate your divine energy ✨
               </Text>
             </View>
-            <Switch
-              value={notifications.newLikes}
-              onValueChange={(value) => handleNotificationToggle('newLikes', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.newLikes ? '#8B4513' : colors.textMuted}
-              disabled={notifications.muteAll}
-            />
+            {loadingStates.newLikes ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.newLikes}
+                onValueChange={(value) => handleNotificationToggle('newLikes', value)}
+                {...getSwitchColors(notifications.newLikes)}
+                disabled={isToggleDisabled('newLikes')}
+                accessibilityLabel="New likes notifications"
+                accessibilityHint="Toggles notifications for when someone likes your profile"
+              />
+            )}
           </View>
 
           <View style={styles.separator} />
@@ -172,13 +236,18 @@ export default function PushNotifications() {
                 When the universe aligns two kindred spirits 🌟
               </Text>
             </View>
-            <Switch
-              value={notifications.newMatches}
-              onValueChange={(value) => handleNotificationToggle('newMatches', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.newMatches ? '#8B4513' : colors.textMuted}
-              disabled={notifications.muteAll}
-            />
+            {loadingStates.newMatches ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.newMatches}
+                onValueChange={(value) => handleNotificationToggle('newMatches', value)}
+                {...getSwitchColors(notifications.newMatches)}
+                disabled={isToggleDisabled('newMatches')}
+                accessibilityLabel="New matches notifications"
+                accessibilityHint="Toggles notifications for when you get a new match"
+              />
+            )}
           </View>
 
           <View style={styles.separator} />
@@ -190,13 +259,18 @@ export default function PushNotifications() {
                 When sacred souls reach out with heartfelt messages 💫
               </Text>
             </View>
-            <Switch
-              value={notifications.newMessages}
-              onValueChange={(value) => handleNotificationToggle('newMessages', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.newMessages ? '#8B4513' : colors.textMuted}
-              disabled={notifications.muteAll}
-            />
+            {loadingStates.newMessages ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.newMessages}
+                onValueChange={(value) => handleNotificationToggle('newMessages', value)}
+                {...getSwitchColors(notifications.newMessages)}
+                disabled={isToggleDisabled('newMessages')}
+                accessibilityLabel="New messages notifications"
+                accessibilityHint="Toggles notifications for when you receive new messages"
+              />
+            )}
           </View>
 
           <View style={styles.separator} />
@@ -208,13 +282,18 @@ export default function PushNotifications() {
                 Exclusive spiritual gifts and sacred promotions from the Circle
               </Text>
             </View>
-            <Switch
-              value={notifications.promotions}
-              onValueChange={(value) => handleNotificationToggle('promotions', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.promotions ? '#8B4513' : colors.textMuted}
-              disabled={notifications.muteAll}
-            />
+            {loadingStates.promotions ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.promotions}
+                onValueChange={(value) => handleNotificationToggle('promotions', value)}
+                {...getSwitchColors(notifications.promotions)}
+                disabled={isToggleDisabled('promotions')}
+                accessibilityLabel="Promotions notifications"
+                accessibilityHint="Toggles notifications for promotions and offers"
+              />
+            )}
           </View>
 
           <View style={styles.separator} />
@@ -226,20 +305,25 @@ export default function PushNotifications() {
                 Sacred announcements about new energies and features in the Circle
               </Text>
             </View>
-            <Switch
-              value={notifications.announcements}
-              onValueChange={(value) => handleNotificationToggle('announcements', value)}
-              trackColor={{ false: colors.border, true: '#8B4513' + '80' }}
-              thumbColor={notifications.announcements ? '#8B4513' : colors.textMuted}
-              disabled={notifications.muteAll}
-            />
+            {loadingStates.announcements ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Switch
+                value={notifications.announcements}
+                onValueChange={(value) => handleNotificationToggle('announcements', value)}
+                {...getSwitchColors(notifications.announcements)}
+                disabled={isToggleDisabled('announcements')}
+                accessibilityLabel="Announcements notifications"
+                accessibilityHint="Toggles notifications for app updates and announcements"
+              />
+            )}
           </View>
         </View>
 
         {/* Info Section */}
         <View style={styles.infoSection}>
           <View style={styles.infoCard}>
-            <Ionicons name="heart" size={24} color="#8B4513" style={styles.infoIcon} />
+            <Ionicons name="heart" size={24} color={colors.primary} style={styles.infoIcon} />
             <Text style={[styles.infoText, fonts.spiritualBodyFont]}>
               Stay connected with your soul tribe and never miss a sacred opportunity to deepen your cosmic connections with kindred spirits.
             </Text>
@@ -352,12 +436,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       paddingHorizontal: Spacing.lg,
     },
     infoCard: {
-      backgroundColor: '#8B4513' + '10',
+      backgroundColor: colors.primary + '10',
       borderRadius: BorderRadius.xl,
       padding: Spacing.xl,
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#8B4513' + '20',
+      borderColor: colors.primary + '20',
     },
     infoIcon: {
       marginBottom: Spacing.md,
