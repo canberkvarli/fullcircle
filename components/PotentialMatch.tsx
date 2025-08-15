@@ -28,6 +28,7 @@ type Props = {
   currentUserData?: UserDataType; // Add current user data for comparison
   isMatched?: boolean;
   onPhotosLoaded?: () => void;
+  getCachedPhotos?: (userId: string) => string[] | null; // 🆕 PHOTO CACHING: Optional prop for cached photos
 };
 
 // Helper function to calculate age
@@ -279,6 +280,7 @@ const PotentialMatch: React.FC<Props> = ({
   currentUserData,
   isMatched = false,
   onPhotosLoaded,
+  getCachedPhotos,
 }) => {
   const { getImageUrl } = useUserContext();
   const colorScheme = useColorScheme() ?? 'light';
@@ -291,6 +293,20 @@ const PotentialMatch: React.FC<Props> = ({
   useEffect(() => {
     const fetchAll = async () => {
       if (currentPotentialMatch.photos) {
+        // 🆕 PHOTO CACHING: Check if photos are already cached
+        const cachedPhotos = getCachedPhotos?.(currentPotentialMatch.userId);
+        
+        if (cachedPhotos && cachedPhotos.length > 0) {
+          // 🚀 INSTANT: Use cached photos for immediate display
+          console.log('📸 Using cached photos for:', currentPotentialMatch.firstName);
+          setPhotoUrls(cachedPhotos);
+          setIsPhotoLoading(false);
+          onPhotosLoaded?.();
+          return;
+        }
+        
+        // 📥 FALLBACK: Load photos normally if not cached
+        console.log('📥 Loading photos for:', currentPotentialMatch.firstName);
         const urls = await Promise.all(
           currentPotentialMatch.photos.map((path: string) => getImageUrl(path))
         );
@@ -300,7 +316,7 @@ const PotentialMatch: React.FC<Props> = ({
       onPhotosLoaded?.();
     };
     fetchAll();
-  }, [currentPotentialMatch, getImageUrl, onPhotosLoaded]);
+  }, [currentPotentialMatch, getImageUrl, onPhotosLoaded, getCachedPhotos]);
 
   if (isPhotoLoading) return null;
 

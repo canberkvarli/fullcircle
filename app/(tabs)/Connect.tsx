@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Animated,
 } from "react-native";
 import { CustomIcon } from "@/components/CustomIcon";
-import { useUserContext } from "@/context/UserContext";
+import { useUserContext, UserDataType } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
 import LotusScreen from "@/components/LotusScreen";
@@ -19,6 +19,24 @@ import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
+/**
+ * 🚀 PERFORMANCE OPTIMIZED CONNECT SCREEN WITH PHOTO CACHING (TESTING MODE)
+ * 
+ * KEY PERFORMANCE FEATURES:
+ * 1. PHOTO CACHING: Preloads next user's photos for instant display
+ * 2. SMART PRELOADING: Automatically fetches next batch when 3 users remain
+ * 3. INSTANT TRANSITIONS: Next user is always ready when you swipe
+ * 4. BACKGROUND LOADING: No UI blocking during data fetching
+ * 5. NO ANIMATIONS: Clean testing mode to verify photo caching performance
+ * 
+ * PHOTO CACHING STRATEGY:
+ * - When viewing a user, automatically start loading next user's photos
+ * - Photos are cached in memory and displayed instantly on swipe
+ * - Fallback to normal loading if cache miss (never breaks existing functionality)
+ * 
+ * TESTING MODE: All animations removed to test if photo caching works
+ * This lets you see instant user transitions without animation delays!
+ */
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
   
@@ -51,57 +69,55 @@ const ConnectScreen: React.FC = () => {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // 🆕 ENHANCED: Smooth card animations with gesture handling
-  const cardTranslateX = useRef(new Animated.Value(0)).current;
-  const cardTranslateY = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(1)).current;
-  const cardRotate = useRef(new Animated.Value(0)).current;
-  const cardOpacity = useRef(new Animated.Value(1)).current;
-  
-  // Button animations
-  const buttonsOpacity = useRef(new Animated.Value(0)).current;
-  const buttonsScale = useRef(new Animated.Value(0.8)).current;
-  const buttonsTranslateY = useRef(new Animated.Value(20)).current;
-  
-  // Loading animations
-  const loadingOpacity = useRef(new Animated.Value(1)).current;
-  const contentFadeIn = useRef(new Animated.Value(0)).current;
-  
-  // Modal animations
-  const dailyLimitModalOpacity = useRef(new Animated.Value(0)).current;
-  const dailyLimitModalScale = useRef(new Animated.Value(0.8)).current;
-  const lotusModalOpacity = useRef(new Animated.Value(0)).current;
-  const lotusModalScale = useRef(new Animated.Value(0.8)).current;
-
-  // 🆕 NEW: Action feedback animations
-  const likeButtonScale = useRef(new Animated.Value(1)).current;
-  const passButtonScale = useRef(new Animated.Value(1)).current;
-  const likeButtonGlow = useRef(new Animated.Value(0)).current;
-  const passButtonGlow = useRef(new Animated.Value(0)).current;
+  // 🚀 TESTING: Removed all animations for clean performance testing
+  // We only keep the essential state variables for functionality
 
   const hasFullCircleSubscription = userData?.subscription?.isActive || false;
   const userDataRef = useRef(userData);
   const matchingStateRef = useRef(matchingState);
 
-  // 🆕 NEW: Initialize smooth animations
+  // 🆕 PHOTO CACHING: Simple cache for next user's photos
+  // This stores the next user's photos so they display instantly when you swipe
+  // instead of showing a loading state while photos download
+  const [photoCache, setPhotoCache] = useState<Map<string, string[]>>(new Map());
+
+  // 🆕 PHOTO PRELOADING: Cache next user's photos for instant display
+  // When you're viewing a user, we automatically start loading the next user's photos
+  // so when you swipe, their photos are already cached and display instantly
+  const preloadNextUserPhotos = useCallback(async () => {
+    if (!matchingState.potentialMatches.length || !currentPotentialMatch) return;
+    
+    const currentIndex = matchingState.currentIndex || 0;
+    const nextUser = matchingState.potentialMatches[currentIndex + 1];
+    
+    if (!nextUser || photoCache.has(nextUser.userId)) return;
+    
+    try {
+      const { getImageUrl } = useUserContext();
+      if (nextUser.photos && nextUser.photos.length > 0) {
+        const photoUrls = await Promise.all(
+          nextUser.photos.map((path: string) => getImageUrl(path))
+        );
+        
+        const validUrls = photoUrls.filter((url): url is string => !!url);
+        if (validUrls.length > 0) {
+          setPhotoCache(prev => new Map(prev).set(nextUser.userId, validUrls));
+          console.log('📸 Cached photos for next user:', nextUser.firstName);
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Photo preloading failed:', error);
+    }
+  }, [matchingState.potentialMatches, matchingState.currentIndex, currentPotentialMatch, photoCache]);
+
+  // 🆕 PHOTO CACHE UTILITY: Get cached photos for a user
+  const getCachedPhotos = useCallback((userId: string): string[] | null => {
+    return photoCache.get(userId) || null;
+  }, [photoCache]);
+
+  // 🚀 TESTING: Initialize content display only
   useEffect(() => {
-    // Reset card position and scale
-    cardTranslateX.setValue(0);
-    cardTranslateY.setValue(0);
-    cardScale.setValue(1);
-    cardRotate.setValue(0);
-    cardOpacity.setValue(1);
-    
-    // Reset button animations
-    buttonsScale.setValue(0.8);
-    buttonsTranslateY.setValue(20);
-    
-    // Fade in content smoothly
-    Animated.timing(contentFadeIn, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    // No animations - just show content immediately
   }, []);
 
   useEffect(() => {
@@ -133,6 +149,16 @@ const ConnectScreen: React.FC = () => {
     }
   }, [matchingState.initialized, userData.userId, forceRefetchOnReturn]);
 
+  // 🆕 PHOTO PRELOADING: Cache next user's photos when current user changes
+  // This effect runs whenever the current user changes, automatically preloading
+  // the next user's photos in the background for instant display
+  useEffect(() => {
+    if (currentPotentialMatch && matchingState.potentialMatches.length > 0) {
+      // Preload photos for the next user in the queue
+      preloadNextUserPhotos();
+    }
+  }, [currentPotentialMatch?.userId, matchingState.currentIndex, preloadNextUserPhotos]);
+
 
 
   // 🆕 BULLETPROOF: Improved loading state management with better logic
@@ -161,29 +187,16 @@ const ConnectScreen: React.FC = () => {
     if (isCurrentlyLoading || !isInitialized || (isInitialized && !hasTriedFetching)) {
       setIsLoading(true);
       setShowContent(false);
-      
-      // Smooth loading entrance
-      Animated.timing(loadingOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
     } else {
-      // 🆕 FIXED: Simplified logic - if no more matches available, we're done
+      // 🚀 TESTING: Simplified logic - if no more matches available, we're done
       if (noMoreAvailable) {
         // We know there are no more matches, so we're done loading
         setIsLoading(false);
         setShowContent(false); // This will trigger the "no more matches" screen
       } else if (hasMatches) {
         // We have matches and more might be available
-        Animated.timing(loadingOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsLoading(false);
-          setShowContent(true);
-        });
+        setIsLoading(false);
+        setShowContent(true);
       } else {
         // No matches and we don't know if there are more - still loading
         setIsLoading(false);
@@ -192,19 +205,9 @@ const ConnectScreen: React.FC = () => {
     }
   }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches, matchingState.lastFetchedDoc, currentPotentialMatch]);
 
-  // Reset animations when match changes
+  // 🚀 TESTING: Reset photo loading state when match changes
   useEffect(() => {
     if (currentPotentialMatch && !actionInProgress && showContent) {
-      // 🆕 SIMPLIFIED: Only reset essential animation values
-      cardTranslateX.setValue(0);
-      cardTranslateY.setValue(0);
-      cardScale.setValue(1);
-      cardRotate.setValue(0);
-      cardOpacity.setValue(1);
-      buttonsOpacity.setValue(0);
-      buttonsScale.setValue(0.8);
-      buttonsTranslateY.setValue(20);
-      
       // Only reset if we actually have a new match (check by userId)
       const currentUserId = currentPotentialMatch.userId;
       if (currentUserId && currentUserId !== matchingState.currentIndex?.toString()) {
@@ -213,16 +216,10 @@ const ConnectScreen: React.FC = () => {
     }
   }, [currentPotentialMatch?.userId, showContent, actionInProgress]);
 
-  // 🆕 NEW: Ensure content is visible when showContent becomes true
+  // 🚀 TESTING: Ensure content is visible when showContent becomes true
   useEffect(() => {
     if (showContent) {
-      // contentOpacity.setValue(1); // This line was removed as per the new_code
-      // Fade in content smoothly
-      Animated.timing(contentFadeIn, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      // No animations - content shows immediately
     }
   }, [showContent]);
 
@@ -246,71 +243,11 @@ const ConnectScreen: React.FC = () => {
     const targetY = direction * -50; // Slight upward movement
     const targetRotate = direction * 15; // Rotation for natural feel
     
-    // 🎯 BUTTON FEEDBACK: Scale and glow animation
-    const buttonScale = action === 'like' ? likeButtonScale : passButtonScale;
-    const buttonGlow = action === 'like' ? likeButtonGlow : passButtonGlow;
+    // 🚀 TESTING: No button animations for clean performance testing
+    console.log('🚀 BUTTON PRESSED:', action, '- Testing instant transitions');
     
-    // Button press feedback
-    Animated.sequence([
-      Animated.timing(buttonScale, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonScale, {
-        toValue: 1.1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
-    // Glow effect
-    Animated.sequence([
-      Animated.timing(buttonGlow, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonGlow, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
-    // 🎭 CARD ANIMATION: Smooth swipe with rotation
-    Animated.parallel([
-      Animated.timing(cardTranslateX, {
-        toValue: targetX,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(cardTranslateY, {
-        toValue: targetY,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(cardRotate, {
-        toValue: targetRotate,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(cardScale, {
-        toValue: 0.8,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(cardOpacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // 🚀 TESTING: No card animation - instant transition for testing
+    console.log('🚀 INSTANT TRANSITION: No animations, showing next user immediately');
     
     const userId = currentPotentialMatch.userId;
     
@@ -352,153 +289,48 @@ const ConnectScreen: React.FC = () => {
       return;
     }
 
-    // 🆕 SMOOTH: Elegant transition to next match
+    // 🚀 INSTANT: No animations - immediate user transition for testing
+    // This lets you see if photo caching is working properly
+    console.log('🚀 INSTANT TRANSITION: No animations, showing next user immediately');
+    
+    // Reset and show new user instantly
+    resetActionState();
+    setPhotosLoaded(false);
+    
     // Reset scroll position
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-    
-    // Brief pause to let the swipe animation complete
-    setTimeout(() => {
-      // Reset card position for next match
-      cardTranslateX.setValue(0);
-      cardTranslateY.setValue(0);
-      cardRotate.setValue(0);
-      cardScale.setValue(1);
-      cardOpacity.setValue(1);
-      
-      // Fade in new content with subtle scale
-      Animated.sequence([
-        Animated.timing(cardScale, {
-          toValue: 0.95,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardScale, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Complete transition
-        resetActionState();
-        setPhotosLoaded(false);
-      });
-    }, 500); // Wait for swipe animation to complete
   };
 
   const resetActionState = () => {
     setActionInProgress(false);
     setLastAction(null);
     
-    // 🆕 SMOOTH: Reset all animation values
-    cardTranslateX.setValue(0);
-    cardTranslateY.setValue(0);
-    cardScale.setValue(1);
-    cardRotate.setValue(0);
-    cardOpacity.setValue(1);
-    
-    // Reset button animations
-    buttonsOpacity.setValue(0);
-    buttonsScale.setValue(0.8);
-    buttonsTranslateY.setValue(20);
-    
-    // 🆕 NEW: Reset photos loaded state to trigger button animation again
+    // 🚀 TESTING: No animations - just reset state
     setPhotosLoaded(false);
   };
 
-  // Enhanced modal functions (keeping existing logic but with smoother animations)
+  // 🚀 TESTING: No modal animations for clean performance testing
   const showDivineLotusModal = () => {
     setShowLotusModal(true);
-    
-    Animated.parallel([
-      Animated.timing(lotusModalOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.spring(lotusModalScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
   };
 
   const closeDivineLotusModal = () => {
-    Animated.parallel([
-      Animated.timing(lotusModalOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(lotusModalScale, {
-        toValue: 0.8,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowLotusModal(false);
-    });
+    setShowLotusModal(false);
   };
 
   const showDailyLimitModalFunc = () => {
     setShowDailyLimitModal(true);
-    
-    Animated.parallel([
-      Animated.timing(dailyLimitModalOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.spring(dailyLimitModalScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
   };
 
   const closeDailyLimitModal = () => {
-    Animated.parallel([
-      Animated.timing(dailyLimitModalOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(dailyLimitModalScale, {
-        toValue: 0.8,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowDailyLimitModal(false);
-    });
+    setShowDailyLimitModal(false);
   };
 
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
     
-    // 🆕 SMOOTH: Beautiful button entrance with staggered animation
-    Animated.parallel([
-      Animated.timing(buttonsOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.spring(buttonsScale, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(buttonsTranslateY, {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // 🚀 TESTING: No button animations for clean performance testing
+    console.log('📸 Photos loaded - buttons should appear immediately');
   };
 
 
@@ -619,7 +451,7 @@ const ConnectScreen: React.FC = () => {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
 
-        <Animated.View style={[styles.centeredLoadingContainer, { opacity: loadingOpacity }]}>
+        <View style={styles.centeredLoadingContainer}>
           <OuroborosLoader
             variant="pulse"              
             size={120}                   
@@ -629,7 +461,7 @@ const ConnectScreen: React.FC = () => {
             strokeColor="#7B6B5C"        
             strokeWidth={1}
           />
-        </Animated.View>
+        </View>
       </View>
     );
   }
@@ -653,15 +485,7 @@ const ConnectScreen: React.FC = () => {
         <CustomIcon name="options" size={22} color="#B8860B" />
       </TouchableOpacity>
       
-      <Animated.View 
-        style={[
-          styles.contentContainer,
-          { 
-            opacity: contentFadeIn,
-            transform: [{ scale: cardScale }]
-          }
-        ]}
-      >
+      <View style={styles.contentContainer}>
         <ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView}
@@ -672,25 +496,15 @@ const ConnectScreen: React.FC = () => {
           
           {(() => {
             return showContent && currentPotentialMatch ? (
-              <Animated.View style={{ 
-                opacity: cardOpacity,
-                transform: [
-                  { translateX: cardTranslateX },
-                  { translateY: cardTranslateY },
-                  { scale: cardScale },
-                  { rotate: cardRotate.interpolate({
-                    inputRange: [-15, 15],
-                    outputRange: ['-15deg', '15deg'],
-                  })}
-                ]
-              }}>
+              <View>
                 <PotentialMatch
                   currentPotentialMatch={currentPotentialMatch}
                   currentUserData={userData}
                   isMatched={false}
                   onPhotosLoaded={handlePhotosLoaded}
+                  getCachedPhotos={getCachedPhotos}
                 />
-              </Animated.View>
+              </View>
             ) : (
               <View style={styles.contentPlaceholder}>
                 <OuroborosLoader
@@ -706,97 +520,60 @@ const ConnectScreen: React.FC = () => {
             );
           })()}
         </ScrollView>
-      </Animated.View>
+      </View>
 
       {/* Enhanced action buttons with smooth animations */}
       {(() => {
         return photosLoaded && !actionInProgress && showContent && currentPotentialMatch ? (
           <>
             {/* X and Heart buttons in their own container */}
-            <Animated.View style={[
-              styles.buttonsContainer, 
-              { 
-                opacity: buttonsOpacity,
-                transform: [
-                  { scale: buttonsScale },
-                  { translateY: buttonsTranslateY }
-                ]
-              }
-            ]}>
-              <Animated.View style={{ transform: [{ scale: passButtonScale }] }}>
-                <Animated.View style={{
-                  shadowColor: '#8B7355',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: passButtonGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.1, 0.4],
-                  }),
-                  shadowRadius: passButtonGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [4, 12],
-                  }),
-                  elevation: passButtonGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [3, 8],
-                  }),
-                }}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.actionButton, 
-                      styles.leftAction,
-                      { 
-                        backgroundColor: colors.card, 
-                        borderColor: colors.border,
-                      }
-                    ]}
-                    onPress={() => handleAction('pass')}
-                    activeOpacity={0.8}
-                    disabled={actionInProgress}
-                  >
-                    <CustomIcon name="close" size={20} color="#8B7355" />
-                  </TouchableOpacity>
-                </Animated.View>
-              </Animated.View>
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.actionButton, 
+                  styles.leftAction,
+                  { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border,
+                    shadowColor: '#8B7355',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 4,
+                    elevation: 4,
+                  }
+                ]}
+                onPress={() => handleAction('pass')}
+                activeOpacity={0.8}
+                disabled={actionInProgress}
+              >
+                <CustomIcon name="close" size={20} color="#8B7355" />
+              </TouchableOpacity>
 
-              <Animated.View style={{ transform: [{ scale: likeButtonScale }] }}>
-                <Animated.View style={{
-                  shadowColor: hasFullCircleSubscription ? '#FFD700' : '#E74C3C',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: likeButtonGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.1, 0.4],
-                  }),
-                  shadowRadius: likeButtonGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [4, 12],
-                  }),
-                  elevation: likeButtonGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [3, 8],
-                  }),
-                }}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.actionButton, 
-                      styles.rightAction,
-                      { 
-                        backgroundColor: colors.card, 
-                        borderColor: colors.border,
-                      }
-                    ]}
-                    onPress={() => handleAction('like')}
-                    activeOpacity={0.8}
-                    disabled={actionInProgress}
-                  >
-                    <CustomIcon 
-                      name="heart" 
-                      size={20} 
-                      color={hasFullCircleSubscription ? '#FFD700' : '#E74C3C'} 
-                    />
-                  </TouchableOpacity>
-                </Animated.View>
-              </Animated.View>
-            </Animated.View>
+              <TouchableOpacity 
+                style={[
+                  styles.actionButton, 
+                  styles.rightAction,
+                  { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border,
+                    shadowColor: hasFullCircleSubscription ? '#FFD700' : '#E74C3C',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 4,
+                    elevation: 4,
+                  }
+                ]}
+                onPress={() => handleAction('like')}
+                activeOpacity={0.8}
+                disabled={actionInProgress}
+              >
+                <CustomIcon 
+                  name="heart" 
+                  size={20} 
+                  color={hasFullCircleSubscription ? '#FFD700' : '#E74C3C'} 
+                />
+              </TouchableOpacity>
+            </View>
 
             {/* Lotus button positioned independently */}
             <View style={styles.lotusButtonContainer}>
@@ -828,17 +605,11 @@ const ConnectScreen: React.FC = () => {
       
       {/* Divine Lotus Modal */}
       {showLotusModal && (
-        <Animated.View 
-          style={[
-            styles.divineModalOverlay,
-            { opacity: lotusModalOpacity }
-          ]}
-        >
-          <Animated.View 
+        <View style={styles.divineModalOverlay}>
+          <View 
             style={[
               styles.divineModal,
               {
-                transform: [{ scale: lotusModalScale }],
                 backgroundColor: colors.card,
                 borderColor: '#CD853F',
                 shadowColor: '#CD853F',
@@ -913,23 +684,17 @@ const ConnectScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          </Animated.View>
-        </Animated.View>
+          </View>
+        </View>
       )}
 
       {/* Daily Limit Modal */}
       {showDailyLimitModal && (
-        <Animated.View 
-          style={[
-            styles.divineModalOverlay,
-            { opacity: dailyLimitModalOpacity }
-          ]}
-        >
-          <Animated.View 
+        <View style={styles.divineModalOverlay}>
+          <View 
             style={[
               styles.divineModal,
               {
-                transform: [{ scale: dailyLimitModalScale }],
                 backgroundColor: colors.card,
                 borderColor: '#B8860B',
                 shadowColor: '#B8860B',
@@ -1001,8 +766,8 @@ const ConnectScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          </Animated.View>
-        </Animated.View>
+          </View>
+        </View>
       )}
 
       {/* Lotus Screen Modal - Uses same pattern as SacredSelf */}
