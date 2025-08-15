@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#8B4513", // Sacred brown instead of purple
+    backgroundColor: "#E53935", // Vivid red instead of brown or purple
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
