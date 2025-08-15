@@ -913,12 +913,33 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const baseCollection = FIRESTORE.collection("users");
     
-    // Start with basic requirements
+    // 🆕 FIXED: Apply exclusions in the Firestore query to avoid fetching already-seen users
     let query = baseCollection
-      .where("onboardingCompleted", "==", true)
-      .orderBy("createdAt", "desc")
-      .limit(batchSize);
-
+      .where("onboardingCompleted", "==", true);
+    
+          // 🆕 NEW: Exclude users that have already been seen/liked/passed
+      if (exclusionSet.size > 0) {
+        // Convert Set to Array for Firestore 'not-in' query
+        const exclusionArray = Array.from(exclusionSet);
+        
+        console.log(`🔍 Building query with ${exclusionArray.length} exclusions:`, exclusionArray.slice(0, 5));
+        
+        // Firestore 'not-in' has a limit of 10 values, so we need to handle large exclusion sets
+        if (exclusionArray.length <= 10) {
+          query = query.where("userId", "not-in", exclusionArray);
+          console.log(`✅ Applied ${exclusionArray.length} exclusions to Firestore query`);
+        } else {
+          // For large exclusion sets, we'll need to handle this differently
+          // For now, just log a warning and continue without exclusions
+          console.log(`⚠️ Large exclusion set (${exclusionArray.length} users), some exclusions may not be applied`);
+        }
+      } else {
+        console.log(`🔍 No exclusions to apply`);
+      }
+    
+    // Add ordering and pagination
+    query = query.orderBy("createdAt", "desc").limit(batchSize);
+    
     // Add pagination
     if (lastDoc) {
       query = query.startAfter(lastDoc);
@@ -2230,8 +2251,10 @@ const verifyPhoneAndSetUser = async (
       // 🔮 Spiritual Compatibility Filtering
       const spiritualCheck = applySpiritualFilter(user);
       if (!spiritualCheck.passes) {
+        console.log(`❌ ${user.firstName} - Spiritual filter failed: ${spiritualCheck.reason}`);
         return false;
       }
+      console.log(`✅ ${user.firstName} - Spiritual filter passed`);
       
       return true;
     });

@@ -137,12 +137,12 @@ const ConnectScreen: React.FC = () => {
 
   // 🆕 BULLETPROOF: Improved loading state management with better logic
   useEffect(() => {
-    // 🆕 FIXED: More precise loading state management
-    const hasMatches = matchingStateRef.current.potentialMatches.length > 0;
-    const isCurrentlyLoading = matchingStateRef.current.loadingBatch;
-    const isInitialized = matchingStateRef.current.initialized;
-    const noMoreAvailable = matchingStateRef.current.noMoreMatches;
-    const hasTriedFetching = matchingStateRef.current.lastFetchedDoc !== undefined;
+    // 🆕 FIXED: Use actual state values instead of refs to avoid timing issues
+    const hasMatches = matchingState.potentialMatches.length > 0;
+    const isCurrentlyLoading = matchingState.loadingBatch;
+    const isInitialized = matchingState.initialized;
+    const noMoreAvailable = matchingState.noMoreMatches;
+    const hasTriedFetching = matchingState.lastFetchedDoc !== undefined;
     
     console.log('🔍 Connect screen loading state:', {
       hasMatches,
@@ -150,7 +150,7 @@ const ConnectScreen: React.FC = () => {
       isInitialized,
       noMoreAvailable,
       hasTriedFetching,
-      potentialMatchesLength: matchingStateRef.current.potentialMatches.length,
+      potentialMatchesLength: matchingState.potentialMatches.length,
       currentPotentialMatch: currentPotentialMatch ? `${currentPotentialMatch.firstName} (${currentPotentialMatch.userId})` : 'none'
     });
     
@@ -169,9 +169,13 @@ const ConnectScreen: React.FC = () => {
         useNativeDriver: true,
       }).start();
     } else {
-      // Check if we have content to show
-      if (hasMatches && !noMoreAvailable) {
-        // Fade out loading and show content
+      // 🆕 FIXED: Simplified logic - if no more matches available, we're done
+      if (noMoreAvailable) {
+        // We know there are no more matches, so we're done loading
+        setIsLoading(false);
+        setShowContent(false); // This will trigger the "no more matches" screen
+      } else if (hasMatches) {
+        // We have matches and more might be available
         Animated.timing(loadingOpacity, {
           toValue: 0,
           duration: 300,
@@ -181,7 +185,7 @@ const ConnectScreen: React.FC = () => {
           setShowContent(true);
         });
       } else {
-        // No matches available
+        // No matches and we don't know if there are more - still loading
         setIsLoading(false);
         setShowContent(false);
       }
@@ -528,29 +532,20 @@ const ConnectScreen: React.FC = () => {
   // No more matches screen - only show after we've actually tried to find matches
   // 🆕 BULLETPROOF: Only show no matches when we're absolutely sure there are none
   // Don't show if we're still loading, fetching, or if this is the first time
+  
+
+  
   if (matchingState.initialized && 
       !matchingState.loadingBatch && 
       !isLoading && 
-      matchingState.potentialMatches.length === 0 && 
-      matchingState.noMoreMatches &&
+      (matchingState.potentialMatches.length === 0 || matchingState.noMoreMatches) &&
       matchingState.lastFetchedDoc !== undefined && 
       !actionInProgress) { // Also don't show during actions to prevent flash
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
         
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, fonts.spiritualityVibrantTitleFont, { color: colors.textDark }]}>
-              Circle
-            </Text>
-            <Text style={[styles.headerSubtitle, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-              Meaningful{' '}
-              <Text style={styles.highlightedWord}>connections</Text>
-              {' await'}
-            </Text>
-          </View>
-        </View>
+
 
         <View style={styles.noLikesContainer}>
             <OuroborosLoader
@@ -613,6 +608,9 @@ const ConnectScreen: React.FC = () => {
   }
 
   // Enhanced loading screen - prevent flash of no matches container
+  
+
+  
   if (isLoading || 
       !showContent || 
       matchingState.loadingBatch || 
@@ -637,6 +635,8 @@ const ConnectScreen: React.FC = () => {
   }
 
   // Main content with enhanced animations
+  
+
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

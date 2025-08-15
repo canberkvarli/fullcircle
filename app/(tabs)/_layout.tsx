@@ -24,14 +24,8 @@ const AnimatedSpiritualOuroboros = ({
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
-  const animationKey = useRef(0);
 
   useEffect(() => {
-    // Always increment the key when focused to ensure animation restarts
-    if (focused) {
-      animationKey.current += 1;
-    }
-
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: focused ? 1.1 : 1,
@@ -46,12 +40,6 @@ const AnimatedSpiritualOuroboros = ({
     ]).start();
   }, [focused, scaleAnim, opacityAnim]);
 
-  // Force re-render when focused to ensure animation restarts
-  const forceUpdate = useRef(0);
-  if (focused) {
-    forceUpdate.current += 1;
-  }
-
   return (
     <Animated.View style={{
       alignItems: 'center',
@@ -64,7 +52,6 @@ const AnimatedSpiritualOuroboros = ({
     }}>
       {focused ? (
         <OuroborosLoader
-          key={`loader-${animationKey.current}-${forceUpdate.current}`}
           size={55}
           fillColor={userData?.subscription?.isActive ? "#F5E6D3" : "#8B4513"}
           strokeColor={userData?.subscription?.isActive ? "#B8860B" : "#BFA98A"}
