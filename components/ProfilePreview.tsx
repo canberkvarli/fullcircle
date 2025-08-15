@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { CustomIcon } from "@/components/CustomIcon";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
@@ -68,14 +69,35 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
 
   // Helper function to get location string
   const getLocation = (user: UserDataType) => {
-    if (user.location?.city && user.location?.region) {
-      return `${user.location.city}, ${user.location.region}`;
-    } else if (user.location?.city) {
-      return user.location.city;
-    } else if (user.regionName) {
-      return user.regionName;
-    } else if (user.location?.region) {
-      return user.location.region;
+    // Filter out various forms of "unknown" values
+    const isUnknown = (value: string) => {
+      if (!value) return true;
+      const lowerValue = value.toLowerCase();
+      return lowerValue === 'unknown' || lowerValue === 'none' || lowerValue === 'n/a' || lowerValue === '';
+    };
+    
+    const city = user.location?.city && !isUnknown(user.location.city) ? user.location.city : null;
+    const region = user.location?.region && !isUnknown(user.location.region) ? user.location.region : null;
+    const regionName = user.regionName && !isUnknown(user.regionName) ? user.regionName : null;
+    
+    // Debug logging
+    console.log('Location debug:', {
+      city: user.location?.city,
+      region: user.location?.region,
+      regionName: user.regionName,
+      filteredCity: city,
+      filteredRegion: region,
+      filteredRegionName: regionName
+    });
+    
+    if (city && region) {
+      return `${city}, ${region}`;
+    } else if (city) {
+      return city;
+    } else if (regionName) {
+      return regionName;
+    } else if (region) {
+      return region;
     }
     return 'Location not shared';
   };
@@ -140,58 +162,98 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
     }
   };
 
-  // Create meaningful details based on current user data
-  const getDetailsForPhoto = (index: number) => {
-    const detailOptions = [
-      {
-        title: "About Me",
-        content: `${userData.age} • ${getLocation(userData)}`,
-        icon: "person-outline",
-        color: intentColors.primary,
-        type: 'text'
-      },
-      {
-        title: "Spiritual Practices",
-        content: userData?.spiritualProfile?.practices || [],
-        icon: "leaf-outline",
-        color: '#059669',
-        type: 'pills',
-        emptyText: 'Spiritual practices not shared'
-      },
-      {
-        title: "Connection Style",
-        content: userData.matchPreferences?.connectionStyles || [],
-        icon: "sparkles-outline",
-        color: intentColors.tertiary,
-        type: 'pills',
-        emptyText: 'Connection style not set'
-      },
-      {
-        title: "Healing Modalities",
-        content: userData?.spiritualProfile?.healingModalities || [],
-        icon: "medical-outline",
-        color: '#0891B2',
-        type: 'pills',
-        emptyText: 'Healing path not shared'
-      },
-      {
-        title: "Physical Details",
-        content: userData.height ? `${userData.height} ft tall` : 'Height not shared',
-        icon: "resize-outline",
-        color: '#6B7280',
-        type: 'text'
-      },
-      {
-        title: "Spiritual Draws",
-        content: userData?.spiritualProfile?.draws || [],
-        icon: "heart-outline",
-        color: '#DC2626',
-        type: 'pills',
-        emptyText: 'Spiritual draws not shared'
-      }
-    ];
+  // Create organized info sections similar to PotentialMatch
+  const createInfoSections = () => {
+    const sections = [];
+    const warmNeutral = '#8B7355'; // Warm brown-gray color for all basic info
 
-    return detailOptions[index % detailOptions.length] || detailOptions[0];
+    // 1. Basic Demographics (About Me) - similar to PotentialMatch
+    const age = userData.age || 'Age not shared';
+    const location = getLocation(userData);
+    const height = userData.height ? `${userData.height} ft tall` : 'Height not shared';
+    
+    const basicItems = [
+      { icon: "cake", iconType: "custom", text: age, color: warmNeutral },
+      { icon: "swap-vertical-outline", iconType: "ionicon", text: height, color: warmNeutral },
+      { icon: "temple", iconType: "custom", text: location, color: warmNeutral }
+    ];
+    
+    // Add gender identity if available
+    if (userData.gender && userData.gender.length > 0) {
+      basicItems.push({ 
+        icon: "person-outline", 
+        iconType: "ionicon", 
+        text: userData.gender.join(", "), 
+        color: warmNeutral 
+      });
+    }
+    
+    sections.push({
+      type: 'basic-info',
+      items: basicItems
+    });
+
+    // 2. Spiritual Practices using custom meditation icon
+    if (userData.spiritualProfile?.practices && userData.spiritualProfile.practices.length > 0) {
+      const meaningfulPractices = userData.spiritualProfile.practices.filter(practice => 
+        practice !== "Open to All" && practice.trim() !== ""
+      );
+      
+      if (meaningfulPractices.length > 0) {
+        sections.push({
+          type: 'info-card',
+          title: "Spiritual Practices",
+          content: meaningfulPractices.slice(0, 3).join(", "),
+          icon: "meditation",
+          iconType: "custom",
+          pillsData: meaningfulPractices,
+          color: '#059669',
+          key: 'practices'
+        });
+      }
+    }
+
+    // 3. Healing Modalities using custom yinyang icon
+    if (userData.spiritualProfile?.healingModalities && userData.spiritualProfile.healingModalities.length > 0) {
+      const meaningfulModalities = userData.spiritualProfile.healingModalities.filter(modality => 
+        modality !== "Open to All" && modality.trim() !== ""
+      );
+      
+      if (meaningfulModalities.length > 0) {
+        sections.push({
+          type: 'info-card',
+          title: "Healing Path",
+          content: meaningfulModalities.slice(0, 3).join(", "),
+          icon: "yinyang",
+          iconType: "custom",
+          pillsData: meaningfulModalities,
+          color: '#0891B2',
+          key: 'healing'
+        });
+      }
+    }
+
+    // 4. Spiritual Draws using custom ohm icon
+    if (userData.spiritualProfile?.draws && userData.spiritualProfile.draws.length > 0) {
+      const meaningfulDraws = userData.spiritualProfile.draws.filter(draw => 
+        draw !== "Open to All" && draw.trim() !== ""
+      );
+      
+      if (meaningfulDraws.length > 0) {
+        sections.push({
+          type: 'info-card',
+          title: "Spiritual Draws",
+          content: meaningfulDraws.slice(0, 3).join(", "),
+          icon: "ohm",
+          iconType: "custom",
+          pillsData: meaningfulDraws,
+          color: '#DC2626',
+          key: 'draws'
+        });
+      }
+    }
+
+    return sections;
   };
 
   const styles = createStyles(colors, fonts, intentColors);
@@ -215,69 +277,6 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       </View>
     );
   }
-
-  // Create organized info sections
-  const createInfoSections = () => {
-    const sections = [];
-
-    // Gender Identity
-    if (userData.gender && userData.gender.length > 0) {
-      sections.push({
-        type: 'info',
-        title: "Gender Identity",
-        icon: "person-outline",
-        content: userData.gender,
-        displayType: 'pills',
-        color: '#6366F1',
-        key: 'gender'
-      });
-    }
-
-    // Connection Styles - always show if available
-    if (userData.matchPreferences?.connectionStyles && userData.matchPreferences.connectionStyles.length > 0) {
-      const styleTitle = connectionIntent === "romantic" ? "Romantic Style" 
-                       : connectionIntent === "friendship" ? "Connection Style"
-                       : "Connection Styles";
-      
-      sections.push({
-        type: 'info',
-        title: styleTitle,
-        icon: "sparkles-outline",
-        content: userData.matchPreferences.connectionStyles,
-        displayType: 'pills',
-        color: intentColors.tertiary,
-        key: 'connectionStyles'
-      });
-    }
-
-    // Spiritual practices
-    if (userData.spiritualProfile?.practices && userData.spiritualProfile.practices.length > 0) {
-      sections.push({
-        type: 'info',
-        title: "Spiritual Practices",
-        icon: "leaf-outline",
-        content: userData.spiritualProfile.practices,
-        displayType: 'pills',
-        color: '#059669',
-        key: 'practices'
-      });
-    }
-
-    // Healing modalities
-    if (userData.spiritualProfile?.healingModalities && userData.spiritualProfile.healingModalities.length > 0) {
-      sections.push({
-        type: 'info',
-        title: "Healing Modalities",
-        icon: "medical-outline",
-        content: userData.spiritualProfile.healingModalities,
-        displayType: 'pills',
-        color: '#0891B2',
-        key: 'healing'
-      });
-    }
-
-    return sections;
-  };
 
   // Render pills with truncation and expand option
   const renderPillsSection = (items: string[], color: string, sectionKey: string, maxInitial: number = 3) => {
@@ -319,98 +318,125 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
     );
   };
 
-  // Create organized content array - interleave photos and info cards
+  // Create organized content array - exactly like PotentialMatch
   const createOrganizedContent = () => {
     const content = [];
     const infoSections = createInfoSections();
     const totalPhotos = photoUrls.length;
-    const totalInfoSections = infoSections.length;
     
-    // Calculate how to distribute content evenly
-    const totalItems = totalPhotos + totalInfoSections;
+    // Separate the basic info from other info items
+    const basicInfoCard = infoSections.find(section => section.type === 'basic-info');
+    const otherInfoItems = infoSections.filter(section => section.type === 'info-card');
+
     let photoIndex = 0;
-    let infoIndex = 0;
 
-    // Strategy: Start with photo, then alternate strategically
-    for (let i = 0; i < totalItems; i++) {
-      const shouldAddPhoto = photoIndex < totalPhotos && (
-        infoIndex >= totalInfoSections || // No more info sections
-        i === 0 || // Always start with photo
-        (i % 3 === 0 && photoIndex < totalPhotos) // Every 3rd item should be a photo if available
-      );
+    // Always start with first photo if available
+    if (photoIndex < totalPhotos) {
+      content.push({
+        type: 'photo',
+        uri: photoUrls[photoIndex],
+        index: photoIndex
+      });
+      photoIndex++;
+    }
 
-      if (shouldAddPhoto) {
+    // Add basic info after first photo
+    if (basicInfoCard) {
+      content.push({
+        type: 'info',
+        card: basicInfoCard,
+        index: 'basic-info'
+      });
+    }
+
+    // Now properly distribute remaining photos and info cards
+    // Rule: Always add a photo before each info card (if photos available)
+    for (let i = 0; i < otherInfoItems.length; i++) {
+      // Add photo before info card if available
+      if (photoIndex < totalPhotos) {
         content.push({
           type: 'photo',
-          index: photoIndex,
-          uri: photoUrls[photoIndex]
+          uri: photoUrls[photoIndex],
+          index: photoIndex
         });
         photoIndex++;
-      } else if (infoIndex < totalInfoSections) {
-        content.push({
-          ...infoSections[infoIndex],
-          type: 'standalone-info'
-        });
-        infoIndex++;
       }
+
+      // Then add the info card
+      content.push({
+        type: 'info',
+        card: otherInfoItems[i],
+        index: `info-card-${i}`
+      });
+    }
+
+    // Add any remaining photos at the end
+    while (photoIndex < totalPhotos) {
+      content.push({
+        type: 'photo',
+        uri: photoUrls[photoIndex],
+        index: photoIndex
+      });
+      photoIndex++;
     }
 
     return content;
   };
 
-  const renderInfoCard = (section: any) => (
-    <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
-      <View style={styles.detailHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: section.color + '15' }]}>
-          <Ionicons name={section.icon as any} size={18} color={section.color} />
+  const renderInfoCard = (section: any) => {
+    // For basic info, render without a container (no title) like PotentialMatch
+    if (section.type === 'basic-info') {
+      return (
+        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+          <View style={styles.basicInfoColumn}>
+            {section.items.map((item: any, index: number) => (
+              <View key={index} style={styles.basicInfoItem}>
+                {item.iconType === "custom" ? (
+                  <CustomIcon name={item.icon} size={18} color={item.color} />
+                ) : (
+                  <Ionicons name={item.icon as any} size={18} color={item.color} />
+                )}
+                <Text style={[styles.basicInfoText, { color: colors.textLight }]}>
+                  {item.text}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
-        <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-          {section.title}
-        </Text>
-      </View>
+      );
+    }
+    
+    // For info cards with titles
+    return (
+      <View style={[styles.infoSection, { backgroundColor: colors.card }]}>
+        <View style={styles.detailHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: section.color + '15' }]}>
+            {section.iconType === "custom" ? (
+              <CustomIcon name={section.icon} size={18} color={section.color} />
+            ) : (
+              <Ionicons name={section.icon as any} size={18} color={section.color} />
+            )}
+          </View>
+          <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+            {section.title}
+          </Text>
+        </View>
 
-      {section.displayType === 'pills' && Array.isArray(section.content) ? 
-        renderPillsSection(section.content, section.color, section.key) : (
-        <Text style={[styles.detailText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
-          {Array.isArray(section.content) ? section.content.join(", ") : section.content}
-        </Text>
-      )}
-    </View>
-  );
+        {section.pillsData && Array.isArray(section.pillsData) ? 
+          renderPillsSection(section.pillsData, section.color, section.key) : (
+          <Text style={[styles.detailText, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+            {section.content}
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   const renderPhotoWithDetail = (uri: string, index: number) => {
-    const detail = getDetailsForPhoto(index);
-    
+    // For photos, we'll show them without additional details since info is in separate cards
     return (
       <View style={styles.photoCard}>
         <Image source={{ uri }} style={styles.photo} />
-
-        <View style={[styles.detailCard, { backgroundColor: colors.card }]}>
-          <View style={styles.detailHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: detail.color + '15' }]}>
-              <Ionicons name={detail.icon as any} size={18} color={detail.color} />
-            </View>
-            <Text style={[styles.detailTitle, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-              {detail.title}
-            </Text>
-          </View>
-          
-          {detail.type === 'pills' && Array.isArray(detail.content) && detail.content.length > 0 ? 
-            renderPillsSection(detail.content, detail.color, `photo-${index}-${detail.title}`) : (
-            <Text style={[styles.detailText, fonts.spiritualBodyFont, { 
-              color: Array.isArray(detail.content) && detail.content.length === 0 
-                ? colors.textMuted 
-                : colors.textLight,
-              fontStyle: Array.isArray(detail.content) && detail.content.length === 0 
-                ? 'italic' 
-                : 'normal'
-            }]}>
-              {Array.isArray(detail.content) 
-                ? (detail.content.length > 0 ? detail.content.join(", ") : detail.emptyText)
-                : detail.content}
-            </Text>
-          )}
-        </View>
       </View>
     );
   };
@@ -423,44 +449,38 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header with improved styling */}
+      {/* Header with name and connection intent - similar to PotentialMatch */}
       <View style={styles.headerContainer}>
-        <Text
-          style={[
-            styles.topName, 
-            fonts.spiritualLargeTitleFont,
-            { color: colors.textDark }
-          ]}
-        >
-          {userData.firstName}
-        </Text>
+        {/* Name Row */}
+        <View style={styles.nameRow}>
+          <Text
+            style={[
+              styles.topName, 
+              fonts.spiritualLargeTitleFont,
+              { color: colors.textDark }
+            ]}
+          >
+            {userData.firstName}
+          </Text>
+        </View>
         
-        {/* Connection Intent Badge - Clean floating badge */}
-        <View style={[styles.connectionBadge, { 
-          backgroundColor: intentColors.secondary,
-          borderColor: intentColors.primary + '40'
-        }]}>
+        {/* Connection Intent Description with icon */}
+        <View style={styles.connectionIntentRow}>
           <Ionicons 
             name={connectionIntent === "romantic" ? "heart" 
                  : connectionIntent === "friendship" ? "people" 
                  : connectionIntent === "both" ? "infinite"
                  : "sparkles"} 
-            size={14} 
+            size={26} 
             color={intentColors.primary} 
           />
-          <Text style={[styles.connectionBadgeText, { color: intentColors.primary }]}>
-            {connectionIntent === "romantic" ? "Dating" 
-             : connectionIntent === "friendship" ? "Friendship"
-             : connectionIntent === "both" ? "Both"
-             : "Open"}
+          <Text style={[styles.connectionIntentDescription, { color: intentColors.primary }]}>
+            {getConnectionTypeDisplay(connectionIntent)}
           </Text>
         </View>
-      </View>
 
-      {/* Connection type description */}
-      <Text style={[styles.connectionDescription, fonts.spiritualBodyFont, { color: intentColors.accent }]}>
-        {getConnectionTypeDisplay(connectionIntent)}
-      </Text>
+        <View style={[styles.headerDivider, { backgroundColor: intentColors.primary }]} />
+      </View>
 
       {/* Handle case when no photos */}
       {photoUrls.length === 0 && (
@@ -478,6 +498,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       {organizedContent.map((item, index) => (
         <View key={`content-${index}`}>
           {item.type === 'photo' && item.uri && renderPhotoWithDetail(item.uri, item.index)}
+          {item.type === 'info' && renderInfoCard(item.card)}
         </View>
       ))}
 
@@ -497,36 +518,45 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     paddingBottom: Spacing.xl,
   },
   headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: "flex-start", // Left aligned like PotentialMatch
+    marginBottom: Spacing.xl,
+    width: "100%",
+  },
+  
+  nameRow: {
+    width: '100%',
     marginBottom: Spacing.sm,
+  },
+  
+  connectionIntentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: Spacing.xs,
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  
+  connectionIntentDescription: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    fontStyle: 'italic',
+    flex: 1,
+  },
+  
+  headerDivider: {
+    width: 60,
+    height: 2,
+    borderRadius: BorderRadius.full,
     marginTop: Spacing.sm,
   },
+  
   topName: {
     fontSize: Typography.sizes['3xl'],
     fontWeight: Typography.weights.bold,
     flex: 1,
   },
-  connectionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-  },
-  connectionBadgeText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-    marginLeft: Spacing.xs,
-  },
-  connectionDescription: {
-    fontSize: Typography.sizes.base,
-    fontStyle: 'italic',
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.xs,
-  },
+
   photoCard: {
     marginBottom: Spacing.xl,
   },
@@ -629,6 +659,42 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
         elevation: 2,
       },
     }),
+  },
+  
+  infoCard: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  
+  basicInfoColumn: {
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  
+  basicInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    width: '100%',
+  },
+  
+  basicInfoText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
   },
   loaderContainer: {
     flex: 1,
