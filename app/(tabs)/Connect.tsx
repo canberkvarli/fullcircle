@@ -51,10 +51,19 @@ const ConnectScreen: React.FC = () => {
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // 🆕 SIMPLIFIED: Only essential animations for smooth UX
-  const contentOpacity = useRef(new Animated.Value(1)).current;
-  const contentScale = useRef(new Animated.Value(1)).current;
+  // 🆕 ENHANCED: Smooth card animations with gesture handling
+  const cardTranslateX = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const cardRotate = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(1)).current;
+  
+  // Button animations
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
+  const buttonsScale = useRef(new Animated.Value(0.8)).current;
+  const buttonsTranslateY = useRef(new Animated.Value(20)).current;
+  
+  // Loading animations
   const loadingOpacity = useRef(new Animated.Value(1)).current;
   const contentFadeIn = useRef(new Animated.Value(0)).current;
   
@@ -64,14 +73,35 @@ const ConnectScreen: React.FC = () => {
   const lotusModalOpacity = useRef(new Animated.Value(0)).current;
   const lotusModalScale = useRef(new Animated.Value(0.8)).current;
 
+  // 🆕 NEW: Action feedback animations
+  const likeButtonScale = useRef(new Animated.Value(1)).current;
+  const passButtonScale = useRef(new Animated.Value(1)).current;
+  const likeButtonGlow = useRef(new Animated.Value(0)).current;
+  const passButtonGlow = useRef(new Animated.Value(0)).current;
+
   const hasFullCircleSubscription = userData?.subscription?.isActive || false;
   const userDataRef = useRef(userData);
   const matchingStateRef = useRef(matchingState);
 
-  // 🆕 NEW: Initialize content opacity to 1 to ensure content is visible
+  // 🆕 NEW: Initialize smooth animations
   useEffect(() => {
-    contentOpacity.setValue(1);
-    contentFadeIn.setValue(1);
+    // Reset card position and scale
+    cardTranslateX.setValue(0);
+    cardTranslateY.setValue(0);
+    cardScale.setValue(1);
+    cardRotate.setValue(0);
+    cardOpacity.setValue(1);
+    
+    // Reset button animations
+    buttonsScale.setValue(0.8);
+    buttonsTranslateY.setValue(20);
+    
+    // Fade in content smoothly
+    Animated.timing(contentFadeIn, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   useEffect(() => {
@@ -162,9 +192,14 @@ const ConnectScreen: React.FC = () => {
   useEffect(() => {
     if (currentPotentialMatch && !actionInProgress && showContent) {
       // 🆕 SIMPLIFIED: Only reset essential animation values
-      contentOpacity.setValue(1);
-      contentScale.setValue(1);
+      cardTranslateX.setValue(0);
+      cardTranslateY.setValue(0);
+      cardScale.setValue(1);
+      cardRotate.setValue(0);
+      cardOpacity.setValue(1);
       buttonsOpacity.setValue(0);
+      buttonsScale.setValue(0.8);
+      buttonsTranslateY.setValue(20);
       
       // Only reset if we actually have a new match (check by userId)
       const currentUserId = currentPotentialMatch.userId;
@@ -177,7 +212,7 @@ const ConnectScreen: React.FC = () => {
   // 🆕 NEW: Ensure content is visible when showContent becomes true
   useEffect(() => {
     if (showContent) {
-      contentOpacity.setValue(1);
+      // contentOpacity.setValue(1); // This line was removed as per the new_code
       // Fade in content smoothly
       Animated.timing(contentFadeIn, {
         toValue: 1,
@@ -187,7 +222,7 @@ const ConnectScreen: React.FC = () => {
     }
   }, [showContent]);
 
-  // 🆕 ENHANCED: Action handler with better error handling and recovery
+  // 🆕 ENHANCED: Action handler with buttery-smooth animations
   const handleAction = async (action: 'like' | 'pass' | 'lotus') => {
     if (actionInProgress || !currentPotentialMatch) {
       return;
@@ -201,19 +236,74 @@ const ConnectScreen: React.FC = () => {
     setActionInProgress(true);
     setLastAction(action);
     
-    // 🆕 SIMPLIFIED: Remove excessive transition animations
-    // Just show a brief visual feedback, no complex transitions
+    // 🆕 SMOOTH: Beautiful card animation based on action
+    const direction = action === 'like' ? 1 : -1;
+    const targetX = direction * 400; // Swipe distance
+    const targetY = direction * -50; // Slight upward movement
+    const targetRotate = direction * 15; // Rotation for natural feel
     
-    // 🆕 NEW: Simple visual feedback - subtle scale animation
+    // 🎯 BUTTON FEEDBACK: Scale and glow animation
+    const buttonScale = action === 'like' ? likeButtonScale : passButtonScale;
+    const buttonGlow = action === 'like' ? likeButtonGlow : passButtonGlow;
+    
+    // Button press feedback
     Animated.sequence([
-      Animated.timing(contentScale, {
-        toValue: 0.95,
+      Animated.timing(buttonScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1.1,
         duration: 150,
         useNativeDriver: true,
       }),
-      Animated.timing(contentScale, {
+      Animated.timing(buttonScale, {
         toValue: 1,
-        duration: 150,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Glow effect
+    Animated.sequence([
+      Animated.timing(buttonGlow, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonGlow, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // 🎭 CARD ANIMATION: Smooth swipe with rotation
+    Animated.parallel([
+      Animated.timing(cardTranslateX, {
+        toValue: targetX,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardTranslateY, {
+        toValue: targetY,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardRotate, {
+        toValue: targetRotate,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardScale, {
+        toValue: 0.8,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardOpacity, {
+        toValue: 0,
+        duration: 400,
         useNativeDriver: true,
       }),
     ]).start();
@@ -258,40 +348,54 @@ const ConnectScreen: React.FC = () => {
       return;
     }
 
-    // 🆕 SIMPLIFIED: Quick, smooth transition to next match
+    // 🆕 SMOOTH: Elegant transition to next match
     // Reset scroll position
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     
-    // Simple fade transition
-    Animated.timing(contentOpacity, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      // Brief pause
-      setTimeout(() => {
-        // Fade back in
-        Animated.timing(contentOpacity, {
+    // Brief pause to let the swipe animation complete
+    setTimeout(() => {
+      // Reset card position for next match
+      cardTranslateX.setValue(0);
+      cardTranslateY.setValue(0);
+      cardRotate.setValue(0);
+      cardScale.setValue(1);
+      cardOpacity.setValue(1);
+      
+      // Fade in new content with subtle scale
+      Animated.sequence([
+        Animated.timing(cardScale, {
+          toValue: 0.95,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardScale, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
-        }).start(() => {
-          // Complete transition
-          resetActionState();
-          setPhotosLoaded(false);
-        });
-      }, 100);
-    });
+        }),
+      ]).start(() => {
+        // Complete transition
+        resetActionState();
+        setPhotosLoaded(false);
+      });
+    }, 500); // Wait for swipe animation to complete
   };
 
   const resetActionState = () => {
     setActionInProgress(false);
     setLastAction(null);
     
-    // 🆕 SIMPLIFIED: Only reset essential animation values
-    contentOpacity.setValue(1);
-    contentScale.setValue(1);
+    // 🆕 SMOOTH: Reset all animation values
+    cardTranslateX.setValue(0);
+    cardTranslateY.setValue(0);
+    cardScale.setValue(1);
+    cardRotate.setValue(0);
+    cardOpacity.setValue(1);
+    
+    // Reset button animations
     buttonsOpacity.setValue(0);
+    buttonsScale.setValue(0.8);
+    buttonsTranslateY.setValue(20);
     
     // 🆕 NEW: Reset photos loaded state to trigger button animation again
     setPhotosLoaded(false);
@@ -371,12 +475,26 @@ const ConnectScreen: React.FC = () => {
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
     
-    // 🆕 SIMPLIFIED: Smooth button entrance
-    Animated.timing(buttonsOpacity, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // 🆕 SMOOTH: Beautiful button entrance with staggered animation
+    Animated.parallel([
+      Animated.timing(buttonsOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(buttonsScale, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(buttonsTranslateY, {
+        toValue: 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
 
@@ -540,7 +658,7 @@ const ConnectScreen: React.FC = () => {
           styles.contentContainer,
           { 
             opacity: contentFadeIn,
-            transform: [{ scale: contentScale }]
+            transform: [{ scale: cardScale }]
           }
         ]}
       >
@@ -554,7 +672,18 @@ const ConnectScreen: React.FC = () => {
           
           {(() => {
             return showContent && currentPotentialMatch ? (
-              <Animated.View style={{ opacity: contentOpacity }}>
+              <Animated.View style={{ 
+                opacity: cardOpacity,
+                transform: [
+                  { translateX: cardTranslateX },
+                  { translateY: cardTranslateY },
+                  { scale: cardScale },
+                  { rotate: cardRotate.interpolate({
+                    inputRange: [-15, 15],
+                    outputRange: ['-15deg', '15deg'],
+                  })}
+                ]
+              }}>
                 <PotentialMatch
                   currentPotentialMatch={currentPotentialMatch}
                   currentUserData={userData}
@@ -582,33 +711,94 @@ const ConnectScreen: React.FC = () => {
       {/* Enhanced action buttons with smooth animations */}
       {(() => {
         return photosLoaded && !actionInProgress && showContent && currentPotentialMatch ? (
-          <Animated.View style={[styles.buttonsContainer, { opacity: buttonsOpacity }]}>
-            <TouchableOpacity 
-              style={[
-                styles.actionButton, 
-                styles.leftAction,
-                { backgroundColor: colors.card, borderColor: colors.border }
-              ]}
-              onPress={() => handleAction('pass')}
-              activeOpacity={0.8}
-              disabled={actionInProgress}
-            >
-              <CustomIcon name="close" size={20} color="#8B7355" />
-            </TouchableOpacity>
+          <>
+            {/* X and Heart buttons in their own container */}
+            <Animated.View style={[
+              styles.buttonsContainer, 
+              { 
+                opacity: buttonsOpacity,
+                transform: [
+                  { scale: buttonsScale },
+                  { translateY: buttonsTranslateY }
+                ]
+              }
+            ]}>
+              <Animated.View style={{ transform: [{ scale: passButtonScale }] }}>
+                <Animated.View style={{
+                  shadowColor: '#8B7355',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: passButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.1, 0.4],
+                  }),
+                  shadowRadius: passButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [4, 12],
+                  }),
+                  elevation: passButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [3, 8],
+                  }),
+                }}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.actionButton, 
+                      styles.leftAction,
+                      { 
+                        backgroundColor: colors.card, 
+                        borderColor: colors.border,
+                      }
+                    ]}
+                    onPress={() => handleAction('pass')}
+                    activeOpacity={0.8}
+                    disabled={actionInProgress}
+                  >
+                    <CustomIcon name="close" size={20} color="#8B7355" />
+                  </TouchableOpacity>
+                </Animated.View>
+              </Animated.View>
 
-            <TouchableOpacity 
-              style={[
-                styles.actionButton, 
-                styles.rightAction,
-                { backgroundColor: colors.card, borderColor: colors.border }
-              ]}
-              onPress={() => handleAction('like')}
-              activeOpacity={0.8}
-              disabled={actionInProgress}
-            >
-              <CustomIcon name="heart" size={20} color="#B8860B" />
-            </TouchableOpacity>
+              <Animated.View style={{ transform: [{ scale: likeButtonScale }] }}>
+                <Animated.View style={{
+                  shadowColor: hasFullCircleSubscription ? '#FFD700' : '#E74C3C',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: likeButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.1, 0.4],
+                  }),
+                  shadowRadius: likeButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [4, 12],
+                  }),
+                  elevation: likeButtonGlow.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [3, 8],
+                  }),
+                }}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.actionButton, 
+                      styles.rightAction,
+                      { 
+                        backgroundColor: colors.card, 
+                        borderColor: colors.border,
+                      }
+                    ]}
+                    onPress={() => handleAction('like')}
+                    activeOpacity={0.8}
+                    disabled={actionInProgress}
+                  >
+                    <CustomIcon 
+                      name="heart" 
+                      size={20} 
+                      color={hasFullCircleSubscription ? '#FFD700' : '#E74C3C'} 
+                    />
+                  </TouchableOpacity>
+                </Animated.View>
+              </Animated.View>
+            </Animated.View>
 
+            {/* Lotus button positioned independently */}
             <View style={styles.lotusButtonContainer}>
               <TouchableOpacity 
                 style={[
@@ -630,50 +820,12 @@ const ConnectScreen: React.FC = () => {
                 <CustomIcon name="lotus" size={36}/>
               </TouchableOpacity>
             </View>
-          </Animated.View>
+          </>
         ) : null;
       })()}
 
-      {/* 🆕 SIMPLIFIED: Removed complex overlay animations for smoother UX */}
+      {/* 🆕 REMOVED: Transition overlay that was showing yellow ouroboros */}
       
-      {/* Simple Transition Loading Overlay */}
-      <Animated.View 
-        style={[
-          styles.transitionOverlay,
-          { 
-            opacity: actionInProgress ? contentOpacity.interpolate({
-              inputRange: [0, 0.3],
-              outputRange: [0, 1],
-              extrapolate: 'clamp'
-            }) : 0,
-            backgroundColor: colors.background
-          }
-        ]}
-        pointerEvents="none"
-      >
-        <Animated.View
-          style={{
-            transform: [{
-              scale: actionInProgress ? contentScale.interpolate({
-                inputRange: [0.8, 1],
-                outputRange: [0.8, 1],
-                extrapolate: 'clamp'
-              }) : 1
-            }]
-          }}
-        >
-          <OuroborosLoader
-            variant="pulse"
-            size={60}
-            duration={800}
-            loop={true}
-            fillColor="#F5E6D3"
-            strokeColor="#B8860B"
-            strokeWidth={2}
-          />
-        </Animated.View>
-      </Animated.View>
-
       {/* Divine Lotus Modal */}
       {showLotusModal && (
         <Animated.View 
@@ -947,13 +1099,11 @@ const styles = StyleSheet.create({
   },
   
   leftAction: {
-    bottom: Platform.OS === 'ios' ? 140 : 120,
-    left: Spacing.xl,
+    left: Spacing.lg,
   },
   
   rightAction: {
-    bottom: Platform.OS === 'ios' ? 140 : 120,
-    right: Spacing.xl,
+    right: Spacing.lg,
   },
   
   centerAction: {
@@ -1002,21 +1152,9 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   
-  // Transition Loading Overlay
-  transitionOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1500,
-  },
-  
   lotusButtonContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 125 : 105,
+    bottom: Platform.OS === 'ios' ? 120 : 100, // Higher position to stay centered
     left: '50%',
     marginLeft: -28,
     width: 56,
