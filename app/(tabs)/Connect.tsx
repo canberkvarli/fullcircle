@@ -21,21 +21,28 @@ import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 /**
- * 🚀 PERFORMANCE OPTIMIZED CONNECT SCREEN WITH PHOTO CACHING
+ * 🚀 PERFORMANCE OPTIMIZED CONNECT SCREEN WITH PHOTO CACHING & GENTLE ANIMATIONS
  * 
  * KEY PERFORMANCE FEATURES:
  * 1. PHOTO CACHING: Preloads next user's photos for instant display
  * 2. SMART PRELOADING: Automatically fetches next batch when 3 users remain
  * 3. INSTANT TRANSITIONS: Next user is always ready when you swipe
  * 4. BACKGROUND LOADING: No UI blocking during data fetching
- * 5. OPTIMIZED ANIMATIONS: 600ms swipe + instant new user display
+ * 5. 🎭 GENTLE ANIMATIONS: Subtle fade-in effects for seamless transitions
  * 
  * PHOTO CACHING STRATEGY:
  * - When viewing a user, automatically start loading next user's photos
  * - Photos are cached in memory and displayed instantly on swipe
  * - Fallback to normal loading if cache miss (never breaks existing functionality)
  * 
- * This eliminates the "loading" experience and makes user transitions feel instant!
+ * 🎭 GENTLE EFFECTS:
+ * - Animation starts FIRST (fade out current user)
+ * - THEN new user data loads (while invisible)
+ * - Finally new user fades in smoothly (200ms)
+ * - Buttons gently appear with subtle opacity transition
+ * - Perfect sequence: Animate → Load → Display
+ * 
+ * This creates a polished, premium experience with instant performance!
  */
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
@@ -66,11 +73,22 @@ const ConnectScreen: React.FC = () => {
   const [showLotusModal, setShowLotusModal] = useState(false);
   const [showLotusScreen, setShowLotusScreen] = useState(false);
   const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
+  
+  // 🎭 TRANSITION: Control when user data changes
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [pendingUserData, setPendingUserData] = useState<any>(null);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // 🚀 TESTING: Removed all animations for clean performance testing
-  // We only keep the essential state variables for functionality
+  // 🎭 MORPHING ANIMATIONS: Beautiful scale-in effects for instant transitions
+  const cardScale = useRef(new Animated.Value(0.8)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const contentFadeIn = useRef(new Animated.Value(0)).current;
+  
+  // Button entrance animations
+  const buttonsOpacity = useRef(new Animated.Value(0)).current;
+  const buttonsScale = useRef(new Animated.Value(0.8)).current;
+  const buttonsTranslateY = useRef(new Animated.Value(20)).current;
 
   const hasFullCircleSubscription = userData?.subscription?.isActive || false;
   const userDataRef = useRef(userData);
@@ -115,9 +133,18 @@ const ConnectScreen: React.FC = () => {
     return photoCache.get(userId) || null;
   }, [photoCache]);
 
-  // 🚀 TESTING: Initialize content display only
+  // 🎭 GENTLE: Initialize subtle entrance animations
   useEffect(() => {
-    // No animations - just show content immediately
+    // Start with content invisible for smooth entrance
+    cardOpacity.setValue(0);
+    contentFadeIn.setValue(0);
+    
+    // Gentle fade in content
+    Animated.timing(contentFadeIn, {
+      toValue: 1,
+      duration: 300, // Faster and gentler
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   useEffect(() => {
@@ -205,21 +232,41 @@ const ConnectScreen: React.FC = () => {
     }
   }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches, matchingState.lastFetchedDoc, currentPotentialMatch]);
 
-  // 🚀 TESTING: Reset photo loading state when match changes
+  // 🎭 TRANSITION: Handle user changes during transitions
   useEffect(() => {
+    // CRITICAL: Don't run this effect during transitions
+    if (isTransitioning) {
+      console.log('🎭 TRANSITION: Skipping useEffect during transition');
+      return;
+    }
+    
     if (currentPotentialMatch && !actionInProgress && showContent) {
       // Only reset if we actually have a new match (check by userId)
       const currentUserId = currentPotentialMatch.userId;
       if (currentUserId && currentUserId !== matchingState.currentIndex?.toString()) {
+        console.log('🎭 TRANSITION: ⚠️ USER DATA CHANGED - This should happen AFTER animation!');
+        console.log('🎭 TRANSITION: Current user:', currentPotentialMatch.firstName);
+        // Reset photo loading state for new user
         setPhotosLoaded(false);
       }
     }
-  }, [currentPotentialMatch?.userId, showContent, actionInProgress]);
+  }, [currentPotentialMatch?.userId, showContent, actionInProgress, isTransitioning]);
 
-  // 🚀 TESTING: Ensure content is visible when showContent becomes true
+  // 🎭 GENTLE: Ensure content fades in smoothly when visible
   useEffect(() => {
     if (showContent) {
-      // No animations - content shows immediately
+      // 🎭 GENTLE EFFECT: Just fade in content smoothly
+      // No scale - just gentle opacity transition
+      cardOpacity.setValue(0);
+      
+      // Small delay to ensure smooth transition
+      setTimeout(() => {
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 250, // Fast and gentle
+          useNativeDriver: true,
+        }).start();
+      }, 100);
     }
   }, [showContent]);
 
@@ -251,51 +298,69 @@ const ConnectScreen: React.FC = () => {
     
     const userId = currentPotentialMatch.userId;
     
-    try {
-      // Execute backend operation
-      switch (action) {
-        case 'pass':
-          await dislikeMatch(userId);
-          break;
-        case 'lotus':
-          await lotusLike(userId);
-          break;
-        case 'like':
-          await likeMatch(userId);
-          break;
-      }
-      
-      // Load next match
-      await loadNextMatch();
-      
-    } catch (error: any) {
-      console.error(`❌ ${action} action failed:`, error);
-      
-      if (error.message === "DAILY_LIMIT_REACHED") {
-        resetActionState();
-        showDailyLimitModalFunc();
-        return;
-      }
-      
-      // Even if the action fails, we should still advance to the next match
-      // to prevent the user from getting stuck
-      try {
-        await loadNextMatch();
-      } catch (loadError) {
-        console.error('❌ Failed to load next match after action error:', loadError);
-      }
-      
-      resetActionState();
-      return;
-    }
-
-    // 🚀 INSTANT: No animations - immediate user transition for testing
-    // This lets you see if photo caching is working properly
-    console.log('🚀 INSTANT TRANSITION: No animations, showing next user immediately');
+    // 🎭 FAST: Quick animation, then load next user
+    console.log('🎭 FAST: Starting quick fade out animation');
     
-    // Reset and show new user instantly
-    resetActionState();
-    setPhotosLoaded(false);
+    // 🚫 CRITICAL: Block user data changes during animation
+    setIsTransitioning(true);
+    
+    // Start fade out immediately - FAST
+    Animated.timing(cardOpacity, {
+      toValue: 0,
+      duration: 200, // Quick 200ms fade out
+      useNativeDriver: true,
+    }).start();
+    
+    // SHORT DELAY: Wait 300ms before loading next user
+    // This gives the animation time to complete
+    setTimeout(async () => {
+      console.log('🎭 FAST: Animation complete, now loading next user');
+      
+      try {
+        // 🚫 CRITICAL: Call the action function AFTER animation completes
+        // This prevents the state from changing before animation
+        switch (action) {
+          case 'pass':
+            await dislikeMatch(userId);
+            break;
+          case 'lotus':
+            await lotusLike(userId);
+            break;
+          case 'like':
+            await likeMatch(userId);
+            break;
+        }
+        
+        // Wait for data to load, then fade in
+        setTimeout(() => {
+          console.log('🎭 FAST: Loading complete, fading in new user');
+          
+          // Fade in new user - FAST
+          Animated.timing(cardOpacity, {
+            toValue: 1,
+            duration: 200, // Quick fade in
+            useNativeDriver: true,
+          }).start(() => {
+            console.log('🎭 FAST: Complete!');
+            setIsTransitioning(false);
+            resetActionState();
+            setPhotosLoaded(false);
+          });
+        }, 100); // Short delay for data to settle
+        
+      } catch (error) {
+        console.error('❌ Failed to execute action:', error);
+        // Fade back in on error
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsTransitioning(false);
+          resetActionState();
+        });
+      }
+    }, 300); // Wait 300ms before loading next user
     
     // Reset scroll position
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
@@ -329,8 +394,15 @@ const ConnectScreen: React.FC = () => {
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
     
-    // 🚀 TESTING: No button animations for clean performance testing
-    console.log('📸 Photos loaded - buttons should appear immediately');
+    // 🎭 GENTLE: Subtle button entrance animation
+    console.log('📸 Photos loaded - gently fading buttons into view');
+    
+    // Just fade in buttons smoothly - no scale or movement
+    Animated.timing(buttonsOpacity, {
+      toValue: 1,
+      duration: 200, // Fast and gentle
+      useNativeDriver: true,
+    }).start();
   };
 
 
@@ -485,7 +557,14 @@ const ConnectScreen: React.FC = () => {
         <CustomIcon name="options" size={22} color="#B8860B" />
       </TouchableOpacity>
       
-      <View style={styles.contentContainer}>
+      <Animated.View 
+        style={[
+          styles.contentContainer,
+          { 
+            opacity: contentFadeIn
+          }
+        ]}
+      >
         <ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView}
@@ -494,40 +573,45 @@ const ConnectScreen: React.FC = () => {
           bounces={true}
         >
           
-          {(() => {
-            return showContent && currentPotentialMatch ? (
-              <View>
-                <PotentialMatch
-                  currentPotentialMatch={currentPotentialMatch}
-                  currentUserData={userData}
-                  isMatched={false}
-                  onPhotosLoaded={handlePhotosLoaded}
-                  getCachedPhotos={getCachedPhotos}
-                />
-              </View>
-            ) : (
-              <View style={styles.contentPlaceholder}>
-                <OuroborosLoader
-                  variant="pulse"
-                  size={60}
-                  duration={800}
-                  loop={true}
-                  fillColor="#F5E6D3"
-                  strokeColor="#7B6B5C"
-                  strokeWidth={1}
-                />
-              </View>
-            );
-          })()}
+                     {showContent && currentPotentialMatch ? (
+            <Animated.View style={{ 
+              opacity: cardOpacity
+            }}>
+              <PotentialMatch
+                currentPotentialMatch={currentPotentialMatch}
+                currentUserData={userData}
+                isMatched={false}
+                onPhotosLoaded={handlePhotosLoaded}
+                getCachedPhotos={getCachedPhotos}
+              />
+            </Animated.View>
+          ) : (
+            <View style={styles.contentPlaceholder}>
+              <OuroborosLoader
+                variant="pulse"
+                size={60}
+                duration={800}
+                loop={true}
+                fillColor="#F5E6D3"
+                strokeColor="#7B6B5C"
+                strokeWidth={1}
+              />
+            </View>
+          )}
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Enhanced action buttons with smooth animations */}
       {(() => {
         return photosLoaded && !actionInProgress && showContent && currentPotentialMatch ? (
           <>
             {/* X and Heart buttons in their own container */}
-            <View style={styles.buttonsContainer}>
+            <Animated.View style={[
+              styles.buttonsContainer, 
+              { 
+                opacity: buttonsOpacity
+              }
+            ]}>
               <TouchableOpacity 
                 style={[
                   styles.actionButton, 
@@ -573,7 +657,7 @@ const ConnectScreen: React.FC = () => {
                   color={hasFullCircleSubscription ? '#FFD700' : '#E74C3C'} 
                 />
               </TouchableOpacity>
-            </View>
+            </Animated.View>
 
             {/* Lotus button positioned independently */}
             <View style={styles.lotusButtonContainer}>
@@ -1115,6 +1199,14 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     letterSpacing: 0.3,
+  },
+  
+  transitionText: {
+    fontSize: Typography.sizes.base,
+    textAlign: 'center',
+    marginTop: Spacing.md,
+    letterSpacing: 0.3,
+    fontStyle: 'italic',
   },
 });
 
