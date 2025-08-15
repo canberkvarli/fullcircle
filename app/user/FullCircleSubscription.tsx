@@ -52,18 +52,16 @@ export default function FullCircleSubscription() {
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const subscription = userData.subscription;
-  const hasSubscription = !!subscription?.subscriptionId;
-  
-  const isIncompleteAndCanceled = subscription?.status === 'incomplete' && subscription?.cancelAtPeriodEnd;
-  const isIncompleteAndPending = subscription?.status === 'incomplete' && !subscription?.cancelAtPeriodEnd;
+  // Only consider active subscriptions as real subscriptions
+  const hasActiveSubscription = subscription?.status === 'active';
   
   const isActiveAndContinuing = subscription?.status === 'active' && !subscription?.cancelAtPeriodEnd;
   const isActiveButCanceling = subscription?.status === 'active' && subscription?.cancelAtPeriodEnd;
   
-  const showAsActive = isActiveAndContinuing || isIncompleteAndPending;
-  const canCancel = isActiveAndContinuing || isIncompleteAndPending;
-  const canReactivate = isIncompleteAndCanceled || isActiveButCanceling;
-  const showUpgradeOptions = !hasSubscription || subscription?.status === 'canceled';
+  const showAsActive = isActiveAndContinuing;
+  const canCancel = isActiveAndContinuing; // Only active subscriptions can be canceled
+  const canReactivate = isActiveButCanceling;
+  const showUpgradeOptions = !hasActiveSubscription || subscription?.status === 'canceled';
 
   const pricingPlans: Record<'1month' | '3months' | '6months', PricingPlan> = {
     '1month': {
@@ -356,7 +354,7 @@ export default function FullCircleSubscription() {
   };
 
   const getStatusDisplay = () => {
-    if (!hasSubscription) {
+    if (!hasActiveSubscription) {
       return {
         title: "Unlock Your Infinite Potential",
         subtitle: "Transform your connections with FullCircle spiritual features",
@@ -366,25 +364,7 @@ export default function FullCircleSubscription() {
       };
     }
     
-    if (subscription?.status === 'incomplete') {
-      if (subscription?.cancelAtPeriodEnd) {
-        return {
-          title: "Subscription Canceled",
-          subtitle: "Your journey was paused before activation. Renew to continue your spiritual path.",
-          icon: "pause-circle",
-          color: "#FF9500",
-          timeText: `Would activate until ${formatCancelDate()}`
-        };
-      } else {
-        return {
-          title: "Payment Pending",
-          subtitle: "Complete your payment to activate FullCircle features.",
-          icon: "time",
-          color: "#FF9500",
-          timeText: "Payment required"
-        };
-      }
-    }
+    // Incomplete subscriptions are treated as non-existent - show upgrade options instead
     
     if (subscription?.status === 'active') {
       if (subscription?.cancelAtPeriodEnd) {
@@ -516,7 +496,7 @@ export default function FullCircleSubscription() {
                     onPress={handleCancel}
                     disabled={isProcessing}
                   >
-                    <Text style={styles.cancelButtonText}>Release Membership</Text>
+                    <Text style={styles.actionButtonText}>Release Membership</Text>
                   </TouchableOpacity>
                 )}
                 
