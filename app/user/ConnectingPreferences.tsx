@@ -163,8 +163,8 @@ export default function ConnectingPreferences() {
     {
       label: "Height Range",
       value: userData?.matchPreferences?.preferredHeightRange
-        ? `${userData.matchPreferences.preferredHeightRange.min || 3}' - ${
-            userData.matchPreferences.preferredHeightRange.max || 8
+        ? `${Math.round(userData.matchPreferences.preferredHeightRange.min || 3)}' - ${
+            Math.round(userData.matchPreferences.preferredHeightRange.max || 8)
           }' tall`
         : "3' - 8' tall",
       isSubscriberField: false,
