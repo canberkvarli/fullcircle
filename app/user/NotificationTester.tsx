@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
 import { FUNCTIONS } from '@/services/FirebaseConfig';
+import NotificationService from '@/services/NotificationService';
 
 export default function NotificationTester() {
   const router = useRouter();
@@ -105,6 +106,67 @@ export default function NotificationTester() {
     }
   };
 
+  const registerForNotifications = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🔔 Manually registering for notifications...');
+      
+      const permissionStatus = await NotificationService.requestPermissions();
+      console.log('🔔 Permission status:', permissionStatus);
+      
+      if (permissionStatus === 'granted') {
+        const token = await NotificationService.getPushToken();
+        console.log('🔔 Push token received:', token ? 'YES' : 'NO');
+        
+        if (token) {
+          console.log('🔔 Token length:', token.length);
+          console.log('🔔 Token preview:', token.substring(0, 20) + '...');
+          
+          // Update the status results to show the token
+          setStatusResults({
+            success: true,
+            userId: 'Manual Registration',
+            hasSettings: true,
+            hasPushNotifications: true,
+            pushToken: `${token.substring(0, 20)}...`,
+            pushTokenLength: token.length,
+            pushSettings: 'Manual registration successful',
+            userDataKeys: ['manual'],
+            settingsKeys: ['pushToken']
+          });
+          
+          Alert.alert(
+            '✅ Registration Successful',
+            `Push token generated successfully!\nToken length: ${token.length}\nToken preview: ${token.substring(0, 20)}...`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert(
+            '❌ No Token Generated',
+            'Failed to generate push token. Check console for details.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        Alert.alert(
+          '❌ Permission Denied',
+          `Notification permission not granted: ${permissionStatus}`,
+          [{ text: 'OK' }]
+        );
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Manual registration error:', error);
+      Alert.alert(
+        '❌ Error',
+        `Failed to register for notifications: ${error.message}`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const clearResults = () => {
     setTestResults(null);
     setStatusResults(null);
@@ -149,6 +211,17 @@ export default function NotificationTester() {
             <Ionicons name="information-circle" size={20} color="#8B4513" />
             <Text style={[styles.buttonTextSecondary, fonts.spiritualBodyFont]}>
               {isLoading ? 'Checking...' : 'Check Notification Status'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: '#28a745' }, isLoading && styles.buttonDisabled]}
+            onPress={registerForNotifications}
+            disabled={isLoading}
+          >
+            <Ionicons name="notifications-outline" size={20} color="white" />
+            <Text style={[styles.buttonText, fonts.spiritualBodyFont]}>
+              {isLoading ? 'Registering...' : 'Register for Notifications'}
             </Text>
           </TouchableOpacity>
 

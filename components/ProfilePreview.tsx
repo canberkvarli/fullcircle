@@ -172,10 +172,17 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       return userData.hiddenFields?.[fieldName] === true;
     };
 
+    // Helper function to format height properly (feet and inches)
+    const formatHeight = (height: number): string => {
+      const feet = Math.floor(height);
+      const inches = Math.round((height - feet) * 12);
+      return `${feet}'${inches}"`;
+    };
+
     // 1. Basic Demographics (About Me) - similar to PotentialMatch
     const age = !isFieldHidden('age') && userData.age ? userData.age : null;
     const location = !isFieldHidden('location') ? getLocation(userData) : null;
-    const height = !isFieldHidden('height') && userData.height ? `${userData.height} ft tall` : null;
+    const height = !isFieldHidden('height') && userData.height ? formatHeight(userData.height) : null;
     
     const basicItems = [];
     

@@ -1,13 +1,16 @@
-const functions = require('firebase-functions');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
-exports.sendPushNotification = functions.https.onCall(async (data, context) => {
+exports.sendPushNotification = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
   // Verify user is authenticated
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { userId, title, body, data: notificationData, type } = data;
+  const { userId, title, body, data: notificationData, type } = request.data;
   
   try {
     // Get user's document from Firestore
@@ -15,7 +18,7 @@ exports.sendPushNotification = functions.https.onCall(async (data, context) => {
     const userData = userDoc.data();
     
     if (!userData) {
-      throw new functions.https.HttpsError('not-found', 'User not found');
+      throw new HttpsError('not-found', 'User not found');
     }
     
     // Check if user has push notifications enabled for this type
@@ -87,30 +90,40 @@ exports.sendPushNotification = functions.https.onCall(async (data, context) => {
     
   } catch (error) {
     console.error('Error sending push notification:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to send notification');
+    throw new HttpsError('internal', 'Failed to send notification');
   }
 });
 
 // Helper function to send notifications for common events
-exports.sendLikeNotification = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+exports.sendLikeNotification = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { likedUserId, likerName, likerId } = data;
+  const { likedUserId, likerName, likerId } = request.data;
   
   try {
-    const result = await exports.sendPushNotification({
-      userId: likedUserId,
-      title: 'New Heart of Appreciation 💖',
-      body: `${likerName} appreciated your divine energy`,
-      type: 'newLikes',
+    // Create a mock request context for sendPushNotification
+    const mockRequest = {
+      auth: request.auth,
       data: {
-        type: 'newLike',
-        likerId: likerId,
-        timestamp: Date.now(),
+        userId: likedUserId,
+        title: 'New Heart of Appreciation 💖',
+        body: `${likerName} appreciated your divine energy`,
+        type: 'newLikes',
+        data: {
+          type: 'newLike',
+          likerId: likerId,
+          timestamp: Date.now(),
+        }
       }
-    }, context);
+    };
+    
+    // Call sendPushNotification with the mock request
+    const result = await exports.sendPushNotification(mockRequest);
     
     return result;
   } catch (error) {
@@ -119,25 +132,35 @@ exports.sendLikeNotification = functions.https.onCall(async (data, context) => {
   }
 });
 
-exports.sendMatchNotification = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+exports.sendMatchNotification = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { matchedUserId, matchedName } = data;
+  const { matchedUserId, matchedName } = request.data;
   
   try {
-    const result = await exports.sendPushNotification({
-      userId: matchedUserId,
-      title: 'Sacred Soul Connection ✨',
-      body: `You and ${matchedName} are now connected!`,
-      type: 'newMatches',
+    // Create a mock request context for sendPushNotification
+    const mockRequest = {
+      auth: request.auth,
       data: {
-        type: 'newMatch',
-        matchedUserId: matchedUserId,
-        timestamp: Date.now(),
+        userId: matchedUserId,
+        title: 'Sacred Soul Connection ✨',
+        body: `You and ${matchedName} are now connected!`,
+        type: 'newMatches',
+        data: {
+          type: 'newMatch',
+          matchedUserId: matchedUserId,
+          timestamp: Date.now(),
+        }
       }
-    }, context);
+    };
+    
+    // Call sendPushNotification with the mock request
+    const result = await exports.sendPushNotification(mockRequest);
     
     return result;
   } catch (error) {
@@ -146,26 +169,36 @@ exports.sendMatchNotification = functions.https.onCall(async (data, context) => 
   }
 });
 
-exports.sendMessageNotification = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+exports.sendMessageNotification = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { recipientUserId, senderName, messagePreview } = data;
+  const { recipientUserId, senderName, messagePreview } = request.data;
   
   try {
-    const result = await exports.sendPushNotification({
-      userId: recipientUserId,
-      title: 'Divine Conversation 💫',
-      body: `New message from ${senderName}: ${messagePreview}`,
-      type: 'newMessages',
+    // Create a mock request context for sendPushNotification
+    const mockRequest = {
+      auth: request.auth,
       data: {
-        type: 'newMessage',
-        senderName: senderName,
-        messagePreview: messagePreview,
-        timestamp: Date.now(),
+        userId: recipientUserId,
+        title: 'Divine Conversation 💫',
+        body: `New message from ${senderName}: ${messagePreview}`,
+        type: 'newMessages',
+        data: {
+          type: 'newMessage',
+          senderName: senderName,
+          messagePreview: messagePreview,
+          timestamp: Date.now(),
+        }
       }
-    }, context);
+    };
+    
+    // Call sendPushNotification with the mock request
+    const result = await exports.sendPushNotification(mockRequest);
     
     return result;
   } catch (error) {

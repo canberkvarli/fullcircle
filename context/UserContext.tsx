@@ -166,6 +166,7 @@ export type UserSettings = {
   selfieVerificationDate?: Date;
   pushNotifications?: PushNotificationSettings;
   pushToken?: string;
+  notificationPermissionStatus?: 'granted' | 'denied' | 'not-requested';
   connectedAccounts?: {
     google?: boolean;
     apple?: boolean;
@@ -404,6 +405,8 @@ type UserContextType = {
   initializing: boolean;
   // 🔒 Add cancellation flag to track sign out state
   isSigningOut: boolean;
+  // 🔔 Add notification permission request function
+  requestNotificationPermissions: () => Promise<{ success: boolean; message: string } | undefined>;
 
 };
 
@@ -497,6 +500,7 @@ const initialUserData: UserDataType = {
       promotions: true,
       announcements: true,
     },
+    notificationPermissionStatus: 'not-requested',
     connectedAccounts: {
       google: false,
       apple: false,
@@ -581,12 +585,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         newMatches: true,
         newMessages: true,
         promotions: true,
-        announcements: true
+        announcements: true,
       },
+      notificationPermissionStatus: 'not-requested',
       connectedAccounts: {
         google: false,
-        apple: false
-      }
+        apple: false,
+      },
     }
   };
 
@@ -705,13 +710,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     matchingStateRef.current = matchingState;
   }, [matchingState]);
 
-  // Register for push notifications when user data is available
+  // Register for push notifications when user data is available AND onboarding is completed
   useEffect(() => {
-    if (userData?.userId && userData?.settings?.pushToken === undefined) {
-      console.log('🔔 Registering for push notifications...');
+    if (userData?.userId && userData?.onboardingCompleted && !userData?.settings?.pushToken) {
       registerForPushNotifications();
     }
-  }, [userData?.userId, userData?.settings?.pushToken]);
+  }, [userData?.userId, userData?.onboardingCompleted, userData?.settings?.pushToken]);
 
   useEffect(() => {
     console.log("Setting up Firebase auth state change listener and app state monitor");
@@ -1672,6 +1676,12 @@ const verifyPhoneAndSetUser = async (
   const registerForPushNotifications = async () => {
     try {
       const permissionStatus = await NotificationService.requestPermissions();
+      
+      // Update the permission status in user settings
+      await updateUserSettings({
+        notificationPermissionStatus: permissionStatus || 'denied'
+      });
+      
       if (permissionStatus === 'granted') {
         const token = await NotificationService.getPushToken();
         if (token) {
@@ -1683,6 +1693,10 @@ const verifyPhoneAndSetUser = async (
       }
     } catch (error) {
       console.log('Error registering for push notifications:', error);
+      // Mark as denied if there's an error
+      await updateUserSettings({
+        notificationPermissionStatus: 'denied'
+      });
     }
   };
 
@@ -3725,10 +3739,80 @@ const verifyPhoneAndSetUser = async (
         syncUserState(FIREBASE_AUTH.currentUser);
       }
       
+      // Request notification permissions after onboarding completion
+      setTimeout(() => {
+        requestNotificationPermissionsAfterOnboarding();
+      }, 1000); // Small delay to ensure user data is synced
+      
       // 🔧 FIXED: Use router.replace for final destination (no animation needed)
       router.replace("/(tabs)/Connect" as any);
     } catch (error) {
       console.error("Failed to complete onboarding: ", error);
+    }
+  };
+
+  // Request notification permissions after onboarding completion
+  const requestNotificationPermissionsAfterOnboarding = async () => {
+    try {
+      // Only request if we haven't asked before or if permission was denied
+      const currentPermissionStatus = userData?.settings?.notificationPermissionStatus;
+      
+      if (currentPermissionStatus === 'not-requested' || currentPermissionStatus === 'denied') {
+        const permissionStatus = await NotificationService.requestPermissions();
+        
+        // Update the permission status in user settings
+        await updateUserSettings({
+          notificationPermissionStatus: permissionStatus || 'denied'
+        });
+        
+        if (permissionStatus === 'granted') {
+          const token = await NotificationService.getPushToken();
+          if (token) {
+            // Update user's push token in Firestore
+            await updateUserSettings({
+              pushToken: token,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Error requesting notification permissions after onboarding:', error);
+      // Mark as denied if there's an error
+      await updateUserSettings({
+        notificationPermissionStatus: 'denied'
+      });
+    }
+  };
+
+  // Manual function to request notification permissions (can be called from UI)
+  const requestNotificationPermissions = async () => {
+    try {
+      const permissionStatus = await NotificationService.requestPermissions();
+      
+      // Update the permission status in user settings
+      await updateUserSettings({
+        notificationPermissionStatus: permissionStatus || 'denied'
+      });
+      
+      if (permissionStatus === 'granted') {
+        const token = await NotificationService.getPushToken();
+        if (token) {
+          // Update user's push token in Firestore
+          await updateUserSettings({
+            pushToken: token,
+          });
+          return { success: true, message: 'Notifications enabled successfully!' };
+        }
+      } else {
+        return { success: false, message: 'Permission denied. You can enable notifications in Settings.' };
+      }
+    } catch (error) {
+      console.log('Error requesting notification permissions:', error);
+      // Mark as denied if there's an error
+      await updateUserSettings({
+        notificationPermissionStatus: 'denied'
+      });
+      return { success: false, message: 'Failed to request permissions. Please try again.' };
     }
   };
 
@@ -4968,6 +5052,7 @@ const verifyPhoneAndSetUser = async (
     forceRefetchOnReturn,
     initializing,
     isSigningOut: isSigningOutRef.current,
+    requestNotificationPermissions,
     
   };
 

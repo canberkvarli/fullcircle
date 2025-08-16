@@ -48,6 +48,13 @@ const UserCard: React.FC<UserCardProps> = ({
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
   const fonts = useFont();
 
+  // Helper function to format height properly (feet and inches)
+  const formatHeight = (height: number): string => {
+    const feet = Math.floor(height);
+    const inches = Math.round((height - feet) * 12);
+    return `${feet}'${inches}"`;
+  };
+
   // Smart font sizing based on name length and card size
   const getNameFontSize = () => {
     const name = user.firstName || "Unknown Presence";
@@ -208,7 +215,7 @@ const UserCard: React.FC<UserCardProps> = ({
               },
               {
                 title: "Height",
-                content: user.height ? `${user.height} ft` : "N/A",
+                content: user.height ? formatHeight(user.height) : "N/A",
               },
               {
                 title: "Children Preference",

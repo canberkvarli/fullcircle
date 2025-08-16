@@ -1,29 +1,30 @@
-const functions = require('firebase-functions');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
 /**
  * Test function to send a push notification to yourself
  * This is useful for testing if notifications are working
  */
-exports.sendTestNotification = functions.https.onCall({
-  enforceAppCheck: false
-}, async (data, context) => {
+exports.sendTestNotification = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
   // Debug logging
   console.log('🔍 Function called with context:', {
-    hasAuth: !!context.auth,
-    authUid: context.auth?.uid,
-    contextKeys: Object.keys(context),
-    data: data
+    hasAuth: !!request.auth,
+    authUid: request.auth?.uid,
+    contextKeys: Object.keys(request),
+    data: request.data
   });
   
   // Verify user is authenticated
-  if (!context.auth) {
+  if (!request.auth) {
     console.log('❌ No auth context found');
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const userId = context.auth.uid;
-  const { message = 'Test notification from FullCircle! 🧪' } = data;
+  const userId = request.auth.uid;
+  const { message = 'Test notification from FullCircle! 🧪' } = request.data;
   
   try {
     console.log(`🧪 Sending test notification to user: ${userId}`);
@@ -33,7 +34,7 @@ exports.sendTestNotification = functions.https.onCall({
     const userData = userDoc.data();
     
     if (!userData) {
-      throw new functions.https.HttpsError('not-found', 'User not found');
+      throw new HttpsError('not-found', 'User not found');
     }
     
     // Get user's push token
@@ -130,21 +131,22 @@ exports.sendTestNotification = functions.https.onCall({
  * Test function to check user's notification settings and push token
  * This helps debug notification issues
  */
-exports.checkNotificationStatus = functions.https.onCall({
-  enforceAppCheck: false
-}, async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+exports.checkNotificationStatus = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const userId = context.auth.uid;
+  const userId = request.auth.uid;
   
   try {
     const userDoc = await admin.firestore().collection('users').doc(userId).get();
     const userData = userDoc.data();
     
     if (!userData) {
-      throw new functions.https.HttpsError('not-found', 'User not found');
+      throw new HttpsError('not-found', 'User not found');
     }
     
     const pushSettings = userData?.settings?.pushNotifications;
@@ -164,6 +166,6 @@ exports.checkNotificationStatus = functions.https.onCall({
     
   } catch (error) {
     console.error('❌ Error checking notification status:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to check notification status', error);
+    throw new HttpsError('internal', 'Failed to check notification status', error);
   }
 });

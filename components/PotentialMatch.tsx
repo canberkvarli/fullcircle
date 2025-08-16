@@ -45,6 +45,13 @@ const getLocation = (user: UserDataType) => {
   return 'Location not shared';
 };
 
+// Helper function to format height properly (feet and inches)
+const formatHeight = (height: number): string => {
+  const feet = Math.floor(height);
+  const inches = Math.round((height - feet) * 12);
+  return `${feet}'${inches}"`;
+};
+
 // Icon renderer function
 const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
   if (iconType === "custom") {
@@ -174,7 +181,7 @@ const generateInfoCards = (user: UserDataType, sharedItems: any) => {
   
   const basicItems = [
     { icon: "cake", iconType: "custom", text: age ? `${age}` : "Age not shared", color: warmNeutral },
-    { icon: "swap-vertical-outline", text: user.height ? `${user.height}` : "Height not shared", color: warmNeutral },
+    { icon: "swap-vertical-outline", text: user.height ? formatHeight(user.height) : "Height not shared", color: warmNeutral },
     { icon: "temple", iconType: "custom", text: location, color: warmNeutral } // Custom location icon
   ];
   

@@ -20,6 +20,13 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 
+// Helper function to format height properly (feet and inches)
+function formatHeight(height: number): string {
+  const feet = Math.floor(height);
+  const inches = Math.round((height - feet) * 12);
+  return `${feet}'${inches}"`;
+}
+
 export default function ConnectingPreferences() {
   const router = useRouter();
   const { userData, updateUserData } = useUserContext();
@@ -163,10 +170,10 @@ export default function ConnectingPreferences() {
     {
       label: "Height Range",
       value: userData?.matchPreferences?.preferredHeightRange
-        ? `${Math.round(userData.matchPreferences.preferredHeightRange.min || 3)}' - ${
-            Math.round(userData.matchPreferences.preferredHeightRange.max || 8)
-          }' tall`
-        : "3' - 8' tall",
+        ? `${formatHeight(userData.matchPreferences.preferredHeightRange.min || 3)} - ${
+            formatHeight(userData.matchPreferences.preferredHeightRange.max || 8)
+          }`
+        : "3'0\" - 8'0\"",
       isSubscriberField: false,
       fieldName: "preferredHeightRange",
       icon: "resize",

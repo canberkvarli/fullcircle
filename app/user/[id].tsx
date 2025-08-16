@@ -195,6 +195,13 @@ const UserShow: React.FC = () => {
     return 'Location not shared';
   };
 
+  // Helper function to format height properly (feet and inches)
+  const formatHeight = (height: number): string => {
+    const feet = Math.floor(height);
+    const inches = Math.round((height - feet) * 12);
+    return `${feet}'${inches}"`;
+  };
+
   const getConnectionIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
@@ -243,7 +250,7 @@ const UserShow: React.FC = () => {
     // 1. Basic Demographics
     const age = !isFieldHidden('age') && user.age;
     const location = !isFieldHidden('location') ? getLocation(user) : null;
-    const height = !isFieldHidden('height') && user.height ? `${user.height}` : null;
+    const height = !isFieldHidden('height') && user.height ? formatHeight(user.height) : null;
     
     const basicItems = [];
     

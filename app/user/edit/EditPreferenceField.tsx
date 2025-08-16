@@ -67,6 +67,13 @@ function EditPreferenceField() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
+
+  // Helper function to format height properly (feet and inches)
+  const formatHeight = (height: number): string => {
+    const feet = Math.floor(height);
+    const inches = Math.round((height - feet) * 12);
+    return `${feet}'${inches}"`;
+  };
   
   const [value, setValue] = useState<any>(currentValue || null);
   const [isVisible, setIsVisible] = useState<boolean>(
@@ -452,10 +459,10 @@ function EditPreferenceField() {
           <View style={styles.sliderContainer}>
             <View style={styles.sliderLabels}>
               <Text style={[styles.sliderLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                Min Height: {Number(heightValue.min).toFixed(1)} ft
+                Min Height: {formatHeight(heightValue.min)}
               </Text>
               <Text style={[styles.sliderLabel, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-                Max Height: {Number(heightValue.max).toFixed(1)} ft
+                Max Height: {formatHeight(heightValue.max)}
               </Text>
             </View>
             <MultiSlider
