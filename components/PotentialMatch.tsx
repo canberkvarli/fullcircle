@@ -31,15 +31,6 @@ type Props = {
   getCachedPhotos?: (userId: string) => string[] | null; // 🆕 PHOTO CACHING: Optional prop for cached photos
 };
 
-// Helper function to calculate age
-const calculateAge = (user: UserDataType) => {
-  if (user.birthyear) {
-    return new Date().getFullYear() - parseInt(user.birthyear);
-  }
-  if (user.age) return user.age;
-  return null;
-};
-
 // Helper function to get location string
 const getLocation = (user: UserDataType) => {
   if (user.location?.city && user.location?.region) {
@@ -177,7 +168,7 @@ const generateInfoCards = (user: UserDataType, sharedItems: any) => {
   const connectionColors = getConnectionIntentColors(user.matchPreferences?.connectionIntent || "romantic");
 
   // 1. Basic Demographics with custom icons for spiritual elements
-  const age = calculateAge(user);
+  const age = user.age;
   const location = getLocation(user);
   const warmNeutral = '#8B7355'; // Warm brown-gray color for all basic info
   

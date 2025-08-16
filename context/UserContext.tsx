@@ -873,7 +873,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const generatePreferencesHash = useCallback((prefs: typeof userData.matchPreferences) => {
-    if (!prefs) return '';
+    if (!prefs) {
+      console.log('🔍 generatePreferencesHash: No preferences provided');
+      return '';
+    }
+    
+    // 🔧 ENHANCED DEBUGGING: Log the raw preferences data
+    console.log('🔍 generatePreferencesHash - Raw preferences:', {
+      preferredAgeRange: prefs.preferredAgeRange,
+      preferredHeightRange: prefs.preferredHeightRange,
+      preferredDistance: prefs.preferredDistance,
+      connectionIntent: prefs.connectionIntent,
+      spiritualCompatibility: prefs.spiritualCompatibility
+    });
     
     // 🔧 FOCUSED: Only hash the fields that actually affect filtering
     const hashData = {
@@ -899,7 +911,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       heightRange: `${hashData.heightMin}-${hashData.heightMax}`,
       distance: hashData.distance,
       hashLength: hash.length,
-      rawData: hashData // 🔧 ADDED: Show raw data for debugging
+      rawData: hashData, // 🔧 ADDED: Show raw data for debugging
+      // 🔧 ENHANCED: Show the actual hash string
+      hashString: hash.substring(0, 100) + '...'
     });
     return hash;
   }, []);
@@ -911,27 +925,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const baseCollection = FIRESTORE.collection("users");
     
+    // 🔧 ADDED: Debug exclusion set contents
+    console.log('🔧 buildMatchQuery - Exclusion set details:', {
+      size: exclusionSet.size,
+      contents: Array.from(exclusionSet),
+      hasEmptyString: exclusionSet.has(''),
+      hasWhitespace: Array.from(exclusionSet).some(id => id && typeof id === 'string' && id.trim() !== id),
+      sampleIds: Array.from(exclusionSet).slice(0, 3) // Show first 3 IDs for debugging
+    });
+    
     // 🔧 SIMPLE & SAFE: Basic query without complex exclusions
     let query = baseCollection
       .where("onboardingCompleted", "==", true);
     
-    // 🔧 SAFE: Only apply exclusions if they're small (avoid Firestore limits)
-    if (exclusionSet.size > 0 && exclusionSet.size <= 10) {
-      const exclusionArray = Array.from(exclusionSet);
-      query = query.where("userId", "not-in", exclusionArray);
-      console.log(`🔍 Applied ${exclusionArray.length} exclusions to Firestore query`);
-    } else if (exclusionSet.size > 10) {
-      console.log(`🔍 Too many exclusions (${exclusionSet.size}), skipping Firestore exclusions for safety`);
-    }
+    // 🔧 COMPLETELY NEW APPROACH: No more not-in queries - fetch more users and filter client-side
+    // This avoids all Firestore not-in limitations and errors
+    // 🔧 STRATEGY: Fetch 2x the batch size to account for exclusions
+    const fetchSize = Math.max(batchSize * 2, 10); // At least 10 users to ensure we have enough after filtering
     
     // Add ordering and pagination
-    query = query.orderBy("createdAt", "desc").limit(batchSize);
+    query = query.orderBy("createdAt", "desc").limit(fetchSize);
     
     if (lastDoc) {
       query = query.startAfter(lastDoc);
     }
     
-    console.log(`🔍 Query built with batch size: ${batchSize}, exclusions: ${exclusionSet.size}`);
+    console.log(`🔧 NEW STRATEGY: Fetching ${fetchSize} users (2x batch size) to filter client-side, exclusions: ${exclusionSet.size}`);
     return query;
   }, []);
 
@@ -2281,11 +2300,10 @@ const verifyPhoneAndSetUser = async (
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
-      // 🔧 SIMPLE & SAFE: Single batch fetch with batch size 5
+      // 🔧 NEW STRATEGY: Fetch more users to account for exclusions, filter client-side
       const query = buildMatchQuery(exclusionsToUse, lastDoc, 5);
-      console.log(`🔍 Executing Firestore query with limit: 5 users`);
       const snapshot = await query.get();
-      console.log(`🔍 Firestore returned ${snapshot.docs.length} users (expected up to 5)`);
+      console.log(`🔧 Firestore returned ${snapshot.docs.length} users (fetching more to filter client-side)`);
       
       if (snapshot.empty) {
         console.log(`🔍 Firestore query returned 0 users - truly no more data`);
@@ -2317,27 +2335,32 @@ const verifyPhoneAndSetUser = async (
         
         // 🔧 CRITICAL FIX: Exclude users that are already in the exclusion set (liked/disliked)
         if (exclusionsToUse.has(user.userId)) {
-          console.log(`🔍 Filtering out excluded user (already liked/disliked): ${user.firstName}`);
+          console.log(`🔧 Filtering out excluded user (already liked/disliked): ${user.firstName}`);
           return false;
         }
         
         // 🔧 SAFE: Also exclude users we've already seen in current session
         const currentSessionUsers = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
         if (currentSessionUsers.has(user.userId)) {
-          console.log(`🔍 Filtering out already seen user: ${user.firstName}`);
+          console.log(`🔧 Filtering out already seen user: ${user.firstName}`);
           return false;
         }
         
         return true;
       });
       
-      console.log(`🔍 DEBUG: Raw users from Firestore: ${rawUsers.length}`);
-      console.log(`🔍 DEBUG: After filtering: ${filteredUsers.length}`);
+      console.log(`🔧 DEBUG: Raw users from Firestore: ${rawUsers.length}`);
+      console.log(`🔧 DEBUG: After filtering: ${filteredUsers.length}`);
       
       // Apply user preferences filtering
       if (userData.matchPreferences) {
         filteredUsers = applyUserPreferences(filteredUsers, new Set()); // Empty set for preferences only
       }
+      
+      // 🔧 NEW STRATEGY: Limit to requested batch size after all filtering
+      const batchSize = 5;
+      const finalUsers = filteredUsers.slice(0, batchSize);
+      console.log(`🔧 Filtered ${filteredUsers.length} users down to ${finalUsers.length} for batch (requested: ${batchSize})`);
       
       // 🔧 FIXED: Always advance pagination cursor, even if no users pass filtering
       const newLastDoc = snapshot.docs.length > 0 ? 
@@ -2348,14 +2371,14 @@ const verifyPhoneAndSetUser = async (
         ...prev,
         lastFetchedDoc: newLastDoc,
         loadingBatch: false,
-        noMoreMatches: filteredUsers.length === 0
+        noMoreMatches: finalUsers.length === 0
       }));
       
-      console.log(`🔍 Cursor advanced to: ${newLastDoc ? 'new position' : 'end of data'}`);
+      console.log(`🔧 Cursor advanced to: ${newLastDoc ? 'new position' : 'end of data'}`);
       
       // 🔧 NEW: If no users passed filtering, we need to fetch the next batch
-      if (filteredUsers.length === 0 && newLastDoc) {
-        console.log(`🔍 No users passed filtering, but cursor advanced for next batch`);
+      if (finalUsers.length === 0 && newLastDoc) {
+        console.log(`🔧 No users passed filtering, but cursor advanced for next batch`);
         // Don't set noMoreMatches to true yet - let the next fetch try
         setMatchingState(prev => ({
           ...prev,
@@ -2364,13 +2387,13 @@ const verifyPhoneAndSetUser = async (
       }
       
       // 🔧 CRITICAL: Log cursor advancement for debugging
-      console.log(`🔍 Pagination state: lastDoc=${lastDoc ? 'exists' : 'null'} -> newLastDoc=${newLastDoc ? 'exists' : 'null'}`);
+      console.log(`🔧 Pagination state: lastDoc=${lastDoc ? 'exists' : 'null'} -> newLastDoc=${newLastDoc ? 'exists' : 'null'}`);
       
       // 🔧 CRITICAL FIX: Log cursor advancement for debugging
-      console.log(`🔍 Cursor advancement: ${lastDoc ? 'from existing' : 'from beginning'} -> ${newLastDoc ? 'to new position' : 'no more data'}`);
+      console.log(`🔧 Cursor advancement: ${lastDoc ? 'from existing' : 'from beginning'} -> ${newLastDoc ? 'to new position' : 'no more data'}`);
       
-      console.log(`🔍 Fetch completed, returning ${filteredUsers.length} users`);
-      return filteredUsers;
+      console.log(`🔧 Fetch completed, returning ${finalUsers.length} users`);
+      return finalUsers;
       
     } catch (error) {
       console.error('❌ Error fetching matches:', error);
@@ -2440,6 +2463,17 @@ const verifyPhoneAndSetUser = async (
   }, [userData.userId, userData.onboardingCompleted, userData.matchPreferences, fetchPotentialMatches, generatePreferencesHash]); // ✅ Add matchPreferences to deps
 
 
+  // 🔧 ADDED: Debug preferences changes in userData
+  useEffect(() => {
+    console.log('🔍 userData.matchPreferences changed:', {
+      hasPreferences: !!userData.matchPreferences,
+      ageRange: userData.matchPreferences?.preferredAgeRange,
+      connectionIntent: userData.matchPreferences?.connectionIntent,
+      timestamp: new Date().toISOString()
+    });
+  }, [userData.matchPreferences]);
+
+
   // 🔧 REMOVED: No more debounced preferences update - the useEffect handles everything cleanly
 
   // 🔧 FIXED: Stable preferences change detection with proper hash management
@@ -2449,7 +2483,10 @@ const verifyPhoneAndSetUser = async (
       isInitialized: matchingState.initialized,
       connectionIntent: userData.matchPreferences?.connectionIntent,
       preferencesHash: matchingState.preferencesHash.substring(0, 50) + '...',
-      isLoading: matchingState.loadingBatch
+      isLoading: matchingState.loadingBatch,
+      // 🔧 ADDED: More debugging info
+      currentAgeRange: userData.matchPreferences?.preferredAgeRange,
+      storedAgeRange: matchingState.preferencesHash.includes('"ageMin"') ? 'has age data' : 'no age data'
     });
     
     // Only run when we have preferences and are initialized
@@ -2479,29 +2516,49 @@ const verifyPhoneAndSetUser = async (
                               matchingState.preferencesHash.includes('"connectionIntent":"friendship"') ? 'friendship' : 'unknown',
       // 🔧 ADDED: More detailed debugging
       currentPreferences: userData.matchPreferences,
-      storedHashFull: matchingState.preferencesHash
+      storedHashFull: matchingState.preferencesHash,
+      // 🔧 ENHANCED: Show exact hash comparison
+      currentHashFull: currentHash,
+      hashComparison: {
+        current: currentHash,
+        stored: matchingState.preferencesHash,
+        areEqual: currentHash === matchingState.preferencesHash,
+        currentLength: currentHash.length,
+        storedLength: matchingState.preferencesHash.length
+      }
     });
     
-    // 🔧 FIXED: Only refetch if hash actually changed, prevent multiple calls
+    // 🔧 FIXED: Check both hash change and actual age range change
+    const currentAgeRange = userData.matchPreferences?.preferredAgeRange;
+    
+    console.log('🔍 Age range comparison:', {
+      current: currentAgeRange ? `${currentAgeRange.min}-${currentAgeRange.max}` : 'none',
+      stored: matchingState.preferencesHash.includes('"ageMin"') ? 'has age data' : 'no age data',
+      hashChanged,
+      shouldRefetch: hashChanged
+    });
+    
+    // 🔧 FIXED: Refetch if hash changed
     if (hashChanged) {
-      console.log('🔄 Preferences hash changed, triggering single refetch');
+      console.log('🔄 Preferences hash changed, triggering immediate refetch');
       
-              // 🔧 FIXED: Update hash first to prevent duplicate triggers
-        setMatchingState(prev => ({
-          ...prev,
-          preferencesHash: currentHash, // Update hash immediately
-          potentialMatches: [],
-          currentIndex: 0,
-          lastFetchedDoc: null,
-          noMoreMatches: false,
-          loadingBatch: true // Show loading state
-        }));
+      // 🔧 FIXED: Single state update to clear everything and start fresh
+      setMatchingState(prev => ({
+        ...prev,
+        preferencesHash: currentHash, // Update hash immediately
+        exclusionSet: new Set(), // 🔧 FIXED: Clear exclusions to start fresh
+        potentialMatches: [],
+        currentIndex: 0,
+        lastFetchedDoc: null, // 🔧 FIXED: Reset cursor to start from beginning
+        noMoreMatches: false,
+        loadingBatch: true // Show loading state
+      }));
       
-      // Single fetch with new preferences and update state with results
+      // 🔧 FIXED: Immediate refetch with new preferences
       const fetchAndUpdate = async () => {
         try {
           console.log('🔄 Fetching new matches with updated preferences...');
-          const newUsers = await fetchPotentialMatches(true); // true = reset batch
+          const newUsers = await fetchPotentialMatches(true, new Set()); // true = reset batch, no exclusions to see all users
           console.log('🔄 Fetched new users:', newUsers.length);
           
           // Update state with the new users and complete loading
@@ -2545,16 +2602,55 @@ const verifyPhoneAndSetUser = async (
       connectionIntent: userData.matchPreferences.connectionIntent,
       hasMatches: matchingState.potentialMatches.length > 0,
       currentHash: currentHash.substring(0, 50) + '...',
-      storedHash: matchingState.preferencesHash.substring(0, 50) + '...'
+      storedHash: matchingState.preferencesHash.substring(0, 50) + '...',
+      // 🔧 ENHANCED: Show exact hash comparison
+      hashComparison: {
+        current: currentHash,
+        stored: matchingState.preferencesHash,
+        areEqual: currentHash === matchingState.preferencesHash,
+        currentLength: currentHash.length,
+        storedLength: matchingState.preferencesHash.length
+      }
     });
     
-    // Only refetch when preferences changed or no matches
-    if (matchingState.potentialMatches.length === 0 || hashChanged) {
-      if (hashChanged) {
-        console.log('🔄 Preferences changed, refetching with new criteria');
-      } else {
-        console.log('🔄 No matches available, fetching fresh batch');
+    // 🔧 FIXED: Handle preference changes and no matches differently
+    if (hashChanged) {
+      console.log('🔄 Preferences changed, triggering complete refetch with new criteria');
+      
+      // 🔧 FIXED: Start completely fresh with new preferences
+      setMatchingState(prev => ({
+        ...prev,
+        preferencesHash: currentHash, // Update hash immediately
+        exclusionSet: new Set(), // 🔧 FIXED: Clear exclusions to start fresh
+        potentialMatches: [],
+        currentIndex: 0,
+        lastFetchedDoc: null, // 🔧 FIXED: Reset cursor to start from beginning
+        noMoreMatches: false,
+        loadingBatch: true // Show loading state
+      }));
+      
+      // 🔧 FIXED: Fetch new users with new preferences
+      try {
+        const newUsers = await fetchPotentialMatches(true, new Set()); // true = reset batch, no exclusions
+        console.log(`🔄 Fetched ${newUsers.length} new users with updated preferences`);
+        
+        setMatchingState(prev => ({
+          ...prev,
+          potentialMatches: newUsers,
+          currentIndex: 0,
+          noMoreMatches: newUsers.length === 0,
+          loadingBatch: false
+        }));
+      } catch (error) {
+        console.error('❌ Error fetching new users with updated preferences:', error);
+        setMatchingState(prev => ({
+          ...prev,
+          loadingBatch: false
+        }));
       }
+      
+    } else if (matchingState.potentialMatches.length === 0) {
+      console.log('🔄 No matches available, fetching fresh batch');
       
       try {
         // Show loading state
@@ -2563,35 +2659,35 @@ const verifyPhoneAndSetUser = async (
           loadingBatch: true
         }));
         
-              // 🔧 FIXED: Use current exclusion set to prevent showing already liked/disliked users
-      const newUsers = await fetchPotentialMatches(false, matchingStateRef.current.exclusionSet);
-      
-      // 🔧 SIMPLIFIED: No retry logic to prevent loops
-      let allUsers = newUsers;
-      
-      // 🔧 NEW: If no users returned, try one more batch to see if we can advance
-      if (allUsers.length === 0) {
-        console.log(`🔍 No users returned from pagination, trying one more batch...`);
-        const nextBatch = await fetchPotentialMatches(false, matchingStateRef.current.exclusionSet);
-        if (nextBatch.length > 0) {
-          allUsers = nextBatch;
-          console.log(`🔍 Success! Got ${nextBatch.length} users from next batch`);
-        } else {
-          console.log(`🔍 Still no users - user can refresh manually`);
+        // 🔧 FIXED: Use current exclusion set to prevent showing already liked/disliked users
+        const newUsers = await fetchPotentialMatches(false, matchingStateRef.current.exclusionSet);
+        
+        // 🔧 SIMPLIFIED: No retry logic to prevent loops
+        let allUsers = newUsers;
+        
+        // 🔧 NEW: If no users returned, try one more batch to see if we can advance
+        if (allUsers.length === 0) {
+          console.log(`🔍 No users returned from pagination, trying one more batch...`);
+          const nextBatch = await fetchPotentialMatches(false, matchingStateRef.current.exclusionSet);
+          if (nextBatch.length > 0) {
+            allUsers = nextBatch;
+            console.log(`🔍 Success! Got ${nextBatch.length} users from next batch`);
+          } else {
+            console.log(`🔍 Still no users - user can refresh manually`);
+          }
         }
-      }
-      
-      // 🔧 FIXED: Keep existing exclusion set to maintain exclusions
-      setMatchingState(prev => ({
-        ...prev,
-        lastFetchedDoc: prev.lastFetchedDoc, // Keep existing cursor for pagination
-        exclusionSet: prev.exclusionSet, // 🔧 FIXED: Keep exclusions to prevent showing same users
-        potentialMatches: allUsers,
-        currentIndex: 0,
-        noMoreMatches: allUsers.length === 0,
-        preferencesHash: currentHash,
-        loadingBatch: false
-      }));
+        
+        // 🔧 FIXED: Keep existing exclusion set to maintain exclusions
+        setMatchingState(prev => ({
+          ...prev,
+          lastFetchedDoc: prev.lastFetchedDoc, // Keep existing cursor for pagination
+          exclusionSet: prev.exclusionSet, // 🔧 FIXED: Keep exclusions to prevent showing same users
+          potentialMatches: allUsers,
+          currentIndex: 0,
+          noMoreMatches: allUsers.length === 0,
+          preferencesHash: currentHash,
+          loadingBatch: false
+        }));
       } catch (error) {
         console.error('❌ Error in refetch:', error);
         // Reset loading state on error

@@ -182,14 +182,6 @@ const UserShow: React.FC = () => {
   };
 
   // Helper functions (matching PotentialMatch)
-  const calculateAge = (user: UserDataType) => {
-    if (user.birthyear) {
-      return new Date().getFullYear() - parseInt(user.birthyear);
-    }
-    if (user.age) return user.age;
-    return null;
-  };
-
   const getLocation = (user: UserDataType) => {
     if (user.location?.city && user.location?.region) {
       return `${user.location.city}, ${user.location.region}`;
@@ -249,7 +241,7 @@ const UserShow: React.FC = () => {
     };
     
     // 1. Basic Demographics
-    const age = !isFieldHidden('age') && calculateAge(user);
+    const age = !isFieldHidden('age') && user.age;
     const location = !isFieldHidden('location') ? getLocation(user) : null;
     const height = !isFieldHidden('height') && user.height ? `${user.height}` : null;
     

@@ -509,25 +509,7 @@ const ConnectScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
             
-            {/* 🔧 NEW: Refresh button to manually trigger fresh fetch */}
-            <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: '#B8860B', marginTop: 12 }]}
-              onPress={async () => {
-                console.log('🔄 Manual refresh triggered by user');
-                try {
-                  // Reset the matching state to start fresh
-                  await resetMatching();
-                } catch (error) {
-                  console.error('❌ Error refreshing matches:', error);
-                }
-              }}
-              activeOpacity={0.9}
-            >
-              <CustomIcon name="infinite" size={18} color="#B8860B" style={styles.buttonIcon} />
-              <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                Refresh Matches
-              </Text>
-            </TouchableOpacity>
+
             
 
 
