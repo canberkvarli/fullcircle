@@ -58,6 +58,7 @@ const ConnectScreen: React.FC = () => {
     userData,
     checkAndRefetchIfNeeded,
     forceRefetchOnReturn,
+    resetMatching,
   } = useUserContext();
 
   const colorScheme = useColorScheme() ?? 'light';
@@ -204,7 +205,9 @@ const ConnectScreen: React.FC = () => {
       noMoreAvailable,
       hasTriedFetching,
       potentialMatchesLength: matchingState.potentialMatches.length,
-      currentPotentialMatch: currentPotentialMatch ? `${currentPotentialMatch.firstName} (${currentPotentialMatch.userId})` : 'none'
+      currentPotentialMatch: currentPotentialMatch ? `${currentPotentialMatch.firstName} (${currentPotentialMatch.userId})` : 'none',
+      exclusionSetSize: matchingState.exclusionSet?.size || 0,
+      lastFetchedDoc: matchingState.lastFetchedDoc ? 'exists' : 'null'
     });
     
     // Show loading when:
@@ -231,6 +234,9 @@ const ConnectScreen: React.FC = () => {
       }
     }
   }, [matchingState.loadingBatch, matchingState.initialized, matchingState.potentialMatches.length, matchingState.noMoreMatches, matchingState.lastFetchedDoc, currentPotentialMatch]);
+
+  // 🔧 REMOVED: Auto-fetch logic that was causing infinite loops
+  // The system will now rely on manual refresh or natural progression
 
   // 🎭 TRANSITION: Handle user changes during transitions
   useEffect(() => {
@@ -503,6 +509,26 @@ const ConnectScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
             
+            {/* 🔧 NEW: Refresh button to manually trigger fresh fetch */}
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: '#B8860B', marginTop: 12 }]}
+              onPress={async () => {
+                console.log('🔄 Manual refresh triggered by user');
+                try {
+                  // Reset the matching state to start fresh
+                  await resetMatching();
+                } catch (error) {
+                  console.error('❌ Error refreshing matches:', error);
+                }
+              }}
+              activeOpacity={0.9}
+            >
+              <CustomIcon name="infinite" size={18} color="#B8860B" style={styles.buttonIcon} />
+              <Text style={[styles.secondaryButtonText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
+                Refresh Matches
+              </Text>
+            </TouchableOpacity>
+            
 
 
           </View>
@@ -587,15 +613,7 @@ const ConnectScreen: React.FC = () => {
             </Animated.View>
           ) : (
             <View style={styles.contentPlaceholder}>
-              <OuroborosLoader
-                variant="pulse"
-                size={60}
-                duration={800}
-                loop={true}
-                fillColor="#F5E6D3"
-                strokeColor="#7B6B5C"
-                strokeWidth={1}
-              />
+              {/* Removed small OuroborosLoader to prevent duplicate spinners */}
             </View>
           )}
         </ScrollView>

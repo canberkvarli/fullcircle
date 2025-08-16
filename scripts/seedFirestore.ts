@@ -440,8 +440,8 @@ async function generateDummyUser(): Promise<UserDataType> {
     age,
     height: faker.number.int({ min: 4, max: 7 }), // feet
     regionName: faker.location.state(),
-    longitude: faker.location.longitude({ min: -123.5, max: -120.5 }), // SF Bay Area
-    latitude: faker.location.latitude({ min: 36.5, max: 38.5 }), // SF Bay Area
+    longitude: faker.location.longitude({ min: -122.5, max: -121.5 }), // San Francisco Bay Area
+    latitude: faker.location.latitude({ min: 37.5, max: 38.5 }), // San Francisco Bay Area
     gender,
     sexualOrientation: faker.helpers.arrayElements(sexualOrientations, { min: 1, max: 2 }),
     ethnicities: faker.helpers.arrayElements(ethnicities, { min: 1, max: 3 }),
@@ -491,7 +491,7 @@ async function generateDummyUser(): Promise<UserDataType> {
       connectionIntent: faker.helpers.arrayElement(['romantic', 'friendship', 'both']),
       childrenPreference: faker.helpers.arrayElement(['Want', 'Don\'t want', 'Maybe', 'Open to children']),
       preferredEthnicities: faker.helpers.arrayElements(ethnicities, { min: 1, max: 4 }),
-      preferredDistance: faker.number.int({ min: 5, max: 50 }),
+      preferredDistance: faker.number.int({ min: 25, max: 100 }),
       datePreferences: faker.helpers.arrayElements(['Coffee', 'Dinner', 'Drinks', 'Activity', 'Spiritual Practice'], { min: 1, max: 3 }),
       desiredRelationship: faker.helpers.arrayElement(['Casual', 'Serious', 'Marriage', 'Spiritual Partnership']),
       preferredSpiritualPractices: faker.helpers.arrayElements(spiritualPracticesArray, { min: 0, max: 3 }),
@@ -510,7 +510,7 @@ async function seedFirestore() {
     await initializeFirebase();
     
     const db = admin.firestore();
-    const numberOfUsers = 50; // Adjust as needed
+    const numberOfUsers = 200; // Increased to 200 users for better testing
     
     console.log(`🌱 Starting to seed ${numberOfUsers} users...`);
     console.log(`📸 ${process.env.UNSPLASH_ACCESS_KEY ? 'Using Unsplash for photos' : 'Using placeholder images'}`);

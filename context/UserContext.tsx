@@ -839,34 +839,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         FIRESTORE.collection("users").doc(userId).collection("unmatchedUsers").get(),
       ]);
       
-      // 🆕 NEW: Build exclusions with STRICT priority - ALWAYS exclude critical ones
-      const criticalExclusions = new Set<string>([
-        userId, // Always exclude self
-        ...matchesSnap.docs.map(doc => doc.id), // Current matches
-        ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id), // Reported users
-        ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id), // Unmatched users
-        ...dislikesSnap.docs.map(doc => doc.id), // Dislikes - ALWAYS exclude
-        ...likesSnap.docs.map(doc => doc.id), // Likes given - ALWAYS exclude to prevent duplicates
-      ]);
+      // �� PRIORITIZED EXCLUSIONS: Order matters for Firestore's 10-user limit
+      const criticalExclusions = [
+        userId, // 1. Always exclude self (MOST CRITICAL)
+        ...matchesSnap.docs.map(doc => doc.id), // 2. Current matches (CRITICAL)
+        ...reportsSnap.docs.map(doc => doc.data().reportedUserId || doc.id), // 3. Reported users (CRITICAL)
+        ...unmatchesSnap.docs.map(doc => doc.data().unmatchedUserId || doc.id), // 4. Unmatched users (CRITICAL)
+        ...dislikesSnap.docs.map(doc => doc.id), // 5. Dislikes (CRITICAL)
+        ...likesSnap.docs.map(doc => doc.id), // 6. Likes given (CRITICAL)
+      ];
       
-      // 🆕 NEW: Only include received likes if we have room and it makes sense
-      const finalExclusions = new Set([...criticalExclusions]);
-      
-      // Add received likes only if under a reasonable limit
-      const maxExclusionSize = __DEV__ ? 25 : 50; // Higher limits
-      if (finalExclusions.size < maxExclusionSize) {
+      // 🧠 SMART: Add received likes only if we have room (REDUCED TO PREVENT TOO MANY EXCLUSIONS)
+      const maxExclusionSize = __DEV__ ? 15 : 15; // Reduced from 25/50 to 15
+      if (criticalExclusions.length < maxExclusionSize) {
         receivedLikesSnap.docs.forEach(doc => {
-          if (finalExclusions.size < maxExclusionSize) {
-            finalExclusions.add(doc.id);
+          if (criticalExclusions.length < maxExclusionSize) {
+            criticalExclusions.push(doc.id);
           }
         });
       }
       
-
+      console.log(`🔍 Built exclusion set: ${criticalExclusions.length} total exclusions`);
+      console.log(`🔍 Critical exclusions: ${criticalExclusions.slice(0, 10).length} (Firestore will handle)`);
+      console.log(`🔍 Additional exclusions: ${Math.max(0, criticalExclusions.length - 10)} (client-side will handle)`);
       
-
-      
-      return finalExclusions;
+      // 🎯 RETURN AS ARRAY: Maintain priority order for Firestore query
+      return new Set(criticalExclusions);
       
     } catch (error) {
       console.error('❌ Error building exclusion set:', error);
@@ -909,42 +907,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   const buildMatchQuery = useCallback((
     exclusionSet: Set<string>,
     lastDoc: any = null,
-    batchSize: number = 20
+    batchSize: number = 5
   ) => {
     const baseCollection = FIRESTORE.collection("users");
     
-    // 🆕 FIXED: Apply exclusions in the Firestore query to avoid fetching already-seen users
+    // 🔧 SIMPLE & SAFE: Basic query without complex exclusions
     let query = baseCollection
       .where("onboardingCompleted", "==", true);
     
-          // 🆕 NEW: Exclude users that have already been seen/liked/passed
-      if (exclusionSet.size > 0) {
-        // Convert Set to Array for Firestore 'not-in' query
-        const exclusionArray = Array.from(exclusionSet);
-        
-        console.log(`🔍 Building query with ${exclusionArray.length} exclusions:`, exclusionArray.slice(0, 5));
-        
-        // Firestore 'not-in' has a limit of 10 values, so we need to handle large exclusion sets
-        if (exclusionArray.length <= 10) {
-          query = query.where("userId", "not-in", exclusionArray);
-          console.log(`✅ Applied ${exclusionArray.length} exclusions to Firestore query`);
-        } else {
-          // For large exclusion sets, we'll need to handle this differently
-          // For now, just log a warning and continue without exclusions
-          console.log(`⚠️ Large exclusion set (${exclusionArray.length} users), some exclusions may not be applied`);
-        }
-      } else {
-        console.log(`🔍 No exclusions to apply`);
-      }
+    // 🔧 SAFE: Only apply exclusions if they're small (avoid Firestore limits)
+    if (exclusionSet.size > 0 && exclusionSet.size <= 10) {
+      const exclusionArray = Array.from(exclusionSet);
+      query = query.where("userId", "not-in", exclusionArray);
+      console.log(`🔍 Applied ${exclusionArray.length} exclusions to Firestore query`);
+    } else if (exclusionSet.size > 10) {
+      console.log(`🔍 Too many exclusions (${exclusionSet.size}), skipping Firestore exclusions for safety`);
+    }
     
     // Add ordering and pagination
     query = query.orderBy("createdAt", "desc").limit(batchSize);
     
-    // Add pagination
     if (lastDoc) {
       query = query.startAfter(lastDoc);
     }
     
+    console.log(`🔍 Query built with batch size: ${batchSize}, exclusions: ${exclusionSet.size}`);
     return query;
   }, []);
 
@@ -2174,8 +2161,8 @@ const verifyPhoneAndSetUser = async (
       return sortedUsers;
     }, [isUserBoosted, isUserRecentlyActive]);
 
-  // 🆕 NEW: Enhanced filtering function that applies all user preferences
-  const applyUserPreferences = useCallback((users: UserDataType[]): UserDataType[] => {
+  // 🆕 NEW: Enhanced filtering function that applies all user preferences + client-side exclusions
+  const applyUserPreferences = useCallback((users: UserDataType[], exclusionSet?: Set<string>): UserDataType[] => {
     if (!userData.matchPreferences) return users;
     
     const prefs = userData.matchPreferences;
@@ -2183,6 +2170,12 @@ const verifyPhoneAndSetUser = async (
     return users.filter(user => {
       // Skip if user is the current user
       if (user.userId === userData.userId) return false;
+      
+      // 🚫 CLIENT-SIDE EXCLUSION FILTERING: Handle exclusions beyond Firestore's 10-user limit
+      if (exclusionSet && exclusionSet.has(user.userId)) {
+        console.log(`🚫 ${user.firstName} - Excluded via client-side filtering (userId: ${user.userId})`);
+        return false;
+      }
       
       // 🔗 Connection Intent Filtering
       if (prefs.connectionIntent && prefs.connectionIntent !== 'both') {
@@ -2236,17 +2229,17 @@ const verifyPhoneAndSetUser = async (
         }
       }
       
-      // 🌍 Distance Filtering
-      if (prefs.preferredDistance && user.latitude && user.longitude && 
-          userData.latitude && userData.longitude) {
-        const distance = calculateHaversineDistance(
-          userData.latitude, userData.longitude,
-          user.latitude, user.longitude
-        );
-        if (distance > prefs.preferredDistance) {
-          return false;
+              // 🌍 Distance Filtering
+        if (prefs.preferredDistance && user.latitude && user.longitude && 
+            userData.latitude && userData.longitude) {
+          const distance = calculateHaversineDistance(
+            userData.latitude, userData.longitude,
+            user.latitude, user.longitude
+          );
+          if (distance > prefs.preferredDistance) {
+            return false;
+          }
         }
-      }
       
       // 🔮 Spiritual Compatibility Filtering
       const spiritualCheck = applySpiritualFilter(user);
@@ -2288,11 +2281,14 @@ const verifyPhoneAndSetUser = async (
       const exclusionsToUse = overrideExclusions || matchingStateRef.current.exclusionSet;
       const lastDoc = resetBatch ? null : matchingStateRef.current.lastFetchedDoc;
       
-      // Build and execute query - keep it simple
-      const query = buildMatchQuery(exclusionsToUse, lastDoc, 20); // Larger batch size
+      // 🔧 SIMPLE & SAFE: Single batch fetch with batch size 5
+      const query = buildMatchQuery(exclusionsToUse, lastDoc, 5);
+      console.log(`🔍 Executing Firestore query with limit: 5 users`);
       const snapshot = await query.get();
+      console.log(`🔍 Firestore returned ${snapshot.docs.length} users (expected up to 5)`);
       
       if (snapshot.empty) {
+        console.log(`🔍 Firestore query returned 0 users - truly no more data`);
         setMatchingState(prev => ({ 
           ...prev, 
           loadingBatch: false, 
@@ -2307,7 +2303,7 @@ const verifyPhoneAndSetUser = async (
         ...doc.data()
       } as UserDataType));
       
-      // 🆕 ENHANCED: Apply comprehensive filtering
+      // 🔧 FIXED: Use exclusion set to filter out already liked/disliked users
       let filteredUsers = rawUsers.filter(user => {
         // Basic requirements
         if (!user.onboardingCompleted || !user.firstName || !user.photos || user.photos.length === 0) {
@@ -2319,45 +2315,35 @@ const verifyPhoneAndSetUser = async (
           return false;
         }
         
-        // Exclude already seen users
-        const currentUserIds = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
-        if (currentUserIds.has(user.userId)) {
+        // 🔧 CRITICAL FIX: Exclude users that are already in the exclusion set (liked/disliked)
+        if (exclusionsToUse.has(user.userId)) {
+          console.log(`🔍 Filtering out excluded user (already liked/disliked): ${user.firstName}`);
           return false;
         }
         
-        // Exclude users in exclusion set
-        if (exclusionsToUse.has(user.userId)) {
+        // 🔧 SAFE: Also exclude users we've already seen in current session
+        const currentSessionUsers = new Set(matchingStateRef.current.potentialMatches.map(u => u.userId));
+        if (currentSessionUsers.has(user.userId)) {
+          console.log(`🔍 Filtering out already seen user: ${user.firstName}`);
           return false;
         }
         
         return true;
       });
       
+      console.log(`🔍 DEBUG: Raw users from Firestore: ${rawUsers.length}`);
+      console.log(`🔍 DEBUG: After filtering: ${filteredUsers.length}`);
+      
       // Apply user preferences filtering
       if (userData.matchPreferences) {
-        console.log('🔍 Applying preferences filter:', {
-          ageRange: userData.matchPreferences.preferredAgeRange,
-          heightRange: userData.matchPreferences.preferredHeightRange,
-          connectionIntent: userData.matchPreferences.connectionIntent,
-          connectionPreferences: userData.matchPreferences.connectionPreferences
-        });
-        console.log('🔍 Before filtering:', filteredUsers.length, 'users');
-        filteredUsers = applyUserPreferences(filteredUsers);
-        console.log('🔍 After filtering:', filteredUsers.length, 'users');
-        
-        // 🆕 NEW: Show connection intent filtering summary
-        if (userData.matchPreferences.connectionIntent && userData.matchPreferences.connectionIntent !== 'both') {
-          console.log(`🎯 Connection Intent Filter: ${userData.matchPreferences.connectionIntent.toUpperCase()}`);
-          console.log(`📋 Will show users with intent: ${userData.matchPreferences.connectionIntent} OR both`);
-        }
-      } else {
-        console.log('⚠️ No match preferences found in userData');
+        filteredUsers = applyUserPreferences(filteredUsers, new Set()); // Empty set for preferences only
       }
       
-      // Update pagination state
+      // 🔧 FIXED: Always advance pagination cursor, even if no users pass filtering
       const newLastDoc = snapshot.docs.length > 0 ? 
         snapshot.docs[snapshot.docs.length - 1] : null;
       
+      // 🔧 CRITICAL: Always advance cursor for proper pagination
       setMatchingState(prev => ({
         ...prev,
         lastFetchedDoc: newLastDoc,
@@ -2365,20 +2351,37 @@ const verifyPhoneAndSetUser = async (
         noMoreMatches: filteredUsers.length === 0
       }));
       
+      console.log(`🔍 Cursor advanced to: ${newLastDoc ? 'new position' : 'end of data'}`);
+      
+      // 🔧 NEW: If no users passed filtering, we need to fetch the next batch
+      if (filteredUsers.length === 0 && newLastDoc) {
+        console.log(`🔍 No users passed filtering, but cursor advanced for next batch`);
+        // Don't set noMoreMatches to true yet - let the next fetch try
+        setMatchingState(prev => ({
+          ...prev,
+          noMoreMatches: false
+        }));
+      }
+      
+      // 🔧 CRITICAL: Log cursor advancement for debugging
+      console.log(`🔍 Pagination state: lastDoc=${lastDoc ? 'exists' : 'null'} -> newLastDoc=${newLastDoc ? 'exists' : 'null'}`);
+      
+      // 🔧 CRITICAL FIX: Log cursor advancement for debugging
+      console.log(`🔍 Cursor advancement: ${lastDoc ? 'from existing' : 'from beginning'} -> ${newLastDoc ? 'to new position' : 'no more data'}`);
+      
+      console.log(`🔍 Fetch completed, returning ${filteredUsers.length} users`);
       return filteredUsers;
       
     } catch (error) {
       console.error('❌ Error fetching matches:', error);
       
-      // 🆕 ENHANCED ERROR HANDLING: Don't get stuck in loading state
       setMatchingState(prev => ({ 
         ...prev, 
         loadingBatch: false, 
         noMoreMatches: false,
-        initialized: true // Mark as initialized to prevent infinite loading
+        initialized: true
       }));
       
-      // Return empty array but don't crash the app
       return [];
     }
   }, [buildMatchQuery, applyUserPreferences]);
@@ -2398,10 +2401,7 @@ const verifyPhoneAndSetUser = async (
       }
       
       try {
-        // Build exclusion set
-        const exclusions = await buildExclusionSet(userData.userId);
-        
-        // Generate preferences hash
+        // 🔧 SIMPLE & SAFE: Start with empty exclusions, let system build naturally
         const preferencesHash = generatePreferencesHash(userData.matchPreferences);
         
         console.log('🔍 Initialization - Setting preferences hash:', {
@@ -2410,13 +2410,18 @@ const verifyPhoneAndSetUser = async (
           willInitialize: true
         });
         
-        // Fetch initial batch with user's actual preferences
-        const initialBatch = await fetchPotentialMatches(true, exclusions);
+        // 🔧 FIXED: Build exclusion set first to prevent showing already liked/disliked users
+        console.log('🔍 Building exclusion set for initialization...');
+        const exclusionSet = await buildExclusionSet(userData.userId);
+        console.log(`🔍 Built exclusion set with ${exclusionSet.size} users to exclude`);
+        
+        // Fetch initial batch with proper exclusions
+        const initialBatch = await fetchPotentialMatches(true, exclusionSet);
         
         // Update state
         setMatchingState(prev => ({
           ...prev,
-          exclusionSet: exclusions,
+          exclusionSet, // 🔧 FIXED: Use built exclusion set
           preferencesHash,
           initialized: true,
           potentialMatches: initialBatch,
@@ -2432,7 +2437,7 @@ const verifyPhoneAndSetUser = async (
     };
     
     initializeMatching();
-  }, [userData.userId, userData.onboardingCompleted, userData.matchPreferences, fetchPotentialMatches]); // ✅ Add matchPreferences to deps
+  }, [userData.userId, userData.onboardingCompleted, userData.matchPreferences, fetchPotentialMatches, generatePreferencesHash]); // ✅ Add matchPreferences to deps
 
 
   // 🔧 REMOVED: No more debounced preferences update - the useEffect handles everything cleanly
@@ -2558,17 +2563,35 @@ const verifyPhoneAndSetUser = async (
           loadingBatch: true
         }));
         
-        const newUsers = await fetchPotentialMatches(true);
-        
-        // Update state with new data and hash
-        setMatchingState(prev => ({
-          ...prev,
-          potentialMatches: newUsers,
-          currentIndex: 0,
-          noMoreMatches: newUsers.length === 0,
-          preferencesHash: currentHash,
-          loadingBatch: false
-        }));
+              // 🔧 FIXED: Use current exclusion set to prevent showing already liked/disliked users
+      const newUsers = await fetchPotentialMatches(false, matchingStateRef.current.exclusionSet);
+      
+      // 🔧 SIMPLIFIED: No retry logic to prevent loops
+      let allUsers = newUsers;
+      
+      // 🔧 NEW: If no users returned, try one more batch to see if we can advance
+      if (allUsers.length === 0) {
+        console.log(`🔍 No users returned from pagination, trying one more batch...`);
+        const nextBatch = await fetchPotentialMatches(false, matchingStateRef.current.exclusionSet);
+        if (nextBatch.length > 0) {
+          allUsers = nextBatch;
+          console.log(`🔍 Success! Got ${nextBatch.length} users from next batch`);
+        } else {
+          console.log(`🔍 Still no users - user can refresh manually`);
+        }
+      }
+      
+      // 🔧 FIXED: Keep existing exclusion set to maintain exclusions
+      setMatchingState(prev => ({
+        ...prev,
+        lastFetchedDoc: prev.lastFetchedDoc, // Keep existing cursor for pagination
+        exclusionSet: prev.exclusionSet, // 🔧 FIXED: Keep exclusions to prevent showing same users
+        potentialMatches: allUsers,
+        currentIndex: 0,
+        noMoreMatches: allUsers.length === 0,
+        preferencesHash: currentHash,
+        loadingBatch: false
+      }));
       } catch (error) {
         console.error('❌ Error in refetch:', error);
         // Reset loading state on error
@@ -2613,25 +2636,39 @@ const verifyPhoneAndSetUser = async (
       return;
     }
     
-    // 🔧 FIX: Rebuild exclusion set from Firebase instead of starting fresh
-    console.log('🔄 Rebuilding exclusion set from Firebase...');
-    const freshExclusions = await buildExclusionSet(userData.userId);
-    console.log('🚫 Fresh exclusions from Firebase:', Array.from(freshExclusions));
-    console.log('🚫 Fresh exclusion set size:', freshExclusions.size);
-    
-    // 🔧 FIXED: Keep preferencesHash to maintain state consistency
-    // The useEffect will handle hash updates when preferences change
-    setMatchingState({
-      potentialMatches: [],
-      currentIndex: 0,
-      lastFetchedDoc: null,
-      loadingBatch: false,
-      noMoreMatches: false,
-      exclusionSet: freshExclusions, // ✅ Use fresh exclusions from Firebase
-      initialized: false,
-      preferencesHash: matchingState.preferencesHash, // 🔧 KEEP: Maintain hash for consistency
-    });
-  }, [userData.userId, buildExclusionSet]); // Add buildExclusionSet as dependency
+    // 🔧 FIXED: Reset state and rebuild exclusion set for fresh start
+    try {
+      console.log('🔄 Rebuilding exclusion set after reset...');
+      const exclusionSet = await buildExclusionSet(userData.userId);
+      console.log(`🔄 Built exclusion set with ${exclusionSet.size} users to exclude`);
+      
+      setMatchingState({
+        potentialMatches: [],
+        currentIndex: 0,
+        lastFetchedDoc: null,
+        loadingBatch: false,
+        noMoreMatches: false,
+        exclusionSet, // 🔧 FIXED: Use rebuilt exclusion set
+        initialized: false,
+        preferencesHash: matchingState.preferencesHash,
+      });
+      
+      console.log('🔄 Reset completed with rebuilt exclusion set');
+    } catch (error) {
+      console.error('❌ Error rebuilding exclusion set during reset:', error);
+      // Fallback to empty exclusion set
+      setMatchingState({
+        potentialMatches: [],
+        currentIndex: 0,
+        lastFetchedDoc: null,
+        loadingBatch: false,
+        noMoreMatches: false,
+        exclusionSet: new Set(),
+        initialized: false,
+        preferencesHash: matchingState.preferencesHash,
+      });
+    }
+  }, [userData.userId]);
 
   function debounce<T extends (...args: any[]) => any>(
     func: T,
@@ -2666,7 +2703,7 @@ const verifyPhoneAndSetUser = async (
     
     // If we're at the last match, fetch more
     console.log('📦 At last match, fetching new batch...');
-    const newBatch = await fetchPotentialMatches(false);
+    const newBatch = await fetchPotentialMatches(false, matchingState.exclusionSet);
     
     if (newBatch.length > 0) {
       console.log(`📦 Adding ${newBatch.length} new matches to batch`);
