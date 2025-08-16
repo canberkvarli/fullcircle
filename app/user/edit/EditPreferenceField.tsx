@@ -96,10 +96,12 @@ function EditPreferenceField() {
         const [min, max] = parsedValue.split(" - ");
         setValue({ min: parseInt(min, 10), max: parseInt(max, 10) });
       } else if (fieldName === "preferredHeightRange" && typeof parsedValue === "string" && parsedValue.includes(" - ")) {
+        // Handle height range strings like "3'0" - 8'0""
         const [minStr, maxStr] = parsedValue.split(" - ");
-        const cleanMin = minStr.replace(/[^0-9.]/g, "");
-        const cleanMax = maxStr.replace(/[^0-9.]/g, "");
-        setValue({ min: parseFloat(cleanMin), max: parseFloat(cleanMax) });
+        // Extract just the feet part (before the apostrophe)
+        const minFeet = minStr.split("'")[0];
+        const maxFeet = maxStr.split("'")[0];
+        setValue({ min: parseFloat(minFeet), max: parseFloat(maxFeet) });
       } else {
         setValue(parsedValue);
       }

@@ -554,7 +554,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     lastLotusAssignedAt: null,
     matchPreferences: {
       preferredAgeRange: { min: 18, max: 100 },
-      preferredHeightRange: { min: 140, max: 220 },
+      preferredHeightRange: { min: 3, max: 8 },
       preferredDistance: 50,
       connectionIntent: 'both',
       connectionPreferences: [],

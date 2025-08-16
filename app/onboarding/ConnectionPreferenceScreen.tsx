@@ -292,7 +292,7 @@ const ConnectionPreferenceScreen = () => {
           datePreferences: connectionIntent === "romantic" ? selectedPreferences : [],
           preferredDistance: userData.matchPreferences?.preferredDistance || 0,
           preferredAgeRange: userData.matchPreferences?.preferredAgeRange || { min: 18, max: 99 },
-          preferredHeightRange: userData.matchPreferences?.preferredHeightRange || { min: 0, max: 300 },
+          preferredHeightRange: userData.matchPreferences?.preferredHeightRange || { min: 3, max: 8 },
         },
         hiddenFields: {
           ...(userData.hiddenFields || {}),
