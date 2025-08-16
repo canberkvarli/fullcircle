@@ -24,33 +24,45 @@ const AnimatedSpiritualOuroboros = ({
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
-  const animationKey = useRef(0);
+  const hasAnimated = useRef(false);
+  const isFirstFocus = useRef(true);
 
   useEffect(() => {
-    // Always increment the key when focused to ensure animation restarts
-    if (focused) {
-      animationKey.current += 1;
+    // Only trigger animation when transitioning from unfocused to focused
+    // This prevents spinning when the tab is already focused and re-renders happen
+    if (focused && !hasAnimated.current && isFirstFocus.current) {
+      // Only animate on first focus, never again
+      hasAnimated.current = true;
+      isFirstFocus.current = false;
+      
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (!focused) {
+      // When transitioning from focused to unfocused
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: focused ? 1.1 : 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: focused ? 1 : 0.8,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
   }, [focused, scaleAnim, opacityAnim]);
-
-  // Force re-render when focused to ensure animation restarts
-  const forceUpdate = useRef(0);
-  if (focused) {
-    forceUpdate.current += 1;
-  }
 
   return (
     <Animated.View style={{
@@ -64,7 +76,7 @@ const AnimatedSpiritualOuroboros = ({
     }}>
       {focused ? (
         <OuroborosLoader
-          key={`loader-${animationKey.current}-${forceUpdate.current}`}
+          key="stable-ouroboros-loader"
           size={55}
           fillColor={userData?.subscription?.isActive ? "#F5E6D3" : "#8B4513"}
           strokeColor={userData?.subscription?.isActive ? "#B8860B" : "#BFA98A"}
