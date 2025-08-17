@@ -33,10 +33,6 @@ const UserLayout = () => {
         name="TermsOfService"
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="DevTools"
-        options={{ headerShown: false }}
-      />
     </Stack>
   );
 };

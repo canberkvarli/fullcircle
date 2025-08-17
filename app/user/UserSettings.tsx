@@ -958,6 +958,24 @@ export default function UserSettings() {
           </TouchableOpacity>
         </View>
 
+        {/* Admin Panel Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, fonts.captionFont]}>ADMIN</Text>
+          
+          <TouchableOpacity 
+            style={styles.row}
+            onPress={() => router.navigate("/admin" as any)}
+          >
+            <View style={styles.rowContent}>
+              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>🛡️ Admin Panel</Text>
+              <Text style={[styles.rowDescription, fonts.captionFont]}>
+                Access system administration tools and development utilities
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
         {/* Log Out & Delete Account */}
         <View style={styles.bottomSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={signOut}>

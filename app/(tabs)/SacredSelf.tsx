@@ -48,9 +48,6 @@ export default function SacredSelf() {
   const fonts = useFont();
   const isFullCircle = userData.subscription?.isActive;
   
-  // Only show dev tools in development mode
-  const env = process.env.EXPO_PUBLIC_ENV || 'development';
-  const isDevelopment = env === 'development';
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -227,18 +224,6 @@ export default function SacredSelf() {
               />
             </TouchableOpacity>
           </Link>
-          {isDevelopment && (
-            <TouchableOpacity 
-              style={styles.iconButton}
-              onPress={() => router.push("/user/DevTools")}
-            >
-              <Ionicons
-                name="construct"
-                size={22}
-                color={colorScheme === 'dark' ? '#F5E6D3' : '#8B4513'}
-              />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
 

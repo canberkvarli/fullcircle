@@ -182,10 +182,7 @@ const KindredSpirits: React.FC = () => {
 
   const handleCardPress = (user: any, isFirst: boolean) => {
     if (hasFullCircle || isFirst) {
-      router.navigate({
-        pathname: "/user/UserShow" as any,
-        params: { user: JSON.stringify(user) },
-      });
+      router.navigate(`/user/${user.userId}?user=${encodeURIComponent(JSON.stringify(user))}`);
     } else {
       router.navigate({ pathname: "/user/FullCircleSubscription" });
     }

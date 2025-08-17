@@ -53,6 +53,12 @@ const {
   getVerificationHistory
 } = require('./selfieVerification');
 
+// Import admin functions
+const { 
+  checkAdminAccess,
+  getAdminUsers
+} = require('./adminAccess');
+
 // Export all functions
 exports.createSubscription = createSubscription;
 exports.cancelSubscription = cancelSubscription;
@@ -85,3 +91,7 @@ exports.checkNotificationStatus = checkNotificationStatus;
 // Export selfie verification functions
 exports.verifySelfie = verifySelfie;
 exports.getVerificationHistory = getVerificationHistory;
+
+// Export admin functions
+exports.checkAdminAccess = checkAdminAccess;
+exports.getAdminUsers = getAdminUsers;

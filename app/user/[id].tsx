@@ -32,7 +32,28 @@ const MAX_PHOTO_SIZE = screenWidth - IMAGE_MARGIN;
 const UserShow: React.FC = () => {
   const router = useRouter();
   const { user: userParam } = useLocalSearchParams();
-  const initialUser: UserDataType = JSON.parse(userParam as string);
+  
+  // Add proper error handling for JSON parsing
+  let initialUser: UserDataType;
+  try {
+    if (!userParam || typeof userParam !== 'string') {
+      console.error('❌ Invalid user parameter:', userParam);
+      router.back();
+      return null;
+    }
+    initialUser = JSON.parse(userParam);
+  } catch (error) {
+    console.error('❌ JSON parse error for user parameter:', error, 'userParam:', userParam);
+    router.back();
+    return null;
+  }
+  
+  // Early return if initialUser is not valid
+  if (!initialUser || !initialUser.userId) {
+    console.error('❌ Invalid initial user data:', initialUser);
+    router.back();
+    return null;
+  }
   
   const {
     getImageUrl,

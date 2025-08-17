@@ -1,21 +1,21 @@
-# Circle - Sacred Connections
+# FullCircle - Meaningful Connections
 
-![Circle Logo](assets/images/store_badges/fullcircle_appstore.png)
+![FullCircle Logo](assets/images/store_badges/fullcircle_appstore.png)
 
-Where sacred souls unite. Connect with fellow seekers who practice meditation, yoga, energy healing, and embrace conscious living.
+Where conscious souls unite. Connect with fellow seekers who practice meditation, yoga, energy healing, and embrace mindful living.
 
 ## 📱 About
 
-Circle is a spiritual dating and connection app designed for conscious individuals seeking meaningful relationships. Unlike mainstream dating apps, Circle focuses on spiritual compatibility, mindful matching, and authentic connections based on shared values and practices.
+FullCircle is a conscious dating and connection app designed for individuals seeking meaningful relationships. Unlike mainstream dating apps, FullCircle focuses on compatibility, mindful matching, and authentic connections based on shared values and practices.
 
 ### 🔮 Core Features
 
-- **Mindful Matching**: Connect with souls who share your spiritual practices and values
+- **Mindful Matching**: Connect with people who share your practices and values
 - **Conscious Community**: Join circles of like-minded seekers on similar journeys
-- **Meaningful Conversations**: Share your journey through deep dialogue about growth and consciousness
-- **Spiritual Compatibility**: Match based on spiritual practices, draws, and healing modalities
+- **Meaningful Conversations**: Share your journey through deep dialogue about growth and awareness
+- **Compatibility Matching**: Match based on practices, interests, and healing modalities
 - **Dual Connection Intent**: Choose between dating, friendship, or both
-- **FullCircle Premium**: Enhanced features for deeper spiritual connections
+- **FullCircle Premium**: Enhanced features for deeper connections
 
 ## 🛠️ Tech Stack
 
@@ -28,10 +28,11 @@ Circle is a spiritual dating and connection app designed for conscious individua
 
 ## 🏗️ Project Structure
 ```
-circle/
+fullcircle/
 ├── app/                  # Main application screens using Expo Router
 │   ├── index.tsx         # Entry point landing page
 │   ├── onboarding/       # Onboarding flow screens
+│   ├── (tabs)/           # Main tab navigation (Connect, Spirits, Chats, Self)
 │   └── user/             # User profile and settings screens
 ├── components/           # Reusable UI components
 ├── context/              # React Context providers
@@ -63,8 +64,6 @@ export type UserDataType = {
   createdAt: any;
   lastActive?: any;
   isSeedUser: boolean;
-  isRadiantSoul?: boolean;
-  numOfOrbs?: number;
   currentOnboardingScreen: string;
   phoneNumber: string;
   email?: string;
@@ -106,22 +105,22 @@ export type UserDataType = {
 };
 ```
 
-## ✨ Spiritual Features
+## ✨ Key Features
 
-The app differentiates itself with spiritual-focused features:
+The app differentiates itself with conscious-focused features:
 
-- **Spiritual Practices**: Meditation, yoga, energy healing, etc.
-- **Spiritual Draws**: What attracts users on a spiritual level
+- **Mindful Practices**: Meditation, yoga, energy healing, etc.
+- **Personal Interests**: What attracts users on a deeper level
 - **Connection Styles**: How users prefer to connect with others
-- **Radiant Souls**: Special designation for active, engaged users
-- **Orbs System**: A reward mechanism for engagement
+- **Sacred Self**: Personal profile and journey tracking
+- **Kindred Spirits**: Discover and connect with like-minded people
 
 ## 💰 Subscription Model
 
-Circle offers a premium subscription called "FullCircle" with:
+FullCircle offers a premium subscription called "FullCircle Premium" with:
 
-- **Enhanced Spiritual Matching**: More detailed compatibility metrics
-- **Advanced Filters**: Filter by spiritual practices and preferences
+- **Enhanced Matching**: More detailed compatibility metrics
+- **Advanced Filters**: Filter by practices and preferences
 - **Priority Matching**: Get seen by more potential connections
 - **Extended Communication**: Additional messaging features
 
@@ -204,8 +203,8 @@ npx ts-node scripts/resetMatchmakingSimple.ts all
 
 ## 🔮 Vision
 
-Circle aims to create a space where spiritually-minded individuals can find meaningful connections beyond the superficial swiping culture of traditional dating apps. By focusing on spiritual compatibility, mindful interactions, and conscious community, Circle facilitates deeper, more authentic relationships.
+FullCircle aims to create a space where conscious individuals can find meaningful connections beyond the superficial swiping culture of traditional dating apps. By focusing on compatibility, mindful interactions, and authentic community, FullCircle facilitates deeper, more genuine relationships.
 
 ---
 
-© 2025 Circle - Sacred Connections
+© 2025 FullCircle - Meaningful Connections
