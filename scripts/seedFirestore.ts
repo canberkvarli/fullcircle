@@ -4,12 +4,11 @@ import * as admin from "firebase-admin";
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
+import { SPIRITUAL_PRACTICES, HEALING_MODALITIES, SPIRITUAL_DRAWS } from "../constants/spiritualConstants";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Initialize Firebase Admin SDK with better error handling
-let app: admin.app.App;
-
 async function initializeFirebase() {
   try {
     // Option 1: Try service account key file first (recommended)
@@ -56,7 +55,7 @@ async function initializeFirebase() {
         
         console.log(`🔑 Service account validation passed for project: ${serviceAccount.project_id}`);
         
-        app = admin.initializeApp({
+        admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
           storageBucket: `${serviceAccount.project_id}.appspot.com`,
         });
@@ -89,7 +88,7 @@ async function initializeFirebase() {
 
       const projectId = process.env.FIREBASE_PROJECT_ID;
       
-      app = admin.initializeApp({
+      admin.initializeApp({
         credential: admin.credential.cert({
           projectId: projectId,
           privateKey: privateKey,
@@ -156,10 +155,8 @@ export type UserDataType = {
   latitude?: number;
   gender?: string[];
   sexualOrientation?: string[];
-  ethnicities?: string[];
   jobLocation?: string;
   jobTitle?: string;
-  educationDegree?: string;
   spiritualPractices?: string[];
   spiritualProfile?: {
     draws?: string[];
@@ -237,49 +234,6 @@ const sexualOrientations = [
   "Queer",
   "Polysexual",
   "Questioning",
-];
-
-const educationDegrees = [
-  "High School",
-  "Associate Degree",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "Doctorate",
-  "Professional Certification",
-];
-
-const ethnicities = [
-  "American Indian",
-  "East Asian",
-  "Black/African Descent",
-  "Middle Eastern",
-  "Hispanic Latino",
-  "South Asian",
-  "Pacific Islander",
-  "White/Caucasian",
-];
-
-const spiritualPracticesArray = [
-  "Hatha/Vinyasa Yoga",
-  "Kundalini Yoga",
-  "Yin Yoga",
-  "Tantric Practices",
-  "Mindfulness Meditation",
-  "Breathwork",
-  "Reiki (Energy Work)",
-  "Chakra Healing",
-  "Qi Gong",
-  "Ayurveda",
-  "Astrology (Western)",
-  "Astrology (Vedic)",
-  "Chinese Astrology",
-  "Human Design & Numerology",
-  "Tarot/Oracle Cards",
-  "Cacao Ceremony",
-  "Ayahuasca & Plant Medicine",
-  "Sound Healing",
-  "Ecstatic Dance",
-  "Crystal Healing",
 ];
 
 // --- Helper: Fetch Unsplash images with rate limiting ---
@@ -444,15 +398,13 @@ async function generateDummyUser(): Promise<UserDataType> {
     latitude: faker.location.latitude({ min: 37.5, max: 38.5 }), // San Francisco Bay Area
     gender,
     sexualOrientation: faker.helpers.arrayElements(sexualOrientations, { min: 1, max: 2 }),
-    ethnicities: faker.helpers.arrayElements(ethnicities, { min: 1, max: 3 }),
     jobLocation: faker.location.city(),
     jobTitle: faker.person.jobTitle(),
-    educationDegree: faker.helpers.arrayElement(educationDegrees),
-    spiritualPractices: faker.helpers.arrayElements(spiritualPracticesArray, { min: 0, max: 5 }),
+    spiritualPractices: faker.helpers.arrayElements(SPIRITUAL_PRACTICES, { min: 0, max: 5 }),
     spiritualProfile: {
-      draws: faker.helpers.arrayElements(['Open to All', 'Meditation', 'Yoga', 'Astrology', 'Tarot', 'Crystal Healing'], { min: 1, max: 3 }),
-      practices: faker.helpers.arrayElements(['Open to All', 'Mindfulness', 'Breathwork', 'Energy Work', 'Sound Healing'], { min: 1, max: 3 }),
-      healingModalities: faker.helpers.arrayElements(['Open to All', 'Reiki', 'Chakra Healing', 'Qi Gong', 'Ayurveda'], { min: 1, max: 3 }),
+      draws: faker.helpers.arrayElements(SPIRITUAL_DRAWS, { min: 1, max: 4 }),
+      practices: faker.helpers.arrayElements(SPIRITUAL_PRACTICES, { min: 1, max: 5 }),
+      healingModalities: faker.helpers.arrayElements(HEALING_MODALITIES, { min: 1, max: 5 }),
     },
     photos: photos,
     hiddenFields: {
@@ -490,15 +442,15 @@ async function generateDummyUser(): Promise<UserDataType> {
       },
       connectionIntent: faker.helpers.arrayElement(['romantic', 'friendship', 'both']),
       childrenPreference: faker.helpers.arrayElement(['Want', 'Don\'t want', 'Maybe', 'Open to children']),
-      preferredEthnicities: faker.helpers.arrayElements(ethnicities, { min: 1, max: 4 }),
+      preferredEthnicities: [], // Removed as per edit hint
       preferredDistance: faker.number.int({ min: 25, max: 100 }),
       datePreferences: faker.helpers.arrayElements(['Coffee', 'Dinner', 'Drinks', 'Activity', 'Spiritual Practice'], { min: 1, max: 3 }),
       desiredRelationship: faker.helpers.arrayElement(['Casual', 'Serious', 'Marriage', 'Spiritual Partnership']),
-      preferredSpiritualPractices: faker.helpers.arrayElements(spiritualPracticesArray, { min: 0, max: 3 }),
+      preferredSpiritualPractices: faker.helpers.arrayElements(SPIRITUAL_PRACTICES, { min: 0, max: 3 }),
       spiritualCompatibility: {
-        spiritualDraws: faker.helpers.arrayElements(['Open to All', 'Meditation', 'Yoga', 'Astrology', 'Tarot', 'Crystal Healing'], { min: 1, max: 3 }),
-        practices: faker.helpers.arrayElements(['Open to All', 'Mindfulness', 'Breathwork', 'Energy Work', 'Sound Healing'], { min: 1, max: 3 }),
-        healingModalities: faker.helpers.arrayElements(['Open to All', 'Reiki', 'Chakra Healing', 'Qi Gong', 'Ayurveda'], { min: 1, max: 3 }),
+        spiritualDraws: faker.helpers.arrayElements(SPIRITUAL_DRAWS, { min: 1, max: 4 }),
+        practices: faker.helpers.arrayElements(SPIRITUAL_PRACTICES, { min: 1, max: 5 }),
+        healingModalities: faker.helpers.arrayElements(HEALING_MODALITIES, { min: 1, max: 5 }),
       },
     },
   };
@@ -510,7 +462,7 @@ async function seedFirestore() {
     await initializeFirebase();
     
     const db = admin.firestore();
-    const numberOfUsers = 200; // Increased to 200 users for better testing
+    const numberOfUsers = 50;
     
     console.log(`🌱 Starting to seed ${numberOfUsers} users...`);
     console.log(`📸 ${process.env.UNSPLASH_ACCESS_KEY ? 'Using Unsplash for photos' : 'Using placeholder images'}`);
@@ -528,7 +480,7 @@ async function seedFirestore() {
       
       // Add delay between photo fetches to respect rate limits
       if (i < numberOfUsers - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
 
