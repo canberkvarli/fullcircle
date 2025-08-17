@@ -24,6 +24,7 @@ import LotusScreen from "@/components/LotusScreen";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
 
+
 const { width: screenWidth } = Dimensions.get("window");
 
 export default function SacredSelf() {
@@ -38,6 +39,7 @@ export default function SacredSelf() {
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [showLotusModal, setshowLotusModal] = useState(false);
   const [showOuroborosTooltip, setShowOuroborosTooltip] = useState(false);
+
   const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
   
@@ -226,15 +228,16 @@ export default function SacredSelf() {
             </TouchableOpacity>
           </Link>
           {isDevelopment && (
-            <Link href="/(tabs)/DevTools" asChild>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons
-                  name="construct"
-                  size={22}
-                  color={colorScheme === 'dark' ? '#F5E6D3' : '#8B4513'}
-                />
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity 
+              style={styles.iconButton}
+              onPress={() => router.push("/user/DevTools")}
+            >
+              <Ionicons
+                name="construct"
+                size={22}
+                color={colorScheme === 'dark' ? '#F5E6D3' : '#8B4513'}
+              />
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -914,4 +917,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     flex: 1,
   },
+  
+
 });

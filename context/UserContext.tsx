@@ -929,15 +929,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const baseCollection = FIRESTORE.collection("users");
     
-    // 🔧 ADDED: Debug exclusion set contents
-    console.log('🔧 buildMatchQuery - Exclusion set details:', {
-      size: exclusionSet.size,
-      contents: Array.from(exclusionSet),
-      hasEmptyString: exclusionSet.has(''),
-      hasWhitespace: Array.from(exclusionSet).some(id => id && typeof id === 'string' && id.trim() !== id),
-      sampleIds: Array.from(exclusionSet).slice(0, 3) // Show first 3 IDs for debugging
-    });
-    
     // 🔧 SIMPLE & SAFE: Basic query without complex exclusions
     let query = baseCollection
       .where("onboardingCompleted", "==", true);

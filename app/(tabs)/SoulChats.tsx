@@ -243,7 +243,7 @@ const SoulChats: React.FC = () => {
         {matches.map((match, index) => {
           const isUnread = match.lastMessage
             ? match.lastMessageSender !== userData.userId
-            : true;
+            : false; // Don't mark as unread if there's no message
 
           const connectionMethods = getConnectionMethods(match);
           const connectionStyle = getConnectionStyle(connectionMethods);
@@ -321,14 +321,14 @@ const SoulChats: React.FC = () => {
                 <View style={styles.matchInfo}>
                   <View style={styles.matchHeader}>
                     <View style={styles.nameRow}>
-                      <Text style={[
-                        styles.matchName, 
-                        fonts.spiritualBodyFont,
-                        { color: colors.textDark },
-                        isUnread && styles.unreadText
-                      ]}>
-                        {match.firstName}
-                      </Text>
+                                        <Text style={[
+                    styles.matchName, 
+                    fonts.spiritualBodyFont,
+                    { color: colors.textDark },
+                    isUnread && styles.unreadText
+                  ]}>
+                    {match.firstName}
+                  </Text>
                       
                       {/* Connection icons next to name */}
                       {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
@@ -363,8 +363,12 @@ const SoulChats: React.FC = () => {
                     style={[
                       styles.conversationText,
                       fonts.spiritualBodyFont,
-                      { color: isUnread ? colors.textDark : colors.textMuted },
-                      isUnread && styles.unreadMessageText
+                      { 
+                        color: match.lastMessage 
+                          ? (isUnread ? colors.textDark : colors.textMuted)
+                          : colors.textMuted // Always use muted color for placeholder text
+                      },
+                      isUnread && match.lastMessage && styles.unreadMessageText
                     ]}
                     numberOfLines={2}
                     ellipsizeMode="tail"
@@ -707,7 +711,6 @@ const styles = StyleSheet.create({
   // Bold styling for unread messages
   unreadText: {
     fontWeight: Typography.weights.bold,
-    color: '#1A1A1A',
   },
   
   unreadTimeText: {
@@ -716,7 +719,6 @@ const styles = StyleSheet.create({
   
   unreadMessageText: {
     fontWeight: Typography.weights.bold,
-    color: '#2C2C2C',
   },
   
   chatIcon: {

@@ -591,7 +591,7 @@ const KindredSpirits: React.FC = () => {
               style={[styles.unlockBanner, { backgroundColor: '#FFD700' + '15', borderColor: '#FFD700' + '40' }]}>
                 <Ionicons name="lock-closed" size={16} color="#B8860B" />
                 <Text style={[styles.unlockText, fonts.spiritualBodyFont, { color: '#B8860B' }]}>
-                  Unlock Full Circle to see everyone who appreciates you
+                Become a FullCircle member to unlock all your Kindred Spirits!
                 </Text>
               </TouchableOpacity>
             )}

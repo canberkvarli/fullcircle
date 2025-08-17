@@ -220,6 +220,18 @@ const handleSubmit = async () => {
 };
 
   const handleDeletePhoto = (index: number) => {
+    const currentPhotoCount = selectedPhotos.filter(photo => photo && photo !== "").length;
+    
+    // Prevent deletion if it would result in fewer than 3 photos
+    if (currentPhotoCount <= 3) {
+      Alert.alert(
+        "Photo Required",
+        "You need at least 3 photos to complete your profile. Please add a new photo before removing this one.",
+        [{ text: "Got it", style: "default" }]
+      );
+      return;
+    }
+
     const newPhotos = [...selectedPhotos];
     newPhotos[index] = "";
     setSelectedPhotos(newPhotos);
@@ -241,13 +253,16 @@ const handleSubmit = async () => {
   const renderPhotoSlot = (index: number) => {
     const photo = selectedPhotos[index];
     const isMainPhoto = index === 0;
+    const photoCount = selectedPhotos.filter(photo => photo && photo !== "").length;
+    const isRequired = index < 3; // First 3 slots are required
 
     return (
       <View key={index} style={styles.photoContainer}>
         <TouchableOpacity
           style={[
             styles.photo,
-            photo && styles.photoWithImage
+            photo && styles.photoWithImage,
+            isRequired && !photo && styles.requiredPhotoSlot
           ]}
           onPress={() => handleSelectPhoto(index)}
           activeOpacity={0.7}
@@ -275,6 +290,9 @@ const handleSubmit = async () => {
                   color={colors.textMuted}
                 />
               </View>
+              {isRequired && (
+                <Text style={styles.requiredText}>Required</Text>
+              )}
             </View>
           )}
         </TouchableOpacity>
@@ -322,6 +340,11 @@ const handleSubmit = async () => {
           <Text style={styles.progressText}>
             {photoCount}/3 photos • {photoCount >= 3 ? "Complete!" : "At least 3 required"}
           </Text>
+          {photoCount < 3 && (
+            <Text style={styles.requirementText}>
+              ⚠️ You need at least 3 photos to complete your profile
+            </Text>
+          )}
         </View>
 
         {/* Photo Grid */}
@@ -369,7 +392,7 @@ const handleSubmit = async () => {
                 styles.buttonText,
                 photoCount < 3 && styles.buttonTextDisabled
               ]}>
-                Complete Your Profile
+                {photoCount >= 3 ? "Complete Your Profile" : `Add ${3 - photoCount} more photo${3 - photoCount === 1 ? '' : 's'}`}
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -672,6 +695,28 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     },
     buttonTextDisabled: {
       color: colors.textMuted,
+    },
+    requiredPhotoSlot: {
+      borderColor: colors.error,
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      backgroundColor: colors.error + '10',
+    },
+    requiredText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.xs,
+      color: colors.error,
+      marginTop: Spacing.xs,
+      fontWeight: Typography.weights.medium,
+    },
+    requirementText: {
+      ...fonts.spiritualBodyFont,
+      fontSize: Typography.sizes.sm,
+      color: colors.error,
+      textAlign: 'center',
+      fontStyle: 'italic',
+      marginTop: Spacing.sm,
+      fontWeight: Typography.weights.medium,
     },
   });
 };
