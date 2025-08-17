@@ -275,12 +275,12 @@ export default function SacredSelf() {
                   <Ionicons 
                     name="shield-checkmark-outline" 
                     size={16} 
-                    color="#000000" 
+                    color={colors.textDark} 
                   />
                   <Text style={[
                     styles.verifyText, 
                     fonts.spiritualBodyFont,
-                    { color: '#000000' }
+                    { color: colors.textDark }
                   ]}>
                     Verify
                   </Text>
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
   },
   nameVerificationRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     marginBottom: Spacing.sm,
     gap: Spacing.md,
   },
