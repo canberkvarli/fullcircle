@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Text,
   View,
@@ -11,10 +11,12 @@ import {
   useColorScheme,
   Platform,
   StyleSheet,
+  Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { DraggableGrid } from "react-native-draggable-grid";
 import * as ImagePicker from "expo-image-picker";
+
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -22,6 +24,7 @@ import { useFont } from "@/hooks/useFont";
 import ProfilePreview from "@/components/ProfilePreview";
 import { STORAGE } from "@/services/FirebaseConfig";
 import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 
 export default function EditUserProfile() {
@@ -32,6 +35,9 @@ export default function EditUserProfile() {
   const [isModified, setIsModified] = useState(false);
   const [fieldVisibility, setFieldVisibility] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   const [progressUpdate, setProgressUpdate] = useState(0);
 
@@ -484,8 +490,23 @@ export default function EditUserProfile() {
 
     if (isModified) {
       try {
-        // Show loading state
-        setLoading?.(true); // Add loading state if you don't have it
+        // Show saving state with ouroboros loader
+        setIsSaving(true);
+        
+        // Animate loader entrance
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+        ]).start();
 
         // Upload new photos to Storage and get URLs
         const uploadedPhotos = await Promise.all(
@@ -511,7 +532,21 @@ export default function EditUserProfile() {
         Alert.alert("Error", "Failed to save changes. Please try again.");
         return;
       } finally {
-        setLoading?.(false);
+        // Animate loader exit
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.8,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setIsSaving(false);
+        });
       }
     }
     router.back();
@@ -619,6 +654,40 @@ export default function EditUserProfile() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colorScheme === 'light' ? "dark-content" : "light-content"} />
 
+      {/* Ouroboros Loader Overlay */}
+      {isSaving && (
+        <Animated.View 
+          style={[
+            styles.loaderOverlay,
+            {
+              opacity: fadeAnim,
+            }
+          ]}
+        >
+          <Animated.View 
+            style={[
+              styles.loaderContainer, 
+              { 
+                backgroundColor: colors.background + 'F0',
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            <OuroborosLoader 
+              size={80} 
+              variant="spinner" 
+              loop={true}
+              duration={2000}
+              fillColor={colors.primary}
+              strokeColor={colors.primary}
+            />
+            <Text style={[styles.loaderText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
+              Saving your journey...
+            </Text>
+          </Animated.View>
+        </Animated.View>
+      )}
+
       {/* Header - matches your app style */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
@@ -633,12 +702,17 @@ export default function EditUserProfile() {
           </Text>
         </View>
 
-        <TouchableOpacity onPress={handleDone} style={styles.headerButton}>
+        <TouchableOpacity 
+          onPress={handleDone} 
+          style={styles.headerButton}
+          disabled={isSaving}
+        >
           <Text style={[styles.headerButtonText, {
             color: photos.length < 3 ? colors.textMuted : colors.primary,
-            fontWeight: isModified ? '600' : '400'
+            fontWeight: isModified ? '600' : '400',
+            opacity: isSaving ? 0.5 : 1
           }]}>
-            {isModified ? "Save" : "Done"}
+            {isSaving ? "Saving..." : (isModified ? "Save" : "Done")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1254,5 +1328,37 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     lineHeight: Typography.sizes.base * 1.4,
     textAlign: 'center',
+  },
+
+  // Loader Overlay Styles
+  loaderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)', // Semi-transparent black overlay
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000, // Ensure it's above other content
+  },
+
+  loaderContainer: {
+    backgroundColor: 'rgba(255,255,255,0.95)', // Semi-transparent white background
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    alignItems: 'center',
+    gap: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  loaderText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    letterSpacing: 0.2,
   },
 });
