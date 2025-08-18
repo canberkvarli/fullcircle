@@ -3,9 +3,9 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
 // 🔧 Load configuration early to ensure environment variables are available
-require('./configLoader');
+const configLoader = require('./configLoader');
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin - in Cloud Functions, use the default service account
 admin.initializeApp();
 
 // Import Stripe functions

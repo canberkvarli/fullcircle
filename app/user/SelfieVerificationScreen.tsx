@@ -130,21 +130,23 @@ export default function SelfieVerificationScreen() {
     animateProgress();
 
     try {
+      // Test authentication first
+      console.log('🧪 Testing authentication before verification...');
+      const authTest = await SelfieVerificationService.testAuthentication();
+      if (!authTest) {
+        throw new Error('Authentication test failed. Please log out and log back in.');
+      }
+      console.log('✅ Authentication test passed');
+
       // Validate the captured image
       const validation = SelfieVerificationService.validateImage(imageAsset.uri);
       if (!validation.valid) {
         throw new Error(validation.error || 'Invalid image');
       }
 
-      // Get the base64 data for the selfie
-      let imageBase64 = imageAsset.uri;
-      if (imageAsset.base64) {
-        imageBase64 = imageAsset.base64;
-      }
-
-      // Call the verification service
+      // Call the verification service with the image URI
       const result = await SelfieVerificationService.verifySelfie(
-        imageBase64,
+        imageAsset.uri,
         profileImageUrl
       );
 

@@ -21,6 +21,7 @@ import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import { CustomIcon } from "@/components/CustomIcon";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
+import { getSubscriptionPrice } from "@/constants/PricingConfig";
 
 interface PricingPlan {
   title: string;
@@ -43,7 +44,7 @@ export default function FullCircleSubscription() {
   const fonts = useFont();
   const styles = createStyles(colorScheme, fonts);
   
-  const [selectedPlan, setSelectedPlan] = useState<'1month' | '3months' | '6months'>('3months');
+  const [selectedPlan, setSelectedPlan] = useState<'1month' | '3months' | '6months' | 'yearly'>('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
 
@@ -63,31 +64,40 @@ export default function FullCircleSubscription() {
   const canReactivate = isActiveButCanceling;
   const showUpgradeOptions = !hasActiveSubscription || subscription?.status === 'canceled';
 
-  const pricingPlans: Record<'1month' | '3months' | '6months', PricingPlan> = {
+  const pricingPlans: Record<'1month' | '3months' | '6months' | 'yearly', PricingPlan> = {
     '1month': {
       title: '1 Month',
-      price: 29.99,
-      weeklyPrice: 7.50,
-      totalPrice: 29.99,
+      price: getSubscriptionPrice('1month'),
+      weeklyPrice: getSubscriptionPrice('1month') / 4, // Approximate weekly price
+      totalPrice: getSubscriptionPrice('1month'),
       savings: null,
       popular: false
     },
     '3months': {
       title: '3 Months',
-      price: 24.99,
-      weeklyPrice: 6.25,
-      totalPrice: 74.97,
-      originalTotal: 89.97,
-      savings: '17%',
+      price: getSubscriptionPrice('3months') / 3,
+      weeklyPrice: getSubscriptionPrice('3months') / 12, // 3 months = ~12 weeks
+      totalPrice: getSubscriptionPrice('3months'),
+      originalTotal: getSubscriptionPrice('1month') * 3,
+      savings: '25%',
       popular: true
     },
     '6months': {
       title: '6 Months',
-      price: 19.99,
-      weeklyPrice: 5.00,
-      totalPrice: 119.94,
-      originalTotal: 179.94,
-      savings: '33%',
+      price: getSubscriptionPrice('6months') / 6,
+      weeklyPrice: getSubscriptionPrice('6months') / 24, // 6 months = ~24 weeks
+      totalPrice: getSubscriptionPrice('6months'),
+      originalTotal: getSubscriptionPrice('1month') * 6,
+      savings: '40%',
+      popular: false
+    },
+    'yearly': {
+      title: 'Yearly',
+      price: getSubscriptionPrice('yearly') / 12,
+      weeklyPrice: getSubscriptionPrice('yearly') / 52, // 1 year = 52 weeks
+      totalPrice: getSubscriptionPrice('yearly'),
+      originalTotal: getSubscriptionPrice('1month') * 12,
+      savings: '60%',
       popular: false
     }
   };

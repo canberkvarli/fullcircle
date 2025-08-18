@@ -20,6 +20,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
 import OuroborosLoader from "./ouroboros/OuroborosLoader";
 import { CustomIcon } from "./CustomIcon";
+import { getRadiancePrice } from "@/constants/PricingConfig";
 
 const { width } = Dimensions.get('window');
 
@@ -142,26 +143,26 @@ const RadianceScreen: React.FC<RadianceScreenProps> = ({ visible, onClose }) => 
   const boostOptions = [
     {
       boostCount: 1,
-      pricePerBoost: 9.99,
-      totalPrice: 9.99,
+      pricePerBoost: getRadiancePrice(1),
+      totalPrice: getRadiancePrice(1),
     },
     {
       boostCount: 3,
-      pricePerBoost: 8.99,
-      totalPrice: 26.97,
-      tag: "Save 10%",
+      pricePerBoost: getRadiancePrice(3) / 3,
+      totalPrice: getRadiancePrice(3),
+      tag: "Save 20%",
       popular: true,
     },
     {
       boostCount: 5,
-      pricePerBoost: 7.99,
-      totalPrice: 39.95,
-      tag: "Save 20%",
+      pricePerBoost: getRadiancePrice(5) / 5,
+      totalPrice: getRadiancePrice(5),
+      tag: "Save 25%",
     },
     {
       boostCount: 10,
-      pricePerBoost: 6.99,
-      totalPrice: 69.90,
+      pricePerBoost: getRadiancePrice(10) / 10,
+      totalPrice: getRadiancePrice(10),
       tag: "Save 30%",
     }
   ];

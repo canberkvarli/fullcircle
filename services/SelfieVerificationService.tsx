@@ -1,6 +1,8 @@
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import functions from '@react-native-firebase/functions';
+import * as FileSystem from 'expo-file-system';
+import { FUNCTIONS } from './FirebaseConfig';
 
 export interface VerificationResult {
   success: boolean;
@@ -24,10 +26,80 @@ export interface VerificationHistory {
 
 export class SelfieVerificationService {
   /**
+   * Test authentication with a simple function call
+   */
+  static async testAuthentication(): Promise<boolean> {
+    try {
+      console.log('🧪 Testing authentication...');
+      
+      const user = auth().currentUser;
+      if (!user) {
+        console.error('❌ No current user');
+        return false;
+      }
+
+      console.log('✅ Current user:', user.uid);
+      
+      // Test with a simple function call
+      const testFunction = FUNCTIONS.httpsCallable('checkNotificationStatus');
+      const result = await testFunction({});
+      
+      console.log('✅ Authentication test successful:', result.data);
+      return true;
+    } catch (error: any) {
+      console.error('❌ Authentication test failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Convert image URI to base64 string
+   */
+  static async convertImageToBase64(imageUri: string): Promise<string> {
+    try {
+      // If it's already a base64 string, return it
+      if (imageUri.startsWith('data:image')) {
+        return imageUri;
+      }
+
+      // If it's a file URI, convert it to base64
+      if (imageUri.startsWith('file://') || imageUri.startsWith('http')) {
+        const base64 = await FileSystem.readAsStringAsync(imageUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        // Determine MIME type from file extension or default to jpeg
+        const extension = imageUri.split('.').pop()?.toLowerCase();
+        let mimeType = 'image/jpeg';
+        
+        if (extension === 'png') {
+          mimeType = 'image/png';
+        } else if (extension === 'gif') {
+          mimeType = 'image/gif';
+        } else if (extension === 'webp') {
+          mimeType = 'image/webp';
+        }
+        
+        return `data:${mimeType};base64,${base64}`;
+      }
+
+      // If it's already a base64 string without data URL prefix, add it
+      if (imageUri.length > 100 && !imageUri.includes(' ')) {
+        return `data:image/jpeg;base64,${imageUri}`;
+      }
+
+      throw new Error('Unsupported image format');
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw new Error('Failed to process image. Please try again.');
+    }
+  }
+
+  /**
    * Verify a selfie against the user's profile image
    */
   static async verifySelfie(
-    imageBase64: string, 
+    imageUri: string, 
     profileImageUrl: string
   ): Promise<VerificationResult> {
     try {
@@ -41,8 +113,20 @@ export class SelfieVerificationService {
       }
 
       console.log('✅ User authenticated:', user.uid);
+      console.log('📧 User email:', user.email);
+      console.log('🔑 User provider:', user.providerData[0]?.providerId);
+      
+      // Check if user needs re-authentication
+      const needsReauth = await user.getIdTokenResult(false);
+      console.log('🔄 Current token info:', {
+        hasToken: !!needsReauth.token,
+        tokenExpiration: needsReauth.expirationTime,
+        isExpired: new Date(needsReauth.expirationTime) < new Date(),
+        authTime: needsReauth.authTime
+      });
       
       // Ensure user is recently authenticated
+      console.log('🔄 Refreshing authentication token...');
       const tokenResult = await user.getIdTokenResult(true);
       if (!tokenResult.token) {
         console.error('❌ Failed to get authentication token');
@@ -50,21 +134,58 @@ export class SelfieVerificationService {
       }
       
       console.log('✅ Authentication token refreshed');
+      console.log('🆕 New token info:', {
+        hasToken: !!tokenResult.token,
+        tokenExpiration: tokenResult.expirationTime,
+        authTime: tokenResult.authTime
+      });
+
+      // Force token refresh to ensure it's valid
+      console.log('🔄 Force refreshing token...');
+      const freshToken = await user.getIdToken(true);
+      console.log('✅ Fresh token obtained, length:', freshToken.length);
+      console.log('🔑 Token preview:', freshToken.substring(0, 50) + '...');
       
-      // Format image data properly
-      let processedImageBase64 = imageBase64;
-      if (imageBase64.startsWith('data:image')) {
-        // Extract base64 content from data URL
-        processedImageBase64 = imageBase64.split(',')[1];
-        console.log('✅ Image data processed');
+      // Verify the token is valid
+      try {
+        const decodedToken = await user.getIdTokenResult(true);
+        console.log('🔍 Token verification result:', {
+          claims: decodedToken.claims,
+          authTime: decodedToken.authTime,
+          expirationTime: decodedToken.expirationTime,
+          issuedAtTime: decodedToken.issuedAtTime,
+          signInProvider: decodedToken.signInProvider
+        });
+      } catch (tokenError) {
+        console.error('❌ Token verification failed:', tokenError);
+        throw new Error('Authentication token verification failed');
+      }
+      
+      // Convert image to base64
+      console.log('🔄 Converting image to base64');
+      const imageBase64 = await this.convertImageToBase64(imageUri);
+      console.log('✅ Image converted to base64');
+      console.log('📏 Image base64 length:', imageBase64.length);
+      console.log('📊 Image data preview:', imageBase64.substring(0, 100) + '...');
+      
+      // Validate image size (max 10MB in base64)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (imageBase64.length > maxSize) {
+        throw new Error('Image is too large. Please use a smaller image.');
       }
       
       // Call the Firebase Cloud Function
       console.log('📡 Calling Firebase Cloud Function: verifySelfie');
-      const verifySelfieFunction = functions().httpsCallable('verifySelfie');
+      console.log('📤 Sending data to function:', {
+        imageBase64Length: imageBase64.length,
+        profileImageUrl,
+        userId: user.uid
+      });
+      
+      const verifySelfieFunction = FUNCTIONS.httpsCallable('verifySelfie');
       
       const result = await verifySelfieFunction({
-        imageBase64: processedImageBase64,
+        imageBase64,
         profileImageUrl,
         userId: user.uid
       });
@@ -78,6 +199,12 @@ export class SelfieVerificationService {
       return verificationData;
     } catch (error: any) {
       console.error('❌ Selfie verification failed:', error);
+      console.error('❌ Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        stack: error.stack
+      });
       
       // Improve error handling with specific messages
       if (error.code === 'functions/unauthenticated') {
@@ -106,7 +233,7 @@ export class SelfieVerificationService {
       await user.getIdTokenResult(true);
       
       // Call the Firebase Cloud Function
-      const getHistoryFunction = functions().httpsCallable('getVerificationHistory');
+      const getHistoryFunction = FUNCTIONS.httpsCallable('getVerificationHistory');
       
       const result = await getHistoryFunction({
         userId: user.uid

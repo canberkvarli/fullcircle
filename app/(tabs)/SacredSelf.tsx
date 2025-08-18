@@ -23,9 +23,16 @@ import RadianceScreen from "@/components/RadianceScreen";
 import LotusScreen from "@/components/LotusScreen";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
+import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const { width: screenWidth } = Dimensions.get("window");
+
+// Cache keys for profile photo
+const PROFILE_PHOTO_CACHE_KEY = (userId: string) => `profile_photo_${userId}`;
+const PROFILE_PHOTO_CACHE_TIMESTAMP_KEY = (userId: string) => `profile_photo_timestamp_${userId}`;
+const PROFILE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 export default function SacredSelf() {
   const { 
@@ -39,6 +46,8 @@ export default function SacredSelf() {
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [showLotusModal, setshowLotusModal] = useState(false);
   const [showOuroborosTooltip, setShowOuroborosTooltip] = useState(false);
+  const [isProfileImageLoading, setIsProfileImageLoading] = useState(true);
+  const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(null);
 
   const [isActivatingBoost, setIsActivatingBoost] = useState(false);
   const router = useRouter();
@@ -47,7 +56,37 @@ export default function SacredSelf() {
   const colors = Colors[colorScheme];
   const fonts = useFont();
   const isFullCircle = userData.subscription?.isActive;
-  
+
+  // Load profile photo from cache
+  React.useEffect(() => {
+    const loadProfilePhoto = async () => {
+      if (!userData?.userId) return;
+
+      try {
+        const cachedPhotoData = await AsyncStorage.getItem(PROFILE_PHOTO_CACHE_KEY(userData.userId));
+        const cacheTimestamp = await AsyncStorage.getItem(PROFILE_PHOTO_CACHE_TIMESTAMP_KEY(userData.userId));
+        
+        const now = Date.now();
+        const isCacheValid = cacheTimestamp && (now - parseInt(cacheTimestamp)) < PROFILE_CACHE_DURATION;
+        
+        if (cachedPhotoData && isCacheValid) {
+          setCachedProfilePhoto(cachedPhotoData);
+          console.log('Profile photo loaded from cache');
+        } else if (userData.photos?.[0]) {
+          // Cache the current photo
+          await AsyncStorage.setItem(PROFILE_PHOTO_CACHE_KEY(userData.userId), userData.photos[0]);
+          await AsyncStorage.setItem(PROFILE_PHOTO_CACHE_TIMESTAMP_KEY(userData.userId), now.toString());
+          setCachedProfilePhoto(userData.photos[0]);
+          console.log('Profile photo cached');
+        }
+      } catch (error) {
+        console.error('Error loading profile photo cache:', error);
+        setCachedProfilePhoto(userData.photos?.[0] || null);
+      }
+    };
+
+    loadProfilePhoto();
+  }, [userData?.userId, userData?.photos?.[0]]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -241,19 +280,38 @@ export default function SacredSelf() {
           <Link href={"/user/EditUserProfile" as any} asChild>
             <TouchableOpacity style={styles.profileImageContainer} activeOpacity={0.8}>
               <View style={[styles.profileImageWrapper, { borderColor: verified ? '#FFD700' : colors.border }]}>
-                {userData.photos?.[0] ? (
-                  <Image
-                    source={{ uri: userData.photos[0] }}
-                    style={styles.profileImage}
-                  />
+                {cachedProfilePhoto || userData.photos?.[0] ? (
+                  <>
+                    {isProfileImageLoading && (
+                      <View style={[styles.profileImageLoadingOverlay, { backgroundColor: colors.background + 'F0' }]}>
+                        <OuroborosLoader 
+                          size={40} 
+                          variant="spinner" 
+                          loop={true}
+                          duration={1500}
+                          fillColor={colors.primary}
+                          strokeColor={colors.primary}
+                        />
+                      </View>
+                    )}
+                    <Image
+                      source={{ uri: cachedProfilePhoto || userData.photos?.[0] }}
+                      style={styles.profileImage}
+                      onLoadStart={() => setIsProfileImageLoading(true)}
+                      onLoadEnd={() => setIsProfileImageLoading(false)}
+                      onError={() => setIsProfileImageLoading(false)}
+                    />
+                  </>
                 ) : (
                   <View style={[styles.placeholderImage, { backgroundColor: colors.border }]}>
                     <Ionicons name="person" size={40} color={colors.textMuted} />
                   </View>
                 )}
-                <View style={[styles.editIconContainer, { backgroundColor: '#8B4513' }]}>
-                  <Ionicons name="camera" size={16} color="#FFFFFF" />
-                </View>
+                {!isProfileImageLoading && (
+                  <View style={[styles.editIconContainer, { backgroundColor: '#8B4513' }]}>
+                    <Ionicons name="camera" size={16} color="#FFFFFF" />
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           </Link>
@@ -676,6 +734,17 @@ const styles = StyleSheet.create({
     borderRadius: 57,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileImageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    borderRadius: 57,
   },
   editIconContainer: {
     position: 'absolute',

@@ -606,29 +606,6 @@ export default function UserSettings() {
               thumbColor={showLastActive ? '#8B4513' : colors.textMuted}
             />
           </View>
-
-          <View style={styles.separator} />
-          
-          <View style={styles.row}>
-            <View style={styles.rowContent}>
-              <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>Current Lotus Count</Text>
-              <Text style={[styles.rowDescription, fonts.captionFont]}>
-                You currently have {userData.numOfLotus || 0} lotus available
-                {userData.lastLotusAssignedAt && (
-                  `\nLast assigned: ${new Date(
-                    userData.lastLotusAssignedAt.toDate ? 
-                    userData.lastLotusAssignedAt.toDate() : 
-                    userData.lastLotusAssignedAt
-                  ).toLocaleDateString()}`
-                )}
-              </Text>
-            </View>
-            <View style={styles.lotusBadge}>
-              <Text style={[styles.lotusBadgeText, fonts.captionFont]}>
-                {userData.numOfLotus || 0} 🪷
-              </Text>
-            </View>
-          </View>
         </View>
 
         {/* Safety Section */}

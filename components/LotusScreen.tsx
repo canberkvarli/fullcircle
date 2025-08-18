@@ -20,6 +20,7 @@ import { Colors, Typography, Spacing } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
 import OuroborosLoader from './ouroboros/OuroborosLoader';
 import colors from 'native-base/lib/typescript/theme/base/colors';
+import { LOTUS_PRICES, getLotusPrice, getLotusTotalPrice } from '@/constants/PricingConfig';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -128,27 +129,27 @@ const LotusScreen: React.FC<LotusScreenProps> = ({ visible, onClose, onPurchaseS
   const LotusOptions: LotusOption[] = [
     {
       lotusCount: 1,
-      pricePerLotus: 4.99,
-      totalPrice: 4.99,
+      pricePerLotus: getLotusPrice(1),
+      totalPrice: getLotusTotalPrice(1),
     },
     {
       lotusCount: 3,
-      pricePerLotus: 4.49,
-      totalPrice: 13.47,
-      tag: "Save 10%",
+      pricePerLotus: getLotusPrice(3),
+      totalPrice: getLotusTotalPrice(3),
+      tag: "Save 25%",
       popular: true,
     },
     {
       lotusCount: 5,
-      pricePerLotus: 3.99,
-      totalPrice: 19.95,
-      tag: "Save 20%",
+      pricePerLotus: getLotusPrice(5),
+      totalPrice: getLotusTotalPrice(5),
+      tag: "Save 25%",
     },
     {
       lotusCount: 10,
-      pricePerLotus: 3.49,
-      totalPrice: 34.90,
-      tag: "Save 30%",
+      pricePerLotus: getLotusPrice(10),
+      totalPrice: getLotusTotalPrice(10),
+      tag: "Save 40%",
     }
   ];
 

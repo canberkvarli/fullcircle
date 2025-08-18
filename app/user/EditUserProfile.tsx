@@ -12,10 +12,12 @@ import {
   Platform,
   StyleSheet,
   Animated,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { DraggableGrid } from "react-native-draggable-grid";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
@@ -26,16 +28,25 @@ import { STORAGE } from "@/services/FirebaseConfig";
 import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
+// Cache key for user photos
+const PHOTO_CACHE_KEY = (userId: string) => `user_photos_${userId}`;
+const PHOTO_CACHE_TIMESTAMP_KEY = (userId: string) => `user_photos_timestamp_${userId}`;
+const PHOTO_LOAD_STATES_KEY = (userId: string) => `photo_load_states_${userId}`;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export default function EditUserProfile() {
   const { userData, updateUserData } = useUserContext();
-  const [photos, setPhotos] = useState<string[]>(userData.photos || []);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [cachedPhotos, setCachedPhotos] = useState<string[]>([]);
+  const [photoLoadingStates, setPhotoLoadingStates] = useState<{ [key: number]: boolean }>({});
+  const [photosLoadedFromCache, setPhotosLoadedFromCache] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState("Edit");
   const router = useRouter();
   const [isModified, setIsModified] = useState(false);
   const [fieldVisibility, setFieldVisibility] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
@@ -48,6 +59,94 @@ export default function EditUserProfile() {
   // Get connection intent for appropriate labeling
   const connectionIntent = userData?.matchPreferences?.connectionIntent || "romantic";
   const isRomantic = connectionIntent === "romantic";
+
+  // Load photos from cache or user data
+  useEffect(() => {
+    const loadPhotos = async () => {
+      if (!userData?.userId) return;
+
+      try {
+        setIsLoadingPhotos(true);
+        
+        // Try to load from cache first
+        const cachedPhotosData = await AsyncStorage.getItem(PHOTO_CACHE_KEY(userData.userId));
+        const cacheTimestamp = await AsyncStorage.getItem(PHOTO_CACHE_TIMESTAMP_KEY(userData.userId));
+        
+        const now = Date.now();
+        const isCacheValid = cacheTimestamp && (now - parseInt(cacheTimestamp)) < CACHE_DURATION;
+        
+        if (cachedPhotosData && isCacheValid) {
+          const parsed = JSON.parse(cachedPhotosData);
+          setPhotos(parsed);
+          setCachedPhotos(parsed);
+          // Mark all cached photos as already loaded to prevent loading indicators
+          setPhotosLoadedFromCache(new Set(parsed));
+          console.log('✅ Photos loaded from cache:', parsed.length, 'photos');
+          console.log('Cache age:', Math.round((now - parseInt(cacheTimestamp)) / 1000 / 60), 'minutes');
+        } else {
+          // Load from user data and cache it
+          const userPhotos = userData.photos || [];
+          setPhotos(userPhotos);
+          setCachedPhotos(userPhotos);
+          
+          // Cache the photos
+          await AsyncStorage.setItem(PHOTO_CACHE_KEY(userData.userId), JSON.stringify(userPhotos));
+          await AsyncStorage.setItem(PHOTO_CACHE_TIMESTAMP_KEY(userData.userId), now.toString());
+          console.log('📥 Photos loaded from user data and cached:', userPhotos.length, 'photos');
+          if (!cachedPhotosData) {
+            console.log('No cache found');
+          } else if (!isCacheValid) {
+            console.log('Cache expired - age:', Math.round((now - parseInt(cacheTimestamp || '0')) / 1000 / 60), 'minutes');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading photos:', error);
+        // Fallback to user data
+        const userPhotos = userData.photos || [];
+        setPhotos(userPhotos);
+        setCachedPhotos(userPhotos);
+      } finally {
+        setIsLoadingPhotos(false);
+      }
+    };
+
+    loadPhotos();
+  }, [userData?.userId]); // Removed userData?.photos dependency to prevent cache invalidation
+
+  // Separate effect to handle userData.photos changes (when photos are updated externally)
+  useEffect(() => {
+    const handleUserPhotosChange = async () => {
+      if (!userData?.userId || !userData?.photos) return;
+      
+      // Only update if the user photos are different from cached photos
+      const userPhotos = userData.photos;
+      const userPhotosString = JSON.stringify(userPhotos);
+      const cachedPhotosString = JSON.stringify(cachedPhotos);
+      
+      if (userPhotosString !== cachedPhotosString) {
+        console.log('User photos changed externally, updating cache');
+        setPhotos(userPhotos);
+        setCachedPhotos(userPhotos);
+        
+        // Update cache
+        try {
+          await AsyncStorage.setItem(PHOTO_CACHE_KEY(userData.userId), JSON.stringify(userPhotos));
+          await AsyncStorage.setItem(PHOTO_CACHE_TIMESTAMP_KEY(userData.userId), Date.now().toString());
+        } catch (error) {
+          console.error('Error updating cache with new user photos:', error);
+        }
+      }
+    };
+
+    handleUserPhotosChange();
+  }, [userData?.photos, cachedPhotos, userData?.userId]);
+
+  // Reset photo loading states when photos change
+  useEffect(() => {
+    // Clear loading states when photos array changes
+    setPhotoLoadingStates({});
+  }, [photos]);
+
 
   useEffect(() => {
     const initialVisibility = {
@@ -363,30 +462,70 @@ export default function EditUserProfile() {
   const renderItem = (item: { key: string; uri: string }, order: number) => {
     const hasPhoto = item.uri && item.uri !== '';
     const index = parseInt(item.key.split('-')[1]);
+    const isLoading = photoLoadingStates[index];
+    const wasLoadedFromCache = photosLoadedFromCache.has(item.uri);
 
     if (hasPhoto) {
-      // Render actual photo
+      // Render actual photo with loading state
       return (
         <View style={styles.photoContainer} key={item.key}>
           <View style={styles.photoWrapper}>
-            <Image source={{ uri: item.uri }} style={styles.photo} />
-            <TouchableOpacity
-              style={styles.editPhotoIcon}
-              onPress={() => pickImage(index)}
-            >
-              <Ionicons name="camera" size={14} color="#FFFFFF" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.removePhotoIcon}
-              onPress={() => {
-                const newPhotos = photos.filter((_, i) => i !== index);
-                setPhotos(newPhotos);
-                setIsModified(true);
-                setProgressUpdate(prev => prev + 1); // Force progress update
+            {isLoading && !wasLoadedFromCache && (
+              <View style={[styles.photoLoadingOverlay, { backgroundColor: colors.background + 'F0' }]}>
+                <OuroborosLoader 
+                  size={30} 
+                  variant="spinner" 
+                  loop={true}
+                  duration={1500}
+                  fillColor={colors.primary}
+                  strokeColor={colors.primary}
+                />
+              </View>
+            )}
+            <Image 
+              source={{ uri: item.uri }} 
+              style={styles.photo}
+              onLoadStart={() => {
+                if (!wasLoadedFromCache) {
+                  setPhotoLoadingStates(prev => ({ ...prev, [index]: true }));
+                }
               }}
-            >
-              <Ionicons name="close" size={10} color="#FFFFFF" />
-            </TouchableOpacity>
+              onLoadEnd={() => {
+                setPhotoLoadingStates(prev => ({ ...prev, [index]: false }));
+                // Add to cache set once successfully loaded
+                setPhotosLoadedFromCache(prev => new Set([...prev, item.uri]));
+              }}
+              onError={() => {
+                setPhotoLoadingStates(prev => ({ ...prev, [index]: false }));
+              }}
+            />
+            {(!isLoading || wasLoadedFromCache) && (
+              <TouchableOpacity
+                style={styles.editPhotoIcon}
+                onPress={() => pickImage(index)}
+              >
+                <Ionicons name="camera" size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+            {(!isLoading || wasLoadedFromCache) && (
+              <TouchableOpacity
+                style={styles.removePhotoIcon}
+                onPress={() => {
+                  const newPhotos = photos.filter((_, i) => i !== index);
+                  setPhotos(newPhotos);
+                  setIsModified(true);
+                  setProgressUpdate(prev => prev + 1); // Force progress update
+                  
+                  // Update cache immediately for better UX
+                  if (userData?.userId) {
+                    AsyncStorage.setItem(PHOTO_CACHE_KEY(userData.userId), JSON.stringify(newPhotos))
+                      .catch(error => console.error('Error updating cache on photo removal:', error));
+                  }
+                }}
+              >
+                <Ionicons name="close" size={10} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       );
@@ -446,6 +585,12 @@ export default function EditUserProfile() {
             setPhotos(updatedPhotos);
             setIsModified(true);
             setProgressUpdate(prev => prev + 1); // Force progress update
+            
+            // Update cache immediately for better UX
+            if (userData?.userId) {
+              AsyncStorage.setItem(PHOTO_CACHE_KEY(userData.userId), JSON.stringify(updatedPhotos))
+                .catch(error => console.error('Error updating cache on photo reorder:', error));
+            }
           }}
           style={styles.photosGrid}
         />
@@ -526,6 +671,18 @@ export default function EditUserProfile() {
 
         // Update user data with Storage URLs
         await updateUserData({ photos: validPhotoUrls });
+        
+        // Update cache with new photos
+        if (userData?.userId) {
+          try {
+            await AsyncStorage.setItem(PHOTO_CACHE_KEY(userData.userId), JSON.stringify(validPhotoUrls));
+            await AsyncStorage.setItem(PHOTO_CACHE_TIMESTAMP_KEY(userData.userId), Date.now().toString());
+            setCachedPhotos(validPhotoUrls);
+          } catch (cacheError) {
+            console.error('Error updating photo cache:', cacheError);
+          }
+        }
+        
         setIsModified(false);
       } catch (error) {
         console.error("Error saving photos:", error);
@@ -560,6 +717,41 @@ export default function EditUserProfile() {
       return fieldValue.some(item => typeof item === 'string' && item.trim().length > 0);
     }
     return typeof fieldValue === 'string' && fieldValue.trim().length > 0;
+  };
+
+  // Function to clear photo cache (useful for debugging or when cache gets corrupted)
+  const clearPhotoCache = async () => {
+    if (!userData?.userId) return;
+    
+    try {
+      await AsyncStorage.removeItem(PHOTO_CACHE_KEY(userData.userId));
+      await AsyncStorage.removeItem(PHOTO_CACHE_TIMESTAMP_KEY(userData.userId));
+      console.log('Photo cache cleared');
+    } catch (error) {
+      console.error('Error clearing photo cache:', error);
+    }
+  };
+
+  // Function to refresh photos from user data (bypass cache)
+  const refreshPhotosFromUserData = async () => {
+    if (!userData?.userId) return;
+    
+    try {
+      setIsLoadingPhotos(true);
+      const userPhotos = userData.photos || [];
+      setPhotos(userPhotos);
+      setCachedPhotos(userPhotos);
+      
+      // Update cache with fresh data
+      await AsyncStorage.setItem(PHOTO_CACHE_KEY(userData.userId), JSON.stringify(userPhotos));
+      await AsyncStorage.setItem(PHOTO_CACHE_TIMESTAMP_KEY(userData.userId), Date.now().toString());
+      
+      console.log('Photos refreshed from user data:', userPhotos.length);
+    } catch (error) {
+      console.error('Error refreshing photos:', error);
+    } finally {
+      setIsLoadingPhotos(false);
+    }
   };
 
   const calculateJourneyProgress = () => {
@@ -825,6 +1017,14 @@ export default function EditUserProfile() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoadingPhotos}
+            onRefresh={refreshPhotosFromUserData}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
       >
         {tab === "Edit" && (
           <View style={styles.editContainer}>
@@ -837,7 +1037,23 @@ export default function EditUserProfile() {
               </View>
 
               <View style={styles.photosContainer}>
-                {renderPhotoGrid()}
+                {isLoadingPhotos ? (
+                  <View style={styles.photosLoadingContainer}>
+                    <OuroborosLoader 
+                      size={60} 
+                      variant="spinner" 
+                      loop={true}
+                      duration={2000}
+                      fillColor={colors.primary}
+                      strokeColor={colors.primary}
+                    />
+                    <Text style={[styles.photosLoadingText, fonts.captionFont, { color: colors.textMuted }]}>
+                      Loading your photos...
+                    </Text>
+                  </View>
+                ) : (
+                  renderPhotoGrid()
+                )}
               </View>
             </View>
 
@@ -1008,6 +1224,20 @@ const styles = StyleSheet.create({
     minHeight: 150,
   },
 
+  photosLoadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xl,
+    gap: Spacing.md,
+  },
+
+  photosLoadingText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+
   photoGridContainer: {
     gap: Spacing.sm,
   },
@@ -1106,6 +1336,18 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
     }),
+  },
+
+  photoLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+    borderRadius: BorderRadius.md,
   },
 
   photoRequirements: {

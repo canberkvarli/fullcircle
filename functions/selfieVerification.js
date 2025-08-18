@@ -1,5 +1,5 @@
 // selfieVerification.js
-const functions = require('firebase-functions');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const vision = require('@google-cloud/vision');
 const configLoader = require('./configLoader');
@@ -14,71 +14,96 @@ const visionClient = new vision.ImageAnnotatorClient({
 });
 
 // Function to verify selfie using Google Cloud Vision API
-exports.verifySelfie = functions.https.onCall(async (data, context) => {
+exports.verifySelfie = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
+  console.log('🔍 verifySelfie function called');
+  console.log('📊 Request data:', {
+    hasImageBase64: !!request.data.imageBase64,
+    hasProfileImageUrl: !!request.data.profileImageUrl,
+    hasUserId: !!request.data.userId,
+    imageBase64Length: request.data.imageBase64 ? request.data.imageBase64.length : 0
+  });
+  
   // Ensure user is authenticated
-  if (!context.auth) {
-    console.error('User not authenticated');
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  if (!request.auth) {
+    console.error('❌ User not authenticated - request.auth is missing');
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
   // Log authentication info for debugging
-  console.log('Authentication context:', {
-    uid: context.auth.uid,
-    token: context.auth.token ? 'Present' : 'Missing'
+  console.log('✅ Authentication context:', {
+    uid: request.auth.uid,
+    token: request.auth.token ? 'Present' : 'Missing',
+    email: request.auth.token?.email || 'Not available'
   });
 
-  const { imageBase64, profileImageUrl, userId } = data;
+  const { imageBase64, profileImageUrl, userId } = request.data;
 
   // Validate input parameters
   if (!imageBase64 || !profileImageUrl || !userId) {
-    console.error('Missing required parameters');
-    throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+    console.error('❌ Missing required parameters:', {
+      hasImageBase64: !!imageBase64,
+      hasProfileImageUrl: !!profileImageUrl,
+      hasUserId: !!userId
+    });
+    throw new HttpsError('invalid-argument', 'Missing required parameters');
   }
 
   // Ensure the requesting user is the same as the userId
-  if (context.auth.uid !== userId) {
-    console.error('User ID mismatch');
-    throw new functions.https.HttpsError('permission-denied', 'You can only verify your own selfie');
+  if (request.auth.uid !== userId) {
+    console.error('❌ User ID mismatch:', {
+      contextUid: request.auth.uid,
+      requestUserId: userId
+    });
+    throw new HttpsError('permission-denied', 'You can only verify your own selfie');
   }
 
   try {
-    console.log('Starting selfie verification process');
+    console.log('🚀 Starting selfie verification process');
     
     // 1. Analyze the selfie image
-    console.log('Analyzing selfie image');
+    console.log('🔍 Analyzing selfie image');
     const selfieAnalysis = await analyzeImage(imageBase64);
+    console.log('✅ Selfie analysis completed');
     
     // 2. Analyze the profile image
-    console.log('Analyzing profile image');
+    console.log('🔍 Analyzing profile image');
     let profileAnalysis;
     if (profileImageUrl.startsWith('data:')) {
       profileAnalysis = await analyzeImage(profileImageUrl.split(',')[1]);
     } else {
       profileAnalysis = await analyzeImageFromUrl(profileImageUrl);
     }
+    console.log('✅ Profile analysis completed');
 
     // 3. Compare the two images for similarity
-    console.log('Comparing images');
+    console.log('🔍 Comparing images');
     const similarityScore = await compareImages(imageBase64, profileImageUrl);
+    console.log('✅ Image comparison completed');
     
     // 4. Perform face detection and quality checks
-    console.log('Detecting faces');
+    console.log('🔍 Detecting faces');
     const faceDetection = await detectFaces(imageBase64);
+    console.log('✅ Face detection completed');
     
     // 5. Determine verification result
-    console.log('Determining verification result');
+    console.log('🔍 Determining verification result');
     const verificationResult = determineVerificationResult(
       selfieAnalysis, 
       profileAnalysis, 
       similarityScore, 
       faceDetection
     );
+    console.log('✅ Verification result determined:', verificationResult);
 
     // 6. Store verification result in Firestore
-    console.log('Storing verification result');
+    console.log('💾 Storing verification result');
     await storeVerificationResult(userId, verificationResult, imageBase64);
+    console.log('✅ Verification result stored');
 
-    console.log('Verification completed successfully:', verificationResult);
+    console.log('🎉 Verification completed successfully:', verificationResult);
     return {
       success: true,
       verified: verificationResult.verified,
@@ -88,8 +113,9 @@ exports.verifySelfie = functions.https.onCall(async (data, context) => {
     };
 
   } catch (error) {
-    console.error('Selfie verification error:', error);
-    throw new functions.https.HttpsError('internal', 'Verification failed: ' + error.message);
+    console.error('❌ Selfie verification error:', error);
+    console.error('❌ Error stack:', error.stack);
+    throw new HttpsError('internal', 'Verification failed: ' + error.message);
   }
 });
 
@@ -320,16 +346,19 @@ async function storeVerificationResult(userId, result, selfieImage) {
 }
 
 // Function to get verification history
-exports.getVerificationHistory = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+exports.getVerificationHistory = onCall({
+  enforceAppCheck: false,
+  region: 'us-central1'
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { userId } = data;
+  const { userId } = request.data;
   
   // Ensure the requesting user is the same as the userId
-  if (context.auth.uid !== userId) {
-    throw new functions.https.HttpsError('permission-denied', 'You can only view your own verification history');
+  if (request.auth.uid !== userId) {
+    throw new HttpsError('permission-denied', 'You can only view your own verification history');
   }
   
   try {
@@ -351,6 +380,6 @@ exports.getVerificationHistory = functions.https.onCall(async (data, context) =>
     return { verifications };
   } catch (error) {
     console.error('Failed to get verification history:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to get verification history: ' + error.message);
+    throw new HttpsError('internal', 'Failed to get verification history: ' + error.message);
   }
 });
