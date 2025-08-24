@@ -540,7 +540,7 @@ const ConnectScreen: React.FC = () => {
               strokeColor="#B8860B"
             />
           
-          <Text  style={[styles.noLikesTitle, fonts.spiritualityVibrantTitleFont, { color: colors.textDark }]}>
+          <Text style={[styles.noLikesTitle, fonts.spiritualityVibrantTitleFont, { color: colors.textDark }]}>
             {hasFullCircleSubscription 
               ? "You've explored your current circle"
               : "More connections coming soon"
@@ -1220,7 +1220,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes['2xl'],
     textAlign: 'center',
     marginBottom: Spacing.lg,
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    fontWeight: '600',
   },
   
   noLikesSubtitle: {
