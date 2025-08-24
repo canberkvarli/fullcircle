@@ -363,6 +363,29 @@ const UserShow: React.FC = () => {
 
   const connectionColors = getConnectionIntentColors(connectionIntent);
 
+  // Get connection intent icon with custom icons for spiritual concepts (matching PotentialMatch)
+  const getConnectionIntentIcon = (intent: string) => {
+    switch (intent) {
+      case "romantic":
+        return { name: "heart", iconType: "ionicon" };
+      case "friendship":
+        return { name: "friendship", iconType: "custom" }; // Custom friendship icon
+      case "both":
+        return { name: "infinity", iconType: "custom" }; // Custom infinite energy icon
+      default:
+        return { name: "sparkles", iconType: "ionicon" };
+    }
+  };
+
+  // Icon renderer function (matching PotentialMatch)
+  const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
+    if (iconType === "custom") {
+      return <CustomIcon name={iconName} size={size} color={color} />;
+    } else {
+      return <Ionicons name={iconName as any} size={size} color={color} />;
+    }
+  };
+
   // Generate organized info cards (matching PotentialMatch)
   const generateInfoCards = (user: UserDataType, sharedItems: any) => {
     const cards = [];
@@ -801,14 +824,10 @@ const UserShow: React.FC = () => {
       {loadingPhotos && (
         <View style={[styles.loaderOverlay, { backgroundColor: colors.background }]}>
           <View style={[styles.loadingMandala, { backgroundColor: connectionColors.secondary }]}>
-            <Ionicons 
-              name={connectionIntent === "romantic" ? "heart" 
-                   : connectionIntent === "friendship" ? "people" 
-                   : connectionIntent === "both" ? "infinite"
-                   : "sparkles"} 
-              size={40} 
-              color={connectionColors.primary} 
-            />
+            {(() => {
+              const iconInfo = getConnectionIntentIcon(connectionIntent);
+              return renderIcon(iconInfo.name, iconInfo.iconType, 40, connectionColors.primary);
+            })()}
           </View>
           <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: connectionColors.primary }]}>
             Loading Beautiful Soul...
@@ -887,14 +906,10 @@ const UserShow: React.FC = () => {
                 <View style={[styles.connectionIntentRow, { 
                   backgroundColor: connectionColors.secondary,
                 }]}>
-                  <Ionicons 
-                    name={connectionIntent === "romantic" ? "heart" 
-                         : connectionIntent === "friendship" ? "people" 
-                         : connectionIntent === "both" ? "infinite"
-                         : "sparkles"} 
-                    size={16} 
-                    color={connectionColors.primary} 
-                  />
+                  {(() => {
+                    const iconInfo = getConnectionIntentIcon(connectionIntent);
+                    return renderIcon(iconInfo.name, iconInfo.iconType, 26, connectionColors.primary);
+                  })()}
                   <Text style={[styles.connectionIntentDescription, { color: connectionColors.primary }]}>
                     {connectionIntent === "romantic" ? "Looking for romantic connections" 
                      : connectionIntent === "friendship" ? "Looking for meaningful friendships"
