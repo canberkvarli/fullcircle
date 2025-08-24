@@ -14,7 +14,7 @@ if (!STRIPE_SECRET_KEY) {
 const stripe = Stripe(STRIPE_SECRET_KEY);
 
 // Import shared pricing configuration
-const { SUBSCRIPTION_PRICES, RADIANCE_PRICING, LOTUS_PRICES } = require('../../constants/PricingConfig');
+const { SUBSCRIPTION_PRICES, RADIANCE_PRICING, LOTUS_PRICES } = require('../pricingConfig');
 
 module.exports = {
   stripe,

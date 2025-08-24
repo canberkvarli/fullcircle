@@ -20,7 +20,7 @@ import { useUserContext } from "@/context/UserContext";
 import { useStripe } from "@stripe/stripe-react-native";
 import OuroborosLoader from "./ouroboros/OuroborosLoader";
 import { CustomIcon } from "./CustomIcon";
-import { getRadiancePrice } from "@/constants/PricingConfig";
+import { getRadiancePrice } from "@/functions/pricingConfig";
 
 const { width } = Dimensions.get('window');
 

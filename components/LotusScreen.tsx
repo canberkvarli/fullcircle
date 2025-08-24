@@ -20,7 +20,7 @@ import { Colors, Typography, Spacing } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
 import OuroborosLoader from './ouroboros/OuroborosLoader';
 import colors from 'native-base/lib/typescript/theme/base/colors';
-import { LOTUS_PRICES, getLotusPrice, getLotusTotalPrice } from '@/constants/PricingConfig';
+import { LOTUS_PRICES, getLotusPrice, getLotusTotalPrice } from '@/functions/pricingConfig';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 

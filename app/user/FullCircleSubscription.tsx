@@ -21,7 +21,7 @@ import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import { CustomIcon } from "@/components/CustomIcon";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
 import { FIREBASE_AUTH } from "@/services/FirebaseConfig";
-import { getSubscriptionPrice } from "@/constants/PricingConfig";
+import { getSubscriptionPrice } from "@/functions/pricingConfig";
 
 interface PricingPlan {
   title: string;
