@@ -195,13 +195,15 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     container: {
       width: '100%',
       alignItems: 'center',
+      justifyContent: 'center',
       position: 'relative',
     },
     buttonContainer: {
       width: '100%',
-      gap: Spacing.md, // Increased from sm to md for better spacing
+      gap: Spacing.sm, // Reduced gap between buttons
       alignItems: 'center',
       justifyContent: 'center', // Added to center buttons vertically
+      paddingHorizontal: 0, // Ensure no horizontal padding affects centering
     },
     
     // Simplified Loading Styles
@@ -253,6 +255,7 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
       alignItems: "center",
       justifyContent: "center",
       flexDirection: "row",
+      alignSelf: 'center', // Ensure buttons are centered within their container
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
