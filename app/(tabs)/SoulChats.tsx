@@ -441,6 +441,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
   },
   
