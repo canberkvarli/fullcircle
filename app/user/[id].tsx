@@ -726,7 +726,7 @@ const UserShow: React.FC = () => {
       >
         <View style={styles.infoHeader}>
           <View style={[styles.iconContainer, { backgroundColor: cardColor + '15' }]}>
-            {renderIcon(icon, iconType, 18, cardColor)}
+            {renderIcon(icon, iconType, 28, cardColor)}
           </View>
           <Text style={[styles.infoTitle, { color: colors.textDark }]}>
             {title}
