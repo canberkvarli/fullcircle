@@ -100,9 +100,9 @@ module.exports = {
       package: getBundleId(),
       googleServicesFile: `./config/${env === 'production' ? 'prod' : env === 'staging' ? 'staging' : 'dev'}/google-services.json`,
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
+        foregroundImage: "./assets/images/store_badges/googleplaystore.png",
         backgroundColor: "#ffffff",
-        backgroundImage: "./assets/images/adaptive-icon.png"
+        backgroundImage: "./assets/images/store_badges/googleplaystore.png"
       },
       enableProguardInReleaseBuilds: true,
       enableShrinkResourcesInReleaseBuilds: true,
@@ -180,7 +180,7 @@ module.exports = {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/store_badges/fullcircle_appstore.png",
+          icon: "./assets/images/store_badges/appstore.png",
           color: "#8B4513",
           sounds: ["./assets/notification-sound.wav"]
         }

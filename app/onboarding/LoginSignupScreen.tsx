@@ -198,7 +198,7 @@ function LoginSignupScreen(): JSX.Element {
             </Animated.View>
             
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>circle</Text>
+              <Text style={styles.title}>Circle</Text>
               <Text style={styles.subTitle}>Where intention meets connection</Text>
             </View>
           </View>
@@ -348,7 +348,6 @@ const createStyles = (colorScheme: 'light' | 'dark') => {
     title: {
       ...fonts.spiritualityHeroFont,
       color: colors.text,
-      letterSpacing: 0,
       marginBottom: 0,
       textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 2, height: 2 },

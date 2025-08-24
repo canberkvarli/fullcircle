@@ -11,7 +11,7 @@ import {
   Animated,
 } from "react-native";
 import { CustomIcon } from "@/components/CustomIcon";
-import { useUserContext, UserDataType } from "@/context/UserContext";
+import { useUserContext } from "@/context/UserContext";
 import { useRouter } from "expo-router";
 import PotentialMatch from "@/components/PotentialMatch";
 import LotusScreen from "@/components/LotusScreen";
