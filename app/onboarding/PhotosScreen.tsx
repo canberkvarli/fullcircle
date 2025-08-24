@@ -340,11 +340,6 @@ const handleSubmit = async () => {
           <Text style={styles.progressText}>
             {photoCount}/3 photos • {photoCount >= 3 ? "Complete!" : "At least 3 required"}
           </Text>
-          {photoCount < 3 && (
-            <Text style={styles.requirementText}>
-              ⚠️ You need at least 3 photos to complete your profile
-            </Text>
-          )}
         </View>
 
         {/* Photo Grid */}
@@ -602,10 +597,10 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
     deleteButton: {
       position: 'absolute',
       top: 0,
-      right: 0,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+      right: -1,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
       backgroundColor: colors.error,
       justifyContent: 'center',
       alignItems: 'center',
@@ -709,15 +704,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: Record<string, any>)
       marginTop: Spacing.xs,
       fontWeight: Typography.weights.medium,
     },
-    requirementText: {
-      ...fonts.spiritualBodyFont,
-      fontSize: Typography.sizes.sm,
-      color: colors.error,
-      textAlign: 'center',
-      fontStyle: 'italic',
-      marginTop: Spacing.sm,
-      fontWeight: Typography.weights.medium,
-    },
+
   });
 };
 

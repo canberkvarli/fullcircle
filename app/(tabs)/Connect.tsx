@@ -20,30 +20,6 @@ import { Colors, Typography, Spacing } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
-/**
- * 🚀 PERFORMANCE OPTIMIZED CONNECT SCREEN WITH PHOTO CACHING & GENTLE ANIMATIONS
- * 
- * KEY PERFORMANCE FEATURES:
- * 1. PHOTO CACHING: Preloads next user's photos for instant display
- * 2. SMART PRELOADING: Automatically fetches next batch when 3 users remain
- * 3. INSTANT TRANSITIONS: Next user is always ready when you swipe
- * 4. BACKGROUND LOADING: No UI blocking during data fetching
- * 5. 🎭 GENTLE ANIMATIONS: Subtle fade-in effects for seamless transitions
- * 
- * PHOTO CACHING STRATEGY:
- * - When viewing a user, automatically start loading next user's photos
- * - Photos are cached in memory and displayed instantly on swipe
- * - Fallback to normal loading if cache miss (never breaks existing functionality)
- * 
- * 🎭 GENTLE EFFECTS:
- * - Animation starts FIRST (fade out current user)
- * - THEN new user data loads (while invisible)
- * - Finally new user fades in smoothly (200ms)
- * - Buttons gently appear with subtle opacity transition
- * - Perfect sequence: Animate → Load → Display
- * 
- * This creates a polished, premium experience with instant performance!
- */
 const ConnectScreen: React.FC = () => {
   const router = useRouter();
   

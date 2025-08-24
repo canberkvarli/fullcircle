@@ -38,9 +38,18 @@ function HealingModalitiesScreen() {
   const styles = createStyles(colorScheme, fonts);
 
   // Normalize any legacy names in user data to new names
-  const [selectedModalities, setSelectedModalities] = useState<string[]>(
-    (userData?.spiritualProfile?.healingModalities || []).map(normalizeModalityName)
-  );
+  const [selectedModalities, setSelectedModalities] = useState<string[]>(() => {
+    try {
+      const modalities = userData?.spiritualProfile?.healingModalities;
+      if (Array.isArray(modalities)) {
+        return modalities.map(normalizeModalityName).filter(Boolean);
+      }
+      return [];
+    } catch (error) {
+      console.warn('Error initializing healing modalities:', error);
+      return [];
+    }
+  });
   const [hiddenFields, setHiddenFields] = useState<{ [key: string]: boolean }>(
     userData?.hiddenFields || {}
   );
@@ -158,7 +167,9 @@ function HealingModalitiesScreen() {
       }
 
       // Ensure we're saving normalized names
-      const normalizedModalities = selectedModalities.map(normalizeModalityName);
+      const normalizedModalities = Array.isArray(selectedModalities) 
+        ? selectedModalities.map(normalizeModalityName).filter(Boolean)
+        : [];
 
       await updateUserData({
         spiritualProfile: {
@@ -199,6 +210,9 @@ function HealingModalitiesScreen() {
 
   // Helper function to get orb color - divine gold when all selected
   const getOrbColor = (modalityColor: string) => {
+    if (!Array.isArray(selectedModalities) || !Array.isArray(healingModalities)) {
+      return modalityColor;
+    }
     const allSelected = selectedModalities.length === healingModalities.length;
     return allSelected ? '#FFD700' : modalityColor;
   };
@@ -215,6 +229,11 @@ function HealingModalitiesScreen() {
   };
 
   const handleSelectAll = () => {
+    if (!Array.isArray(selectedModalities) || !Array.isArray(healingModalities)) {
+      console.warn('Invalid arrays for select all operation');
+      return;
+    }
+    
     if (selectedModalities.length === healingModalities.length) {
       // If all are selected, deselect all
       setSelectedModalities([]);
@@ -420,7 +439,7 @@ function HealingModalitiesScreen() {
   };
 
   const renderSelectedCount = () => {
-    if (selectedModalities.length === 0) return null;
+    if (!Array.isArray(selectedModalities) || !Array.isArray(healingModalities) || selectedModalities.length === 0) return null;
 
     const allSelected = selectedModalities.length === healingModalities.length;
 

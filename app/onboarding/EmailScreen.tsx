@@ -490,8 +490,8 @@ function EmailScreen() {
                         item.connected ? styles.connectedText : null,
                       ]}
                     >
-                      {item.connected && item.option === 1 ? "Apple account connected ✨" : 
-                       item.connected && item.option === 2 ? "Google account connected ✨" : 
+                      {item.connected && item.option === 1 ? "Apple account connected!" : 
+                       item.connected && item.option === 2 ? "Google account connected!" : 
                        item.text}
                     </Text>
                   </TouchableOpacity>
@@ -754,7 +754,6 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     modalOptionText: {
       ...fonts.buttonFont,
       color: colors.textDark,
-      flex: 1,
     },
     connectedOption: {
       backgroundColor: colors.success + '20',
