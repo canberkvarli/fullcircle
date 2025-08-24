@@ -12,7 +12,7 @@ import {
   useColorScheme,
   Platform,
 } from "react-native";
-import { useRouter, useLocalSearchParams, Link } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -892,7 +892,7 @@ const UserShow: React.FC = () => {
                          : connectionIntent === "friendship" ? "people" 
                          : connectionIntent === "both" ? "infinite"
                          : "sparkles"} 
-                    size={14} 
+                    size={16} 
                     color={connectionColors.primary} 
                   />
                   <Text style={[styles.connectionIntentDescription, { color: connectionColors.primary }]}>
