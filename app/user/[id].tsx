@@ -76,6 +76,7 @@ const UserShow: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserDataType>(initialUser);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
   const lastLoadedPhotosFor = useRef<string | null>(null);
   const didSubscribe = useRef(false);
   
@@ -166,65 +167,92 @@ const UserShow: React.FC = () => {
   }, [currentUser.userId, getImageUrl]);
 
   const handleHeartPress = async () => {
-    const likedId = currentUser.userId;
-    
-    console.log('❤️ Like pressed for:', currentUser.firstName);
-    console.log('📍 Current position:', currentPosition);
-    console.log('📋 Original order length:', originalOrder.length);
-    
-    // 🆕 SIMPLE FIX: Just use originalOrder directly
-    let nextUser: UserDataType | null = null;
-    
-    if (originalOrder.length > 0) {
-      const nextPosition = currentPosition + 1;
-      if (nextPosition < originalOrder.length) {
-        nextUser = originalOrder[nextPosition];
-        setCurrentPosition(nextPosition);
-        console.log('✅ Next user:', nextUser.firstName);
-      }
+    // Prevent rapid-fire interactions
+    if (isProcessingAction) {
+      console.log('⏳ Action already in progress, ignoring tap');
+      return;
     }
+    
+    setIsProcessingAction(true);
+    
+    try {
+      const likedId = currentUser.userId;
+      
+      console.log('❤️ Like pressed for:', currentUser.firstName);
+      console.log('📍 Current position:', currentPosition);
+      console.log('📋 Original order length:', originalOrder.length);
+      
+      // 🆕 SIMPLE FIX: Just use originalOrder directly
+      let nextUser: UserDataType | null = null;
+      
+      if (originalOrder.length > 0) {
+        const nextPosition = currentPosition + 1;
+        if (nextPosition < originalOrder.length) {
+          nextUser = originalOrder[nextPosition];
+          setCurrentPosition(nextPosition);
+          console.log('✅ Next user:', nextUser.firstName);
+        }
+      }
 
-    if (nextUser) {
-      // Call likeMatch first
+      // Always call likeMatch first
       await likeMatch(likedId);
       
-      // Then show next user
-      setCurrentUser(nextUser);
-    } else {
-      console.log('🚪 No more users');
-      await likeMatch(likedId);
+      // Then show next user if available, otherwise go back
+      if (nextUser) {
+        setCurrentUser(nextUser);
+      } else {
+        console.log('🚪 No more users - going back');
+        router.back();
+      }
+    } catch (error) {
+      console.error('❌ Error in handleHeartPress:', error);
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
   const handleDislikePress = async () => {
-    const dislikedId = currentUser.userId;
-    
-    console.log('👎 Dislike pressed for:', currentUser.firstName);
-    console.log('📍 Current position:', currentPosition);
-    console.log('📋 Original order length:', originalOrder.length);
-    
-    // 🆕 SIMPLE FIX: Just use originalOrder directly
-    let nextUser: UserDataType | null = null;
-    
-    if (originalOrder.length > 0) {
-      const nextPosition = currentPosition + 1;
-      if (nextPosition < originalOrder.length) {
-        nextUser = originalOrder[nextPosition];
-        setCurrentPosition(nextPosition);
-        console.log('✅ Next user:', nextUser.firstName);
-      }
+    // Prevent rapid-fire interactions
+    if (isProcessingAction) {
+      console.log('⏳ Action already in progress, ignoring tap');
+      return;
     }
+    
+    setIsProcessingAction(true);
+    
+    try {
+      const dislikedId = currentUser.userId;
+      
+      console.log('👎 Dislike pressed for:', currentUser.firstName);
+      console.log('📍 Current position:', currentPosition);
+      console.log('📋 Original order length:', originalOrder.length);
+      
+      // 🆕 SIMPLE FIX: Just use originalOrder directly
+      let nextUser: UserDataType | null = null;
+      
+      if (originalOrder.length > 0) {
+        const nextPosition = currentPosition + 1;
+        if (nextPosition < originalOrder.length) {
+          nextUser = originalOrder[nextPosition];
+          setCurrentPosition(nextPosition);
+          console.log('✅ Next user:', nextUser.firstName);
+        }
+      }
 
-    if (nextUser) {
-      // Call dislikeMatch first
+      // Always call dislikeMatch first
       await dislikeMatch(dislikedId);
       
-      
-      // Then show next user
-      setCurrentUser(nextUser);
-    } else {
-      console.log('🚪 No more users');
-      await dislikeMatch(dislikedId);
+      // Then show next user if available, otherwise go back
+      if (nextUser) {
+        setCurrentUser(nextUser);
+      } else {
+        console.log('🚪 No more users - going back');
+        router.back();
+      }
+    } catch (error) {
+      console.error('❌ Error in handleDislikePress:', error);
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
@@ -963,8 +991,13 @@ const UserShow: React.FC = () => {
               ]}
               onPress={handleDislikePress}
               activeOpacity={0.8}
+              disabled={isProcessingAction}
             >
-              <Ionicons name="close" size={20} color="#8B7355" />
+              <Ionicons 
+                name={isProcessingAction ? "hourglass-outline" : "close"} 
+                size={20} 
+                color={isProcessingAction ? colors.textMuted : "#8B7355"} 
+              />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -975,8 +1008,13 @@ const UserShow: React.FC = () => {
               ]}
               onPress={handleHeartPress}
               activeOpacity={0.8}
+              disabled={isProcessingAction}
             >
-              <Ionicons name="heart" size={20} color={hasFullCircleSubscription ? '#FFD700' : '#E74C3C'} />
+              <Ionicons 
+                name={isProcessingAction ? "hourglass-outline" : "heart"} 
+                size={20} 
+                color={isProcessingAction ? colors.textMuted : (hasFullCircleSubscription ? '#FFD700' : '#E74C3C')} 
+              />
             </TouchableOpacity>
           </View>
         </>
