@@ -220,18 +220,6 @@ const handleSubmit = async () => {
 };
 
   const handleDeletePhoto = (index: number) => {
-    const currentPhotoCount = selectedPhotos.filter(photo => photo && photo !== "").length;
-    
-    // Prevent deletion if it would result in fewer than 3 photos
-    if (currentPhotoCount <= 3) {
-      Alert.alert(
-        "Photo Required",
-        "You need at least 3 photos to complete your profile. Please add a new photo before removing this one.",
-        [{ text: "Got it", style: "default" }]
-      );
-      return;
-    }
-
     const newPhotos = [...selectedPhotos];
     newPhotos[index] = "";
     setSelectedPhotos(newPhotos);
