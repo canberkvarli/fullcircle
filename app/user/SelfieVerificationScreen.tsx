@@ -43,27 +43,39 @@ export default function SelfieVerificationScreen() {
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasVerified, setHasVerified] = useState(false);
 
-  
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Get profile image URL on component mount
+  // Get profile image URL on component mount - only run once
   useEffect(() => {
-    if (userData) {
+    if (userData && !profileImageUrl && !isProcessing && !hasVerified) {
+      console.log('🔍 useEffect: Setting up profile image and checking requirements');
+      setIsLoading(false);
       const profileUrl = SelfieVerificationService.getProfileImageUrl(userData);
       setProfileImageUrl(profileUrl);
       
-      if (!profileUrl) {
+      // Only show alert if user has no photos and we're not in a verification flow
+      if (!profileUrl && verificationStep === 'intro') {
+        console.log('⚠️ useEffect: No profile photo found, showing alert');
         Alert.alert(
           'Profile Photo Required',
           'Please add a profile photo before attempting verification. This helps us verify your identity.',
           [{ text: 'OK', onPress: () => router.back() }]
         );
       }
+    } else {
+      console.log('🔍 useEffect: Skipping setup', { 
+        hasUserData: !!userData, 
+        hasProfileImage: !!profileImageUrl, 
+        isProcessing, 
+        hasVerified 
+      });
     }
-  }, [userData]);
+  }, [userData, profileImageUrl, verificationStep, isProcessing, hasVerified]);
 
   // Start pulsing animation for camera
   const startPulseAnimation = () => {
@@ -126,8 +138,15 @@ export default function SelfieVerificationScreen() {
       return;
     }
 
+    // Prevent multiple verification attempts
+    if (hasVerified || isProcessing) {
+      console.log('⚠️ Verification already in progress or completed', { hasVerified, isProcessing });
+      return;
+    }
+
     setVerificationStep('processing');
     setIsProcessing(true);
+    setHasVerified(true);
     animateProgress();
 
     try {
@@ -191,6 +210,8 @@ export default function SelfieVerificationScreen() {
   const resetVerification = () => {
     setVerificationStep('intro');
     setCapturedImage(null);
+    setHasVerified(false);
+    setIsProcessing(false);
     pulseAnim.setValue(1);
     progressAnim.setValue(0);
   };
