@@ -594,7 +594,7 @@ const KindredSpirits: React.FC = () => {
             )}
             
             <View style={styles.gridContainer}>
-              {rest.slice(0, displayedUsers.length - 1).map((user) => (
+              {rest.map((user) => (
                 <View key={user.userId} style={styles.userCardContainer}>
                   <TouchableOpacity 
                     onPress={() => handleCardPress(user, false)}

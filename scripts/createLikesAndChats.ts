@@ -156,15 +156,15 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       data: doc.data() 
     }));
     
-  if (others.length < 10) {
-    console.warn(`⚠️  Only found ${others.length} other users. You might want to run the seed script first.`);
+  if (others.length < 25) {
+    console.warn(`⚠️  Only found ${others.length} other users. You might want to run the seed script first to create more users.`);
   }
   
   faker.helpers.shuffle(others);
   
-  // First 5 will just like current user, next 5 will be mutual matches
-  const dummyLikes = others.slice(0, Math.min(5, others.length));
-  const dummyMatches = others.slice(5, Math.min(10, others.length));
+  // First 20 will just like current user, next 5 will be mutual matches
+  const dummyLikes = others.slice(0, Math.min(20, others.length));
+  const dummyMatches = others.slice(20, Math.min(25, others.length));
   
   console.log(`📝 Creating ${dummyLikes.length} incoming likes and ${dummyMatches.length} mutual matches...`);
 
