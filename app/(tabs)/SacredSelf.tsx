@@ -42,7 +42,7 @@ export default function SacredSelf() {
     getRadianceStatus,
   } = useUserContext();
   
-  const verified = userData?.settings?.isSelfieVerified || false;
+  const verified = userData?.settings?.selfieVerification?.isVerified || false;
   const [showRadianceModal, setShowRadianceModal] = useState(false);
   const [showLotusModal, setshowLotusModal] = useState(false);
   const [showOuroborosTooltip, setShowOuroborosTooltip] = useState(false);

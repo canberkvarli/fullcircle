@@ -42,6 +42,7 @@ export default function SelfieVerificationScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   
   // Animations
@@ -157,14 +158,20 @@ export default function SelfieVerificationScreen() {
         await updateUserData({
           settings: {
             ...(userData.settings || {}),
-            isSelfieVerified: true,
-            selfieVerificationDate: new Date(),
+            selfieVerification: {
+              isVerified: true,
+              verifiedAt: new Date(),
+              status: 'verified',
+              reason: 'Verification successful',
+              lastAttemptAt: new Date(),
+              lastVerifiedAt: new Date()
+            }
           }
         });
         // Update verification status in Firestore
         await SelfieVerificationService.updateUserVerificationStatus(true, result.score);
         
-        setVerificationStep('success');
+        setShowSuccessModal(true);
       } else {
         setVerificationStep('failed');
       }
@@ -330,8 +337,8 @@ export default function SelfieVerificationScreen() {
   const renderSuccessStep = () => (
     <View style={styles.contentContainer}>
       <View style={styles.iconContainer}>
-        <View style={[styles.iconBackground, { backgroundColor: '#4CAF50' + '20' }]}>
-          <Ionicons name="checkmark-circle" size={48} color="#4CAF50" />
+        <View style={[styles.iconBackground, { backgroundColor: '#8B4513' + '20' }]}>
+          <Ionicons name="checkmark-circle" size={48} color="#8B4513" />
         </View>
       </View>
       
@@ -344,18 +351,18 @@ export default function SelfieVerificationScreen() {
       </Text>
       
       {verificationResult && (
-        <View style={[styles.verificationDetailsContainer, { backgroundColor: '#4CAF50' + '10' }]}>
+        <View style={[styles.verificationDetailsContainer, { backgroundColor: '#8B4513' + '10' }]}>
           <Text style={[styles.verificationDetailsTitle, fonts.spiritualBodyFont]}>
             Verification Details:
           </Text>
           <View style={styles.verificationDetailRow}>
-            <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+            <Ionicons name="checkmark-circle" size={16} color="#8B4513" />
             <Text style={[styles.verificationDetailText, fonts.captionFont]}>
               Similarity Score: {Math.round(verificationResult.score * 100)}%
             </Text>
           </View>
           <View style={styles.verificationDetailRow}>
-            <Ionicons name="shield-checkmark" size={16} color="#4CAF50" />
+            <Ionicons name="shield-checkmark" size={16} color="#8B4513" />
             <Text style={[styles.verificationDetailText, fonts.captionFont]}>
               Status: Verified
             </Text>
@@ -363,7 +370,7 @@ export default function SelfieVerificationScreen() {
         </View>
       )}
       
-      <View style={styles.benefitsContainer}>
+      <View style={[styles.benefitsContainer, { backgroundColor: '#8B4513' + '10', borderColor: '#8B4513' + '20' }]}>
         <Text style={[styles.benefitsTitle, fonts.spiritualBodyFont]}>
           Benefits Unlocked:
         </Text>
@@ -375,7 +382,7 @@ export default function SelfieVerificationScreen() {
           'Priority in our matching system'
         ].map((benefit, index) => (
           <View key={index} style={styles.benefitRow}>
-            <Ionicons name="star" size={16} color="#FFD700" />
+            <Ionicons name="star" size={16} color="#8B4513" />
             <Text style={[styles.benefitText, fonts.captionFont]}>
               {benefit}
             </Text>
@@ -500,6 +507,39 @@ export default function SelfieVerificationScreen() {
       >
         {renderContent()}
       </ScrollView>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+            <View style={styles.modalIconContainer}>
+              <View style={[styles.modalIconBackground, { backgroundColor: '#8B4513' + '20' }]}>
+                <Ionicons name="checkmark-circle" size={48} color="#8B4513" />
+              </View>
+            </View>
+            
+            <Text style={[styles.modalTitle, fonts.spiritualLargeTitleFont, { color: colors.textDark }]}>
+              Verification Complete! ✨
+            </Text>
+            
+            <Text style={[styles.modalDescription, fonts.spiritualBodyFont, { color: colors.textLight }]}>
+              Your identity has been verified! You now carry a verification badge, building greater trust with others seeking genuine connections.
+            </Text>
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: '#8B4513' }]} 
+              onPress={() => {
+                setShowSuccessModal(false);
+                router.push('/(tabs)/SacredSelf');
+              }}
+            >
+              <Text style={[styles.modalButtonText, fonts.buttonFont, { color: '#FFFFFF' }]}>
+                Back to Circle
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -630,12 +670,12 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     },
     benefitsContainer: {
       width: '100%',
-      backgroundColor: '#4CAF50' + '10',
+      backgroundColor: '#8B4513' + '10',
       borderRadius: BorderRadius.lg,
       padding: Spacing.lg,
       marginBottom: Spacing.xl,
       borderWidth: 1,
-      borderColor: '#4CAF50' + '20',
+      borderColor: '#8B4513' + '20',
     },
     benefitsTitle: {
       fontSize: Typography.sizes.lg,
@@ -775,7 +815,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       padding: Spacing.lg,
       marginBottom: Spacing.xl,
       borderWidth: 1,
-      borderColor: '#4CAF50' + '20',
+      borderColor: '#8B4513' + '20',
     },
     verificationDetailsTitle: {
       fontSize: Typography.sizes.lg,
@@ -795,6 +835,72 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
       marginLeft: Spacing.sm,
       flex: 1,
       lineHeight: 20,
+    },
+    // Modal styles
+    modalOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    },
+    modalContainer: {
+      width: '85%',
+      borderRadius: BorderRadius.xl,
+      padding: Spacing.xl,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    modalIconContainer: {
+      marginBottom: Spacing.lg,
+    },
+    modalIconBackground: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#8B4513' + '30',
+    },
+    modalTitle: {
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      textAlign: 'center',
+      marginBottom: Spacing.md,
+      letterSpacing: 0.5,
+    },
+    modalDescription: {
+      fontSize: Typography.sizes.base,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: Spacing.xl,
+      paddingHorizontal: Spacing.sm,
+    },
+    modalButton: {
+      borderRadius: BorderRadius.lg,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      width: '100%',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    modalButtonText: {
+      fontSize: Typography.sizes.base,
+      fontWeight: Typography.weights.semibold,
+      letterSpacing: 0.3,
     },
   });
 };

@@ -751,14 +751,14 @@ const PotentialMatch: React.FC<Props> = ({
           {/* Verification Status */}
           <View style={styles.verificationContainer}>
             <Ionicons 
-              name={currentPotentialMatch.settings?.isSelfieVerified ? "checkmark-circle" : "checkmark-circle-outline"} 
+              name={currentPotentialMatch.settings?.selfieVerification?.isVerified ? "checkmark-circle" : "checkmark-circle-outline"} 
               size={16} 
-              color={currentPotentialMatch.settings?.isSelfieVerified ? '#8B4513' : colors.textMuted} 
+              color={currentPotentialMatch.settings?.selfieVerification?.isVerified ? '#8B4513' : colors.textMuted} 
             />
             <Text style={[styles.verificationText, { 
-              color: currentPotentialMatch.settings?.isSelfieVerified ? '#8B4513' : colors.textMuted 
+              color: currentPotentialMatch.settings?.selfieVerification?.isVerified ? '#8B4513' : colors.textMuted 
             }]}>
-              {currentPotentialMatch.settings?.isSelfieVerified ? 'Verified' : 'Not verified'}
+              {currentPotentialMatch.settings?.selfieVerification?.isVerified ? 'Verified' : 'Not verified'}
             </Text>
           </View>
 

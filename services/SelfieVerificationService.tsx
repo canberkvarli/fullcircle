@@ -279,15 +279,25 @@ export class SelfieVerificationService {
 
       const userRef = firestore().collection('users').doc(user.uid);
       const updateData: any = {
-        'settings.isSelfieVerified': verified,
-        'settings.selfieVerificationDate': verified ? firestore.FieldValue.serverTimestamp() : null,
+        'settings.selfieVerification.isVerified': verified,
+        'settings.selfieVerification.verifiedAt': verified ? firestore.FieldValue.serverTimestamp() : null,
+        'settings.selfieVerification.status': verified ? 'verified' : 'failed',
+        'settings.selfieVerification.reason': verified ? 'Verification successful' : 'Verification failed',
+        'settings.selfieVerification.lastAttemptAt': firestore.FieldValue.serverTimestamp(),
+        'settings.selfieVerification.lastVerifiedAt': verified ? firestore.FieldValue.serverTimestamp() : null,
       };
       
-      if (score !== undefined) {
-        updateData.verificationScore = score;
-      }
+      // Clean up old fields
+      const cleanupData = {
+        'settings.isSelfieVerified': firestore.FieldValue.delete(),
+        'settings.selfieVerificationDate': firestore.FieldValue.delete(),
+        'verificationScore': firestore.FieldValue.delete()
+      };
       
-      await userRef.update(updateData);
+      await userRef.update({
+        ...updateData,
+        ...cleanupData
+      });
       
       console.log('✅ User verification status updated in Firestore');
     } catch (error: any) {

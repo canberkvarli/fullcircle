@@ -619,12 +619,12 @@ export default function UserSettings() {
             <View style={styles.rowContent}>
               <Text style={[styles.rowTitle, fonts.spiritualBodyFont]}>
                 Photo Verification
-                {userData.settings?.isSelfieVerified && (
+                {userData.settings?.selfieVerification?.isVerified && (
                   <Text> ✨</Text>
                 )}
               </Text>
               <Text style={[styles.rowDescription, fonts.captionFont]}>
-                {userData.settings?.isSelfieVerified 
+                {userData.settings?.selfieVerification?.isVerified
                   ? "Your photos are verified"
                   : "Verify your photos to build trust and get more matches"
                 }

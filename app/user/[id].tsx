@@ -656,16 +656,16 @@ const UserShow: React.FC = () => {
                 </View>
                 
                 <View style={styles.verificationContainer}>
-                  <Ionicons 
-                    name={currentUser.settings?.isSelfieVerified ? "checkmark-circle" : "checkmark-circle-outline"} 
-                    size={16} 
-                    color={currentUser.settings?.isSelfieVerified ? '#8B4513' : colors.textMuted} 
-                  />
-                  <Text style={[styles.verificationText, { 
-                    color: currentUser.settings?.isSelfieVerified ? '#8B4513' : colors.textMuted 
-                  }]}>
-                    {currentUser.settings?.isSelfieVerified ? 'Verified' : 'Not verified'}
-                  </Text>
+                                      <Ionicons 
+                      name={currentUser.settings?.selfieVerification?.isVerified ? "checkmark-circle" : "checkmark-circle-outline"} 
+                      size={16} 
+                      color={currentUser.settings?.selfieVerification?.isVerified ? '#8B4513' : colors.textMuted} 
+                    />
+                                         <Text style={[styles.verificationText, { 
+                       color: currentUser.settings?.selfieVerification?.isVerified ? '#8B4513' : colors.textMuted 
+                     }]}>
+                      {currentUser.settings?.selfieVerification?.isVerified ? 'Verified' : 'Not verified'}
+                    </Text>
                 </View>
 
                 <View style={[styles.connectionIntentRow, { 

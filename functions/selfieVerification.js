@@ -384,31 +384,28 @@ function assessFaceQuality(face) {
 
 async function storeVerificationResult(userId, result) {
   try {
+    // Store verification data only under the selfieVerification object in settings
     const verificationData = {
-      userId,
-      verified: result.verified,
-      reason: result.reason,
-      similarityScore: result.similarityScore,
-      confidence: result.confidence,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      // Note: selfieImage removed due to Firestore 1MB field size limit
-      // The image was successfully analyzed but not stored for audit
-      status: result.verified ? 'verified' : 'failed'
+      'settings.selfieVerification.isVerified': result.verified,
+      'settings.selfieVerification.verifiedAt': result.verified ? admin.firestore.FieldValue.serverTimestamp() : null,
+      'settings.selfieVerification.status': result.verified ? 'verified' : 'failed',
+      'settings.selfieVerification.reason': result.reason,
+      'settings.selfieVerification.lastAttemptAt': admin.firestore.FieldValue.serverTimestamp(),
+      'settings.selfieVerification.lastVerifiedAt': admin.firestore.FieldValue.serverTimestamp()
     };
 
-    // Store in user's verification history
-    await db.collection('users').doc(userId)
-      .collection('verifications')
-      .add(verificationData);
+    // Clean up old verification fields that should no longer exist
+    const cleanupData = {
+      'lastVerifiedAt': admin.firestore.FieldValue.delete(),
+      'settings.isSelfieVerified': admin.firestore.FieldValue.delete(),
+      'settings.selfieVerificationDate': admin.firestore.FieldValue.delete()
+    };
 
-    // Update user's verification status
-    if (result.verified) {
-      await db.collection('users').doc(userId).update({
-        isSelfieVerified: true,
-        selfieVerificationDate: admin.firestore.FieldValue.serverTimestamp(),
-        verificationScore: result.similarityScore
-      });
-    }
+    // Update user's verification status and clean up old fields
+    await db.collection('users').doc(userId).update({
+      ...verificationData,
+      ...cleanupData
+    });
 
     return true;
   } catch (error) {
@@ -417,40 +414,3 @@ async function storeVerificationResult(userId, result) {
   }
 }
 
-// Function to get verification history - V2 Format
-exports.getVerificationHistory = onCall(async (request) => {
-  const { data, auth } = request;
-  
-  if (!auth) {
-    throw new HttpsError('unauthenticated', 'User must be authenticated');
-  }
-
-  const { userId } = data;
-  
-  // Ensure the requesting user is the same as the userId
-  if (auth.uid !== userId) {
-    throw new HttpsError('permission-denied', 'You can only view your own verification history');
-  }
-  
-  try {
-    const snapshot = await db.collection('users').doc(userId)
-      .collection('verifications')
-      .orderBy('timestamp', 'desc')
-      .limit(10)
-      .get();
-
-    const verifications = [];
-    snapshot.forEach(doc => {
-      verifications.push({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp
-      });
-    });
-
-    return { verifications };
-  } catch (error) {
-    console.error('Failed to get verification history:', error);
-    throw new HttpsError('internal', 'Failed to get verification history: ' + error.message);
-  }
-});

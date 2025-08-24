@@ -162,8 +162,14 @@ interface PaymentResult {
 export type UserSettings = {
   isPaused?: boolean;
   showLastActiveStatus?: boolean;
-  isSelfieVerified?: boolean;
-  selfieVerificationDate?: Date;
+  selfieVerification?: {
+    isVerified: boolean;
+    verifiedAt: Date | null;
+    status: 'verified' | 'failed' | 'not_verified';
+    reason: string | null;
+    lastAttemptAt: Date | null;
+    lastVerifiedAt: Date | null;
+  };
   pushNotifications?: PushNotificationSettings;
   pushToken?: string;
   notificationPermissionStatus?: 'granted' | 'denied' | 'not-requested';
@@ -499,7 +505,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     settings: {
       isPaused: false,
       showLastActiveStatus: true,
-      isSelfieVerified: false,
+      selfieVerification: {
+        isVerified: false,
+        verifiedAt: null,
+        status: 'not_verified',
+        reason: null,
+        lastAttemptAt: null,
+        lastVerifiedAt: null
+      },
       pushNotifications: {
         enableAll: true,
         muteAll: false,
