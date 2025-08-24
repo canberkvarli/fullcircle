@@ -18,7 +18,8 @@ import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import SlidingTabBar from "@/components/SlidingTabBar";
-import { getSpiritualDrawLabels } from "@/constants/spiritualMappings"
+import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
+import { CustomIcon } from "@/components/CustomIcon";
 
 const HEADER_HEIGHT = 100;
 const HEADER_FADE_START = 80;
@@ -324,6 +325,10 @@ const UserShow: React.FC = () => {
     return shared;
   };
 
+  const connectionIntent = currentUser.matchPreferences?.connectionIntent || "romantic";
+  const hasFullCircleSubscription = userData?.subscription?.isActive || false;
+
+  // Get connection intent colors (restoring the dynamic colors based on intent)
   const getConnectionIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
@@ -356,7 +361,6 @@ const UserShow: React.FC = () => {
     }
   };
 
-  const connectionIntent = currentUser.matchPreferences?.connectionIntent || "romantic";
   const connectionColors = getConnectionIntentColors(connectionIntent);
 
   // Generate organized info cards (matching PotentialMatch)
@@ -419,7 +423,8 @@ const UserShow: React.FC = () => {
       cards.push({
         title: "Spiritual Practices",
         content: user.spiritualProfile.practices.slice(0, 3).join(", "),
-        icon: "leaf-outline",
+        icon: "meditation",
+        iconType: "custom",
         pillsData: user.spiritualProfile.practices,
         color: '#059669',
         type: 'info-card',
@@ -434,7 +439,8 @@ const UserShow: React.FC = () => {
       cards.push({
         title: "Healing Path",
         content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
-        icon: "medical-outline",
+        icon: "yinyang",
+        iconType: "custom",
         pillsData: user.spiritualProfile.healingModalities,
         color: '#0891B2',
         type: 'info-card',
@@ -451,7 +457,8 @@ const UserShow: React.FC = () => {
       cards.push({
         title: "Spiritual Draws",
         content: drawLabels.slice(0, 3).join(", "), // UPDATED: Use labels instead of values
-        icon: "heart-outline",
+        icon: "ohm",
+        iconType: "custom",
         pillsData: drawLabels, // UPDATED: Use labels instead of values
         pillsDataRaw: user.spiritualProfile.draws, // Raw values for shared item detection
         color: '#DC2626',
@@ -547,18 +554,28 @@ const UserShow: React.FC = () => {
 
   const InfoCardWithColor: React.FC<{
     title: string;
- content: string;
+    content: string;
     icon: string;
+    iconType?: "ionicon" | "custom";
     pillsData: string[];
     pillsDataRaw?: string[]; // Raw values for shared item detection when pills show labels
     customColor?: string;
     sharedItems?: string[];
     hasShared?: boolean;
-  }> = ({ title, content, icon, pillsData, pillsDataRaw, customColor, sharedItems = [], hasShared = false }) => {
+  }> = ({ title, content, icon, iconType = "ionicon", pillsData, pillsDataRaw, customColor, sharedItems = [], hasShared = false }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const shouldTruncate = pillsData.length > 4 || content.length > 120;
     const canExpand = shouldTruncate;
     const cardColor = customColor || colors.primary;
+
+    // Icon renderer function (matching PotentialMatch)
+    const renderIcon = (iconName: string, iconType: string, size: number, color: string) => {
+      if (iconType === "custom") {
+        return <CustomIcon name={iconName} size={size} color={color} />;
+      } else {
+        return <Ionicons name={iconName as any} size={size} color={color} />;
+      }
+    };
 
     const renderContent = () => {
       if (pillsData.length > 0) {
@@ -686,7 +703,7 @@ const UserShow: React.FC = () => {
       >
         <View style={styles.infoHeader}>
           <View style={[styles.iconContainer, { backgroundColor: cardColor + '15' }]}>
-            <Ionicons name={icon as any} size={18} color={cardColor} />
+            {renderIcon(icon, iconType, 18, cardColor)}
           </View>
           <Text style={[styles.infoTitle, { color: colors.textDark }]}>
             {title}
@@ -726,6 +743,7 @@ const UserShow: React.FC = () => {
           title={card.title}
           content={card.content}
           icon={card.icon}
+          iconType={card.iconType}
           pillsData={card.pillsData}
           pillsDataRaw={card.pillsDataRaw}
           customColor={card.color}
@@ -810,8 +828,8 @@ const UserShow: React.FC = () => {
                 style={styles.backButton}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               >
-                <Ionicons name="chevron-back" size={24} color={connectionColors.primary} />
-                <Text style={[styles.backText, fonts.spiritualBodyFont, { color: connectionColors.primary }]}>
+                <Ionicons name="chevron-back" size={24} color={colors.primary} />
+                <Text style={[styles.backText, fonts.spiritualBodyFont, { color: colors.primary }]}>
                   Back
                 </Text>
               </TouchableOpacity>
@@ -943,7 +961,7 @@ const UserShow: React.FC = () => {
               onPress={handleHeartPress}
               activeOpacity={0.8}
             >
-              <Ionicons name="heart" size={20} color={connectionColors.primary} />
+              <Ionicons name="heart" size={20} color={hasFullCircleSubscription ? '#FFD700' : '#E74C3C'} />
             </TouchableOpacity>
           </View>
         </>
@@ -992,7 +1010,7 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   marginLeft: 4,
   fontSize: Typography.sizes.base,
   fontWeight: Typography.weights.medium,
-  color: colors.primary, // Use consistent color instead of connectionColors.primary
+  color: colors.primary,
 },
   centerNameContainer: {
     position: "absolute",

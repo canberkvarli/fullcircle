@@ -12,8 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { CustomIcon } from "@/components/CustomIcon"; // Import your CustomIcon component
-import InfoCard from "@/components/InfoCard";
+import { CustomIcon } from "@/components/CustomIcon";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
