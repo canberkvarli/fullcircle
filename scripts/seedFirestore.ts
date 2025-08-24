@@ -4,9 +4,16 @@ import * as admin from "firebase-admin";
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
-import { SPIRITUAL_PRACTICES, HEALING_MODALITIES, SPIRITUAL_DRAWS } from "../constants/spiritualConstants";
+import { healingModalities } from "../constants/healingModalities";
+import { personalPractices } from "../constants/personalPractices";
+import { spiritualDraws } from "../constants/spiritualMappings";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
+// Extract just the names from the constants objects to create arrays of strings
+const HEALING_MODALITIES = healingModalities.map(modality => modality.name);
+const SPIRITUAL_PRACTICES = personalPractices.map(practice => practice.name);
+const SPIRITUAL_DRAWS = spiritualDraws.map(draw => draw.value);
 
 // Initialize Firebase Admin SDK with better error handling
 async function initializeFirebase() {

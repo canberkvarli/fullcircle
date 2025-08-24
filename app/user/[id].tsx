@@ -31,22 +31,26 @@ const MAX_PHOTO_SIZE = screenWidth - IMAGE_MARGIN;
 
 const UserShow: React.FC = () => {
   const router = useRouter();
-  const { user: userParam } = useLocalSearchParams();
+  const { navigationData: navigationDataParam } = useLocalSearchParams();
   
   // Add proper error handling for JSON parsing
   let initialUser: UserDataType;
-  try {
-    if (!userParam || typeof userParam !== 'string') {
-      console.error('❌ Invalid user parameter:', userParam);
+      let initialNavigationData: any = null;
+    
+    try {
+      if (navigationDataParam && typeof navigationDataParam === 'string') {
+        initialNavigationData = JSON.parse(navigationDataParam);
+        initialUser = initialNavigationData.user;
+      } else {
+        // Fallback for direct navigation or other sources
+        router.back();
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ JSON parse error for navigation data:', error, 'navigationDataParam:', navigationDataParam);
       router.back();
       return null;
     }
-    initialUser = JSON.parse(userParam);
-  } catch (error) {
-    console.error('❌ JSON parse error for user parameter:', error, 'userParam:', userParam);
-    router.back();
-    return null;
-  }
   
   // Early return if initialUser is not valid
   if (!initialUser || !initialUser.userId) {
@@ -68,12 +72,27 @@ const UserShow: React.FC = () => {
   const fonts = useFont();
 
   const [souls, setSouls] = useState<UserDataType[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [currentUser, setCurrentUser] = useState<UserDataType>(initialUser);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const lastLoadedPhotosFor = useRef<string | null>(null);
   const didSubscribe = useRef(false);
+  
+  // 🆕 FIX: Track the original order of users from Kindred Spirits
+  const [originalOrder, setOriginalOrder] = useState<UserDataType[]>(initialNavigationData?.allUsers || []);
+  const [currentPosition, setCurrentPosition] = useState(initialNavigationData?.currentIndex || 0);
+  
+
+
+  // Debug logging for originalOrder changes
+  useEffect(() => {
+    console.log('📋 Original order initialized with:', originalOrder.length, 'users');
+    console.log('📍 Current position set to:', currentPosition);
+    if (originalOrder.length > 0) {
+      console.log('👤 First user in original order:', originalOrder[0]?.firstName);
+      console.log('👤 Current user in original order:', originalOrder[currentPosition]?.firstName);
+    }
+  }, [originalOrder, currentPosition]);
 
   // Use consistent animation drivers - all useNativeDriver: true
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -94,51 +113,24 @@ const UserShow: React.FC = () => {
       // batch and update souls/currentUser/index:
       unstable_batchedUpdates(() => {
         setSouls(users);
-        if (users.length === 0) {
-          router.back();
+        
+        // 🆕 FIX: Initialize original order if this is the first time
+        if (originalOrder.length === 0) {
+          console.log('📋 Setting original order from subscription with', users.length, 'users');
+          setOriginalOrder(users);
+          // Find the current user's position in the new list
+          const position = users.findIndex(u => u.userId === currentUser.userId);
+          setCurrentPosition(position >= 0 ? position : 0);
+          console.log('📍 Set current position to:', position >= 0 ? position : 0);
         } else {
-          setCurrentIndex(0);
-          setCurrentUser(users[0]);
+          console.log('📋 Original order already set, not updating from subscription');
         }
+        
+        // Don't update currentUser here - let the navigation logic handle it
       });
     });
 
     return unsub;
-  }, [userData.userId]);
-
-  useEffect(() => {
-    if (!userData.userId) return;
-
-    // track the last snapshot payload so we don't re-render
-    let lastSnapshot: string | null = null;
-
-    const unsub = subscribeToReceivedLikes((users) => {
-      // serialize the list of IDs so we can do a deep compare
-      const key = users.map((u) => u.userId).join("|");
-      if (key === lastSnapshot) {
-        // identical payload → skip
-        return;
-      }
-      lastSnapshot = key;
-
-      // batch all three updates into one render
-      unstable_batchedUpdates(() => {
-        setSouls(users);
-
-        if (users.length === 0) {
-          // if nobody left, go back
-          router.back();
-        } else {
-          // if this is the very first snapshot, position on initialUser
-          const idx = users.findIndex((u) => u.userId === initialUser.userId);
-          const nextIndex = idx >= 0 ? idx : 0;
-          setCurrentIndex(nextIndex);
-          setCurrentUser(users[nextIndex]);
-        }
-      });
-    });
-
-    return () => unsub;
   }, [userData.userId]);
 
   useEffect(() => {
@@ -160,6 +152,9 @@ const UserShow: React.FC = () => {
         if (active) {
           setPhotoUrls(urls.filter((u): u is string => !!u));
         }
+      } else {
+        // Handle case where user has no photos
+        setPhotoUrls([]);
       }
       if (active) setLoadingPhotos(false);
     })();
@@ -167,39 +162,69 @@ const UserShow: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [currentUser.userId]);
+  }, [currentUser.userId, getImageUrl]);
 
   const handleHeartPress = async () => {
     const likedId = currentUser.userId;
-    const nextSouls = souls.filter((u) => u.userId !== likedId);
-
-    if (nextSouls.length) {
-      // show the next one right away
-      setSouls(nextSouls);
-      setCurrentIndex(0);
-      setCurrentUser(nextSouls[0]);
-    } else {
-      router.back();
+    
+    console.log('❤️ Like pressed for:', currentUser.firstName);
+    console.log('📍 Current position:', currentPosition);
+    console.log('📋 Original order length:', originalOrder.length);
+    
+    // 🆕 SIMPLE FIX: Just use originalOrder directly
+    let nextUser: UserDataType | null = null;
+    
+    if (originalOrder.length > 0) {
+      const nextPosition = currentPosition + 1;
+      if (nextPosition < originalOrder.length) {
+        nextUser = originalOrder[nextPosition];
+        setCurrentPosition(nextPosition);
+        console.log('✅ Next user:', nextUser.firstName);
+      }
     }
 
-    await likeMatch(likedId);
+    if (nextUser) {
+      // Call likeMatch first
+      await likeMatch(likedId);
+      
+      // Then show next user
+      setCurrentUser(nextUser);
+    } else {
+      console.log('🚪 No more users');
+      await likeMatch(likedId);
+    }
   };
 
   const handleDislikePress = async () => {
     const dislikedId = currentUser.userId;
-    const nextSouls = souls.filter((u) => u.userId !== dislikedId);
-
-    if (nextSouls.length) {
-      // show the next one right away
-      setSouls(nextSouls);
-      setCurrentIndex(0);
-      setCurrentUser(nextSouls[0]);
-    } else {
-      router.back();
-    }
     
-    // Call dislikeMatch to remove from backend
-    await dislikeMatch(dislikedId);
+    console.log('👎 Dislike pressed for:', currentUser.firstName);
+    console.log('📍 Current position:', currentPosition);
+    console.log('📋 Original order length:', originalOrder.length);
+    
+    // 🆕 SIMPLE FIX: Just use originalOrder directly
+    let nextUser: UserDataType | null = null;
+    
+    if (originalOrder.length > 0) {
+      const nextPosition = currentPosition + 1;
+      if (nextPosition < originalOrder.length) {
+        nextUser = originalOrder[nextPosition];
+        setCurrentPosition(nextPosition);
+        console.log('✅ Next user:', nextUser.firstName);
+      }
+    }
+
+    if (nextUser) {
+      // Call dislikeMatch first
+      await dislikeMatch(dislikedId);
+      
+      
+      // Then show next user
+      setCurrentUser(nextUser);
+    } else {
+      console.log('🚪 No more users');
+      await dislikeMatch(dislikedId);
+    }
   };
 
   // Helper functions (matching PotentialMatch)

@@ -798,7 +798,7 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: any) => {
       alignItems: 'center',
     },
     actionButtonText: {
-      color: '#FFFFFF',
+      color: '#B8860B',
       fontWeight: Typography.weights.semibold,
       fontSize: Typography.sizes.sm,
     },

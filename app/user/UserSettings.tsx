@@ -23,7 +23,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import { useFont } from "@/hooks/useFont";
 import { FIREBASE_AUTH, FUNCTIONS } from "@/services/FirebaseConfig";  
-import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+
 
 export default function UserSettings() {
   const router = useRouter();
@@ -63,6 +63,18 @@ export default function UserSettings() {
   // Animated values for smooth expand/collapse
   const phoneAnimation = useRef(new Animated.Value(0)).current;
   const emailAnimation = useRef(new Animated.Value(0)).current;
+  const loaderRotateAnim = useRef(new Animated.Value(0)).current;
+
+  // Initialize circular loader animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(loaderRotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
 
   // Toggle animations
   const togglePhoneExpand = () => {
@@ -727,14 +739,23 @@ export default function UserSettings() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <OuroborosLoader 
-                  size={50}
-                  duration={3000}
-                  fillColor="#F5E6D3"
-                  strokeColor="#7B6B5C"
-                  strokeWidth={1.5}
-                  loop={true}
-                />
+                <View style={[styles.circularLoader, { borderColor: '#8B4513' + '40' }]}>
+                  <Animated.View 
+                    style={[
+                      styles.circularLoaderInner, 
+                      { 
+                        borderColor: '#8B4513', 
+                        borderTopColor: 'transparent',
+                        transform: [{
+                          rotate: loaderRotateAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        }],
+                      }
+                    ]}
+                  />
+                </View>
               ) : (
                 <Text style={[styles.updateButtonText, fonts.buttonFont]}>Update Email</Text>
               )}
@@ -824,14 +845,23 @@ export default function UserSettings() {
             </View>
             
             {isConnectingGoogle ? (
-              <OuroborosLoader 
-                size={40}
-                duration={3000}
-                fillColor="#F5E6D3"
-                strokeColor="#7B6B5C"
-                strokeWidth={1.5}
-                loop={true}
-              />
+              <View style={[styles.circularLoader, { borderColor: '#8B4513' + '40' }]}>
+                <Animated.View 
+                  style={[
+                    styles.circularLoaderInner, 
+                    { 
+                      borderColor: '#8B4513', 
+                      borderTopColor: 'transparent',
+                      transform: [{
+                        rotate: loaderRotateAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '360deg'],
+                        }),
+                      }],
+                    }
+                  ]}
+                />
+              </View>
             ) : (
               <Switch
                 value={userData.settings?.connectedAccounts?.google || false}
@@ -1026,14 +1056,23 @@ export default function UserSettings() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <OuroborosLoader 
-                  size={50}
-                  duration={3000}
-                  fillColor="#F5E6D3"
-                  strokeColor="#7B6B5C"
-                  strokeWidth={1.5}
-                  loop={true}
-                />
+                <View style={[styles.circularLoader, { borderColor: '#8B4513' + '40' }]}>
+                  <Animated.View 
+                    style={[
+                      styles.circularLoaderInner, 
+                      { 
+                        borderColor: '#8B4513', 
+                        borderTopColor: 'transparent',
+                        transform: [{
+                          rotate: loaderRotateAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        }],
+                      }
+                    ]}
+                  />
+                </View>
               ) : (
                 <Text style={[styles.modalButtonText, fonts.buttonFont]}>Verify Code</Text>
               )}
@@ -1078,14 +1117,23 @@ export default function UserSettings() {
             
             {isLoading ? (
               <View style={styles.loaderContainer}>
-                <OuroborosLoader 
-                  size={50}
-                  duration={3000}
-                  fillColor="#F5E6D3"
-                  strokeColor="#7B6B5C"
-                  strokeWidth={1.5}
-                  loop={true}
-                />
+                <View style={[styles.circularLoader, { borderColor: '#8B4513' + '40' }]}>
+                  <Animated.View 
+                    style={[
+                      styles.circularLoaderInner, 
+                      { 
+                        borderColor: '#8B4513', 
+                        borderTopColor: 'transparent',
+                        transform: [{
+                          rotate: loaderRotateAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        }],
+                      }
+                    ]}
+                  />
+                </View>
               </View>
             ) : (
               <TouchableOpacity 
@@ -1479,6 +1527,22 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
     marketingSection: {
       marginTop: 30,
       paddingBottom: 20,
+    },
+    // Circular Loader Styles
+    circularLoader: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      borderWidth: 3,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    circularLoaderInner: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      borderWidth: 2,
+      borderTopColor: 'transparent',
     },
   });
 };

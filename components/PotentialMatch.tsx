@@ -18,7 +18,12 @@ import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
-import { cleanSpiritualProfileData, isValidSpiritualPractice, isValidHealingModality, isValidSpiritualDraw } from "@/constants/spiritualConstants";
+import { spiritualDraws } from "@/constants/spiritualMappings";
+
+
+const isValidSpiritualDraw = (draw: string): boolean => {
+  return spiritualDraws.some(d => d.value === draw);
+};
 
 const { width: screenWidth } = Dimensions.get("window");
 const IMAGE_MARGIN = Spacing.xl;

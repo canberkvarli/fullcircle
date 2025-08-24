@@ -12,6 +12,7 @@ import {
   Dimensions,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from "expo-router";
@@ -23,7 +24,7 @@ import RadianceScreen from "@/components/RadianceScreen";
 import LotusScreen from "@/components/LotusScreen";
 import OuroborosSVG from "@/components/ouroboros/OuroborosSVG";
 import OuroborosInfoModal from "@/components/modals/OuroborosInfoModal";
-import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -91,6 +92,7 @@ export default function SacredSelf() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const loaderRotateAnim = useRef(new Animated.Value(0)).current;
 
   // Initialize animations
   React.useEffect(() => {
@@ -120,6 +122,15 @@ export default function SacredSelf() {
         ])
       ).start();
     }
+
+    // Continuous rotation animation for circular loader
+    Animated.loop(
+      Animated.timing(loaderRotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      })
+    ).start();
   }, [isFullCircle]);
 
   const headerOpacity = scrollY.interpolate({
@@ -284,14 +295,22 @@ export default function SacredSelf() {
                   <>
                     {isProfileImageLoading && (
                       <View style={[styles.profileImageLoadingOverlay, { backgroundColor: colors.background + 'F0' }]}>
-                        <OuroborosLoader 
-                          size={40} 
-                          variant="spinner" 
-                          loop={true}
-                          duration={1500}
-                          fillColor={colors.primary}
-                          strokeColor={colors.primary}
-                        />
+                        <Animated.View 
+                          style={[
+                            styles.circularLoader, 
+                            { 
+                              borderColor: colors.primary + '40',
+                              transform: [{
+                                rotate: loaderRotateAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '360deg'],
+                                }),
+                              }],
+                            }
+                          ]}
+                        >
+                          <View style={[styles.circularLoaderInner, { borderColor: colors.primary, borderTopColor: 'transparent' }]} />
+                        </Animated.View>
                       </View>
                     )}
                     <Image
@@ -972,5 +991,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
+  // Circular Loader Styles
+  circularLoader: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  circularLoaderInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderTopColor: 'transparent',
+  },
 
 });

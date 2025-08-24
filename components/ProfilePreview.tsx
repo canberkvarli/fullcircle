@@ -9,12 +9,14 @@ import {
   useColorScheme,
   Platform,
   TouchableOpacity,
+  Animated,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { CustomIcon } from "@/components/CustomIcon";
 import { useUserContext, UserDataType } from "@/context/UserContext";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
+import { getSpiritualDrawLabels } from "@/constants/spiritualMappings";
 
 interface ProfilePreviewProps {
   userData: UserDataType;
@@ -31,8 +33,18 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const lastLoadedPhotosFor = useRef<string | null>(null);
+  const loaderRotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Initialize circular loader animation
+    Animated.loop(
+      Animated.timing(loaderRotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      })
+    ).start();
+
     // If photos are passed from edit screen (local URIs), use them directly
     if (passedPhotos && passedPhotos.length > 0) {
       setPhotoUrls(passedPhotos);
@@ -262,13 +274,14 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
       );
       
       if (meaningfulDraws.length > 0) {
+        const spiritualDrawLabels = getSpiritualDrawLabels(meaningfulDraws);
         sections.push({
           type: 'info-card',
           title: "Spiritual Draws",
-          content: meaningfulDraws.slice(0, 3).join(", "),
+          content: spiritualDrawLabels.slice(0, 3).join(", "),
           icon: "ohm",
           iconType: "custom",
-          pillsData: meaningfulDraws,
+          pillsData: spiritualDrawLabels, // Show beautiful labels instead of raw values
           color: '#DC2626',
           key: 'draws'
         });
@@ -283,16 +296,22 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({ userData, photos: passe
   if (loadingPhotos) {
     return (
       <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.loadingMandala, { backgroundColor: intentColors.secondary }]}>
-          <Ionicons 
-            name={connectionIntent === "romantic" ? "heart" 
-                 : connectionIntent === "friendship" ? "people" 
-                 : connectionIntent === "both" ? "infinite"
-                 : "sparkles"} 
-            size={32} 
-            color={intentColors.primary} 
-          />
-        </View>
+        <Animated.View 
+          style={[
+            styles.circularLoader, 
+            { 
+              borderColor: intentColors.primary + '40',
+              transform: [{
+                rotate: loaderRotateAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '360deg'],
+                }),
+              }],
+            }
+          ]}
+        >
+          <View style={[styles.circularLoaderInner, { borderColor: intentColors.primary, borderTopColor: 'transparent' }]} />
+        </Animated.View>
         <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: intentColors.primary }]}>
           Loading Beautiful Spirit...
         </Text>
@@ -724,13 +743,21 @@ const createStyles = (colors: any, fonts: any, intentColors: any) => StyleSheet.
     alignItems: "center",
     paddingHorizontal: Spacing.lg,
   },
-  loadingMandala: {
+  circularLoader: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: Spacing.lg,
+    borderWidth: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  circularLoaderInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderTopColor: 'transparent',
   },
   loadingText: {
     fontSize: Typography.sizes.lg,

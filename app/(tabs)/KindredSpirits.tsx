@@ -211,7 +211,14 @@ const KindredSpirits: React.FC = () => {
 
   const handleCardPress = (user: any, isFirst: boolean) => {
     if (hasFullCircle || isFirst) {
-      router.navigate(`/user/${user.userId}?user=${encodeURIComponent(JSON.stringify(user))}`);
+      // 🆕 FIX: Pass the full list of users and current position for proper navigation
+      const userIndex = displayedUsers.findIndex(u => u.userId === user.userId);
+      const navigationData = {
+        user: user,
+        allUsers: displayedUsers,
+        currentIndex: userIndex
+      };
+      router.navigate(`/user/${user.userId}?navigationData=${encodeURIComponent(JSON.stringify(navigationData))}`);
     } else {
       router.navigate({ pathname: "/user/FullCircleSubscription" });
     }
