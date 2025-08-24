@@ -223,6 +223,82 @@ const UserShow: React.FC = () => {
     return `${feet}'${inches}"`;
   };
 
+  // Helper function to find shared spiritual items (matching PotentialMatch)
+  const findSharedSpiritualItems = (currentUser: UserDataType | undefined, potentialMatch: UserDataType) => {
+    if (!currentUser?.spiritualProfile) return { practices: [], healingModalities: [], draws: [] };
+    
+    const shared = {
+      practices: [] as string[],
+      healingModalities: [] as string[],
+      draws: [] as string[]
+    };
+
+    // Helper function to check if someone has "Open to All" selected
+    const hasOpenToAll = (items: string[]) => items.includes("Open to All");
+    
+    // Compare spiritual practices
+    if (currentUser.spiritualProfile.practices && potentialMatch.spiritualProfile?.practices) {
+      const currentPractices = currentUser.spiritualProfile.practices;
+      const matchPractices = potentialMatch.spiritualProfile.practices;
+      
+      // If either person has "Open to All", show the OTHER person's specific practices as shared
+      if (hasOpenToAll(currentPractices)) {
+        // You have "Open to All" - show their specific choices as shared
+        shared.practices = matchPractices.filter(practice => practice !== "Open to All");
+      } else if (hasOpenToAll(matchPractices)) {
+        // They have "Open to All" - show their specific choices as shared (not all of yours!)
+        shared.practices = matchPractices.filter(practice => practice !== "Open to All");
+      } else {
+        // Normal exact matching
+        shared.practices = currentPractices.filter(practice => 
+          matchPractices.includes(practice)
+        );
+      }
+    }
+    
+    // Compare healing modalities
+    if (currentUser.spiritualProfile.healingModalities && potentialMatch.spiritualProfile?.healingModalities) {
+      const currentModalities = currentUser.spiritualProfile.healingModalities;
+      const matchModalities = potentialMatch.spiritualProfile.healingModalities;
+      
+      // If either person has "Open to All", show the OTHER person's specific modalities as shared
+      if (hasOpenToAll(currentModalities)) {
+        // You have "Open to All" - show their specific choices as shared
+        shared.healingModalities = matchModalities.filter(modality => modality !== "Open to All");
+      } else if (hasOpenToAll(matchModalities)) {
+        // They have "Open to All" - show their specific choices as shared (not all of yours!)
+        shared.healingModalities = matchModalities.filter(modality => modality !== "Open to All");
+      } else {
+        // Normal exact matching
+        shared.healingModalities = currentModalities.filter(modality => 
+          matchModalities.includes(modality)
+        );
+      }
+    }
+    
+    // Compare spiritual draws
+    if (currentUser.spiritualProfile.draws && potentialMatch.spiritualProfile?.draws) {
+      const currentDraws = currentUser.spiritualProfile.draws;
+      const matchDraws = potentialMatch.spiritualProfile.draws;
+      
+      // If either person has "Open to All", show the OTHER person's specific choices as shared
+      if (hasOpenToAll(currentDraws)) {
+        // You have "Open to All" - show their specific choices as shared
+        shared.draws = matchDraws.filter(draw => draw !== "Open to All");
+      } else if (hasOpenToAll(matchDraws)) {
+        // They have "Open to All" - show their specific choices as shared (not all of yours!)
+        shared.draws = matchDraws.filter(draw => draw !== "Open to All");
+      } else {
+        // Normal exact matching
+        shared.draws = currentDraws.filter(draw => 
+          matchDraws.includes(draw)
+        );
+      }
+    }
+    
+    return shared;
+  };
+
   const getConnectionIntentColors = (intent: string) => {
     if (intent === "romantic") {
       return {
@@ -259,7 +335,7 @@ const UserShow: React.FC = () => {
   const connectionColors = getConnectionIntentColors(connectionIntent);
 
   // Generate organized info cards (matching PotentialMatch)
-  const generateInfoCards = (user: UserDataType) => {
+  const generateInfoCards = (user: UserDataType, sharedItems: any) => {
     const cards = [];
     const warmNeutral = '#8B7355';
     
@@ -314,39 +390,49 @@ const UserShow: React.FC = () => {
 
     // 3. Spiritual Practices
     if (!isFieldHidden('spiritualPractices') && user.spiritualProfile?.practices && user.spiritualProfile.practices.length > 0) {
+      const hasShared = sharedItems.practices.length > 0;
       cards.push({
         title: "Spiritual Practices",
         content: user.spiritualProfile.practices.slice(0, 3).join(", "),
         icon: "leaf-outline",
         pillsData: user.spiritualProfile.practices,
         color: '#059669',
-        type: 'info-card'
+        type: 'info-card',
+        sharedItems: sharedItems.practices,
+        hasShared
       });
     }
 
     // 4. Healing Modalities
     if (!isFieldHidden('healingModalities') && user.spiritualProfile?.healingModalities && user.spiritualProfile.healingModalities.length > 0) {
+      const hasShared = sharedItems.healingModalities.length > 0;
       cards.push({
         title: "Healing Path",
         content: user.spiritualProfile.healingModalities.slice(0, 3).join(", "),
         icon: "medical-outline",
         pillsData: user.spiritualProfile.healingModalities,
         color: '#0891B2',
-        type: 'info-card'
+        type: 'info-card',
+        sharedItems: sharedItems.healingModalities,
+        hasShared
       });
     }
 
     // 5. Spiritual Draws
     if (!isFieldHidden('spiritualDraws') && user.spiritualProfile?.draws && user.spiritualProfile.draws.length > 0) {
       const drawLabels = getSpiritualDrawLabels(user.spiritualProfile.draws);
+      const hasShared = sharedItems.draws.length > 0;
       
       cards.push({
         title: "Spiritual Draws",
         content: drawLabels.slice(0, 3).join(", "), // UPDATED: Use labels instead of values
         icon: "heart-outline",
         pillsData: drawLabels, // UPDATED: Use labels instead of values
+        pillsDataRaw: user.spiritualProfile.draws, // Raw values for shared item detection
         color: '#DC2626',
-        type: 'info-card'
+        type: 'info-card',
+        sharedItems: sharedItems.draws,
+        hasShared
       });
     }
 
@@ -356,7 +442,11 @@ const UserShow: React.FC = () => {
   // Create content array (matching PotentialMatch logic)
   const createContent = () => {
     const content = [];
-    const infoCards = generateInfoCards(currentUser);
+    
+    // Find shared spiritual items between current user and the profile being viewed
+    const sharedItems = findSharedSpiritualItems(userData, currentUser);
+    
+    const infoCards = generateInfoCards(currentUser, sharedItems);
     const totalPhotos = photoUrls.length;
     
     const basicInfoCard = infoCards.find(card => card.type === 'basic-info');
@@ -432,11 +522,14 @@ const UserShow: React.FC = () => {
 
   const InfoCardWithColor: React.FC<{
     title: string;
-    content: string;
+ content: string;
     icon: string;
     pillsData: string[];
+    pillsDataRaw?: string[]; // Raw values for shared item detection when pills show labels
     customColor?: string;
-  }> = ({ title, content, icon, pillsData, customColor }) => {
+    sharedItems?: string[];
+    hasShared?: boolean;
+  }> = ({ title, content, icon, pillsData, pillsDataRaw, customColor, sharedItems = [], hasShared = false }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const shouldTruncate = pillsData.length > 4 || content.length > 120;
     const canExpand = shouldTruncate;
@@ -444,33 +537,110 @@ const UserShow: React.FC = () => {
 
     const renderContent = () => {
       if (pillsData.length > 0) {
-        const displayItems = isExpanded ? pillsData : pillsData.slice(0, 4);
-        const hasMore = pillsData.length > 4;
+        // If there are shared items, show ALL items (not just first 4)
+        // This ensures users see the complete shared connection
+        const shouldShowAll = hasShared && sharedItems.length > 0;
+        const displayItems = isExpanded || shouldShowAll ? pillsData : pillsData.slice(0, 4);
+        const hasMore = pillsData.length > 4 && !shouldShowAll;
         
         return (
-          <View style={styles.pillsContainer}>
-            {displayItems.map((item, index) => (
-              <View key={index} style={[styles.pill, { 
-                backgroundColor: cardColor + '20',
-                borderColor: cardColor + '40'
-              }]}>
-                <Text style={[styles.pillText, { color: cardColor }]}>{item}</Text>
-              </View>
-            ))}
-            {hasMore && !isExpanded && (
-              <TouchableOpacity 
-                style={[styles.pill, {
-                  backgroundColor: cardColor + '15',
-                  borderColor: cardColor + '30'
-                }]}
-                onPress={() => setIsExpanded(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.pillText, { color: cardColor, fontStyle: 'italic' }]}>
-                  +{pillsData.length - 4} more
+          <View>
+            {/* Shared items indicator */}
+            {hasShared && (
+              <View style={styles.sharedIndicator}>
+                <Text style={[styles.sharedText, { color: colors.textMuted }]}>
+                  • {sharedItems.length} shared
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
+            
+            <View style={styles.pillsContainer}>
+              {/* Show shared items FIRST for prominence */}
+              {displayItems
+                .filter((item, index) => {
+                  // Check if this item is shared using either pillsData or pillsDataRaw
+                  const isShared = pillsDataRaw 
+                    ? sharedItems.includes(pillsDataRaw[index]) // Use raw value for comparison
+                    : sharedItems.includes(item); // Fallback to direct comparison
+                  return isShared;
+                })
+                .map((item, index) => (
+                  <View key={`shared-${index}`} style={[
+                    styles.pill, 
+                    { 
+                      backgroundColor: cardColor + '40',
+                      borderColor: cardColor,
+                      borderWidth: 2,
+                      shadowColor: cardColor,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 4,
+                      elevation: 4,
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.pillText, 
+                      { 
+                        color: cardColor,
+                        fontWeight: Typography.weights.bold
+                      }
+                    ]}>
+                      {item}
+                    </Text>
+                  </View>
+                ))}
+              
+              {/* Then show non-shared items */}
+              {displayItems
+                .filter((item, index) => {
+                  // Check if this item is shared using either pillsData or pillsDataRaw
+                  const isShared = pillsDataRaw 
+                    ? sharedItems.includes(pillsDataRaw[index]) // Use raw value for comparison
+                    : sharedItems.includes(item); // Fallback to direct comparison
+                  return !isShared;
+                })
+                .map((item, index) => (
+                  <View key={`non-shared-${index}`} style={[
+                    styles.pill, 
+                    { 
+                      backgroundColor: cardColor + '20',
+                      borderColor: cardColor + '30',
+                      borderWidth: 1,
+                      shadowColor: 'transparent',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: 0,
+                      shadowRadius: 0,
+                      elevation: 0,
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.pillText, 
+                      { 
+                        color: colors.textMuted,
+                        fontWeight: Typography.weights.regular
+                      }
+                    ]}>
+                      {item}
+                    </Text>
+                  </View>
+                ))}
+              
+              {/* Show "more" button if needed */}
+              {hasMore && !isExpanded && (
+                <TouchableOpacity 
+                  style={[styles.pill, {
+                    backgroundColor: cardColor + '15',
+                    borderColor: cardColor + '30'
+                  }]}
+                  onPress={() => setIsExpanded(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.pillText, { color: cardColor, fontStyle: 'italic' }]}>
+                    +{pillsData.length - 4} more
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         );
       }
@@ -532,7 +702,10 @@ const UserShow: React.FC = () => {
           content={card.content}
           icon={card.icon}
           pillsData={card.pillsData}
+          pillsDataRaw={card.pillsDataRaw}
           customColor={card.color}
+          sharedItems={card.sharedItems}
+          hasShared={card.hasShared}
         />
       );
     }
@@ -1051,6 +1224,23 @@ const createStyles = (colors: any, fonts: any, connectionColors: any) => StyleSh
   loadingText: {
     fontSize: Typography.sizes.lg,
     fontStyle: 'italic',
+  },
+
+  sharedIndicator: {
+    marginBottom: Spacing.sm,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignSelf: 'flex-start',
+  },
+
+  sharedText: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.regular,
+    textAlign: 'left',
+    opacity: 0.6,
   },
 });
 

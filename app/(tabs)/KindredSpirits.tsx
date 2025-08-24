@@ -76,6 +76,9 @@ const KindredSpirits: React.FC = () => {
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const router = useRouter();
   
+  // Track if we're already subscribed to prevent multiple subscriptions
+  const isSubscribedRef = useRef(false);
+  
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const fonts = useFont();
@@ -87,9 +90,17 @@ const KindredSpirits: React.FC = () => {
   const loadingPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!userData.userId) return;
+    if (!userData.userId) {
+      return;
+    }
+    
+    // Prevent multiple subscriptions
+    if (isSubscribedRef.current) {
+      return;
+    }
     
     setIsLoading(true);
+    isSubscribedRef.current = true;
     
     // Start loading animation
     Animated.loop(
@@ -101,12 +112,30 @@ const KindredSpirits: React.FC = () => {
       { resetBeforeIteration: true }
     ).start();
 
-    const unsubscribe = subscribeToReceivedLikes((users) => {
-      setLikedByUsers(users);
-      setIsLoading(false);
+    subscribeToReceivedLikes((users) => {
+      try {
+        // Only update if we actually received valid data
+        if (users && Array.isArray(users)) {
+          setLikedByUsers(users);
+        } else {
+          // Don't clear existing users if we get invalid data
+          if (likedByUsers.length === 0) {
+            setLikedByUsers([]);
+          }
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('❌ Error in subscribeToReceivedLikes callback:', error);
+        // Don't clear existing users on error, just stop loading
+        setIsLoading(false);
+      }
     });
-    return unsubscribe;
-  }, [userData.userId, subscribeToReceivedLikes]);
+
+    return () => {
+      isSubscribedRef.current = false;
+    };
+  }, [userData.userId]); // Remove subscribeToReceivedLikes from dependencies
 
   // Check radiance time remaining
   useEffect(() => {
@@ -318,6 +347,11 @@ const KindredSpirits: React.FC = () => {
   const radianceConfig = getRadianceButtonConfig();
 
   // Show loading animation while data is being fetched
+  // Safety check: if we have users but still loading, something went wrong - stop loading
+  if (isLoading && likedByUsers.length > 0) {
+    setIsLoading(false);
+  }
+  
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>

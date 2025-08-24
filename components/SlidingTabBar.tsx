@@ -109,9 +109,9 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
           renderIcon={() => (
             <View style={styles.ouroborosContainer}>
               <OuroborosSVG
-                size={18}
-                fillColor={colors.textMuted}
-                strokeColor={colors.textMuted}
+                size={55}
+                fillColor={userData?.subscription?.isActive ? "#F5E6D3" : "#8B4513"}
+                strokeColor={userData?.subscription?.isActive ? "#B8860B" : "#BFA98A"}
                 strokeWidth={0.8}
               />
             </View>
@@ -124,7 +124,7 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
           onPress={() => handleTabPress('/KindredSpirits')}
           renderIcon={() => (
             <LikedByIconWithBadge 
-              color={colors.textMuted} 
+              color={userData?.subscription?.isActive ? '#DAA520' : '#8B4513'} 
               size={25} 
             />
           )}
@@ -136,7 +136,7 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
           onPress={() => handleTabPress('/SoulChats')}
           renderIcon={() => (
             <MatchesIconWithBadge 
-              color={colors.textMuted} 
+              color={userData?.subscription?.isActive ? '#DAA520' : '#8B4513'} 
               size={25} 
             />
           )}
@@ -145,14 +145,14 @@ const SlidingTabBar: React.FC<SlidingTabBarProps> = ({ translateY }) => {
         <TabItem
           renderIcon={() => (
             userData?.photos?.[0] ? (
-              <View style={[styles.avatarContainer, { borderColor: '#8B4513' + '40' }]}>
+              <View style={[styles.avatarContainer, { borderColor: (userData?.subscription?.isActive ? '#DAA520' : '#8B4513') + '40' }]}>
                 <Image
                   source={{ uri: userData.photos[0] }}
                   style={styles.avatar}
                 />
               </View>
             ) : (
-              <Ionicons name="person" size={25} color={colors.textMuted} />
+              <Ionicons name="person" size={25} color={userData?.subscription?.isActive ? '#DAA520' : '#8B4513'} />
             )
           )}
           label="Self"
@@ -219,8 +219,8 @@ const styles = StyleSheet.create({
   },
   
   ouroborosContainer: {
-    width: 20,
-    height: 20,
+    width: 25,
+    height: 25,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2, // Small adjustment to center better with text

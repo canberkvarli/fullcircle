@@ -245,6 +245,12 @@ const SoulChats: React.FC = () => {
             ? match.lastMessageSender !== userData.userId
             : false; // Don't mark as unread if there's no message
 
+          // Check if this is a new match (no messages yet)
+          const isNewMatch = !match.lastMessage && !match.lastMessageSender;
+          
+          // Apply enhanced styling for new matches (bold text, enhanced avatar)
+          const shouldEnhance = isUnread || isNewMatch;
+
           const connectionMethods = getConnectionMethods(match);
           const connectionStyle = getConnectionStyle(connectionMethods);
 
@@ -261,8 +267,8 @@ const SoulChats: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <View style={styles.avatarWrapper}>
-                  {/* Enhanced unread glow with connection-specific colors */}
-                  {isUnread && (
+                  {/* Enhanced glow with connection-specific colors for unread OR new matches */}
+                  {shouldEnhance && (
                     <>
                       <View style={[styles.unreadOuterGlow, { backgroundColor: connectionStyle.shadowColor + '15' }]} />
                       <View style={[styles.unreadInnerGlow, { backgroundColor: connectionStyle.shadowColor + '08' }]} />
@@ -274,13 +280,13 @@ const SoulChats: React.FC = () => {
                     styles.avatarContainer, 
                     { 
                       backgroundColor: colors.border,
-                      borderColor: isUnread ? connectionStyle.borderColor : colors.border,
-                      borderWidth: isUnread ? 3 : 2,
-                      shadowColor: isUnread ? connectionStyle.shadowColor : '#000',
-                      shadowOffset: { width: 0, height: isUnread ? 4 : 2 },
-                      shadowOpacity: isUnread ? 0.3 : 0.1,
-                      shadowRadius: isUnread ? 8 : 4,
-                      elevation: isUnread ? 8 : 3,
+                      borderColor: shouldEnhance ? connectionStyle.borderColor : colors.border,
+                      borderWidth: shouldEnhance ? 3 : 2,
+                      shadowColor: shouldEnhance ? connectionStyle.shadowColor : '#000',
+                      shadowOffset: { width: 0, height: shouldEnhance ? 4 : 2 },
+                      shadowOpacity: shouldEnhance ? 0.3 : 0.1,
+                      shadowRadius: shouldEnhance ? 8 : 4,
+                      elevation: shouldEnhance ? 8 : 3,
                     }
                   ]}>
                     {match.photos[0] ? (
@@ -294,6 +300,7 @@ const SoulChats: React.FC = () => {
                   </View>
                   
                   {/* Connection Method Icon - Top Right of Avatar */}
+                  {/* Connection indicators on avatar (top-right) */}
                   {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                     <View style={styles.connectionIndicators}>
                       {connectionMethods.theirMethod.viaLotus && (
@@ -309,8 +316,8 @@ const SoulChats: React.FC = () => {
                     </View>
                   )}
                   
-                  {/* Enhanced unread indicator with connection-specific center */}
-                  {isUnread && (
+                  {/* Enhanced indicator with connection-specific center for unread OR new matches */}
+                  {shouldEnhance && (
                     <View style={styles.unreadDot}>
                       <View style={[styles.unreadDotInner, { backgroundColor: connectionStyle.borderColor }]} />
                       <View style={[styles.unreadDotCenter, { backgroundColor: connectionStyle.borderColor }]} />
@@ -325,7 +332,7 @@ const SoulChats: React.FC = () => {
                     styles.matchName, 
                     fonts.spiritualBodyFont,
                     { color: colors.textDark },
-                    isUnread && styles.unreadText
+                    shouldEnhance && styles.unreadText
                   ]}>
                     {match.firstName}
                   </Text>
@@ -351,8 +358,8 @@ const SoulChats: React.FC = () => {
                       <Text style={[
                         styles.timeText, 
                         fonts.spiritualBodyFont, 
-                        { color: isUnread ? connectionStyle.textColor : colors.textMuted },
-                        isUnread && styles.unreadTimeText
+                        { color: shouldEnhance ? connectionStyle.textColor : colors.textMuted },
+                        shouldEnhance && styles.unreadTimeText
                       ]}>
                         {formatTime(match.lastMessageTimestamp)}
                       </Text>
@@ -365,10 +372,10 @@ const SoulChats: React.FC = () => {
                       fonts.spiritualBodyFont,
                       { 
                         color: match.lastMessage 
-                          ? (isUnread ? colors.textDark : colors.textMuted)
+                          ? (shouldEnhance ? colors.textDark : colors.textMuted)
                           : colors.textMuted // Always use muted color for placeholder text
                       },
-                      isUnread && match.lastMessage && styles.unreadMessageText
+                      shouldEnhance && match.lastMessage && styles.unreadMessageText
                     ]}
                     numberOfLines={2}
                     ellipsizeMode="tail"
@@ -385,7 +392,7 @@ const SoulChats: React.FC = () => {
                   <Ionicons 
                     name="chevron-forward" 
                     size={20} 
-                    color={isUnread ? connectionStyle.textColor : colors.textMuted}
+                    color={shouldEnhance ? connectionStyle.textColor : colors.textMuted}
                   />
                 </View>
               </TouchableOpacity>
@@ -622,6 +629,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
+
+  
   // Enhanced unread dot with connection-specific center
   unreadDot: {
     position: 'absolute',
@@ -752,7 +761,7 @@ const styles = StyleSheet.create({
   },
   
   bottomSpacing: {
-    height: Spacing['3xl'],
+    height: Spacing['4xl'] + 20, // Increased spacing to prevent bottom tab cutoff
   },
 });
 

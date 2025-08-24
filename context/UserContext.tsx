@@ -2813,6 +2813,13 @@ const verifyPhoneAndSetUser = async (
           throw new Error("DAILY_LIMIT_REACHED");
         }
       }
+      
+      // Log current context for debugging
+      console.log(`🔍 Like context - Current matchingState:`, {
+        hasPotentialMatches: matchingStateRef.current.potentialMatches?.length > 0,
+        potentialMatchesCount: matchingStateRef.current.potentialMatches?.length || 0,
+        exclusionSetSize: matchingStateRef.current.exclusionSet?.size || 0
+      });
 
       // Check if the TARGET USER (person being liked) has radiance
       let targetHasRadiance = false;
@@ -2893,18 +2900,29 @@ const verifyPhoneAndSetUser = async (
       // Only rollback exclusion for certain errors
       if (error.message !== "DAILY_LIMIT_REACHED" && !error.message?.includes('already matched')) {
         console.log(`🔄 Rolling back exclusion for ${matchId} due to error:`, error.message);
+        
+        // Safely rollback the exclusion
         setMatchingState(prev => {
           const newSet = new Set(prev.exclusionSet);
           newSet.delete(matchId);
           
-          // Add user back to potentialMatches if rollback
-          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          // Only try to restore user if we have potentialMatches (Connect screen context)
+          if (prev.potentialMatches && prev.potentialMatches.length > 0) {
+            const userToRestore = prev.potentialMatches.find(u => u.userId === matchId);
+            if (userToRestore) {
+              const newMatches = [...prev.potentialMatches, userToRestore];
+              return { 
+                ...prev, 
+                exclusionSet: newSet,
+                potentialMatches: newMatches
+              };
+            }
+          }
           
+          // If no potentialMatches or user not found, just update exclusion set
           return { 
             ...prev, 
-            exclusionSet: newSet,
-            potentialMatches: newMatches
+            exclusionSet: newSet
           };
         });
       }
@@ -3019,13 +3037,23 @@ const verifyPhoneAndSetUser = async (
           const newSet = new Set(prev.exclusionSet);
           newSet.delete(matchId);
           
-          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          // Only try to restore user if we have potentialMatches (Connect screen context)
+          if (prev.potentialMatches && prev.potentialMatches.length > 0) {
+            const userToRestore = prev.potentialMatches.find(u => u.userId === matchId);
+            if (userToRestore) {
+              const newMatches = [...prev.potentialMatches, userToRestore];
+              return { 
+                ...prev, 
+                exclusionSet: newSet,
+                potentialMatches: newMatches
+              };
+            }
+          }
           
+          // If no potentialMatches or user not found, just update exclusion set
           return { 
             ...prev, 
-            exclusionSet: newSet,
-            potentialMatches: newMatches
+            exclusionSet: newSet
           };
         });
         
@@ -3101,13 +3129,23 @@ const verifyPhoneAndSetUser = async (
           const newSet = new Set(prev.exclusionSet);
           newSet.delete(matchId);
           
-          const userToRestore = matchingStateRef.current.potentialMatches.find(u => u.userId === matchId);
-          const newMatches = userToRestore ? [...prev.potentialMatches, userToRestore] : prev.potentialMatches;
+          // Only try to restore user if we have potentialMatches (Connect screen context)
+          if (prev.potentialMatches && prev.potentialMatches.length > 0) {
+            const userToRestore = prev.potentialMatches.find(u => u.userId === matchId);
+            if (userToRestore) {
+              const newMatches = [...prev.potentialMatches, userToRestore];
+              return { 
+                ...prev, 
+                exclusionSet: newSet,
+                potentialMatches: newMatches
+              };
+            }
+          }
           
+          // If no potentialMatches or user not found, just update exclusion set
           return { 
             ...prev, 
-            exclusionSet: newSet,
-            potentialMatches: newMatches
+            exclusionSet: newSet
           };
         });
       }
@@ -3122,49 +3160,34 @@ const verifyPhoneAndSetUser = async (
     viaLotus: boolean = false,
     viaRadiance: boolean = false
   ): Promise<void> => {
-    console.log('🔥 Using batch approach for like...', { viaLotus, viaRadiance });
-    
-    try {
-      const fromRef = FIRESTORE.collection("users").doc(fromUserId);
-      const toRef = FIRESTORE.collection("users").doc(toUserId);
-      const givenRef = fromRef.collection("likesGiven").doc(toUserId);
-      const receivedRef = toRef.collection("likesReceived").doc(fromUserId);
-      const incomingRef = fromRef.collection("likesReceived").doc(toUserId);
+          try {
+        // 🔒 SECURITY FIX: Only write to our own documents to avoid permission issues
+        const fromRef = FIRESTORE.collection("users").doc(fromUserId);
+        const givenRef = fromRef.collection("likesGiven").doc(toUserId);
+        const incomingRef = fromRef.collection("likesReceived").doc(toUserId);
       
-      console.log('🔥 Reading current user data...');
-      const [fromSnap, toSnap, incomingSnap] = await Promise.all([
-        fromRef.get(),
-        toRef.get(),
-        incomingRef.get()
-      ]);
-      
-      if (!fromSnap.exists || !toSnap.exists) {
-        throw new Error('User documents do not exist');
-      }
-      
-      // ✅ NEW: Check if we already have this user in our likesGiven (shouldn't happen but let's be safe)
-      const alreadyLikedSnap = await givenRef.get();
-      if (alreadyLikedSnap.exists) {
-        console.log('⚠️ Already liked this user, checking for match...');
-        // Check if they're already matched
-        const matchRef = fromRef.collection("matches").doc(toUserId);
-        const matchSnap = await matchRef.get();
-        if (matchSnap.exists) {
-          throw new Error('Users are already matched');
+              const [fromSnap, incomingSnap] = await Promise.all([
+          fromRef.get(),
+          incomingRef.get()
+        ]);
+        
+        if (!fromSnap.exists) {
+          throw new Error('User document does not exist');
         }
-      }
-      
-      const fromData: any = fromSnap.data()!;
-      const toData = toSnap.data()!;
-      const hadLikedUs = incomingSnap.exists;
-      
-      console.log('🔥 Data loaded:', { 
-        fromExists: fromSnap.exists, 
-        toExists: toSnap.exists, 
-        hadLikedUs,
-        fromLikesGiven: fromData.likesGivenCount,
-        hasActiveRadiance: hasActiveRadiance(fromData)
-      });
+        
+        // Check if we already have this user in our likesGiven
+        const alreadyLikedSnap = await givenRef.get();
+        if (alreadyLikedSnap.exists) {
+          // Check if they're already matched
+          const matchRef = fromRef.collection("matches").doc(toUserId);
+          const matchSnap = await matchRef.get();
+          if (matchSnap.exists) {
+            throw new Error('Users are already matched');
+          }
+        }
+        
+        const fromData: any = fromSnap.data()!;
+        const hadLikedUs = incomingSnap.exists;
       
       // Check lotus allowance
       if (viaLotus && (fromData.numOfLotus ?? 0) < 1) {
@@ -3204,104 +3227,68 @@ const verifyPhoneAndSetUser = async (
         fromUpdates.numOfLotus = Math.max(0, (fromData.numOfLotus ?? 0) - 1);
       }
       
-      // Handle mutual match creation
-      if (hadLikedUs) {
-        console.log('🔥 MUTUAL LIKE DETECTED - Creating match...');
-        
-        // Get the original like data to preserve connection method
-        const incomingLikeData = incomingSnap.data();
-        const originalviaLotus = incomingLikeData?.viaLotus || false;
-        const originalViaRadiance = incomingLikeData?.viaRadiance || false;
-        
-        // Remove the incoming like since we're creating a match
-        batch.delete(incomingRef);
-        fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
-        
-        const myMatchRef = fromRef.collection("matches").doc(toUserId);
-        const theirMatchRef = toRef.collection("matches").doc(fromUserId);
-        
-        // Store match data with connection methods from both sides
-        const matchData = {
-          timestamp: firestore.FieldValue.serverTimestamp(),
-          myConnectionMethod: {
-            viaLotus,
-            viaRadiance
-          },
-          theirConnectionMethod: {
-            viaLotus: originalviaLotus,
-            viaRadiance: originalViaRadiance
-          }
-        };
-        
-        const theirMatchData = {
-          timestamp: firestore.FieldValue.serverTimestamp(),
-          myConnectionMethod: {
-            viaLotus: originalviaLotus,
-            viaRadiance: originalViaRadiance
-          },
-          theirConnectionMethod: {
-            viaLotus,
-            viaRadiance
-          }
-        };
-        
-        batch.set(myMatchRef, matchData);
-        batch.set(theirMatchRef, theirMatchData);
-        
-        fromUpdates.matches = firestore.FieldValue.arrayUnion(toUserId);
-        
-        // Create chat with connection method metadata
-        const chatId = [fromUserId, toUserId].sort().join("_");
-        const chatRef = FIRESTORE.collection("chats").doc(chatId);
-        
-        batch.set(chatRef, {
-          participants: [fromUserId, toUserId],
-          messages: [],
-          lastMessage: "",
-          lastMessageSender: "",
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          lastUpdated: firestore.FieldValue.serverTimestamp(),
-          connectionMethods: {
-            [fromUserId]: { viaLotus, viaRadiance },
-            [toUserId]: { viaLotus: originalviaLotus, viaRadiance: originalViaRadiance }
-          }
-        });
-        
-        // Update the other user for the match
-        batch.update(toRef, {
-          matches: firestore.FieldValue.arrayUnion(fromUserId),
-          likesGivenCount: Math.max(0, (toData.likesGivenCount ?? 1) - 1),
-        });
-        
-        console.log('🔥 Match and chat will be created with connection methods:', {
-          current: { viaLotus, viaRadiance },
-          original: { viaLotus: originalviaLotus, viaRadiance: originalViaRadiance }
-        });
-      } else {
-        // Only for NON-MUTUAL likes: create received like record and increment counter
-        console.log('🔥 Creating received like record (not mutual)');
-        
-        const receivedLikeData = {
-          matchId: fromUserId,
-          viaLotus,
-          viaRadiance,
-          timestamp: firestore.FieldValue.serverTimestamp(),
-        };
-        
-        batch.set(receivedRef, receivedLikeData);
-        
-        // Increment the receiver's likesReceivedCount
-        batch.update(toRef, {
-          likesReceivedCount: (toData.likesReceivedCount ?? 0) + 1,
-        });
-      }
+              // Handle mutual match creation
+        if (hadLikedUs) {
+          // Get the original like data to preserve connection method
+          const incomingLikeData = incomingSnap.data();
+          const originalviaLotus = incomingLikeData?.viaLotus || false;
+          const originalViaRadiance = incomingLikeData?.viaRadiance || false;
+          
+          // Remove the incoming like since we're creating a match
+          batch.delete(incomingRef);
+          fromUpdates.likesReceivedCount = Math.max(0, (fromData.likesReceivedCount ?? 1) - 1);
+          
+          const myMatchRef = fromRef.collection("matches").doc(toUserId);
+          
+          // Store match data with connection methods from both sides
+          const matchData = {
+            timestamp: firestore.FieldValue.serverTimestamp(),
+            myConnectionMethod: {
+              viaLotus,
+              viaRadiance
+            },
+            theirConnectionMethod: {
+              viaLotus: originalviaLotus,
+              viaRadiance: originalViaRadiance
+            }
+          };
+          
+          batch.set(myMatchRef, matchData);
+          
+          fromUpdates.matches = firestore.FieldValue.arrayUnion(toUserId);
+          
+          // Create chat with connection method metadata
+          const chatId = [fromUserId, toUserId].sort().join("_");
+          const chatRef = FIRESTORE.collection("chats").doc(chatId);
+          
+          batch.set(chatRef, {
+            participants: [fromUserId, toUserId],
+            messages: [],
+            lastMessage: "",
+            lastMessageSender: "",
+            createdAt: firestore.FieldValue.serverTimestamp(),
+            lastUpdated: firestore.FieldValue.serverTimestamp(),
+            connectionMethods: {
+              [fromUserId]: { viaLotus, viaRadiance },
+              [toUserId]: { viaLotus: originalviaLotus, viaRadiance: originalViaRadiance }
+            }
+          });
+        } else {
+          // Only for NON-MUTUAL likes: create received like record
+        }
       
       // Always update the sender (fromUser)
       batch.update(fromRef, fromUpdates);
       
-      console.log('🔥 Committing batch...');
-      await batch.commit();
-      console.log('✅ Batch committed successfully');
+      try {
+        await batch.commit();
+      } catch (commitError: any) {
+        // Check if it's a permission error
+        if (commitError.code === 'permission-denied') {
+          throw new Error('Permission denied: Unable to create like due to security restrictions. This may require a Cloud Function to handle cross-user operations.');
+        }
+        throw commitError;
+      }
       
       // Update local state
       if (viaLotus && !userData.subscription?.isActive) {
@@ -3316,12 +3303,6 @@ const verifyPhoneAndSetUser = async (
           likesGivenCount: (prev.likesGivenCount ?? 0) + 1,
         }));
       }
-      
-      if (hadLikedUs) {
-        console.log('🎉 MUTUAL MATCH CREATED WITH CONNECTION TRACKING!');
-      }
-      
-      console.log('🔥 Local state updated');
       
     } catch (error) {
       console.error('❌ Batch approach failed:', error);
