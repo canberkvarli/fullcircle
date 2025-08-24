@@ -1,45 +1,88 @@
-// selfieVerification.js
+// selfieVerification.js - Updated for Cloud Functions v2
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { setGlobalOptions } = require('firebase-functions/v2');
 const admin = require('firebase-admin');
 const vision = require('@google-cloud/vision');
 const configLoader = require('./configLoader');
 
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+// Set global options for v2
+setGlobalOptions({
+  region: 'us-central1',
+  maxInstances: 10,
+  memory: '1GiB',
+  timeoutSeconds: 60
+});
+
 // Initialize Firestore
 const db = admin.firestore();
 
-// Initialize Google Cloud Vision client using configLoader
-const visionClient = new vision.ImageAnnotatorClient({
-  credentials: configLoader.get('visionCredentials'),
-  projectId: configLoader.get('projectId')
-});
-
-// Function to verify selfie using Google Cloud Vision API
-exports.verifySelfie = onCall({
-  enforceAppCheck: false,
-  region: 'us-central1'
-}, async (request) => {
-  console.log('🔍 verifySelfie function called');
-  console.log('📊 Request data:', {
-    hasImageBase64: !!request.data.imageBase64,
-    hasProfileImageUrl: !!request.data.profileImageUrl,
-    hasUserId: !!request.data.userId,
-    imageBase64Length: request.data.imageBase64 ? request.data.imageBase64.length : 0
+// Initialize Google Cloud Vision client using configLoader with error handling
+let visionClient;
+try {
+  console.log('🔧 Initializing Google Cloud Vision client...');
+  const credentials = configLoader.get('visionCredentials');
+  const projectId = configLoader.get('projectId');
+  
+  console.log('🔧 Vision credentials loaded:', !!credentials);
+  console.log('🔧 Project ID loaded:', projectId);
+  
+  if (!credentials || !projectId) {
+    throw new Error('Missing required configuration for Google Cloud Vision');
+  }
+  
+  visionClient = new vision.ImageAnnotatorClient({
+    credentials: credentials,
+    projectId: projectId
   });
   
+  console.log('✅ Google Cloud Vision client initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize Google Cloud Vision client:', error);
+  visionClient = null;
+}
+
+
+
+// Function to verify selfie using Google Cloud Vision API - V2 Format
+exports.verifySelfie = onCall({
+  cors: true,
+  region: 'us-central1'
+}, async (request) => {
+  const { data, auth } = request;
+  
+  console.log('🔍 verifySelfie function called');
+  console.log('📊 Request data:', {
+    hasImageBase64: !!data.imageBase64,
+    hasProfileImageUrl: !!data.profileImageUrl,
+    hasUserId: !!data.userId,
+    imageBase64Length: data.imageBase64 ? data.imageBase64.length : 0
+  });
+  
+  // Check if vision client is available
+  if (!visionClient) {
+    console.error('❌ Google Cloud Vision client not initialized');
+    throw new HttpsError('internal', 'Image analysis service not available');
+  }
+  
   // Ensure user is authenticated
-  if (!request.auth) {
-    console.error('❌ User not authenticated - request.auth is missing');
+  if (!auth) {
+    console.error('❌ User not authenticated - auth is missing');
     throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
   // Log authentication info for debugging
   console.log('✅ Authentication context:', {
-    uid: request.auth.uid,
-    token: request.auth.token ? 'Present' : 'Missing',
-    email: request.auth.token?.email || 'Not available'
+    uid: auth.uid,
+    token: auth.token ? 'Present' : 'Missing',
+    email: auth.token?.email || 'Not available'
   });
 
-  const { imageBase64, profileImageUrl, userId } = request.data;
+  const { imageBase64, profileImageUrl, userId } = data;
 
   // Validate input parameters
   if (!imageBase64 || !profileImageUrl || !userId) {
@@ -52,9 +95,9 @@ exports.verifySelfie = onCall({
   }
 
   // Ensure the requesting user is the same as the userId
-  if (request.auth.uid !== userId) {
+  if (auth.uid !== userId) {
     console.error('❌ User ID mismatch:', {
-      contextUid: request.auth.uid,
+      authUid: auth.uid,
       requestUserId: userId
     });
     throw new HttpsError('permission-denied', 'You can only verify your own selfie');
@@ -100,7 +143,7 @@ exports.verifySelfie = onCall({
 
     // 6. Store verification result in Firestore
     console.log('💾 Storing verification result');
-    await storeVerificationResult(userId, verificationResult, imageBase64);
+    await storeVerificationResult(userId, verificationResult);
     console.log('✅ Verification result stored');
 
     console.log('🎉 Verification completed successfully:', verificationResult);
@@ -119,8 +162,14 @@ exports.verifySelfie = onCall({
   }
 });
 
+// Import HttpsError from v2 - moved to top
+
 async function analyzeImage(imageBase64) {
   try {
+    console.log('🔍 Starting image analysis...');
+    console.log('🔍 Image base64 length:', imageBase64 ? imageBase64.length : 'undefined');
+    console.log('🔍 Vision client available:', !!visionClient);
+    
     const request = {
       image: {
         content: imageBase64
@@ -133,16 +182,29 @@ async function analyzeImage(imageBase64) {
       ]
     };
 
+    console.log('🔍 Sending request to Google Cloud Vision API...');
     const [result] = await visionClient.annotateImage(request);
+    
+    console.log('✅ Image analysis completed successfully');
     return result;
   } catch (error) {
-    console.error('Image analysis error:', error);
+    console.error('❌ Image analysis error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      details: error.details
+    });
     throw new Error('Failed to analyze image: ' + error.message);
   }
 }
 
 async function analyzeImageFromUrl(imageUrl) {
   try {
+    console.log('🔍 Starting URL image analysis...');
+    console.log('🔍 Image URL:', imageUrl);
+    console.log('🔍 Vision client available:', !!visionClient);
+    
     const request = {
       image: {
         source: {
@@ -156,10 +218,19 @@ async function analyzeImageFromUrl(imageUrl) {
       ]
     };
 
+    console.log('🔍 Sending URL request to Google Cloud Vision API...');
     const [result] = await visionClient.annotateImage(request);
+    
+    console.log('✅ URL image analysis completed successfully');
     return result;
   } catch (error) {
-    console.error('URL image analysis error:', error);
+    console.error('❌ URL image analysis error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      details: error.details
+    });
     throw new Error('Failed to analyze profile image: ' + error.message);
   }
 }
@@ -311,7 +382,7 @@ function assessFaceQuality(face) {
   };
 }
 
-async function storeVerificationResult(userId, result, selfieImage) {
+async function storeVerificationResult(userId, result) {
   try {
     const verificationData = {
       userId,
@@ -320,7 +391,8 @@ async function storeVerificationResult(userId, result, selfieImage) {
       similarityScore: result.similarityScore,
       confidence: result.confidence,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      selfieImage: selfieImage, // Store base64 for audit purposes
+      // Note: selfieImage removed due to Firestore 1MB field size limit
+      // The image was successfully analyzed but not stored for audit
       status: result.verified ? 'verified' : 'failed'
     };
 
@@ -345,19 +417,18 @@ async function storeVerificationResult(userId, result, selfieImage) {
   }
 }
 
-// Function to get verification history
-exports.getVerificationHistory = onCall({
-  enforceAppCheck: false,
-  region: 'us-central1'
-}, async (request) => {
-  if (!request.auth) {
+// Function to get verification history - V2 Format
+exports.getVerificationHistory = onCall(async (request) => {
+  const { data, auth } = request;
+  
+  if (!auth) {
     throw new HttpsError('unauthenticated', 'User must be authenticated');
   }
 
-  const { userId } = request.data;
+  const { userId } = data;
   
   // Ensure the requesting user is the same as the userId
-  if (request.auth.uid !== userId) {
+  if (auth.uid !== userId) {
     throw new HttpsError('permission-denied', 'You can only view your own verification history');
   }
   
