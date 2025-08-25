@@ -834,6 +834,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       heightMax: prefs.preferredHeightRange?.max || 8,
       distance: prefs.preferredDistance || 100,
       connectionIntent: prefs.connectionIntent || 'both',
+      // Include connection preferences and styles that affect filtering
+      connectionPreferences: (prefs.connectionPreferences && prefs.connectionPreferences.length > 0) ? 
+        [...prefs.connectionPreferences].sort() : [],
+      connectionStyles: (prefs.connectionStyles && prefs.connectionStyles.length > 0) ? 
+        [...prefs.connectionStyles].sort() : [],
       // Only include spiritual fields if they're not empty arrays
       spiritualDraws: (prefs.spiritualCompatibility?.spiritualDraws && prefs.spiritualCompatibility.spiritualDraws.length > 0) ? 
         [...prefs.spiritualCompatibility.spiritualDraws].sort() : [],
@@ -846,6 +851,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
     const hash = JSON.stringify(hashData);
     console.log('🔍 Generated preferences hash:', {
       connectionIntent: hashData.connectionIntent,
+      connectionPreferences: hashData.connectionPreferences,
+      connectionStyles: hashData.connectionStyles,
       ageRange: `${hashData.ageMin}-${hashData.ageMax}`,
       heightRange: `${hashData.heightMin}-${hashData.heightMax}`,
       distance: hashData.distance,
@@ -1986,57 +1993,78 @@ const verifyPhoneAndSetUser = async (
         return { passes: true, score: 0 };
       }
       
-      // 🔮 DETAILED COMPATIBILITY SCORING (only for specific preferences)
+      // 🔮 ENHANCED COMPATIBILITY SCORING (gentle but nuanced)
       let score = 0;
       let totalCategories = 0;
+      let totalPossibleMatches = 0;
       const matchDetails: string[] = [];
       
       // Check spiritual draws compatibility (only if user has specific draws preferences)
       if (hasSpecificDraws && candidateProfile.draws?.length) {
-        const commonDraws = userSpiritualPrefs.spiritualDraws!.filter(draw => 
-          draw !== "Open to All" && candidateProfile?.draws?.includes(draw)
-        );
+        const userDraws = userSpiritualPrefs.spiritualDraws!.filter(draw => draw !== "Open to All");
+        const commonDraws = userDraws.filter(draw => candidateProfile?.draws?.includes(draw));
         
         if (commonDraws.length > 0) {
-          score += 1;
-          matchDetails.push(`Draws: ${commonDraws.join(', ')}`);
+          // Gentle scoring: partial credit for partial matches
+          const drawScore = commonDraws.length / userDraws.length;
+          score += drawScore;
+          matchDetails.push(`Draws: ${commonDraws.join(', ')} (${Math.round(drawScore * 100)}% match)`);
         }
         totalCategories += 1;
-        
-
+        totalPossibleMatches += userDraws.length;
       }
       
       // Check practices compatibility (only if user has specific practices preferences)
       if (hasSpecificPractices && candidateProfile.practices?.length) {
-        const commonPractices = userSpiritualPrefs.practices!.filter(practice =>
-          practice !== "Open to All" && candidateProfile?.practices?.includes(practice)
-        );
+        const userPractices = userSpiritualPrefs.practices!.filter(practice => practice !== "Open to All");
+        const commonPractices = userPractices.filter(practice => candidateProfile?.practices?.includes(practice));
         
         if (commonPractices.length > 0) {
-          score += 1;
-          matchDetails.push(`Practices: ${commonPractices.join(', ')}`);
+          // Gentle scoring: partial credit for partial matches
+          const practiceScore = commonPractices.length / userPractices.length;
+          score += practiceScore;
+          matchDetails.push(`Practices: ${commonPractices.join(', ')} (${Math.round(practiceScore * 100)}% match)`);
         }
         totalCategories += 1;
-        
-
+        totalPossibleMatches += userPractices.length;
       }
       
       // Check healing modalities compatibility (only if user has specific healing preferences)
       if (hasSpecificHealing && candidateProfile.healingModalities?.length) {
-        const commonModalities = userSpiritualPrefs.healingModalities!.filter(modality =>
-          modality !== "Open to All" && candidateProfile?.healingModalities?.includes(modality)
-        );
+        const userModalities = userSpiritualPrefs.healingModalities!.filter(modality => modality !== "Open to All");
+        const commonModalities = userModalities.filter(modality => candidateProfile?.healingModalities?.includes(modality));
         
         if (commonModalities.length > 0) {
-          score += 1;
-          matchDetails.push(`Healing: ${commonModalities.join(', ')}`);
+          // Gentle scoring: partial credit for partial matches
+          const modalityScore = commonModalities.length / userModalities.length;
+          score += modalityScore;
+          matchDetails.push(`Healing: ${commonModalities.join(', ')} (${Math.round(modalityScore * 100)}% match)`);
         }
         totalCategories += 1;
-        
-
+        totalPossibleMatches += userModalities.length;
       }
       
+      // Enhanced scoring: weighted by category importance and partial matches
       const compatibilityScore = totalCategories > 0 ? score / totalCategories : 0;
+      
+      // 🌟 GENTLE BONUS: Reward people who are very open-minded (have many spiritual interests)
+      let finalScore = compatibilityScore;
+      if (candidateProfile.practices?.length && candidateProfile.practices.length > 3) {
+        finalScore += 0.1; // Small bonus for spiritual diversity
+        matchDetails.push("Spiritually diverse (+10%)");
+      }
+      
+      // 🌟 GENTLE BONUS: Reward people who are open to learning (have "Open to All" in their profile)
+      const candidateHasOpenToAll = candidateProfile.practices?.includes("Open to All") || 
+                                   candidateProfile.draws?.includes("Open to All") || 
+                                   candidateProfile.healingModalities?.includes("Open to All");
+      if (candidateHasOpenToAll) {
+        finalScore += 0.05; // Small bonus for being open-minded
+        matchDetails.push("Open to learning (+5%)");
+      }
+      
+      // Cap the final score at 1.0
+      finalScore = Math.min(finalScore, 1.0);
       
       // 🎯 COMPATIBILITY LOGIC
       if (totalCategories === 0) {
@@ -2049,7 +2077,7 @@ const verifyPhoneAndSetUser = async (
       
       return { 
         passes, 
-        score: compatibilityScore,
+        score: finalScore,
         reason: passes ? matchDetails.join('; ') : 'No shared spiritual interests'
       };
     }, [userData.matchPreferences]);
@@ -2165,6 +2193,59 @@ const verifyPhoneAndSetUser = async (
         }
       } else {
         console.log(`🔗 Connection intent check for ${user.firstName}: No specific intent preference (showing everyone)`);
+      }
+      
+      // 👥 Gender Filtering (Connection Preferences)
+      if (prefs.connectionPreferences && prefs.connectionPreferences.length > 0) {
+        // Skip filtering if "Everyone" is selected
+        if (!prefs.connectionPreferences.includes("Everyone")) {
+          const userGender = user.gender;
+          if (!userGender || userGender.length === 0) {
+            console.log(`❌ ${user.firstName} - No gender data available`);
+            return false;
+          }
+          
+          // 🔧 FIXED: Handle mapping between plural preferences and singular user data
+          const genderMapping: { [key: string]: string[] } = {
+            "Women": ["Woman"],
+            "Men": ["Man"],
+            "Trans Woman": ["Trans Woman"],
+            "Trans Man": ["Trans Man"],
+            "Non-binary": ["Non-binary"],
+            "Genderqueer": ["Genderqueer"],
+            "Agender": ["Agender"],
+            "Genderfluid": ["Genderfluid"],
+            "Two-Spirit": ["Two-Spirit"],
+            "Bigender": ["Bigender"],
+            "Intersex": ["Intersex"],
+            "Questioning": ["Questioning"],
+            "Other": ["Other"]
+          };
+          
+          // Check if any of the user's genders match the user's preferences
+          const hasMatchingGender = userGender.some(gender => {
+            // Check direct matches first
+            if (prefs.connectionPreferences!.includes(gender)) {
+              return true;
+            }
+            
+            // Check mapped matches (e.g., "Women" preference matches "Woman" user)
+            return prefs.connectionPreferences!.some(pref => {
+              const mappedGenders = genderMapping[pref] || [];
+              return mappedGenders.includes(gender);
+            });
+          });
+          
+          if (!hasMatchingGender) {
+            console.log(`❌ ${user.firstName} - Gender mismatch: user has ${userGender.join(', ')}, you prefer ${prefs.connectionPreferences.join(', ')}`);
+            return false;
+          }
+          console.log(`✅ ${user.firstName} - Gender match: ${userGender.join(', ')} matches your preferences ${prefs.connectionPreferences.join(', ')}`);
+        } else {
+          console.log(`✅ ${user.firstName} - "Everyone" selected, showing all genders`);
+        }
+      } else {
+        console.log(`👥 No gender preferences set, showing everyone`);
       }
       
       // 🎂 Age Range Filtering

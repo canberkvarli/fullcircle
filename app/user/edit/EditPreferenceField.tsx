@@ -43,7 +43,7 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
 const romanticOptions = [
             "Men", 
             "Women",
-            "Non-Binary",
+            "Non-binary",
             "Genderqueer", 
             "Agender", 
             "Genderfluid", 

@@ -17,7 +17,7 @@ const healingModalities = [
   { name: "Hypnotherapy", icon: "therapy", iconType: "custom", color: "#607D8B" },
   { name: "Homeopathy", icon: "homeopathy", iconType: "custom", color: "#009688" },
   { name: "Herbalism", icon: "plant", iconType: "custom", color: "#4CAF50" },
-  { name: "Plant Medicine", icon: "mushroom", iconType: "custom", color: "#8E24AA" },
+  { name: "Plant Medicine", icon: "leaf", iconType: "custom", color: "#8E24AA" },
 ];
 
 // Helper function to normalize modality names (handles legacy names and variations)

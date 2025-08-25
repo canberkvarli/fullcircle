@@ -8,6 +8,7 @@ import {
   StyleSheet,
   useColorScheme,
   Platform,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
@@ -32,58 +33,95 @@ export default function OuroborosInfoModal({ visible, onClose }: OuroborosInfoMo
       visible={visible}
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.infoModalContent}>
-              <View style={styles.infoModalHeader}>
-                <TouchableOpacity 
-                  onPress={onClose}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={24} color={colors.textDark} />
-                </TouchableOpacity>
+      <View style={styles.modalOverlay}>
+        <ScrollView 
+          style={styles.infoModalContent}
+          contentContainerStyle={styles.modalContentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Close Button */}
+          <TouchableOpacity 
+            onPress={onClose}
+            style={styles.closeButton}
+          >
+            <Ionicons name="close" size={20} color={colors.textDark} />
+          </TouchableOpacity>
+          
+          {/* Ouroboros Animation */}
+          <View style={styles.loaderContainer}>
+            <OuroborosLoader
+              size={80}
+              duration={3000}
+              fillColor="#F5E6D3"
+              strokeColor="#B8860B"
+              strokeWidth={2}
+            />
+          </View>
+          
+          {/* Title */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.titleText}>
+              The Ouroboros
+            </Text>
+          </View>
+          
+          {/* Main Content */}
+          <View style={styles.contentContainer}>
+            <Text style={styles.descriptionText}>
+              The ouroboros is an ancient symbol representing the eternal cycle of life, death, and rebirth.
+            </Text>
+            
+            {/* Features */}
+            <View style={styles.featuresContainer}>
+              {/* Eternal Cycles */}
+              <View style={styles.featureItem}>
+                <View style={styles.featureIcon}>
+                  <Ionicons name="refresh" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Eternal Cycles</Text>
+                  <Text style={styles.featureText}>
+                    Everything in nature moves in cycles - seasons change, relationships evolve, and we continuously transform.
+                  </Text>
+                </View>
               </View>
               
-              <View style={styles.loaderContainer}>
-                <OuroborosLoader
-                  size={80}
-                  duration={3000}
-                  fillColor="#F5E6D3"
-                  strokeColor="#B8860B"
-                  strokeWidth={2}
-                />
+              {/* Unity of Opposites */}
+              <View style={styles.featureItem}>
+                <View style={styles.featureIcon}>
+                  <Ionicons name="infinite" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Unity of Opposites</Text>
+                  <Text style={styles.featureText}>
+                    Beginnings and endings are connected, light and dark exist together, and we find wholeness by embracing all parts of ourselves.
+                  </Text>
+                </View>
               </View>
               
-              <Text style={styles.infoModalSubtitle}>
-                The Ouroboros represents the eternal cycle of transformation and renewal
-              </Text>
-              
-              <View style={styles.infoFeatures}>
-                <Text style={styles.infoFeatureTitle}>The Sacred Symbol:</Text>
-                <Text style={styles.infoFeatureText}>• Ancient symbol of infinite cycles</Text>
-                <Text style={styles.infoFeatureText}>• Represents death and rebirth</Text>
-                <Text style={styles.infoFeatureText}>• Symbolizes the unity of opposites</Text>
-                <Text style={styles.infoFeatureText}>• Embodies eternal transformation</Text>
-                <Text style={styles.infoFeatureText}>• Represents the cosmic dance of life</Text>
+              {/* In Circle's Journey */}
+              <View style={styles.featureItem}>
+                <View style={styles.featureIcon}>
+                  <Ionicons name="heart" size={20} color={colors.accent} />
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>In Circle's Journey</Text>
+                  <Text style={styles.featureText}>
+                    Circle helps us grow through relationships. Each connection teaches us something new, and every ending opens the door to new beginnings.
+                  </Text>
+                </View>
               </View>
-              
-              <View style={styles.infoFeatures}>
-                <Text style={styles.infoFeatureTitle}>In Circle's Journey:</Text>
-                <Text style={styles.infoFeatureText}>• Every ending is a new beginning</Text>
-                <Text style={styles.infoFeatureText}>• Each connection transforms us</Text>
-                <Text style={styles.infoFeatureText}>• We grow through relationships</Text>
-                <Text style={styles.infoFeatureText}>• Love flows in infinite cycles</Text>
-                <Text style={styles.infoFeatureText}>• Our spiritual path has no end</Text>
-              </View>
-              
-              <Text style={styles.infoModalFooter}>
-                "As the serpent eats its tail, so do we complete and renew ourselves through love"
+            </View>
+            
+            {/* Quote */}
+            <View style={styles.quoteContainer}>
+              <Text style={styles.quoteText}>
+                "As the serpent completes its circle, so do we find completion in our connections"
               </Text>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+          </View>
+        </ScrollView>
+      </View>
     </Modal>
   );
 }
@@ -94,17 +132,17 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
   return StyleSheet.create({
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
       justifyContent: 'center',
       alignItems: 'center',
+      padding: Spacing.md,
     },
     infoModalContent: {
       backgroundColor: colors.card,
       borderRadius: BorderRadius.xl,
-      padding: Spacing.lg,
-      width: '90%',
       maxWidth: 400,
-      alignItems: 'center',
+      width: '100%',
+      maxHeight: '90%',
       borderWidth: 1,
       borderColor: colors.primary + '20',
       ...Platform.select({
@@ -119,52 +157,93 @@ const createStyles = (colorScheme: 'light' | 'dark', fonts: ReturnType<typeof us
         },
       }),
     },
-    infoModalHeader: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
+    modalContentContainer: {
+      padding: Spacing.xl,
       alignItems: 'center',
-      width: '100%',
-      marginBottom: Spacing.lg,
     },
     closeButton: {
-      padding: Spacing.xs,
+      position: 'absolute',
+      top: Spacing.md,
+      right: Spacing.md,
+      padding: Spacing.sm,
       borderRadius: BorderRadius.full,
       backgroundColor: colors.background,
       borderWidth: 1,
       borderColor: colors.border,
+      zIndex: 1,
     },
     loaderContainer: {
-      marginVertical: Spacing.lg,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.md,
       alignItems: 'center',
     },
-    infoModalSubtitle: {
+    titleContainer: {
+      marginBottom: Spacing.md,
+    },
+    titleText: {
+      ...fonts.spiritualLargeTitleFont,
+      fontSize: Typography.sizes.xl,
+      fontWeight: Typography.weights.bold,
+      color: colors.primary,
+      textAlign: 'center',
+      letterSpacing: 0.5,
+    },
+    contentContainer: {
+      width: '100%',
+      alignItems: 'center',
+    },
+    descriptionText: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.base,
       color: colors.textLight,
       textAlign: 'center',
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.md,
       lineHeight: 22,
     },
-    infoFeatures: {
+    featuresContainer: {
       width: '100%',
-      marginBottom: Spacing.lg,
+      marginBottom: Spacing.md,
     },
-    infoFeatureTitle: {
-      ...fonts.spiritualLargeTitleFont,
+    featureItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: Spacing.md,
+      gap: Spacing.sm,
+    },
+    featureIcon: {
+      width: 36,
+      height: 36,
+      backgroundColor: colors.accent + '20',
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 2,
+      flexShrink: 0,
+    },
+    featureContent: {
+      flex: 1,
+    },
+    featureTitle: {
+      ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.base,
-      fontWeight: Typography.weights.bold,
-      color: colors.textDark,
-      marginBottom: Spacing.sm,
-      textAlign: 'center',
+      fontWeight: Typography.weights.semibold,
+      color: colorScheme === 'dark' ? colors.accent : colors.textDark,
+      marginBottom: Spacing.xs,
     },
-    infoFeatureText: {
+    featureText: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.sm,
-      color: colors.textLight,
-      marginBottom: Spacing.xs,
+      color: colors.textMuted,
       lineHeight: 18,
     },
-    infoModalFooter: {
+    quoteContainer: {
+      marginTop: Spacing.md,
+      paddingTop: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border + '20',
+      width: '100%',
+    },
+    quoteText: {
       ...fonts.spiritualBodyFont,
       fontSize: Typography.sizes.sm,
       color: colors.textMuted,

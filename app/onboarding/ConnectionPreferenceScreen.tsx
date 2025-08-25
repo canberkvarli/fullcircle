@@ -18,54 +18,11 @@ import {CustomIcon} from "@/components/CustomIcon"; // Import your custom icon c
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
-
-// Combined connection styles (pills for "both" option)
-const combinedStyles = [
-  // Romantic styles
-  "Twin Flame Seeker",
-  "Soul Mate Guided", 
-  "Tantric Connection",
-  "Heart-Centered",
-  "Polyamorous Soul",
-  "Monogamous Journey",
-  "Love Without Labels",
-  // Friendship styles
-  "Practice Partners",
-  "Meditation Buddies",
-  "Adventure Seekers",
-  "Study Circles",
-  "Healing Circles",
-  "Creative Collaborators",
-  "Retreat Companions",
-  "Wisdom Sharers",
-  "Community Builders",
-  "Soul Supporters",
-];
-
-// Connection Intent Options - Updated with custom icon support
-const connectionIntents = [
-  { 
-    id: "romantic", 
-    label: "Dating", 
-    subtitle: "Seeking romantic & intimate connections",
-    icon: "heart", 
-    iconType: "ionicon"
-  },
-  { 
-    id: "friendship", 
-    label: "Friendship", 
-    subtitle: "Building meaningful platonic bonds",
-    icon: "friendship",
-    iconType: "custom"
-  },
-  { 
-    id: "both", 
-    label: "Both", 
-    subtitle: "Open to all types of meaningful connections",
-    icon: "infinite",
-    iconType: "ionicon" // Fixed: added missing iconType
-  },
-];
+import { 
+  connectionIntents, 
+  connectionStylesByIntent, 
+  combinedStyles 
+} from "@/constants/connectionOptions";
 
 // Romantic dating preferences (for when "romantic" is selected)
 const romanticOptions = [
@@ -80,7 +37,7 @@ const romanticOptions = [
     subtitle: "Attracted to feminine essence",
   },
   { 
-    id: "Non-Binary", 
+    id: "Non-binary", 
     label: "Non-Binary Souls", 
     subtitle: "Connected to fluid expressions",
   },
@@ -91,33 +48,9 @@ const romanticOptions = [
   },
 ];
 
-// Romantic connection styles (pills for romantic)
-const romanticStyles = [
-  "Twin Flame Seeker",
-  "Soul Mate Guided", 
-  "Tantric Connection",
-  "Heart-Centered",
-  "Consciousness Explorer",
-  "Polyamorous Soul",
-  "Monogamous Journey",
-  "Spiritual Partnership",
-  "Sacred Union",
-  "Love Without Labels",
-];
-
-// Friendship connection styles (pills for friendship)
-const friendshipStyles = [
-  "Practice Partners",
-  "Meditation Buddies",
-  "Adventure Seekers",
-  "Study Circles",
-  "Healing Circles",
-  "Creative Collaborators",
-  "Retreat Companions",
-  "Wisdom Sharers",
-  "Community Builders",
-  "Soul Supporters",
-];
+// Use constants for connection styles
+const romanticStyles = connectionStylesByIntent.romantic;
+const friendshipStyles = connectionStylesByIntent.friendship;
 
 const ConnectionPreferenceScreen = () => {
   const {
@@ -186,7 +119,7 @@ const ConnectionPreferenceScreen = () => {
           return '#6366F1' + '15'; // Very subtle indigo
         case "Women":
           return '#EC4899' + '15'; // Very subtle pink
-        case "Non-Binary":
+        case "Non-binary":
           return '#8B5CF6' + '15'; // Very subtle purple
         case "Everyone":
           return '#F59E0B' + '15'; // Very subtle amber
@@ -207,9 +140,9 @@ const ConnectionPreferenceScreen = () => {
       switch (optionId) {
         case "Men":
           return '#6366F1' + '40';
-        case "Women":
+        case "Woman":
           return '#EC4899' + '40';
-        case "Non-Binary":
+        case "Non-binary":
           return '#8B5CF6' + '40';
         case "Everyone":
           return '#F59E0B' + '40';

@@ -1,4 +1,3 @@
-// components/CustomIcon.tsx
 import React from 'react';
 import { Image, ImageStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

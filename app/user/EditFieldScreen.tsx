@@ -22,6 +22,14 @@ import { Colors, Typography, Spacing, BorderRadius } from "@/constants/Colors";
 import { useFont } from "@/hooks/useFont";
 import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 import { spiritualDraws } from "@/constants/spiritualMappings";
+import { personalPractices } from "@/constants/personalPractices";
+import { healingModalities } from "@/constants/healingModalities";
+import { 
+  connectionIntents, 
+  connectionStylesByIntent, 
+  genderOptions, 
+  connectionPreferences 
+} from "@/constants/connectionOptions";
 
 const DEFAULT_REGION = {
   latitude: 37.8715,
@@ -30,75 +38,22 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.0421,
 };
 
-// Updated field options - EXPANDED GENDER OPTIONS
+// Updated field options - Using centralized constants
 const FIELD_OPTIONS = {
   // Gender options for user's own gender (limit 2)
-  gender: [
-    "Woman",
-    "Man", 
-    "Non-binary",
-    "Genderqueer",
-    "Agender",
-    "Two-Spirit",
-    "Genderfluid",
-    "Transgender",
-    "Questioning",
-  ],
+  gender: genderOptions,
   
-  connectionIntent: [
-    { id: "romantic", label: "Dating", subtitle: "Seeking romantic & intimate connections", icon: "heart" },
-    { id: "friendship", label: "Friendship", subtitle: "Building meaningful platonic bonds", icon: "people" },
-    { id: "both", label: "Both", subtitle: "Open to all types of meaningful connections", icon: "infinite" },
-  ],
+  connectionIntent: connectionIntents,
 
-  // Connection preferences (for dating - who you're interested in) - EXPANDED OPTIONS with limit 2
-  connectionPreferences: [
-    "Woman",
-    "Man", 
-    "Non-binary",
-    "Genderqueer",
-    "Agender",
-    "Two-Spirit",
-    "Genderfluid",
-    "Transgender",
-    "Questioning",
-    "Everyone", // Special option that selects all
-  ],
+  // Connection preferences (for dating - who you're interested in) - limit 2
+  connectionPreferences: connectionPreferences,
 
   // Connection styles
-  connectionStyles: {
-    romantic: [
-      "Twin Flame Seeker", "Soul Mate Guided", "Tantric Connection", "Heart-Centered",
-      "Consciousness Explorer", "Polyamorous Soul", "Monogamous Journey", 
-      "Spiritual Partnership", "Sacred Union", "Love Without Labels",
-    ],
-    friendship: [
-      "Practice Partners", "Meditation Buddies", "Adventure Seekers", "Study Circles",
-      "Healing Circles", "Creative Collaborators", "Retreat Companions", 
-      "Wisdom Sharers", "Community Builders", "Soul Supporters",
-    ],
-    both: [
-      // Combined styles for "both" option
-      "Twin Flame Seeker", "Soul Mate Guided", "Heart-Centered", "Love Without Labels",
-      "Practice Partners", "Meditation Buddies", "Healing Circles", "Soul Supporters",
-      "Consciousness Explorer", "Community Builders", "Creative Collaborators", "Wisdom Sharers",
-    ],
-  },
+  connectionStyles: connectionStylesByIntent,
 
-  spiritualPractices: [
-    "Meditation", "Yoga", "Prayer", "Journaling", "Energy Healing", 
-    "Crystal Work", "Tarot & Oracle", "Astrology", "Nature Rituals", 
-    "Sound Healing", "Breathwork", "Sacred Dance", "Plant Medicine", 
-    "Shamanic Journey", "Martial Arts", "Fasting", "Chanting",
-    "Mindfulness", "Contemplation", "Sacred Geometry"
-  ],
+  spiritualPractices: personalPractices.map(practice => practice.name),
 
-  healingModalities: [
-    "Reiki", "Acupuncture", "Sound Therapy", "Crystal Healing", 
-    "Aromatherapy", "Light Therapy", "Massage Therapy", "Hypnotherapy", 
-    "Homeopathy", "Herbalism", "Plant Medicine", "Cupping",
-    "Reflexology", "Craniosacral", "Chakra Balancing"
-  ],
+  healingModalities: healingModalities.map(modality => modality.name),
 };
 
 function EditFieldScreen() {

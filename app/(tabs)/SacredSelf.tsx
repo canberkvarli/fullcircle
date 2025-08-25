@@ -228,9 +228,9 @@ export default function SacredSelf() {
 
   const getNameFontSize = () => {
     const nameLength = userData.firstName?.length || 0;
-    if (nameLength <= 6) return Typography.sizes.lg; 
-    if (nameLength <= 10) return Typography.sizes["2xl"];
-    return Typography.sizes.sm;
+    if (nameLength <= 6) return Typography.sizes["2xl"]; 
+    if (nameLength <= 10) return Typography.sizes["3xl"];
+    return Typography.sizes.xl;
   };
 
   return (
@@ -241,6 +241,8 @@ export default function SacredSelf() {
         backgroundColor: colors.background,
         borderBottomWidth: 0
       }]}>
+        <View style={styles.headerLeft} />
+        
         <Animated.Text style={[
           styles.animatedHeaderTitle, 
           fonts.spiritualLargeTitleFont, 
@@ -708,13 +710,20 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     paddingTop: Spacing.sm,
     borderBottomWidth: 1,
+    position: 'relative',
+  },
+  headerLeft: {
+    width: 80, // Same width as headerIcons to balance the layout
   },
 
   animatedHeaderTitle: {
     fontWeight: Typography.weights.bold,
     letterSpacing: 0.5,
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     textAlign: 'center',
+    zIndex: 1,
   },
   headerIcons: {
     flexDirection: 'row',

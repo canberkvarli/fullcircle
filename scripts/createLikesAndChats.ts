@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import { faker } from "@faker-js/faker";
 import * as fs from "fs";
+import { personalPractices } from "../constants/personalPractices";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -301,7 +302,7 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     const conversationStarters = [
       `Hey! I love your profile 😊`,
       `Hi there! How's your day going?`,
-      `Hello! I noticed we both like ${faker.helpers.arrayElement(['meditation', 'yoga', 'hiking', 'traveling'])} 🌟`,
+      `Hello! I noticed we both like ${faker.helpers.arrayElement(personalPractices.map(p => p.name))} 🌟`,
       `Hey! Your photos are beautiful ✨`,
       `Hi! I'd love to get to know you better`,
     ];
