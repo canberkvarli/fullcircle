@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   StyleProp,
   ViewStyle,
+  useColorScheme,
 } from "react-native";
 import { Colors, Typography, Spacing } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
@@ -20,7 +21,6 @@ interface UserCardProps {
   isBlurred?: boolean;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
-  showDetails?: boolean;
   getImageUrl?: (photoPath: string) => Promise<string | null>;
   islotusLike?: boolean;
   isRadianceLike?: boolean;
@@ -35,7 +35,6 @@ const UserCard: React.FC<UserCardProps> = ({
   isBlurred = false,
   style,
   onPress,
-  showDetails = false,
   getImageUrl,
   islotusLike = false,
   isRadianceLike = false,
@@ -47,28 +46,35 @@ const UserCard: React.FC<UserCardProps> = ({
   const photos: string[] = user.photos || [];
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>(photos);
   const fonts = useFont();
+  
+  // Get current color scheme
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
 
-  // Helper function to format height properly (feet and inches)
-  const formatHeight = (height: number): string => {
-    const feet = Math.floor(height);
-    const inches = Math.round((height - feet) * 12);
-    return `${feet}'${inches}"`;
-  };
 
-  // Smart font sizing based on name length and card size
+  // Smart font sizing based on name length, card size, and badge count
   const getNameFontSize = () => {
     const name = user.firstName || "Unknown Presence";
     const isSmallCard = cardSize === "small";
     
+    // Count how many badges will be shown
+    const badgeCount = (shouldShowTextActivity ? 1 : 0) + 
+                      (shouldShowDotActivity ? 1 : 0) + 
+                      (showConnectionBadges && islotusLike ? 1 : 0) + 
+                      (showConnectionBadges && isRadianceLike ? 1 : 0);
+    
+    // Reduce font size if there are many badges to prevent overlap
+    const badgeAdjustment = badgeCount >= 3 ? 2 : 0;
+    
     if (isSmallCard) {
-      if (name.length > 12) return Typography.sizes.sm; // 14px for very long names
-      if (name.length > 8) return Typography.sizes.base; // 16px for long names
-      return Typography.sizes.lg; // 18px for short names
+      if (name.length > 12) return Math.max(Typography.sizes.sm - badgeAdjustment, Typography.sizes.xs);
+      if (name.length > 8) return Math.max(Typography.sizes.base - badgeAdjustment, Typography.sizes.sm);
+      return Math.max(Typography.sizes.lg - badgeAdjustment, Typography.sizes.base);
     } else {
       // Large card sizing
-      if (name.length > 15) return Typography.sizes.base; // 16px for very long names
-      if (name.length > 10) return Typography.sizes.lg; // 18px for long names
-      return Typography.sizes.xl; // 20px for short names
+      if (name.length > 15) return Math.max(Typography.sizes.base - badgeAdjustment, Typography.sizes.sm);
+      if (name.length > 10) return Math.max(Typography.sizes.lg - badgeAdjustment, Typography.sizes.base);
+      return Math.max(Typography.sizes.xl - badgeAdjustment, Typography.sizes.lg);
     }
   };
 
@@ -106,6 +112,12 @@ const UserCard: React.FC<UserCardProps> = ({
       <View
         style={[
           styles.card,
+          isSmallCard && styles.smallCard,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            shadowColor: colors.shadow,
+          },
           style,
         ]}
       >
@@ -135,13 +147,11 @@ const UserCard: React.FC<UserCardProps> = ({
             {showConnectionBadges && islotusLike && (
               <View style={[
                 styles.connectionBadge, 
-                styles.lotusBadge,
                 isSmallCard && styles.smallConnectionBadge
               ]}>
                 <CustomIcon 
                   name="lotus" 
                   size={isSmallCard ? 8 : 12} 
-                  color="#FFFFFF" 
                 />
               </View>
             )}
@@ -162,20 +172,26 @@ const UserCard: React.FC<UserCardProps> = ({
         )}
 
         {/* Simple header with smart name sizing */}
-        <View style={styles.headerDefault}>
+        <View style={[
+          styles.headerDefault,
+          isSmallCard && styles.smallCardHeader
+        ]}>
           <Text style={[
             fonts.spiritualBodyFont,
             {
               fontSize: getNameFontSize(),
               fontWeight: Typography.weights.bold,
-              color: Colors.light.textDark,
+              color: colors.textDark,
             }
           ]}>
             {user.firstName || "Unknown"}
           </Text>
         </View>
 
-        <View style={styles.mainPhotoContainer}>
+        <View style={[
+          styles.mainPhotoContainer,
+          isSmallCard && styles.smallCardPhotoContainer
+        ]}>
           {mainPhoto ? (
             <Image
               source={{ uri: mainPhoto }}
@@ -183,56 +199,17 @@ const UserCard: React.FC<UserCardProps> = ({
               blurRadius={isBlurred ? 20 : 0}
             />
           ) : (
-            <View style={styles.photoFallback}>
+            <View style={[styles.photoFallback, { backgroundColor: colors.border }]}>
               <CustomIcon 
                 name="person" 
                 size={50} 
-                color="#ccc" 
+                color={colors.textMuted} 
               />
             </View>
           )}
         </View>
 
-        {/* Details section */}
-        {showDetails && (
-          <View style={styles.detailsContainer}>
-            {[
-              {
-                title: "Age",
-                content: user.age?.toString() || "N/A",
-              },
-              {
-                title: "Location",
-                content: user.location?.city || "N/A",
-              },
-              {
-                title: "Spiritual Practices",
-                content: user.spiritualPractices?.join(", ") || "N/A",
-              },
-              {
-                title: "Job Title",
-                content: user.jobTitle || "N/A",
-              },
-              {
-                title: "Height",
-                content: user.height ? formatHeight(user.height) : "N/A",
-              },
-              {
-                title: "Children Preference",
-                content: user.childrenPreference || "N/A",
-              },
-              {
-                title: "Education Degree",
-                content: user.educationDegree || "N/A",
-              },
-            ].map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <Text style={styles.detailTitle}>{detail.title}:</Text>
-                <Text style={styles.detailContent}>{detail.content}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+
       </View>
     </TouchableOpacity>
   );
@@ -240,22 +217,29 @@ const UserCard: React.FC<UserCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#fff", // Will be overridden by inline styles
     borderRadius: 10,
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#ddd", // Will be overridden by inline styles
     elevation: 3,
     width: width * 0.8,
-    height: height * 0.66,
+    height: height * 0.55, // Reduced from 0.66
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "space-between", // Use space-between to push photo to bottom
     overflow: 'hidden',
   },
+
+  // Small card specific styling
+  smallCard: {
+    height: height * 0.22, // Much more reduced height for small cards
+    padding: 8, // Slightly reduce padding for small cards
+    justifyContent: "space-between", // Use space-between to push photo to bottom
+  },
   radiantCard: {
-    backgroundColor: "#EDE9E3",
-    borderColor: "#D8BFAA",
-    shadowColor: "#000",
+    backgroundColor: "#EDE9E3", // Will be overridden by inline styles if needed
+    borderColor: "#D8BFAA", // Will be overridden by inline styles if needed
+    shadowColor: "#000", // Will be overridden by inline styles if needed
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -269,6 +253,16 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: 'relative',
   },
+
+  // Small card photo container with tighter spacing
+  smallCardPhotoContainer: {
+    width: "100%",
+    aspectRatio: 0.85, // Almost square but slightly longer than square for small cards
+    borderRadius: 8, // Smaller border radius for small cards
+    overflow: "hidden",
+    position: 'relative',
+    // Removed marginTop to eliminate invisible spacing
+  },
   mainPhoto: {
     width: "100%",
     height: "100%",
@@ -280,7 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#f0f0f0", // Will be overridden by inline styles
   },
 
   // Top-right badges container
@@ -324,10 +318,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-  },
-
-  lotusBadge: {
-    backgroundColor: "#FFD700", // Gold background for star
   },
 
   radianceBadge: {
@@ -386,28 +376,17 @@ const styles = StyleSheet.create({
   headerDefault: {
     paddingHorizontal: Spacing.xs,
     zIndex: 5,
+    marginBottom: 6, // Small space between name and photo
   },
 
-  // Details section
-  detailsContainer: {
-    marginTop: 10,
-    width: "100%",
+  // Small card specific header styling
+  smallCardHeader: {
+    paddingHorizontal: Spacing.xs,
     zIndex: 5,
+    marginBottom: 4, // Even smaller space for small cards
   },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  detailTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#555",
-  },
-  detailContent: {
-    fontSize: 14,
-    color: "#777",
-  },
+
+
 });
 
 export default UserCard;
