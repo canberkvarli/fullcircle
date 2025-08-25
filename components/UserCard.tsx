@@ -9,9 +9,9 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing } from '@/constants/Colors';
 import { useFont } from '@/hooks/useFont';
+import { CustomIcon } from './CustomIcon';
 
 const { width, height } = Dimensions.get("window");
 
@@ -118,7 +118,7 @@ const UserCard: React.FC<UserCardProps> = ({
             {/* Activity Badge - First (leftmost) */}
             {shouldShowTextActivity && (
               <View style={styles.activityBadge}>
-                <Ionicons name="radio" size={12} color="#FFFFFF" />
+                <View style={styles.activityIcon} />
                 <Text style={styles.activityBadgeText}>
                   {activityText}
                 </Text>
@@ -127,7 +127,7 @@ const UserCard: React.FC<UserCardProps> = ({
             
             {shouldShowDotActivity && (
               <View style={styles.activityDot}>
-                <Ionicons name="radio" size={8} color="#FFFFFF" />
+                <View style={styles.activityIcon} />
               </View>
             )}
             
@@ -138,8 +138,8 @@ const UserCard: React.FC<UserCardProps> = ({
                 styles.lotusBadge,
                 isSmallCard && styles.smallConnectionBadge
               ]}>
-                <Ionicons 
-                  name="planet" 
+                <CustomIcon 
+                  name="lotus" 
                   size={isSmallCard ? 8 : 12} 
                   color="#FFFFFF" 
                 />
@@ -151,8 +151,8 @@ const UserCard: React.FC<UserCardProps> = ({
                 styles.radianceBadge,
                 isSmallCard && styles.smallConnectionBadge
               ]}>
-                <Ionicons 
-                  name="radio" 
+                <CustomIcon 
+                  name="halo" 
                   size={isSmallCard ? 8 : 12} 
                   color="#FFFFFF" 
                 />
@@ -184,7 +184,7 @@ const UserCard: React.FC<UserCardProps> = ({
             />
           ) : (
             <View style={styles.photoFallback}>
-              <Ionicons 
+              <CustomIcon 
                 name="person" 
                 size={50} 
                 color="#ccc" 
@@ -373,6 +373,14 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: "#FFFFFF",
+  },
+
+  // Activity icon (green circle)
+  activityIcon: {
+    backgroundColor: '#4CAF50',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 
   headerDefault: {

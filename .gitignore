@@ -40,3 +40,4 @@ functions/firebase-debug.log
 
 # macOS
 .DS_Storeconfig/dev/vision-api.env
+.aider*

@@ -974,10 +974,37 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         (a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime()
       );
       setChatMatches(detailed);
-      // count those where the *other* user was the last sender
-      setUnreadMatchesCount(
-        detailed.filter((m) => m.lastMessageSender !== userData.userId).length
-      );
+      // count those where the *other* user was the last sender AND the message hasn't been read
+      const unreadCount = detailed.filter((match) => {
+        // If there's no last message, it's not unread
+        if (!match.lastMessage || !match.lastMessageSender) return false;
+        
+        // If the current user sent the last message, it's not unread
+        if (match.lastMessageSender === userData.userId) return false;
+        
+        // Check if this message has been read by the current user
+        const chatId = [userData.userId, match.userId].sort().join("_");
+        const chatDoc = snap.docs.find(doc => doc.id === chatId);
+        
+        if (chatDoc) {
+          const chatData = chatDoc.data();
+          const lastMessageTimestamp = chatData.lastUpdated?.toDate?.() || new Date(chatData.createdAt);
+          const readTimestamp = chatData.readBy?.[userData.userId]?.toDate?.();
+          
+          // If no read timestamp or read timestamp is before last message, it's unread
+          return !readTimestamp || readTimestamp < lastMessageTimestamp;
+        }
+        
+        // If we can't find the chat doc, assume it's unread
+        return true;
+      }).length;
+      
+      // If we have no matches but still have an unread count, reset it
+      if (detailed.length === 0 && unreadCount > 0) {
+        setUnreadMatchesCount(0);
+      } else {
+        setUnreadMatchesCount(unreadCount);
+      }
     });
     return () => unsub();
   }, [userData.userId, userData.onboardingCompleted]);
@@ -4096,11 +4123,21 @@ const verifyPhoneAndSetUser = async (
     chatId: string,
     userId: string
   ): Promise<void> => {
-    const chatRef = FIRESTORE.collection("chats").doc(chatId);
-    await chatRef.update({
-      lastMessageSender: userId,
-    });
+    try {
+      const chatRef = FIRESTORE.collection("chats").doc(chatId);
+      await chatRef.update({
+        [`readBy.${userId}`]: firestore.FieldValue.serverTimestamp(),
+      });
+      
+      // Optimistically update local unread count
+      setUnreadMatchesCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('❌ Error marking chat as read:', error);
+      throw error;
+    }
   };
+
+
 
   const unmatchUser = async (otherUserId: string) => {
     if (!userDataRef.current.userId) return false;
