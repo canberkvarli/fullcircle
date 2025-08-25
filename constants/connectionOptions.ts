@@ -11,19 +11,22 @@ export const connectionIntents = [
     id: "romantic", 
     label: "Dating", 
     subtitle: "Seeking romantic & intimate connections",
-    icon: "heart"
+    icon: "hand-heart",
+    iconType: "custom"
   },
   { 
     id: "friendship", 
     label: "Friendship", 
     subtitle: "Building meaningful platonic bonds",
-    icon: "people"
+    icon: "friendship",
+    iconType: "custom"
   },
   { 
     id: "both", 
     label: "Both", 
     subtitle: "Open to all types of meaningful connections",
-    icon: "infinite"
+    icon: "infinity",
+    iconType: "custom"
   },
 ];
 
