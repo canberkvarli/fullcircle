@@ -11,6 +11,7 @@ import {
   ScrollView,
   useColorScheme,
   Animated,
+  Keyboard,
 } from "react-native";
 import {
   GiftedChat,
@@ -196,6 +197,11 @@ const Chat: React.FC = () => {
   // Handle tab change with gentler sliding animation
   const handleTabChange = (tab: "chat" | "profile") => {
     setActiveTab(tab);
+    
+    // Dismiss keyboard when switching to profile tab
+    if (tab === "profile") {
+      Keyboard.dismiss();
+    }
     
     const toValue = tab === "chat" ? 0 : -screenWidth;
     
