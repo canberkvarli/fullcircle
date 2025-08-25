@@ -124,8 +124,56 @@ const CURRENT_USER_ID = process.argv[2];
 
 if (!CURRENT_USER_ID) {
   console.error("Please provide a current user ID as the first argument.");
-  console.error("Usage: npx ts-node scripts/simulateLikesAndChats.ts <USER_ID>");
+  console.error("Usage: npx ts-node scripts/createLikesAndChats.ts <USER_ID>");
   process.exit(1);
+}
+
+async function clearExistingUserData(currentUserRef: admin.firestore.DocumentReference, db: admin.firestore.Firestore) {
+  console.log(`🧹 Clearing existing likes and matches for user: ${currentUserRef.id}`);
+
+  // Clear likesGiven
+  const likesGivenSnap = await currentUserRef.collection("likesGiven").get();
+  for (const doc of likesGivenSnap.docs) {
+    await doc.ref.delete();
+  }
+  console.log(`   ✨ Cleared ${likesGivenSnap.size} likesGiven records`);
+
+  // Clear likesReceived
+  const likesReceivedSnap = await currentUserRef.collection("likesReceived").get();
+  for (const doc of likesReceivedSnap.docs) {
+    await doc.ref.delete();
+  }
+  console.log(`   ✨ Cleared ${likesReceivedSnap.size} likesReceived records`);
+
+  // Clear matches
+  const matchesSnap = await currentUserRef.collection("matches").get();
+  for (const doc of matchesSnap.docs) {
+    await doc.ref.delete();
+  }
+  console.log(`   ✨ Cleared ${matchesSnap.size} matches records`);
+
+  // Clear existing chats that include the current user
+  const chatsQuery = await db.collection("chats")
+    .where("participants", "array-contains", currentUserRef.id)
+    .get();
+  
+  for (const chatDoc of chatsQuery.docs) {
+    await chatDoc.ref.delete();
+  }
+  console.log(`   ✨ Cleared ${chatsQuery.size} existing chat conversations`);
+
+  // Reset counters
+  await currentUserRef.update({
+    likesGivenCount: 0,
+    likesReceivedCount: 0,
+  });
+  console.log(`   ✨ Reset likesGivenCount and likesReceivedCount to 0`);
+
+  // Also clear any existing matches array on the user document
+  await currentUserRef.update({
+    matches: [],
+  });
+  console.log(`   ✨ Cleared matches array`);
 }
 
 async function simulateDummyLikesAndChats(): Promise<void> {
@@ -144,6 +192,10 @@ async function simulateDummyLikesAndChats(): Promise<void> {
     process.exit(1);
   }
   console.log("✅ Current user found, fetching other users...");
+
+  // Clear existing data for current user first
+  console.log("🧹 Clearing existing likes and matches for current user...");
+  await clearExistingUserData(currentUserRef, db);
 
   // Fetch all other users (excluding seed users for more realistic data)
   const allUsersSnap = await db.collection("users")
@@ -288,10 +340,28 @@ async function simulateDummyLikesAndChats(): Promise<void> {
       .set({
         matchId: CURRENT_USER_ID,
         timestamp: FieldValue.serverTimestamp(),
+        // Store connection methods for UI display
+        theirConnectionMethod: {
+          viaLotus: faker.datatype.boolean(0.4), // 40% chance via lotus
+          viaRadiance: faker.datatype.boolean(0.3), // 30% chance via radiance
+        },
+        myConnectionMethod: {
+          viaLotus: faker.datatype.boolean(0.4), // 40% chance via lotus
+          viaRadiance: faker.datatype.boolean(0.3), // 30% chance via radiance
+        },
       });
     await currentUserRef.collection("matches").doc(otherId).set({
       matchId: otherId,
       timestamp: FieldValue.serverTimestamp(),
+      // Store connection methods for UI display
+      theirConnectionMethod: {
+        viaLotus: faker.datatype.boolean(0.4), // 40% chance via lotus
+        viaRadiance: faker.datatype.boolean(0.3), // 30% chance via radiance
+      },
+      myConnectionMethod: {
+        viaLotus: faker.datatype.boolean(0.4), // 40% chance via lotus
+        viaRadiance: faker.datatype.boolean(0.3), // 30% chance via radiance
+      },
     });
   }
 

@@ -108,10 +108,10 @@ const SoulChats: React.FC = () => {
     
     if (theirMethod.viaLotus) {
       return {
-        borderColor: '#8E44AD', // Purple/Pink for Lotus
-        shadowColor: '#8E44AD',
-        iconBgColor: '#8E44AD',
-        textColor: '#8E44AD'
+        borderColor: '#DDA0DD', // Softer pink for Lotus (more elegant than purple)
+        shadowColor: '#DDA0DD',
+        iconBgColor: '#DDA0DD',
+        textColor: '#DDA0DD'
       };
     } else if (theirMethod.viaRadiance) {
       return {
@@ -255,7 +255,7 @@ const SoulChats: React.FC = () => {
           const connectionStyle = getConnectionStyle(connectionMethods);
 
           return (
-            <View key={match.userId}>
+            <View key={`${match.userId}-${index}`}>
               <TouchableOpacity
                 style={[
                   styles.matchRow, 
@@ -300,21 +300,20 @@ const SoulChats: React.FC = () => {
                   </View>
                   
                   {/* Connection Method Icon - Top Right of Avatar */}
-                  {/* Connection indicators on avatar (top-right) */}
-                  {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
+                  {/* {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                     <View style={styles.connectionIndicators}>
                       {connectionMethods.theirMethod.viaLotus && (
-                        <View style={[styles.connectionBadge, { backgroundColor: '#8E44AD' }]}>
+                        <View key="lotus" style={[styles.connectionBadge, { backgroundColor: '#8E44AD' }]}>
                           <CustomIcon name="lotus" size={11} color="#FFFFFF" />
                         </View>
                       )}
                       {connectionMethods.theirMethod.viaRadiance && (
-                        <View style={[styles.connectionBadge, { backgroundColor: '#F1C40F' }]}>
+                        <View key="radiance" style={[styles.connectionBadge, { backgroundColor: '#F1C40F' }]}>
                           <CustomIcon name="halo" size={11} color="#FFFFFF" />
                         </View>
                       )}
                     </View>
-                  )}
+                  )} */}
                   
                   {/* Enhanced indicator with connection-specific center for unread OR new matches */}
                   {shouldEnhance && (
@@ -341,13 +340,13 @@ const SoulChats: React.FC = () => {
                       {(connectionMethods.theirMethod.viaLotus || connectionMethods.theirMethod.viaRadiance) && (
                         <View style={styles.nameConnectionIcons}>
                           {connectionMethods.theirMethod.viaLotus && (
-                            <View style={[styles.nameConnectionIcon, { backgroundColor: '#8E44AD' + '20' }]}>
-                              <CustomIcon name="lotus" size={13} />
+                            <View style={[styles.nameConnectionIcon, { backgroundColor: '#DDA0DD' + '20' }]}>
+                              <CustomIcon name="lotus" size={20} />
                             </View>
                           )}
                           {connectionMethods.theirMethod.viaRadiance && (
                             <View style={[styles.nameConnectionIcon, { backgroundColor: '#F1C40F' + '20' }]}>
-                              <CustomIcon name="halo" size={13} color="#F1C40F" />
+                              <CustomIcon name="halo" size={20} color="#F1C40F" />
                             </View>
                           )}
                         </View>
@@ -634,8 +633,8 @@ const styles = StyleSheet.create({
   // Enhanced unread dot with connection-specific center
   unreadDot: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 0,
+    right: 0,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -694,9 +693,9 @@ const styles = StyleSheet.create({
   },
   
   nameConnectionIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 28,
+    height: 28,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

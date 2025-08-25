@@ -3271,6 +3271,7 @@ const verifyPhoneAndSetUser = async (
           try {
         // 🔒 SECURITY FIX: Only write to our own documents to avoid permission issues
         const fromRef = FIRESTORE.collection("users").doc(fromUserId);
+        const toRef = FIRESTORE.collection("users").doc(toUserId);
         const givenRef = fromRef.collection("likesGiven").doc(toUserId);
         const incomingRef = fromRef.collection("likesReceived").doc(toUserId);
       
@@ -3363,7 +3364,28 @@ const verifyPhoneAndSetUser = async (
           
           batch.set(myMatchRef, matchData);
           
+          // Also create the match document for the other user
+          const theirMatchRef = toRef.collection("matches").doc(fromUserId);
+          const theirMatchData = {
+            timestamp: firestore.FieldValue.serverTimestamp(),
+            myConnectionMethod: {
+              viaLotus: originalviaLotus,
+              viaRadiance: originalViaRadiance
+            },
+            theirConnectionMethod: {
+              viaLotus,
+              viaRadiance
+            }
+          };
+          
+          batch.set(theirMatchRef, theirMatchData);
+          
           fromUpdates.matches = firestore.FieldValue.arrayUnion(toUserId);
+          
+          // Update the other user's matches array as well
+          batch.update(toRef, {
+            matches: firestore.FieldValue.arrayUnion(fromUserId)
+          });
           
           // Create chat with connection method metadata
           const chatId = [fromUserId, toUserId].sort().join("_");
@@ -3943,6 +3965,8 @@ const verifyPhoneAndSetUser = async (
         lastMessage: string;
         lastMessageSender: string;
         lastUpdated: Date;
+        theirConnectionMethod?: { viaLotus: boolean; viaRadiance: boolean };
+        myConnectionMethod?: { viaLotus: boolean; viaRadiance: boolean };
       }>
     ) => void
   ) => {
@@ -3963,6 +3987,17 @@ const verifyPhoneAndSetUser = async (
           const userSnap = await FIRESTORE.collection("users").doc(otherId).get();
           const profile = userSnap.exists ? userSnap.data()! : {};
 
+          // Fetch connection method information from the matches subcollection
+          const matchSnap = await FIRESTORE.collection("users")
+            .doc(userId)
+            .collection("matches")
+            .doc(otherId)
+            .get();
+          
+          const matchData = matchSnap.exists ? matchSnap.data() : {};
+          const theirConnectionMethod = matchData?.theirConnectionMethod || { viaLotus: false, viaRadiance: false };
+          const myConnectionMethod = matchData?.myConnectionMethod || { viaLotus: false, viaRadiance: false };
+
           let updated = data.lastUpdated?.toDate
             ? data.lastUpdated.toDate()
             : data.lastUpdated
@@ -3976,6 +4011,8 @@ const verifyPhoneAndSetUser = async (
             lastMessage: data.lastMessage || "",
             lastMessageSender: data.lastMessageSender || "",
             lastUpdated: updated,
+            theirConnectionMethod,
+            myConnectionMethod,
           };
         })
       );
@@ -4065,13 +4102,15 @@ const verifyPhoneAndSetUser = async (
   const fetchChatMatches = async (
     userId: string
   ): Promise<Array<{
-      userId: string;
-      lastMessage: string;
-      lastUpdated: Date;
-      firstName?: string;
-      photos?: string[];
-      [key: string]: any;
-    }>> => {
+    userId: string;
+    firstName?: string;
+    photos?: string[];
+    lastMessage: string;
+    lastUpdated: Date;
+    theirConnectionMethod?: { viaLotus: boolean; viaRadiance: boolean };
+    myConnectionMethod?: { viaLotus: boolean; viaRadiance: boolean };
+    [key: string]: any;
+  }>> => {
     console.log("fetchChatMatches called with userId:", userId);
     try {
       const chatsSnap = await FIRESTORE
@@ -4087,6 +4126,17 @@ const verifyPhoneAndSetUser = async (
 
           const userSnap = await FIRESTORE.collection("users").doc(otherId).get();
           const profile = userSnap.exists ? userSnap.data() : {};
+
+          // Fetch connection method information from the matches subcollection
+          const matchSnap = await FIRESTORE.collection("users")
+            .doc(userId)
+            .collection("matches")
+            .doc(otherId)
+            .get();
+          
+          const matchData = matchSnap.exists ? matchSnap.data() : {};
+          const theirConnectionMethod = matchData?.theirConnectionMethod || { viaLotus: false, viaRadiance: false };
+          const myConnectionMethod = matchData?.myConnectionMethod || { viaLotus: false, viaRadiance: false };
 
           let updated: Date;
           if (data.lastUpdated && data.lastUpdated.toDate) {
@@ -4105,6 +4155,8 @@ const verifyPhoneAndSetUser = async (
             lastUpdated: updated,
             firstName: profile?.firstName,
             photos: profile?.photos,
+            theirConnectionMethod,
+            myConnectionMethod,
             ...profile,
           };
         })
