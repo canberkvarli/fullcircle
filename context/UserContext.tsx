@@ -317,6 +317,7 @@ type UserContextType = {
   chatMatches: MatchType[];
   markMatchAsRead: (matchId: string, userId: string) => Promise<void>;
   markChatAsRead: (chatId: string, userId: string) => Promise<void>;
+  markNewMatchAsRead: (chatId: string, userId: string) => Promise<void>;
   unreadMatchesCount: number;
   fetchChatMatches: (userId: string) => Promise<any[]>;
   getImageUrl: (imagePath: string) => Promise<string | null>;
@@ -974,28 +975,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         (a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime()
       );
       setChatMatches(detailed);
-      // count those where the *other* user was the last sender AND the message hasn't been read
-      const unreadCount = detailed.filter((match) => {
-        // If there's no last message, it's not unread
-        if (!match.lastMessage || !match.lastMessageSender) return false;
+      // count those where the *other* user was the last sender OR it's a new match (no messages yet)
+      // This encourages users to start conversations with new matches
+      const unreadCount = detailed.filter((m) => {
+        // If it's a new match (no last message), it's unread
+        if (!m.lastMessage || !m.lastMessageSender) return true;
         
         // If the current user sent the last message, it's not unread
-        if (match.lastMessageSender === userData.userId) return false;
+        if (m.lastMessageSender === userData.userId) return false;
         
-        // Check if this message has been read by the current user
-        const chatId = [userData.userId, match.userId].sort().join("_");
-        const chatDoc = snap.docs.find(doc => doc.id === chatId);
-        
-        if (chatDoc) {
-          const chatData = chatDoc.data();
-          const lastMessageTimestamp = chatData.lastUpdated?.toDate?.() || new Date(chatData.createdAt);
-          const readTimestamp = chatData.readBy?.[userData.userId]?.toDate?.();
-          
-          // If no read timestamp or read timestamp is before last message, it's unread
-          return !readTimestamp || readTimestamp < lastMessageTimestamp;
-        }
-        
-        // If we can't find the chat doc, assume it's unread
+        // If someone else sent the last message, it's unread
         return true;
       }).length;
       
@@ -3955,6 +3944,8 @@ const verifyPhoneAndSetUser = async (
     });
   };
 
+
+
   const subscribeToChatMatches = (
     userId: string,
     callback: (
@@ -4178,13 +4169,32 @@ const verifyPhoneAndSetUser = async (
     try {
       const chatRef = FIRESTORE.collection("chats").doc(chatId);
       await chatRef.update({
-        [`readBy.${userId}`]: firestore.FieldValue.serverTimestamp(),
+        lastMessageSender: userId,
       });
       
       // Optimistically update local unread count
       setUnreadMatchesCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error('❌ Error marking chat as read:', error);
+      throw error;
+    }
+  };
+
+  // Function to mark a new match as "read" when user sends first message
+  const markNewMatchAsRead = async (
+    chatId: string,
+    userId: string
+  ): Promise<void> => {
+    try {
+      const chatRef = FIRESTORE.collection("chats").doc(chatId);
+      await chatRef.update({
+        lastMessageSender: userId,
+      });
+      
+      // Optimistically update local unread count
+      setUnreadMatchesCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('❌ Error marking new match as read:', error);
       throw error;
     }
   };
@@ -5088,6 +5098,7 @@ const verifyPhoneAndSetUser = async (
     subscribeToReceivedLikes,
     sendMessage,
     markChatAsRead,
+    markNewMatchAsRead,
     fetchChatMatches,
     chatMatches,
     markMatchAsRead,

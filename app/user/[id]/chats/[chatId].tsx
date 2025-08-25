@@ -30,7 +30,6 @@ import { useFont } from "@/hooks/useFont";
 import { CustomIcon } from "@/components/CustomIcon";
 import PotentialMatch from "@/components/PotentialMatch";
 import ReportModal from "@/components/modals/ReportModal";
-import OuroborosLoader from "@/components/ouroboros/OuroborosLoader";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -44,6 +43,7 @@ const Chat: React.FC = () => {
     subscribeToChatMessages,
     sendMessage,
     markChatAsRead,
+    markNewMatchAsRead,
     fetchUserById,
     reportUser,
     unmatchUser,
@@ -56,8 +56,6 @@ const Chat: React.FC = () => {
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [otherUserData, setOtherUserData] = useState<any>(null);
   const [fullUserData, setFullUserData] = useState<any>(null);
   const [matchDate, setMatchDate] = useState<Date | null>(null);
@@ -69,55 +67,6 @@ const Chat: React.FC = () => {
   
   // Animation for smooth sliding between tabs
   const slideAnim = useRef(new Animated.Value(0)).current;
-  
-  // 🔄 SIMPLIFIED: Only keep content fade-in, remove loading animations
-  const contentFadeIn = useRef(new Animated.Value(0)).current;
-
-  // 🔄 SIMPLIFIED: Enhanced loading state management without manual animations
-  useEffect(() => {
-    setShowLoadingScreen(true);
-    
-    let minimumTimeElapsed = false;
-    let dataReady = false;
-
-    // Minimum display time timer (1.5 seconds to see the ouroboros)
-    const minimumTimer = setTimeout(() => {
-      minimumTimeElapsed = true;
-      if (dataReady) {
-        handleTransitionToContent();
-      }
-    }, 1500);
-
-    // Check if data is ready
-    const checkDataReady = () => {
-      if (!isLoading && chatId) {
-        dataReady = true;
-        if (minimumTimeElapsed) {
-          handleTransitionToContent();
-        }
-      }
-    };
-
-    const handleTransitionToContent = () => {
-      // Simple transition to content
-      setShowLoadingScreen(false);
-      setShowContent(true);
-      // Fade in main content
-      Animated.timing(contentFadeIn, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }).start();
-    };
-
-    // Initial check
-    checkDataReady();
-
-    // Cleanup
-    return () => {
-      clearTimeout(minimumTimer);
-    };
-  }, [isLoading, chatId]);
 
   // Parse matchUser and detect connection method
   useEffect(() => {
@@ -242,7 +191,9 @@ const Chat: React.FC = () => {
     matchDate,
   ]);
 
-  // Handle tab change with smooth sliding animation
+
+
+  // Handle tab change with gentler sliding animation
   const handleTabChange = (tab: "chat" | "profile") => {
     setActiveTab(tab);
     
@@ -250,8 +201,8 @@ const Chat: React.FC = () => {
     
     Animated.spring(slideAnim, {
       toValue,
-      tension: 100,
-      friction: 8,
+      tension: 60,        // Reduced tension for gentler movement
+      friction: 12,       // Increased friction for smoother deceleration
       useNativeDriver: true,
     }).start();
   };
@@ -261,11 +212,19 @@ const Chat: React.FC = () => {
     async (newMsgs: IMessage[] = []) => {
       if (!chatId) return;
 
+      // Check if this is a new match (no messages yet)
+      const isNewMatch = messages.length === 1; // Only the system match message exists
+      
       for (const m of newMsgs) {
         await sendMessage(chatId, m.text || "", userData.userId, otherUserId);
       }
+      
+      // If this was a new match, mark it as read to remove the unread badge
+      if (isNewMatch) {
+        markNewMatchAsRead(chatId, userData.userId).catch(console.error);
+      }
     },
-    [chatId, sendMessage, userData.userId, otherUserId]
+    [chatId, sendMessage, userData.userId, otherUserId, messages.length, markNewMatchAsRead]
   );
 
   // Get connection method info
@@ -435,26 +394,6 @@ const Chat: React.FC = () => {
     </Send>
   );
 
-  // 🔄 SIMPLIFIED: Clean loading screen with only OuroborosLoader
-  if (showLoadingScreen) {
-    return (
-      <SafeAreaView style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <OuroborosLoader 
-          variant="breathe"              // Spiritual feel for chat loading
-          size={120}                     
-          duration={2500}                // Slower, more meditative
-          fillColor="#F5E6D3"
-          strokeColor="#7B6B5C"
-          strokeWidth={1.5}
-          loop={true}
-        />
-        <Text style={[styles.loadingText, fonts.spiritualBodyFont, { color: '#7B6B5C' }]}>
-          Connecting souls...
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
   const connectionInfo = getConnectionInfo();
 
   return (
@@ -491,9 +430,8 @@ const Chat: React.FC = () => {
         }}
       />
       
-      {/* Main Content with Fade-in Animation */}
-      <Animated.View style={[{ flex: 1 }, { opacity: contentFadeIn }]}>
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Main Content - Instant loading, no wrapper needed */}
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={[styles.header, { 
             backgroundColor: colors.background,
@@ -637,15 +575,9 @@ const Chat: React.FC = () => {
                   </ScrollView>
                 ) : (
                   <View style={styles.profileLoader}>
-                    <OuroborosLoader 
-                      variant="spinner"            // Simple spinner for profile loading
-                      size={80}                   
-                      duration={1500}             
-                      fillColor="#F5E6D3"
-                      strokeColor="#7B6B5C"
-                      strokeWidth={1.5}
-                      loop={true}
-                    />
+                    <View style={styles.simpleSpinner}>
+                      <Ionicons name="refresh" size={32} color="#7B6B5C" />
+                    </View>
                     <Text style={[styles.profileLoadingText, fonts.spiritualBodyFont, { color: '#7B6B5C' }]}>
                       Loading essence...
                     </Text>
@@ -655,7 +587,6 @@ const Chat: React.FC = () => {
             </Animated.View>
           </View>
         </SafeAreaView>
-      </Animated.View>
     </>
   );
 };
@@ -663,12 +594,6 @@ const Chat: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  // 🆕 NEW: Loading container style
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
   },
   header: {
     paddingHorizontal: Spacing.lg,
@@ -782,14 +707,6 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: "100%",
   },
-  loadingText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.medium,
-    marginTop: Spacing.lg,
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
   profileLoadingText: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
@@ -885,6 +802,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
+  },
+  simpleSpinner: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F5E6D3',
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+    shadowColor: '#7B6B5C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
 

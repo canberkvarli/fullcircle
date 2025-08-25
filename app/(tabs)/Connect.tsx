@@ -469,10 +469,7 @@ const ConnectScreen: React.FC = () => {
 
   const handlePhotosLoaded = () => {
     setPhotosLoaded(true);
-    
-    // 🎭 SIMPLE: Clean button entrance with just opacity
-    console.log('📸 Photos loaded - clean fade in for buttons');
-    
+
     // Reset button state for smooth entrance
     buttonsOpacity.setValue(0);
     
@@ -556,7 +553,7 @@ const ConnectScreen: React.FC = () => {
           
           <View style={styles.actionContainer}>
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: '#B8860B', shadowColor: '#B8860B' }]}
+              style={[styles.primaryButton, { backgroundColor: '#B8860B' }]}
               onPress={() => router.navigate(hasFullCircleSubscription ? '/user/EditUserProfile' : '/user/FullCircleSubscription')}
               activeOpacity={0.9}
             >
@@ -766,7 +763,6 @@ const ConnectScreen: React.FC = () => {
               {
                 backgroundColor: colors.card,
                 borderColor: '#CD853F',
-                shadowColor: '#CD853F',
               }
             ]}
           >
@@ -807,8 +803,7 @@ const ConnectScreen: React.FC = () => {
                   style={[
                     styles.divineButton, 
                     { 
-                      backgroundColor: '#680439ff',
-                      shadowColor: '#680439ff'
+                      backgroundColor: '#680439ff'
                     }
                   ]}
                   onPress={navigateToLotusShop}
@@ -820,17 +815,16 @@ const ConnectScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity 
-                  style={[
-                    styles.divineButton, 
-                    { 
-                      backgroundColor: '#B8860B',
-                      shadowColor: '#B8860B'
-                    }
-                  ]}
-                  onPress={navigateToSubscription}
-                  activeOpacity={0.9}
-                >
+                                  <TouchableOpacity 
+                    style={[
+                      styles.divineButton, 
+                      { 
+                        backgroundColor: '#B8860B'
+                      }
+                    ]}
+                    onPress={navigateToSubscription}
+                    activeOpacity={0.9}
+                  >
                   <CustomIcon name="infinite" size={20} color="#FFFFFF" style={styles.buttonIcon} />
                   <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>
                     Join Full Circle
@@ -851,7 +845,6 @@ const ConnectScreen: React.FC = () => {
               {
                 backgroundColor: colors.card,
                 borderColor: '#B8860B',
-                shadowColor: '#B8860B',
               }
             ]}
           >
@@ -889,8 +882,7 @@ const ConnectScreen: React.FC = () => {
                   style={[
                     styles.divineButton, 
                     { 
-                      backgroundColor: '#B8860B',
-                      shadowColor: '#B8860B'
+                                          backgroundColor: '#B8860B'
                     }
                   ]}
                   onPress={navigateToFullCircle}
@@ -1009,6 +1001,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -1021,6 +1014,7 @@ const styles = StyleSheet.create({
   
   leftAction: {
     left: Spacing.lg,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     // 🆕 SPIRITUAL: Peaceful pass button with gentle shadows
     shadowColor: '#8B7355',
     shadowOffset: { width: 0, height: 3 },
@@ -1030,6 +1024,7 @@ const styles = StyleSheet.create({
   
   rightAction: {
     right: Spacing.lg,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     // 🆕 SPIRITUAL: Loving heart button with warm shadows
     shadowColor: '#E74C3C',
     shadowOffset: { width: 0, height: 3 },
@@ -1042,6 +1037,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     borderWidth: 0,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     // 🆕 SPIRITUAL: Sacred lotus button with divine shadows
     shadowColor: '#680439',
     shadowOffset: { width: 0, height: 4 },
@@ -1058,6 +1054,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -1116,6 +1113,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.xl,
     borderRadius: 24,
     borderWidth: 2,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.5,
     shadowRadius: 30,
@@ -1166,6 +1164,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     paddingHorizontal: Spacing.xl,
     borderRadius: 16,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -1196,11 +1195,12 @@ const styles = StyleSheet.create({
     left: 16,
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
     borderWidth: 1,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1248,6 +1248,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     paddingHorizontal: Spacing.xl,
     borderRadius: 16,
+    backgroundColor: '#FFFFFF', // Add solid background for efficient shadow calculation
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

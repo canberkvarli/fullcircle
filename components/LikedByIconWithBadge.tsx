@@ -28,11 +28,11 @@ export const LikedByIconWithBadge: React.FC<Props> = ({ color, size }) => {
 const styles = StyleSheet.create({
   badgeContainer: {
     position: "absolute",
-    right: -8,
-    top: -4,
+    right: -10,
+    top: -5,
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 15,
     backgroundColor: "#E53935", // Vivid red instead of brown or purple
     alignItems: "center",
     justifyContent: "center",

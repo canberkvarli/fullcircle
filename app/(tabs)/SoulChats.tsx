@@ -29,6 +29,8 @@ const SoulChats: React.FC = () => {
 
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // 🆕 NEW: Chat cache to store preloaded chat IDs
+  const [chatCache, setChatCache] = useState<{[key: string]: string}>({});
   const router = useRouter();
   
   const colorScheme = useColorScheme() ?? 'light';
@@ -61,21 +63,54 @@ const SoulChats: React.FC = () => {
           })
         );
         setMatches(withPhotos);
+        
+        // 🆕 NEW: Preload all chat IDs in the background
+        preloadAllChats(withPhotos);
+        
         setIsLoading(false);
       }
     );
     return unsubscribe;
   }, [userData.userId, subscribeToChatMatches, getImageUrl]);
 
+  // 🆕 NEW: Preload all chat IDs to eliminate loading screens
+  const preloadAllChats = async (matchesList: any[]) => {
+    const chatIds: {[key: string]: string} = {};
+    
+    // Preload all chats in parallel
+    await Promise.all(
+      matchesList.map(async (match) => {
+        try {
+          const chatId = await createOrFetchChat(userData.userId, match.userId);
+          if (chatId) {
+            chatIds[match.userId] = chatId;
+          }
+        } catch (error) {
+          console.error(`Error preloading chat for ${match.userId}:`, error);
+        }
+      })
+    );
+    
+    setChatCache(chatIds);
+  };
+
   const handleChatPress = (match: any) => {
-    // Navigate immediately without waiting
-    const chatId = [userData.userId, match.userId].sort().join("_");
+    // 🆕 NEW: Navigate instantly using preloaded chat ID
+    const chatId = chatCache[match.userId] || [userData.userId, match.userId].sort().join("_");
+    
+    // Navigate immediately - no loading screen needed!
     router.navigate(`/user/${userData.userId}/chats/${chatId}?otherUserId=${match.userId}&matchUser=${encodeURIComponent(JSON.stringify(match))}`);
     
-    // Create/fetch chat in background (don't await)
-    createOrFetchChat(userData.userId, match.userId).catch(error => {
-      console.error("Error creating/fetching chat in background:", error);
-    });
+    // If chat wasn't preloaded, create it in background
+    if (!chatCache[match.userId]) {
+      createOrFetchChat(userData.userId, match.userId).then(chatId => {
+        if (chatId) {
+          setChatCache(prev => ({ ...prev, [match.userId]: chatId }));
+        }
+      }).catch(error => {
+        console.error("Error creating/fetching chat in background:", error);
+      });
+    }
   };
 
   // Helper function to get connection methods for this match
