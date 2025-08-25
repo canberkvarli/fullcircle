@@ -375,24 +375,37 @@ const Chat: React.FC = () => {
   );
 
   // Send button
-  const renderSend = (props: any) => (
-    <Send 
-      {...props}
-      containerStyle={{
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 0,
-        marginBottom: 10,
-        marginLeft: 0,
-        marginTop: 0,
-      }}
-      textStyle={{ display: 'none' }}
-    >
-      <View style={[styles.sendButton, { backgroundColor: "#8B4513" }]}>
-        <Ionicons name="paper-plane" size={18} color="#FFFFFF" />
-      </View>
-    </Send>
-  );
+  const renderSend = (props: any) => {
+    const hasText = props.text && props.text.trim().length > 0;
+    return (
+      <Send 
+        {...props}
+        containerStyle={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 0,
+          marginBottom: 0,
+          marginLeft: 0,
+          marginTop: 0,
+        }}
+        textStyle={{ display: 'none' }}
+      >
+        <View style={[
+          styles.sendButton, 
+          { 
+            backgroundColor: hasText ? "#8B4513" : "#D3D3D3",
+            opacity: hasText ? 1 : 0.6
+          }
+        ]}>
+          <Ionicons 
+            name="arrow-up" 
+            size={18} 
+            color={hasText ? "#FFFFFF" : "#808080"} 
+          />
+        </View>
+      </Send>
+    );
+  };
 
   const connectionInfo = getConnectionInfo();
 
@@ -513,8 +526,6 @@ const Chat: React.FC = () => {
               <View style={styles.tabContent}>
                 <KeyboardAvoidingView
                   style={{ flex: 1 }}
-                  behavior={Platform.OS === "ios" ? "padding" : undefined}
-                  keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
                 >
                   <GiftedChat
                     messages={messages}
@@ -530,10 +541,10 @@ const Chat: React.FC = () => {
                     renderInputToolbar={renderInputToolbar}
                     renderSend={renderSend}
                     renderSystemMessage={renderSystemMessage}
-                    alwaysShowSend
-                    minInputToolbarHeight={72}
-                    bottomOffset={Platform.OS === "ios" ? 20 : 0}
-                    keyboardShouldPersistTaps="never"
+                    alwaysShowSend={true}
+                    minInputToolbarHeight={56}
+                    bottomOffset={0}
+                    keyboardShouldPersistTaps="handled"
                     messagesContainerStyle={{ backgroundColor: colors.background }}
                     renderChatEmpty={() => <View />}
                     renderChatFooter={() => null}
@@ -615,6 +626,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     marginBottom: Spacing.md,
+    backgroundColor: '#FFFFFF',
     shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -698,13 +710,14 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: "hidden",
   },
+  tabContent: {
+    width: screenWidth,
+    height: "100%",
+    flex: 1,
+  },
   slidingContainer: {
     flexDirection: "row",
     width: screenWidth * 2,
-    height: "100%",
-  },
-  tabContent: {
-    width: screenWidth,
     height: "100%",
   },
   profileLoadingText: {
@@ -719,30 +732,34 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.lg,
-    minHeight: 72,
+    minHeight: 56,
+    backgroundColor: '#FFFFFF',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+    paddingBottom: Platform.OS === 'ios' ? 0 : Spacing.xs,
   },
   inputPrimary: {
     alignItems: "flex-end",
     justifyContent: "center",
     flexDirection: "row",
+    paddingVertical: 8,
   },
   textInput: {
     fontSize: Typography.sizes.base,
     lineHeight: Typography.sizes.base * 1.4,
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.xs,
+    marginTop: 0,
+    marginBottom: 0,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingVertical: 8,
     borderRadius: 28,
     borderWidth: 1.5,
     maxHeight: 100,
-    minHeight: 48,
+    minHeight: 40,
     flex: 1,
     marginRight: Spacing.md,
+    backgroundColor: '#FFFFFF',
     shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -750,11 +767,12 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   sendButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: '#8B4513',
     shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -771,6 +789,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.xl,
     alignItems: "center",
+    backgroundColor: '#FFFFFF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
