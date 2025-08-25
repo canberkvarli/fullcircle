@@ -366,7 +366,7 @@ const Chat: React.FC = () => {
     <InputToolbar
       {...props}
       containerStyle={[styles.inputToolbar, { 
-        backgroundColor: colors.card,
+        backgroundColor: colors.background,
         borderTopColor: colors.border,
         shadowColor: '#8B4513'
       }]}
@@ -555,7 +555,7 @@ const Chat: React.FC = () => {
                     renderLoadEarlier={() => null}
                     textInputProps={{
                       style: [styles.textInput, { 
-                        backgroundColor: colors.background,
+                        backgroundColor: colors.card,
                         borderColor: colors.border,
                         color: colors.textDark,
                         fontFamily: fonts.spiritualBodyFont?.fontFamily,
@@ -730,15 +730,15 @@ const styles = StyleSheet.create({
   },
   inputToolbar: {
     borderTopWidth: 1,
-    paddingVertical: Spacing.xs,
+    paddingVertical: 0,
     paddingHorizontal: Spacing.lg,
     minHeight: 56,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
-    paddingBottom: Platform.OS === 'ios' ? 0 : Spacing.xs,
+    paddingBottom: 0,
   },
   inputPrimary: {
     alignItems: "flex-end",
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     flex: 1,
     marginRight: Spacing.md,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
