@@ -1087,14 +1087,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
       const isSSOLogin = isGoogleLogin || isAppleLogin;
   
       AuthDebug.trackFlowStep('AuthStateChange', 'User Authenticated', { 
-        userId: user.uid, 
-        isGoogleLogin, 
-        isAppleLogin,
-        isSSOLogin,
-        email: user.email,
-        phone: user.phoneNumber
+        userId: user.uid,
+        isSSO: isSSOLogin,
+        providers: user.providerData.map(p => p.providerId)
       });
-  
+      
+
+      
       try {
         // 🔒 SINGLE SOURCE OF TRUTH: Use authoritative user ID
         const authoritativeUserId = getAuthoritativeUserId();

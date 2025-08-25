@@ -29,7 +29,7 @@ const SoulChats: React.FC = () => {
 
   const [matches, setMatches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // 🆕 NEW: Chat cache to store preloaded chat IDs
+  // Chat cache to store preloaded chat IDs
   const [chatCache, setChatCache] = useState<{[key: string]: string}>({});
   const router = useRouter();
   
@@ -37,20 +37,7 @@ const SoulChats: React.FC = () => {
   const colors = Colors[colorScheme];
   const fonts = useFont();
 
-  // Animation for smooth loading
-  const loadingPulse = React.useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    // Start loading animation
-    Animated.loop(
-      Animated.timing(loadingPulse, {
-        toValue: 1,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-      { resetBeforeIteration: true }
-    ).start();
-
     const unsubscribe = subscribeToChatMatches(
       userData.userId,
       async (chatList) => {
@@ -64,16 +51,16 @@ const SoulChats: React.FC = () => {
         );
         setMatches(withPhotos);
         
-        // 🆕 NEW: Preload all chat IDs in the background
+        // Preload all chat IDs in the background
         preloadAllChats(withPhotos);
         
         setIsLoading(false);
       }
     );
     return unsubscribe;
-  }, [userData.userId, subscribeToChatMatches, getImageUrl]);
+  }, [userData.userId, userData.onboardingCompleted]);
 
-  // 🆕 NEW: Preload all chat IDs to eliminate loading screens
+  // Preload all chat IDs to eliminate loading screens
   const preloadAllChats = async (matchesList: any[]) => {
     const chatIds: {[key: string]: string} = {};
     
@@ -95,7 +82,7 @@ const SoulChats: React.FC = () => {
   };
 
   const handleChatPress = (match: any) => {
-    // 🆕 NEW: Navigate instantly using preloaded chat ID
+    // Navigate instantly using preloaded chat ID
     const chatId = chatCache[match.userId] || [userData.userId, match.userId].sort().join("_");
     
     // Navigate immediately - no loading screen needed!
