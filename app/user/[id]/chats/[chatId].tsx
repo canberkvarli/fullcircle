@@ -287,6 +287,20 @@ const Chat: React.FC = () => {
     const systemIconColor = getSystemMessageIconColor();
     const isCustomIcon = systemIcon === "lotus" || systemIcon === "halo";
     
+    // Get custom message based on connection method
+    const getCustomMessage = () => {
+      if (!connectionMethod) return props.currentMessage.text;
+      
+      if (connectionMethod.viaLotus && connectionMethod.viaRadiance) {
+        return `${otherUserData?.firstName || "They"} sent you a lotus flower & radiated your way!`;
+      } else if (connectionMethod.viaLotus) {
+        return `${otherUserData?.firstName || "They"} sent you a lotus flower!`;
+      } else if (connectionMethod.viaRadiance) {
+        return `Your radiance caught ${otherUserData?.firstName || "their"} attention!`;
+      }
+      return props.currentMessage.text;
+    };
+    
     return (
       <View style={[styles.systemMessageContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.systemMessage, { 
@@ -302,7 +316,7 @@ const Chat: React.FC = () => {
             )}
           </View>
           <Text style={[styles.systemMessageText, fonts.spiritualBodyFont, { color: colors.textDark }]}>
-            {props.currentMessage.text}
+            {getCustomMessage()}
           </Text>
           <Text style={[styles.systemMessageDate, fonts.spiritualBodyFont, { color: colors.textLight }]}>
             Connected • {props.currentMessage.createdAt.toLocaleDateString("en-US", {
